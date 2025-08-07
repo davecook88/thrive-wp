@@ -1,0 +1,57 @@
+services:
+  wordpress:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DEBUG: 1
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME', 'http://localhost:8080');
+        define('WP_SITEURL', 'http://localhost:8080');
+        define('WP_DEBUG_DISPLAY', false);
+        define('SCRIPT_DEBUG', true);
+    volumes:
+      - ./wordpress/plugins/nodejs-bridge:/var/www/html/wp-content/plugins/nodejs-bridge
+      - ./_logs_wp:/var/www/html/wp-content/debug.log:rw
+    depends_on:
+      - db
+      - nestjs
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    networks:
+      - wordpress_net
+
+  db:
+    image: mariadb:10.6
+    ports:
+      - '3306:3306'
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+      MYSQL_ROOT_PASSWORD: somewordpress
+    volumes:
+      - db:/var/lib/mysql
+    networks:
+      - wordpress_net
+
+  nestjs:
+    build:
+      context: ./nestjs
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    networks:
+      - wordpress_net
+
+volumes:
+  wordpress:
+  db:
+
+networks:
+  wordpress_net:
+    driver: bridge
