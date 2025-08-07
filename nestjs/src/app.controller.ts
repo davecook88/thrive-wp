@@ -15,6 +15,6 @@ export class AppController {
     console.log('Received request on /test-bridge');
     console.log('Headers:', headers);
     console.log('Body:', body);
-    return { message: 'Request received by NestJS!' };
+    return { message: 'Request received by NestJS!123' };
   }
 }

@@ -17,6 +17,7 @@ services:
     volumes:
       - ./wordpress/plugins/nodejs-bridge:/var/www/html/wp-content/plugins/nodejs-bridge
       - ./_logs_wp:/var/www/html/wp-content/debug.log:rw
+      - ./wordpress/themes/custom-theme:/var/www/html/wp-content/themes/custom-theme
     depends_on:
       - db
       - nestjs
@@ -45,6 +46,9 @@ services:
       dockerfile: Dockerfile
     ports:
       - '3000:3000'
+    volumes:
+      - ./nestjs:/usr/src/app
+      - /usr/src/app/node_modules
     networks:
       - wordpress_net
 

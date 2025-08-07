@@ -1,0 +1,262 @@
+/*
+Theme Name: Custom Theme
+Description: Custom block theme for Thrive WP Spanish Learning Platform
+Version: 1.0
+Author: Thrive WP Team
+*/
+
+/* Import Google Fonts */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+/* Main theme styles */
+body {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+  font-size: 16px;
+  color: #1f2937;
+  background-color: #ffffff;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom CSS for better design */
+.wp-block-button__link {
+  transition: all 0.2s ease-in-out;
+  font-weight: 600;
+  text-decoration: none !important;
+}
+
+.wp-block-button__link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Card hover effects */
+.wp-block-group:has(.wp-block-image) {
+  transition: all 0.3s ease-in-out;
+}
+
+.wp-block-group:has(.wp-block-image):hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* Navigation styles */
+.wp-block-navigation-link a {
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease-in-out;
+}
+
+.wp-block-navigation-link a:hover {
+  color: #4f46e5 !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .wp-block-columns {
+    flex-direction: column !important;
+  }
+
+  .wp-block-column {
+    flex-basis: 100% !important;
+    margin-bottom: 2rem;
+  }
+
+  .wp-block-group[style*="padding-top:4rem"] {
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+  }
+}
+
+/* Better spacing and typography */
+.wp-block-heading {
+  margin-top: 0;
+}
+
+.wp-block-list li {
+  margin-bottom: 0.5rem;
+}
+
+/* Site header enhancements */
+.wp-block-site-title a {
+  text-decoration: none;
+  font-weight: 700;
+}
+
+/* Footer adjustments */
+.site-footer {
+  margin-top: auto;
+}
+
+/* Custom utility classes */
+.text-gradient {
+  background: linear-gradient(135deg, #4f46e5 0%, #10b981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Image placeholder styles */
+.wp-block-image div[style*="background"] {
+  font-family: Inter, sans-serif;
+  font-weight: 500;
+}
+
+/* Image placeholder styles - simple fallback */
+.wp-block-image img[src*="placeholder"] {
+  opacity: 0;
+  position: relative;
+}
+
+.wp-block-image img[src="placeholder-collage.jpg"] {
+  width: 100%;
+  height: 400px;
+  background: linear-gradient(135deg, #4f46e5 0%, #10b981 100%);
+  border-radius: 20px;
+}
+
+.wp-block-image img[src="placeholder-terrace.jpg"] {
+  width: 100%;
+  height: 300px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 20px;
+}
+
+.wp-block-image img[src="placeholder-diego.jpg"] {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+  border-radius: 50%;
+}
+
+/* Enhanced button hover effects */
+.wp-block-button__link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Better typography for headings */
+.wp-block-heading {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Ensure consistent spacing */
+.wp-block-group {
+  box-sizing: border-box;
+}
+
+/* Fix any layout issues on mobile */
+@media (max-width: 768px) {
+  .wp-block-columns {
+    flex-direction: column !important;
+  }
+
+  .wp-block-column {
+    flex-basis: 100% !important;
+    margin-bottom: 2rem;
+  }
+
+  h1,
+  h2 {
+    font-size: 2rem !important;
+  }
+
+  .wp-block-group[style*="padding-top:var(--wp--preset--spacing--80)"] {
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+  }
+}
+
+/* Handle missing image placeholders with a simpler approach */
+.wp-block-image img[src*="placeholder-"] {
+  display: none;
+}
+
+/* Create placeholder backgrounds for missing images */
+.wp-block-image:has(img[src*="placeholder-collage"]) {
+  background: linear-gradient(135deg, #4f46e5 0%, #10b981 100%);
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  color: white;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.wp-block-image:has(img[src*="placeholder-collage"])::after {
+  content: "Spanish Learning Collage";
+}
+
+.wp-block-image:has(img[src*="placeholder-terrace"]) {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  color: white;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.wp-block-image:has(img[src*="placeholder-terrace"])::after {
+  content: "People studying on terrace";
+}
+
+.wp-block-image:has(img[src*="placeholder-diego"]) {
+  background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #ff5722;
+  font-size: 16px;
+  font-weight: 600;
+  border: 3px solid #ff5722;
+  margin: 0 auto;
+}
+
+.wp-block-image:has(img[src*="placeholder-diego"])::after {
+  content: "Diego";
+}
+
+/* Enhanced button hover effects */
+.wp-block-button__link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Improved spacing and typography */
+.wp-block-group.alignfull {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+}
+
+/* Better responsive design */
+@media (max-width: 768px) {
+  h1[style*="3.5rem"] {
+    font-size: 2.5rem !important;
+  }
+
+  h2[style*="3.5rem"] {
+    font-size: 2.5rem !important;
+  }
+
+  h2[style*="2.5rem"] {
+    font-size: 2rem !important;
+  }
+
+  .wp-block-columns {
+    flex-direction: column !important;
+  }
+
+  .wp-block-column[style*="flex-basis"] {
+    flex-basis: 100% !important;
+  }
+}

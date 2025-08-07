@@ -64,8 +64,17 @@ docker-compose logs -f wordpress
 - `docker-compose.yml`: Service orchestration (primary config)
 - `GEMINI.md`: Architecture decisions and requirements (keep updated)
 
-## Common Gotchas
-- Use Docker internal hostnames (`nestjs`, `db`) not `localhost` for inter-service communication
-- WordPress requires container rebuild for core changes, but not plugin changes
-- NestJS requires `npm run build` before production deployment
-- Database persists in Docker volume - use `docker-compose down -v` to reset completely
+## Local WP Database
+Credentials:
+"MYSQL_HOST": "localhost",
+"MYSQL_USER": "wordpress",
+"MYSQL_PASSWORD": "wordpress",
+"MYSQL_DATABASE": "wordpress"
+
+You are able to query the database using the CLI like so: docker-compose exec db mysql -u wordpress -p wordpress wordpress.
+
+Remember that page content is stored in the wp_posts table.
+
+You will be required to update the WP site by making changes to the database. You should open the page at http://localhost:8080/ in your browser to check that the changes have been applied.
+
+The page displayed at http://localhost:8080/ is the homepage of the WordPress site. This is the record with ID 5 in the wp_posts table.
