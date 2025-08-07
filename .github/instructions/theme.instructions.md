@@ -204,7 +204,7 @@ wordpress/themes/custom-theme/
 docker-compose exec db mysql -u wordpress -p'wordpress' wordpress -e "SELECT post_content FROM wp_posts WHERE ID = 5;"
 
 # Apply database updates
-docker-compose exec db mysql -u wordpress -p'wordpress' wordpress < fixed_content.sql
+docker-compose exec db mysql -u wordpress -p'wordpress' wordpress < wordpress/themes/custom-theme/fixed_content.sql
 
 # Restart WordPress container
 docker-compose restart wordpress
