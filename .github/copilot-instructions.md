@@ -3,6 +3,9 @@
 ## Architecture Overview
 This is a **hybrid WordPress + NestJS application** running in Docker containers. WordPress serves as the frontend/CMS, while NestJS provides modern backend API capabilities. Communication between services happens via HTTP calls within the Docker network.
 
+## Infra - Important!
+This entire app must be able to be deployed to a single VPC. This means all services must be accessible within the VPC without relying on public IPs or external DNS.
+
 ### Key Services & Ports
 - **WordPress**: `localhost:8080` (PHP/Apache container)
 - **NestJS API**: `localhost:3000` (Node.js container) 
