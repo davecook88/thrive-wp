@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User, AuthProvider, UserRole } from '../users/entities/user.entity.js';
+import { User } from '../users/entities/user.entity.js';
 
 interface GoogleProfileLike {
   id: string;
@@ -28,34 +28,10 @@ export class AuthService {
     let user = await this.usersRepo.findOne({ where: { email } });
     if (user) {
       let dirty = false;
-      if (!user.externalId) {
-        user.externalId = profile.id;
-        dirty = true;
-      }
-      if (user.authProvider !== AuthProvider.GOOGLE) {
-        user.authProvider = AuthProvider.GOOGLE;
-        dirty = true;
-      }
-      if (dirty) {
-        await this.usersRepo.save(user);
-      }
-      return user;
+      return user; // No extended fields to update in minimal schema
     }
 
-    const firstName = profile.name?.givenName;
-    const lastName = profile.name?.familyName;
-
-    user = this.usersRepo.create({
-      email,
-      firstName,
-      lastName,
-      authProvider: AuthProvider.GOOGLE,
-      externalId: profile.id,
-      role: UserRole.STUDENT,
-      emailVerified: true,
-      isActive: true,
-      preferredLanguage: 'en',
-    });
+    user = this.usersRepo.create({ email });
     await this.usersRepo.save(user);
     this.logger.log(`Created new Google user ${email}`);
     return user;

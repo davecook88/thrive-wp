@@ -1,6 +1,12 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import configuration from './config/configuration.js';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+// __dirname isn't available in ESM; reconstruct it for glob patterns used below
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Build configuration once (not using ConfigService here since this file is used by CLI)
 const appConfig = configuration();

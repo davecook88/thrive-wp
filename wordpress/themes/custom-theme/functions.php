@@ -37,7 +37,7 @@ function custom_theme_scripts()
     // Pass NestJS OAuth endpoint (assumes default local port)
     wp_add_inline_script(
         'custom-theme-login-modal',
-        'window.THriveAuthConfig = ' . wp_json_encode([
+        'window.ThriveAuthConfig = ' . wp_json_encode([
             'googleAuthUrl' => 'http://localhost:3000/auth/google',
         ]) . ';',
         'before'

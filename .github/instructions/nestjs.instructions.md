@@ -1,5 +1,5 @@
 ---
-applyTo: 'nestjs'
+applyTo: 'nestjs/**'
 ---
 
 ## NestJS Language School Platform

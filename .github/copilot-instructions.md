@@ -81,3 +81,7 @@ Remember that page content is stored in the wp_posts table.
 You will be required to update the WP site by making changes to the database. You should open the page at http://localhost:8080/ in your browser to check that the changes have been applied.
 
 The page displayed at http://localhost:8080/ is the homepage of the WordPress site. This is the record with ID 5 in the wp_posts table.
+
+# Makefile
+
+Useful commands for running, stopping, migrating can all be found in `Makefile`.
