@@ -27,6 +27,14 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     });
   }
 
+  // Force account chooser / consent behavior. Google supports prompt values: 'none', 'consent', 'select_account', 'consent select_account'.
+  // We default to select_account so users can switch accounts after logging out locally.
+  // To change at runtime, set GOOGLE_OAUTH_PROMPT env var (e.g. 'consent select_account').
+  public authorizationParams(): Record<string, string> {
+    const prompt = process.env.GOOGLE_OAUTH_PROMPT || 'select_account';
+    return { prompt };
+  }
+
   async validate(
     accessToken: string,
     refreshToken: string,

@@ -22,4 +22,12 @@ export class User extends BaseEntity {
     comment: 'User last name',
   })
   lastName: string;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: 'BCrypt password hash for local (email/password) auth',
+  })
+  passwordHash: string | null;
 }

@@ -1,13 +1,17 @@
 import {
   Controller,
   Get,
+  Post,
+  Body,
   Req,
   Res,
   UseGuards,
   Header,
   HttpCode,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { AuthService } from './auth.service.js';
 import type { Request, Response } from 'express'; // <-- Add this import
 import { randomUUID } from 'node:crypto';
 import jwt from 'jsonwebtoken';
@@ -15,7 +19,9 @@ import jwt from 'jsonwebtoken';
 interface SessionPayload {
   sub: string;
   email: string;
-  name: string;
+  name: string; // Display name (first + last)
+  firstName?: string;
+  lastName?: string;
   roles: string[];
   sid: string; // session id
 }
@@ -39,6 +45,7 @@ function verifySession(token: string): SessionPayload | null {
 
 @Controller('auth')
 export class AuthController {
+  constructor(private readonly authService: AuthService) {}
   @Get('google')
   @UseGuards(AuthGuard('google'))
   googleAuth() {}
@@ -54,6 +61,8 @@ export class AuthController {
       sub: String(user.id),
       email: user.email,
       name: [user.firstName, user.lastName].filter(Boolean).join(' '),
+      firstName: user.firstName,
+      lastName: user.lastName,
       roles: [],
       sid: randomUUID(),
     };
@@ -82,11 +91,109 @@ export class AuthController {
     if (!token) return res.sendStatus(401);
     const payload = verifySession(token);
     if (!payload) return res.sendStatus(401);
+    // Build single JSON context header for Nginx → WordPress theme hydration
+    const context = {
+      id: payload.sub,
+      email: payload.email,
+      name: payload.name,
+      firstName: payload.firstName ?? null,
+      lastName: payload.lastName ?? null,
+      roles: payload.roles,
+    };
+    // Keep legacy headers for a short transition (can be removed later)
     res.setHeader('X-Auth-User-Id', payload.sub);
     res.setHeader('X-Auth-Email', payload.email);
     res.setHeader('X-Auth-Name', payload.name);
     res.setHeader('X-Auth-Roles', payload.roles.join(','));
+    res.setHeader('X-Auth-Context', JSON.stringify(context));
     return res.send();
+  }
+
+  @Post('register')
+  async register(
+    @Body('email') email: string,
+    @Body('password') password: string,
+    @Body('firstName') firstName: string,
+    @Body('lastName') lastName: string,
+    @Res() res: Response,
+  ) {
+    if (!email || !password)
+      throw new BadRequestException('Email & password required');
+    const user = await this.authService.registerLocal(
+      email,
+      password,
+      firstName,
+      lastName,
+    );
+    // Issue session cookie same as Google flow
+    const session: SessionPayload = {
+      sub: String(user.id),
+      email: user.email,
+      name: [user.firstName, user.lastName].filter(Boolean).join(' '),
+      firstName: user.firstName,
+      lastName: user.lastName,
+      roles: [],
+      sid: randomUUID(),
+    };
+    const token = signSession(session);
+    const cookieName = process.env.SESSION_COOKIE_NAME || 'thrive_sess';
+    const isProd = process.env.NODE_ENV === 'production';
+    res.cookie(cookieName, token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: isProd,
+      path: '/',
+      maxAge: 1000 * 60 * 30,
+    });
+    const redirectBase = process.env.WP_BASE_URL || 'http://localhost:8080';
+    return res.status(201).json({ ok: true, redirect: redirectBase + '/' });
+  }
+
+  @Post('login')
+  async login(
+    @Body('email') email: string,
+    @Body('password') password: string,
+    @Res() res: Response,
+  ) {
+    if (!email || !password)
+      throw new BadRequestException('Email & password required');
+    const user = await this.authService.validateLocal(email, password);
+    const session: SessionPayload = {
+      sub: String(user.id),
+      email: user.email,
+      name: [user.firstName, user.lastName].filter(Boolean).join(' '),
+      firstName: user.firstName,
+      lastName: user.lastName,
+      roles: [],
+      sid: randomUUID(),
+    };
+    const token = signSession(session);
+    const cookieName = process.env.SESSION_COOKIE_NAME || 'thrive_sess';
+    const isProd = process.env.NODE_ENV === 'production';
+    res.cookie(cookieName, token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: isProd,
+      path: '/',
+      maxAge: 1000 * 60 * 30,
+    });
+    const redirectBase = process.env.WP_BASE_URL || 'http://localhost:8080';
+    return res.json({ ok: true, redirect: redirectBase + '/' });
+  }
+
+  @Get('logout')
+  logout(@Req() req: Request, @Res() res: Response) {
+    const cookieName = process.env.SESSION_COOKIE_NAME || 'thrive_sess';
+    const isProd = process.env.NODE_ENV === 'production';
+    const redirectBase = process.env.WP_BASE_URL || 'http://localhost:8080';
+    res.cookie(cookieName, '', {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: isProd,
+      path: '/',
+      maxAge: 0,
+    });
+    return res.redirect(302, redirectBase + '/');
   }
 }
 

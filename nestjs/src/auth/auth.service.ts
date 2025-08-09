@@ -1,4 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity.js';
@@ -60,6 +66,49 @@ export class AuthService {
     });
     await this.usersRepo.save(user);
     this.logger.log(`Created new Google user ${email}`);
+    return user;
+  }
+
+  async registerLocal(
+    email: string,
+    password: string,
+    firstName = '',
+    lastName = '',
+  ): Promise<User> {
+    email = email.toLowerCase();
+    const existing = await this.usersRepo.findOne({ where: { email } });
+    if (existing && existing.passwordHash) {
+      throw new BadRequestException('Email already registered');
+    }
+    const passwordHash = await bcrypt.hash(password, 12);
+    let user: User;
+    if (existing) {
+      existing.passwordHash = passwordHash;
+      if (firstName) existing.firstName = firstName;
+      if (lastName) existing.lastName = lastName;
+      user = await this.usersRepo.save(existing);
+    } else {
+      user = this.usersRepo.create({
+        email,
+        firstName,
+        lastName,
+        passwordHash,
+      });
+      await this.usersRepo.save(user);
+    }
+    return user;
+  }
+
+  async validateLocal(email: string, password: string): Promise<User> {
+    email = email.toLowerCase();
+    const user = await this.usersRepo.findOne({ where: { email } });
+    if (!user || !user.passwordHash) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    const ok = await bcrypt.compare(password, user.passwordHash);
+    if (!ok) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
     return user;
   }
 }

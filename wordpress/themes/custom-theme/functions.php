@@ -160,3 +160,57 @@ function custom_theme_block_editor_settings($editor_settings, $editor_context)
     return $editor_settings;
 }
 add_filter('block_editor_settings_all', 'custom_theme_block_editor_settings', 10, 2);
+
+// Strongly typed auth context integration
+require_once get_template_directory() . '/includes/class-thrive-auth-context.php';
+
+function thrive_hydrate_user_from_proxy(): void
+{
+    if (is_user_logged_in()) {
+        return; // Already native-authenticated
+    }
+    $rawHeader = $_SERVER['HTTP_X_AUTH_CONTEXT'] ?? '';
+    $ctx = ThriveAuthContext::fromJson($rawHeader);
+    if ($ctx === null) {
+        return; // Invalid / missing header
+    }
+    $userId = $ctx->applyToWordPress();
+    if ($userId === null) {
+        return; // Failed to map/create user
+    }
+    $GLOBALS['thrive_auth_context'] = $ctx; // Store object for later access
+}
+
+// Run very early on init so templates & later hooks see the user; after pluggable is loaded.
+add_action('init', 'thrive_hydrate_user_from_proxy', 1);
+
+/**
+ * Helper: get object context.
+ * @return ThriveAuthContext|null
+ */
+function thrive_get_auth_context(): ?ThriveAuthContext
+{
+    $ctx = $GLOBALS['thrive_auth_context'] ?? null;
+    return $ctx instanceof ThriveAuthContext ? $ctx : null;
+}
+
+/**
+ * Helper: legacy array form for templates.
+ * @return array<string,mixed>|null
+ */
+function thrive_get_auth_context_array(): ?array
+{
+    $ctx = thrive_get_auth_context();
+    return $ctx ? $ctx->toArray() : null;
+}
+
+// Server-side replacement for template-part 'login-auth' to use PHP logic.
+add_filter('render_block', function ($content, $block) {
+    if (isset($block['blockName'], $block['attrs']['slug']) && $block['blockName'] === 'core/template-part' && $block['attrs']['slug'] === 'login-auth') {
+        ob_start();
+        get_template_part('parts/login-auth');
+        return ob_get_clean();
+    }
+    return $content;
+}, 10, 2);
+
