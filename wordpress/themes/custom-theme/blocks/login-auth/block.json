@@ -1,0 +1,23 @@
+{
+    "apiVersion": 2,
+    "name": "thrive/login-auth",
+    "title": "Login / Auth",
+    "description": "Thrive unified login/auth component (Google + Email/Password).",
+    "category": "widgets",
+    "icon": "admin-users",
+    "textdomain": "custom-theme",
+    "supports": {
+        "html": false,
+        "align": [
+            "left",
+            "right"
+        ],
+        "anchor": true
+    },
+    "keywords": [
+        "login",
+        "auth",
+        "thrive"
+    ],
+    "render": "file:./render.php"
+}

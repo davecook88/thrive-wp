@@ -20,50 +20,17 @@ class NodeJS_Bridge
      */
     public function map_proxied_auth_user()
     {
-        // Skip if already logged in (avoid overriding existing session)
-        if (is_user_logged_in()) {
-            return;
-        }
-
-        $user_id_header = isset($_SERVER['HTTP_X_AUTH_USER_ID']) ? trim(sanitize_text_field(wp_unslash($_SERVER['HTTP_X_AUTH_USER_ID']))) : '';
         $email_header = isset($_SERVER['HTTP_X_AUTH_EMAIL']) ? sanitize_email(wp_unslash($_SERVER['HTTP_X_AUTH_EMAIL'])) : '';
-        $name_header = isset($_SERVER['HTTP_X_AUTH_NAME']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_X_AUTH_NAME'])) : '';
-        $roles_header = isset($_SERVER['HTTP_X_AUTH_ROLES']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_X_AUTH_ROLES'])) : '';
-
-        if (empty($user_id_header) || empty($email_header)) {
-            return; // Not authenticated
+        if ($email_header === '') {
+            return; // No authenticated context
         }
-
-        $wp_user = get_user_by('email', $email_header);
-        if (!$wp_user) {
-            $username_base = sanitize_user(current(explode('@', $email_header)), true);
-            $username = $username_base;
-            $i = 1;
-            while (username_exists($username)) {
-                $username = $username_base . $i;
-                $i++;
-                if ($i > 50) {
-                    break; // prevent infinite loop
-                }
-            }
-            $user_id = wp_insert_user([
-                'user_login' => $username,
-                'user_email' => $email_header,
-                'display_name' => $name_header ?: $username,
-                'user_pass' => wp_generate_password(),
-                'role' => 'subscriber',
-            ]);
-            if (!is_wp_error($user_id)) {
-                $wp_user = get_user_by('id', $user_id);
-            }
-        }
-
-        if ($wp_user && !is_wp_error($wp_user)) {
-            wp_set_current_user($wp_user->ID);
-            // Optionally set WP auth cookie if we want native WP capability checks across requests
-            // wp_set_auth_cookie($wp_user->ID);
-            do_action('thrive_proxied_auth_mapped', $wp_user, $roles_header);
-        }
+        $globals = [
+            'id' => isset($_SERVER['HTTP_X_AUTH_USER_ID']) ? trim(sanitize_text_field(wp_unslash($_SERVER['HTTP_X_AUTH_USER_ID']))) : null,
+            'email' => $email_header,
+            'name' => isset($_SERVER['HTTP_X_AUTH_NAME']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_X_AUTH_NAME'])) : null,
+            'roles' => isset($_SERVER['HTTP_X_AUTH_ROLES']) ? array_filter(array_map('sanitize_key', explode(',', (string) wp_unslash($_SERVER['HTTP_X_AUTH_ROLES'])))) : [],
+        ];
+        $GLOBALS['thrive_header_auth'] = $globals; // Legacy lightweight global (themes now prefer thrive_get_auth_context)
     }
 
     public function test_nodejs_bridge_shortcode()

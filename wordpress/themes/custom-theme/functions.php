@@ -163,22 +163,28 @@ add_filter('block_editor_settings_all', 'custom_theme_block_editor_settings', 10
 
 // Strongly typed auth context integration
 require_once get_template_directory() . '/includes/class-thrive-auth-context.php';
+// Register custom dynamic blocks (metadata based)
+add_action('init', function () {
+    $blocks = [
+        '/blocks/login-auth',
+    ];
+    $base = get_template_directory();
+    foreach ($blocks as $rel) {
+        $dir = $base . $rel;
+        if (file_exists($dir . '/block.json')) {
+            register_block_type($dir);
+        }
+    }
+});
 
 function thrive_hydrate_user_from_proxy(): void
 {
-    if (is_user_logged_in()) {
-        return; // Already native-authenticated
-    }
+    // Parse header into context only (no WP user creation / mapping)
     $rawHeader = $_SERVER['HTTP_X_AUTH_CONTEXT'] ?? '';
     $ctx = ThriveAuthContext::fromJson($rawHeader);
-    if ($ctx === null) {
-        return; // Invalid / missing header
+    if ($ctx !== null) {
+        $GLOBALS['thrive_auth_context'] = $ctx;
     }
-    $userId = $ctx->applyToWordPress();
-    if ($userId === null) {
-        return; // Failed to map/create user
-    }
-    $GLOBALS['thrive_auth_context'] = $ctx; // Store object for later access
 }
 
 // Run very early on init so templates & later hooks see the user; after pluggable is loaded.
@@ -195,6 +201,27 @@ function thrive_get_auth_context(): ?ThriveAuthContext
 }
 
 /**
+ * Lightweight auth check relying on reverse proxy validated session.
+ * Source of truth is the NestJS session cookie (validated by Nginx before headers are injected).
+ * We consider the user "logged in" if any of these are present:
+ *  - Parsed ThriveAuthContext object (preferred)
+ *  - X-Auth-Email header (set only after successful introspection)
+ *  - Session cookie thrive_sess (name configurable, but default from docs)
+ */
+function thrive_is_logged_in(): bool
+{
+    if (thrive_get_auth_context() instanceof ThriveAuthContext) {
+        return true;
+    }
+    if (!empty($_SERVER['HTTP_X_AUTH_EMAIL'])) {
+        return true;
+    }
+    // Fallback: presence of session cookie (may be slightly optimistic if expired but not yet purged)
+    $cookieName = $_ENV['SESSION_COOKIE_NAME'] ?? 'thrive_sess';
+    return isset($_COOKIE[$cookieName]) && $_COOKIE[$cookieName] !== '';
+}
+
+/**
  * Helper: legacy array form for templates.
  * @return array<string,mixed>|null
  */
@@ -205,12 +232,5 @@ function thrive_get_auth_context_array(): ?array
 }
 
 // Server-side replacement for template-part 'login-auth' to use PHP logic.
-add_filter('render_block', function ($content, $block) {
-    if (isset($block['blockName'], $block['attrs']['slug']) && $block['blockName'] === 'core/template-part' && $block['attrs']['slug'] === 'login-auth') {
-        ob_start();
-        get_template_part('parts/login-auth');
-        return ob_get_clean();
-    }
-    return $content;
-}, 10, 2);
+// Legacy template-part override removed in favor of dynamic block.
 

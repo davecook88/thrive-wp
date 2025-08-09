@@ -7,16 +7,21 @@ if (!defined('ABSPATH')) {
 }
 
 $ctx = function_exists('thrive_get_auth_context') ? thrive_get_auth_context() : null;
-$logged_in = is_user_logged_in();
+$logged_in = function_exists('thrive_is_logged_in') ? thrive_is_logged_in() : false;
+
 $display = '';
 if ($ctx && $ctx->name) {
     $display = $ctx->name;
-} elseif ($logged_in) {
-    $display = wp_get_current_user()->display_name ?: '';
+} elseif ($logged_in && function_exists('wp_get_current_user')) {
+    // Only attempt WP user object if native auth exists (legacy compatibility)
+    $u = wp_get_current_user();
+    if ($u && $u->exists()) {
+        $display = $u->display_name ?: '';
+    }
 }
 
-$google_url = esc_url(home_url('/auth/google'));
-$logout_url = esc_url(home_url('/auth/logout'));
+$google_url = esc_url(home_url('/api/auth/google'));
+$logout_url = esc_url(home_url('/api/auth/logout'));
 ?>
 <div class="thrive-auth-component" data-thrive-auth>
     <?php if ($logged_in): ?>

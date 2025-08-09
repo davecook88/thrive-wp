@@ -186,14 +186,22 @@ export class AuthController {
     const cookieName = process.env.SESSION_COOKIE_NAME || 'thrive_sess';
     const isProd = process.env.NODE_ENV === 'production';
     const redirectBase = process.env.WP_BASE_URL || 'http://localhost:8080';
+    // Clear cookie (some browsers are picky – use both clearCookie & explicit expired cookie)
+    res.clearCookie(cookieName, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: isProd,
+      path: '/',
+    });
     res.cookie(cookieName, '', {
       httpOnly: true,
       sameSite: 'lax',
       secure: isProd,
       path: '/',
+      expires: new Date(0),
       maxAge: 0,
     });
-    return res.redirect(302, redirectBase + '/');
+    return res.redirect(302, redirectBase + '/?logged_out=1');
   }
 }
 
