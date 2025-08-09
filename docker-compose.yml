@@ -1,8 +1,6 @@
 services:
   wordpress:
     build: .
-    ports:
-      - "8080:80"
     environment:
       WORDPRESS_DB_HOST: db
       WORDPRESS_DB_USER: wordpress
@@ -29,7 +27,8 @@ services:
   db:
     image: mariadb:10.6
     ports:
-      - '3306:3306'
+      - '3306:3306' # exposes the db outside of the container.
+      # convenient locally but not recommended for production
     environment:
       MYSQL_DATABASE: wordpress
       MYSQL_USER: wordpress
@@ -39,18 +38,43 @@ services:
       - db:/var/lib/mysql
     networks:
       - wordpress_net
+    healthcheck:
+      # Use root creds so healthcheck doesn't spam Access denied logs
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p'somewordpress' --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+      start_period: 5s
 
   nestjs:
     build:
       context: ./nestjs
       dockerfile: Dockerfile
-    ports:
-      - '3000:3000'
     volumes:
       - ./nestjs:/usr/src/app
       - /usr/src/app/node_modules
     env_file:
       - .env.local
+    networks:
+      - wordpress_net
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/" ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+  web:
+    image: nginx:1.27-alpine
+    depends_on:
+      - wordpress
+      - nestjs
+    ports:
+      - '8080:80'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d:ro
     networks:
       - wordpress_net
 

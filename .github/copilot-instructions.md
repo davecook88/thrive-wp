@@ -4,7 +4,7 @@
 This is a **hybrid WordPress + NestJS application** running in Docker containers. WordPress serves as the frontend/CMS, while NestJS provides modern backend API capabilities. Communication between services happens via HTTP calls within the Docker network.
 
 ## Infra - Important!
-This entire app must be able to be deployed to a single VPC. This means all services must be accessible within the VPC without relying on public IPs or external DNS.
+This entire app must be able to be deployed to a single VPS. This means all services must be accessible within the VPS without relying on public IPs or external DNS.
 
 ### Key Services & Ports
 - **WordPress**: `localhost:8080` (PHP/Apache container)
@@ -85,3 +85,37 @@ The page displayed at http://localhost:8080/ is the homepage of the WordPress si
 # Makefile
 
 Useful commands for running, stopping, migrating can all be found in `Makefile`.
+
+# Typing !important
+Use strict typing as much as possible across all apps.
+- Avoid using 'any' type
+- Use specific types for function parameters and return values
+- Leverage TypeScript interfaces and types for complex data structures
+- When you need to write javascript files, use JSDoc annotations to provide type information
+- PHPStan has been set up for all PHP files, use it to analyze and improve your code quality
+
+## Added: Unified Domain & Reverse Proxy Auth (Dev Enhancement)
+
+An Nginx `web` service now fronts WordPress and NestJS to provide a single origin (http://localhost:8080) and inject authenticated user context into WordPress at render time.
+
+Flow:
+1. User authenticates via Google OAuth (NestJS `/auth/google`).
+2. NestJS issues a short‑lived signed session cookie (`thrive_sess`, HS256, 30m) and redirects back to WordPress base URL.
+3. Every page request hits Nginx → internal subrequest to `/auth/introspect` on NestJS.
+4. Introspect validates the cookie and returns identity via `X-Auth-*` headers.
+5. Nginx forwards headers to WordPress; plugin creates/loads corresponding WP user during `init` for template conditionals.
+
+Config Vars:
+- `SESSION_SECRET` (NestJS) – MUST override in production.
+- `SESSION_COOKIE_NAME` (optional) – default `thrive_sess`.
+- `WP_BASE_URL` – base URL used for post-login redirect.
+
+Security Notes:
+- Dev secret is insecure; replace before deploy.
+- Cookie: HttpOnly, SameSite=Lax (adjust to `Strict` if compatible), `Secure` automatically when `NODE_ENV=production`.
+- Revocation currently time-based; consider adding a denylist or session store for immediate logout if needed.
+
+Next Potential Improvements:
+- Refresh endpoint & silent renewal JS.
+- Role synchronization.
+- Optional Redis-backed session for instant revocation.

@@ -79,3 +79,29 @@ project-root/
 -   The NestJS service is accessible at `http://localhost:3000`.
 -   Developers can work on custom plugins in the `wordpress/plugins` directory, and changes are reflected live in the running container.
 -   The setup is clean, simple, and easy for new developers to understand.
+
+## Added: Unified Domain & Reverse Proxy Auth (Dev Enhancement)
+
+An Nginx `web` service now fronts WordPress and NestJS to provide a single origin (http://localhost:8080) and inject authenticated user context into WordPress at render time.
+
+Flow:
+1. User authenticates via Google OAuth (NestJS `/auth/google`).
+2. NestJS issues a short‑lived signed session cookie (`thrive_sess`, HS256, 30m) and redirects back to WordPress base URL.
+3. Every page request hits Nginx → internal subrequest to `/auth/introspect` on NestJS.
+4. Introspect validates the cookie and returns identity via `X-Auth-*` headers.
+5. Nginx forwards headers to WordPress; plugin creates/loads corresponding WP user during `init` for template conditionals.
+
+Config Vars:
+- `SESSION_SECRET` (NestJS) – MUST override in production.
+- `SESSION_COOKIE_NAME` (optional) – default `thrive_sess`.
+- `WP_BASE_URL` – base URL used for post-login redirect.
+
+Security Notes:
+- Dev secret is insecure; replace before deploy.
+- Cookie: HttpOnly, SameSite=Lax (adjust to `Strict` if compatible), `Secure` automatically when `NODE_ENV=production`.
+- Revocation currently time-based; consider adding a denylist or session store for immediate logout if needed.
+
+Next Potential Improvements:
+- Refresh endpoint & silent renewal JS.
+- Role synchronization.
+- Optional Redis-backed session for instant revocation.

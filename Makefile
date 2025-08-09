@@ -8,6 +8,9 @@ logs-nestjs:
 logs-wp:
 	docker-compose logs -f wordpress
 
+logs-nginx:
+	docker-compose logs -f web
+
 build:
 	docker compose build
 

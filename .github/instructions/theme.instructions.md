@@ -244,7 +244,7 @@ The theme now includes a lightweight, framework-free login modal component:
 - Modal markup: Added directly after header part in `parts/header.html` with `id="thrive-login-modal"`.
 - Script: `js/login-modal.js` enqueued via `functions.php` (`custom_theme_scripts`). It:
     - Handles open/close (accessibility: focus trap, Escape, returning focus).
-    - Redirects to NestJS Google OAuth init endpoint (`http://localhost:3000/auth/google`).
+    - Redirects to NestJS Google OAuth init endpoint (`http://localhost:3000/api/auth/google`).
 - Styles appended at end of `style.css` (search for `Login Modal Styles`).
 
 Extending:

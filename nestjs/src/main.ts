@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
+import cookieParser from 'cookie-parser';
 
 // Ensure global crypto (Node 18 should have, but polyfill defensively for libraries expecting it)
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -11,6 +12,7 @@ if (!(global as any).crypto) {
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.use(cookieParser());
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

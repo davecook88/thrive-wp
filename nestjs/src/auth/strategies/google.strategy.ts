@@ -15,12 +15,13 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     if (!clientID || !clientSecret) {
       throw new Error('Google OAuth client ID/secret not configured');
     }
+    if (!process.env.GOOGLE_CALLBACK_URL) {
+      throw new Error('Google OAuth callback URL not configured');
+    }
     super({
       clientID,
       clientSecret,
-      callbackURL:
-        process.env.GOOGLE_CALLBACK_URL ||
-        'http://localhost:3000/auth/google/callback',
+      callbackURL: process.env.GOOGLE_CALLBACK_URL,
       scope: ['profile', 'email'],
       passReqToCallback: false,
     });
