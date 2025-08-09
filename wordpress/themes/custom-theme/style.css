@@ -20,267 +20,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom CSS for better design */
-.wp-block-button__link {
-  transition: all 0.2s ease-in-out;
-  font-weight: 600;
-  text-decoration: none !important;
-}
-
-.wp-block-button__link:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* Card hover effects */
-.wp-block-group:has(.wp-block-image) {
-  transition: all 0.3s ease-in-out;
-}
-
-.wp-block-group:has(.wp-block-image):hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-}
-
-/* Navigation styles */
-.wp-block-navigation-link a {
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s ease-in-out;
-}
-
-.wp-block-navigation-link a:hover {
-  color: #4f46e5 !important;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .wp-block-columns {
-    flex-direction: column !important;
-  }
-
-  .wp-block-column {
-    flex-basis: 100% !important;
-    margin-bottom: 2rem;
-  }
-
-  .wp-block-group[style*="padding-top:4rem"] {
-    padding-top: 2rem !important;
-    padding-bottom: 2rem !important;
-  }
-}
-
-/* Better spacing and typography */
-.wp-block-heading {
-  margin-top: 0;
-}
-
-.wp-block-list li {
-  margin-bottom: 0.5rem;
-}
-
-/* Site header enhancements */
-.wp-block-site-title a {
-  text-decoration: none;
-  font-weight: 700;
-}
-
-/* Footer adjustments */
-.site-footer {
-  margin-top: auto;
-}
-
-/* Custom utility classes */
-.text-gradient {
-  background: linear-gradient(135deg, #4f46e5 0%, #10b981 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Image placeholder styles */
-.wp-block-image div[style*="background"] {
-  font-family: Inter, sans-serif;
-  font-weight: 500;
-}
-
-/* Image placeholder styles - simple fallback */
-.wp-block-image img[src*="placeholder"] {
-  opacity: 0;
-  position: relative;
-}
-
-.wp-block-image img[src="placeholder-collage.jpg"] {
-  width: 100%;
-  height: 400px;
-  background: linear-gradient(135deg, #4f46e5 0%, #10b981 100%);
-  border-radius: 20px;
-}
-
-.wp-block-image img[src="placeholder-terrace.jpg"] {
-  width: 100%;
-  height: 300px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  border-radius: 20px;
-}
-
-.wp-block-image img[src="placeholder-diego.jpg"] {
-  width: 100px;
-  height: 100px;
-  background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
-  border-radius: 50%;
-}
-
-/* Enhanced button hover effects */
-.wp-block-button__link:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-/* Better typography for headings */
-.wp-block-heading {
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-
-/* Ensure consistent spacing */
-.wp-block-group {
-  box-sizing: border-box;
-}
-
-/* Fix any layout issues on mobile */
-@media (max-width: 768px) {
-  .wp-block-columns {
-    flex-direction: column !important;
-  }
-
-  .wp-block-column {
-    flex-basis: 100% !important;
-    margin-bottom: 2rem;
-  }
-
-  h1,
-  h2 {
-    font-size: 2rem !important;
-  }
-
-  .wp-block-group[style*="padding-top:var(--wp--preset--spacing--80)"] {
-    padding-top: 2rem !important;
-    padding-bottom: 2rem !important;
-  }
-}
-
-/* Handle missing image placeholders with a simpler approach */
-.wp-block-image img[src*="placeholder-"] {
-  display: none;
-}
-
-/* Create placeholder backgrounds for missing images */
-.wp-block-image:has(img[src*="placeholder-collage"]) {
-  background: linear-gradient(135deg, #4f46e5 0%, #10b981 100%);
-  height: 400px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 20px;
-  color: white;
-  font-size: 18px;
-  font-weight: 500;
-}
-
-.wp-block-image:has(img[src*="placeholder-collage"])::after {
-  content: "Spanish Learning Collage";
-}
-
-.wp-block-image:has(img[src*="placeholder-terrace"]) {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  height: 300px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 20px;
-  color: white;
-  font-size: 18px;
-  font-weight: 500;
-}
-
-.wp-block-image:has(img[src*="placeholder-terrace"])::after {
-  content: "People studying on terrace";
-}
-
-.wp-block-image:has(img[src*="placeholder-diego"]) {
-  background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
-  width: 100px;
-  height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  color: #ff5722;
-  font-size: 16px;
-  font-weight: 600;
-  border: 3px solid #ff5722;
-  margin: 0 auto;
-}
-
-.wp-block-image:has(img[src*="placeholder-diego"])::after {
-  content: "Diego";
-}
-
-/* Enhanced button hover effects */
-.wp-block-button__link:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-}
-
-/* Improved spacing and typography */
-.wp-block-group.alignfull {
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-}
-
-/* Better responsive design */
-@media (max-width: 768px) {
-  h1[style*="3.5rem"] {
-    font-size: 2.5rem !important;
-  }
-
-  h2[style*="3.5rem"] {
-    font-size: 2.5rem !important;
-  }
-
-  h2[style*="2.5rem"] {
-    font-size: 2rem !important;
-  }
-
-  .wp-block-columns {
-    flex-direction: column !important;
-  }
-
-  .wp-block-column[style*="flex-basis"] {
-    flex-basis: 100% !important;
-  }
-}
-
-/* Login Modal Styles */
-.thrive-login-button {
-  background: #4f46e5;
-  color: #fff;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  font-family: inherit;
-  margin-left: 1rem;
-  transition: background 0.2s ease, transform 0.15s ease;
-}
-.thrive-login-button:hover {
-  background: #4338ca;
-}
-.thrive-login-button:active {
-  transform: translateY(1px);
-}
-
 .thrive-login-modal {
   position: fixed;
   inset: 0;
@@ -297,15 +36,13 @@ body {
   backdrop-filter: blur(3px);
 }
 .thrive-login-modal__dialog {
-  position: relative;
-  width: 100%;
-  max-width: 420px;
-  margin: 8vh auto;
-  background: #fff;
+  padding: var(--wp--preset--spacing--60);
   border-radius: 16px;
-  padding: 2rem 2rem 2.25rem;
   box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.25);
   animation: thriveModalIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 420px;
+  margin: 8vh auto;
+  position: relative;
 }
 @keyframes thriveModalIn {
   from {
@@ -326,43 +63,12 @@ body {
   font-size: 1.5rem;
   line-height: 1;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--wp--preset--color--gray-500);
 }
 .thrive-login-modal__close:hover {
-  color: #111827;
+  color: var(--wp--preset--color--gray-900);
 }
-.thrive-login-modal__subtitle {
-  margin-top: 0.5rem;
-  margin-bottom: 1.25rem;
-  color: #4b5563;
-  font-size: 0.95rem;
-}
-.thrive-login-modal__actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-.thrive-login-provider {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 500;
-  font-family: inherit;
-  font-size: 0.95rem;
-  transition: box-shadow 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
-}
-.thrive-login-provider:hover {
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-  border-color: #d1d5db;
-}
-.thrive-login-provider:active {
-  transform: translateY(1px);
-}
+
 .thrive-login-provider__icon {
   display: inline-flex;
   align-items: center;
@@ -373,25 +79,19 @@ body {
   background: #fff;
   font-weight: 600;
   color: #4285f4;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--wp--preset--color--gray-200);
   font-size: 0.9rem;
 }
-.thrive-login-provider--google {
-  background: #fff;
-}
-.thrive-login-modal__disclaimer {
-  margin-top: 1.5rem;
-  font-size: 0.7rem;
-  line-height: 1.2;
-  color: #6b7280;
-}
-.thrive-login-modal__disclaimer a {
-  color: #4f46e5;
-  text-decoration: none;
-}
-.thrive-login-modal__disclaimer a:hover {
-  text-decoration: underline;
-}
+
 .thrive-modal-open {
   overflow: hidden;
+}
+
+input[type="email"],
+input[type="password"],
+input[type="text"] {
+  width: 100%;
+  padding: var(--wp--preset--spacing--30);
+  border: 1px solid var(--wp--preset--color--gray-200);
+  border-radius: 8px;
 }

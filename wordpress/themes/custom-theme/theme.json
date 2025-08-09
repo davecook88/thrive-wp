@@ -73,6 +73,16 @@
           "slug": "gray-900",
           "color": "#111827",
           "name": "Gray 900"
+        },
+        {
+          "slug": "indigo",
+          "color": "#4F46E5",
+          "name": "Indigo"
+        },
+        {
+          "slug": "indigo-dark",
+          "color": "#4338CA",
+          "name": "Indigo Dark"
         }
       ]
     },
@@ -200,6 +210,19 @@
     },
     "blocks": {
       "core/button": {
+        "variations": {
+          "thrive-outline": {
+            "color": {
+              "background": "transparent",
+              "text": "var(--wp--preset--color--primary)"
+            },
+            "border": {
+              "color": "var(--wp--preset--color--primary)",
+              "width": "2px",
+              "style": "solid"
+            }
+          }
+        },
         "border": {
           "radius": "8px"
         },

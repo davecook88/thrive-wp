@@ -1,7 +1,7 @@
 <!-- wp:group {"style":{"spacing":{"padding":{"top":"1rem","bottom":"1rem"}}},"backgroundColor":"background","layout":{"type":"constrained"}} -->
 <div class="wp-block-group has-background-background-color has-background" style="padding-top:1rem;padding-bottom:1rem">
-        <!-- wp:group {"layout":{"type":"flex","justifyContent":"space-between","flexWrap":"wrap","orientation":"horizontal","verticalAlignment":"center"}} -->
-        <div class="wp-block-group">
+    <!-- wp:group {"layout":{"type":"flex","justifyContent":"space-between","flexWrap":"wrap","orientation":"horizontal","verticalAlignment":"center"}} -->
+    <div class="wp-block-group">
         <!-- wp:site-title {"level":0,"style":{"typography":{"fontWeight":"700"}},"textColor":"primary","fontSize":"x-large"} /-->
         
         <!-- wp:navigation {"layout":{"type":"flex","setCascadingProperties":true,"justifyContent":"right"}} -->
@@ -11,11 +11,12 @@
         <!-- wp:navigation-link {"label":"Contact","url":"#contact"} /-->
         <!-- /wp:navigation -->
 
-                <!-- Auth Component Dynamic Block -->
-                <!-- wp:thrive/login-auth /-->
+        <!-- wp:group -->
+        <div class="wp-block-group">
+            <!-- wp:thrive/login-auth /-->
+        </div>
+        <!-- /wp:group -->
     </div>
     <!-- /wp:group -->
 </div>
 <!-- /wp:group -->
-
-<!-- (Auth component already included above inside header group) -->
