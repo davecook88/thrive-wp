@@ -1,15 +1,19 @@
 import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
-import { BaseEntity } from '../../common/entities/base.entity';
-import { User } from '../../users/entities/user.entity';
+import { BaseEntity } from '../../common/entities/base.entity.js';
+import { User } from '../../users/entities/user.entity.js';
 
 @Entity('refresh_tokens')
 @Index(['token'], { unique: true })
-@Index(['userId', 'deviceId'])
+// Removed composite index on (userId, deviceId) because MySQL/MariaDB was using it to
+// satisfy the foreign key on userId, causing synchronize attempts to fail when TypeORM
+// tried to drop/recreate it ("Cannot drop index ... needed in a foreign key constraint").
+// Instead, allow the FK to create/retain its own index on userId and add a separate index
+// for deviceId to keep lookup performance without conflicting with FK requirements.
+@Index('IDX_refresh_tokens_device', ['deviceId'])
 export class RefreshToken extends BaseEntity {
   @Column({
     type: 'varchar',
     length: 255,
-    unique: true,
     comment: 'Refresh token value',
   })
   token: string;

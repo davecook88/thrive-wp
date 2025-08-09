@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import configuration, { DatabaseConfig } from './config/configuration';
+import { AppController } from './app.controller.js';
+import { AppService } from './app.service.js';
+import { AuthModule } from './auth/auth.module.js';
+import configuration, { DatabaseConfig } from './config/configuration.js';
 
 @Module({
   imports: [
@@ -18,6 +21,8 @@ import configuration, { DatabaseConfig } from './config/configuration';
         if (!dbConfig) {
           throw new Error('Database configuration not found');
         }
+        // In ESM, __dirname isn't defined; derive it from import.meta.url
+        const moduleDir = dirname(fileURLToPath(import.meta.url));
         return {
           type: dbConfig.type,
           host: dbConfig.host,
@@ -25,8 +30,9 @@ import configuration, { DatabaseConfig } from './config/configuration';
           username: dbConfig.username,
           password: dbConfig.password,
           database: dbConfig.database,
-          entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize: dbConfig.synchronize,
+          entities: [join(moduleDir, '/**/*.entity{.ts,.js}')],
+          // Force disable auto-sync; rely on migrations to avoid FK/index conflicts
+          synchronize: false,
           logging: dbConfig.logging,
           timezone: 'Z', // Force UTC
           dateStrings: false,
@@ -34,6 +40,7 @@ import configuration, { DatabaseConfig } from './config/configuration';
       },
       inject: [ConfigService],
     }),
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

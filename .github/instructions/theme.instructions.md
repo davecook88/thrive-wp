@@ -236,3 +236,32 @@ docker-compose logs wordpress
 - Keep this documentation updated with new learnings
 - Consider automated testing for block validation in CI/CD pipeline
 
+## Authentication UI (Login Modal)
+
+The theme now includes a lightweight, framework-free login modal component:
+
+- Trigger button: `<button id="thrive-login-button">Login</button>` injected in `parts/header.html`.
+- Modal markup: Added directly after header part in `parts/header.html` with `id="thrive-login-modal"`.
+- Script: `js/login-modal.js` enqueued via `functions.php` (`custom_theme_scripts`). It:
+    - Handles open/close (accessibility: focus trap, Escape, returning focus).
+    - Redirects to NestJS Google OAuth init endpoint (`http://localhost:3000/auth/google`).
+- Styles appended at end of `style.css` (search for `Login Modal Styles`).
+
+Extending:
+1. After implementing NestJS routes `/auth/google` & `/auth/google/callback`, successful auth should 302 back to WordPress (e.g. `/?auth=success`).
+2. You may inject dynamic user state (e.g. replace button with avatar) using `wp_localize_script` or a small REST request to NestJS.
+
+Testing (Puppeteer):
+`scripts/test-login-modal.js` performs:
+1. Load homepage
+2. Assert login button exists
+3. Open modal & assert Google button
+4. Close modal
+
+Run manually (ensure WordPress container running):
+```bash
+node scripts/test-login-modal.js
+```
+
+CI suggestion: Add this script to a GitHub Action job after `docker-compose up -d` and a short wait for WordPress readiness.
+

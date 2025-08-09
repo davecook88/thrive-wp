@@ -34,7 +34,16 @@ export default () => ({
     username: process.env.DB_USERNAME || 'wordpress',
     password: process.env.DB_PASSWORD || 'wordpress',
     database: process.env.DB_DATABASE || 'wordpress',
-    synchronize: process.env.NODE_ENV === 'development',
+    // Schema synchronization logic:
+    // If DB_SYNCHRONIZE is explicitly set ("true" / "false"), respect it.
+    // Otherwise default to true only in development. This allows disabling sync in dev
+    // to rely solely on migrations (recommended once schema stabilizes).
+    synchronize: (() => {
+      if (process.env.DB_SYNCHRONIZE !== undefined) {
+        return process.env.DB_SYNCHRONIZE === 'true';
+      }
+      return process.env.NODE_ENV === 'development';
+    })(),
     logging: process.env.NODE_ENV === 'development',
     entities: ['dist/**/*.entity{.ts,.js}'],
     migrations: ['dist/migrations/*{.ts,.js}'],

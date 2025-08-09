@@ -96,3 +96,22 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Database & Migrations (Project Customization)
+
+We manage schema changes via TypeORM migrations instead of synchronize in most environments.
+
+Environment variable to control sync (dev only):
+DB_SYNCHRONIZE=true
+
+Typical workflow:
+1. Make entity changes
+2. Generate migration:
+  npm run migration:generate -- src/migrations/DescriptiveName
+3. Review the generated file (ensure no unintended WordPress table changes)
+4. Run migrations:
+  npm run migration:run
+5. Revert last (if needed):
+  npm run migration:revert
+
+Initial migration (InitialSchema) baselines custom tables: users, classes, refresh_tokens and normalizes refresh_tokens indexes (removes legacy composite (userId, deviceId) index conflict).

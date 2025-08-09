@@ -1,5 +1,13 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { AppModule } from './app.module.js';
+
+// Ensure global crypto (Node 18 should have, but polyfill defensively for libraries expecting it)
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+if (!(global as any).crypto) {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const nodeCrypto = require('crypto');
+  (global as any).crypto = nodeCrypto.webcrypto || nodeCrypto;
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

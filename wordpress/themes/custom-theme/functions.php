@@ -23,6 +23,28 @@ function custom_theme_styles()
 }
 add_action('wp_enqueue_scripts', 'custom_theme_styles');
 
+// Enqueue theme scripts
+function custom_theme_scripts()
+{
+    wp_enqueue_script(
+        'custom-theme-login-modal',
+        get_template_directory_uri() . '/js/login-modal.js',
+        array(),
+        wp_get_theme()->get('Version'),
+        true
+    );
+
+    // Pass NestJS OAuth endpoint (assumes default local port)
+    wp_add_inline_script(
+        'custom-theme-login-modal',
+        'window.THriveAuthConfig = ' . wp_json_encode([
+            'googleAuthUrl' => 'http://localhost:3000/auth/google',
+        ]) . ';',
+        'before'
+    );
+}
+add_action('wp_enqueue_scripts', 'custom_theme_scripts');
+
 // Add theme support for various features
 function custom_theme_setup()
 {

@@ -57,6 +57,17 @@ This app will share the WP MySQL db for now but it should be treated as if it we
 5. Client refreshes tokens before expiration
 6. System tracks active sessions and allows remote logout
 
+### Google OAuth Implementation Details
+- Endpoint to initiate: `GET /auth/google`
+- Callback endpoint: `GET /auth/google/callback`
+- Required env vars (set in `.env.local` loaded via docker-compose):
+	- `GOOGLE_CLIENT_ID`
+	- `GOOGLE_CLIENT_SECRET`
+	- `GOOGLE_CALLBACK_URL` (defaults to `http://localhost:3000/auth/google/callback` if unset)
+	- `WP_BASE_URL` (used to redirect user back after successful auth)
+- On successful callback, server currently 302 redirects to `${WP_BASE_URL}/?auth=success`.
+- Extend later to issue JWT (access + refresh) and set HttpOnly cookies for WordPress origin.
+
 ## User Roles & Permissions
 
 ### Base Roles

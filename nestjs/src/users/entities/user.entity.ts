@@ -1,5 +1,5 @@
 import { Entity, Column, Index } from 'typeorm';
-import { BaseEntity } from '../../common/entities/base.entity';
+import { BaseEntity } from '../../common/entities/base.entity.js';
 
 export enum UserRole {
   PUBLIC = 'public',
@@ -21,7 +21,6 @@ export class User extends BaseEntity {
   @Column({
     type: 'varchar',
     length: 255,
-    unique: true,
     comment: 'User email address (primary identifier)',
   })
   email: string;
