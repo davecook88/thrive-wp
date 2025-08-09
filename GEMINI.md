@@ -1,107 +1,243 @@
-# WordPress Development Environment Setup
+# Platform Architecture & Engineering Guide
 
-You are tasked with creating a development environment for a WordPress application. The environment must use Docker to manage services and allow for easy development and testing of custom plugins. This setup includes a NestJS backend service that communicates with WordPress.
+This document unifies all operational & architectural instructions for the hybrid WordPress + NestJS language learning platform. It merges the contents of the per-layer Copilot instruction files so contributors have a single authoritative reference. Always update this file when behavior, flows, or guarantees change.
 
-Always update this file after any changes which make this irrelevant.
+---
+## 1. Core Services & Deployment Model
 
-## Project Architecture Requirements
+| Service | Purpose | Dev Endpoint | Notes |
+|---------|---------|--------------|-------|
+| Nginx (web) | Unified reverse proxy + header injection | http://localhost:8080 | Fronts WP & NestJS under single origin |
+| WordPress | Presentation + CMS authoring | (proxied) | No longer system-of-record for auth |
+| NestJS API | Business logic + auth authority | http://localhost:3000 | Stateless + future standalone deployment |
+| MariaDB | Persistent data store | internal (3306) | Shared for now; treat as replaceable |
 
-### Core Services
-1.  **WordPress Service** (PHP/Apache)
-    -   Based on a custom Dockerfile.
-    -   Handles all WordPress functionality.
-    -   Custom plugins will be mounted directly into the container.
-2.  **Database Service** (MariaDB)
-    -   A `mariadb:10.6` database for all WordPress data.
-3.  **NestJS Service**
-    -   A Node.js backend application built with the NestJS framework.
-    -   Runs in its own container and communicates with the WordPress service.
+Single VPS deploy: all containers run on one host; no external managed dependencies required beyond Docker.
 
-## Docker Environment Requirements
+### Docker / Compose Expectations
+* One `docker-compose up` boots the stack.
+* Custom volumes: plugin code, logs (`_logs_wp/`), database data.
+* Internal network: `wordpress_net` for service-to-service communication (`http://nestjs:3000` from WP).
 
-### Development Environment (docker-compose.yml)
-Create a Docker Compose setup with the following services:
--   `wordpress`: The main WordPress application.
--   `db`: The MariaDB database.
--   `nestjs`: The NestJS backend service.
-
-### Volume requirements:
--   A volume for the custom WordPress plugin(s) (`nodejs-bridge`).
--   A volume for the WordPress debug log (`_logs_wp`).
--   A volume for persistent database storage.
-
-### Environment variables:
--   Database credentials for WordPress.
--   WordPress configuration settings (e.g., debug flags, site URL).
-
-## Specific Implementation Tasks
-
-### 1. WordPress Setup
--   Use a custom `Dockerfile` to build the WordPress image.
--   Configure the site URL to `http://localhost:8080` via environment variables in `docker-compose.yml`.
--   Mount the `nodejs-bridge` custom plugin from the local filesystem into the `wp-content/plugins` directory.
-
-### 2. Database Schema
--   The database schema will be managed entirely by WordPress.
-
-### 3. NestJS Service Setup
--   The service is built from the `nestjs/Dockerfile`.
--   It is accessible on port `3000`.
-
-### 4. Docker Orchestration
--   Define service dependencies (`wordpress` depends on `db` and `nestjs`).
--   Use a custom bridge network (`wordpress_net`) for communication between services.
--   Use a root `Dockerfile` to apply any necessary customizations to the base WordPress image.
-
-## File Structure Expected
-
+### File Skeleton (Simplified)
 ```
-project-root/
-├── docker-compose.yml
-├── Dockerfile
-├── .env.local
-├── nestjs/
-│   ├── Dockerfile
-│   ├── package.json
-│   └── src/
-│       └── main.ts
-└── wordpress/
-    └── plugins/
-        └── nodejs-bridge/
-            ├── nodejs-bridge.php
-            └── includes/
-                └── class-nodejs-bridge.php
+docker-compose.yml
+nestjs/
+wordpress/
+    plugins/nodejs-bridge/
+    themes/custom-theme/
+nginx/
 ```
 
-## Success Criteria
--   A single `docker-compose up` command starts the entire development environment.
--   The WordPress site is accessible at `http://localhost:8080`.
--   The NestJS service is accessible at `http://localhost:3000`.
--   Developers can work on custom plugins in the `wordpress/plugins` directory, and changes are reflected live in the running container.
--   The setup is clean, simple, and easy for new developers to understand.
+---
+## 2. NestJS Platform Specification
 
-## Added: Unified Domain & Reverse Proxy Auth (Dev Enhancement)
+The NestJS app is a standalone headless API for multi‑channel consumption (WordPress today; SPA / mobile later).
 
-An Nginx `web` service now fronts WordPress and NestJS to provide a single origin (http://localhost:8080) and inject authenticated user context into WordPress at render time.
+### Architecture Tenets
+* Treat DB as generic MySQL (future swap OK).
+* All datetimes stored UTC.
+* TypeORM migrations define schema evolution.
+* Soft deletes where user/business data longevity matters.
 
-Flow:
-1. User authenticates via Google OAuth (NestJS `/auth/google`).
-2. NestJS issues a short‑lived signed session cookie (`thrive_sess`, HS256, 30m) and redirects back to WordPress base URL.
-3. Every page request hits Nginx → internal subrequest to `/auth/introspect` on NestJS.
-4. Introspect validates the cookie and returns identity via `X-Auth-*` headers.
-5. Nginx forwards headers to WordPress; plugin creates/loads corresponding WP user during `init` for template conditionals.
+### Authentication (Canonical)
+* Supports Email/Password & Google OAuth (Passport strategies).
+* Issues a signed session cookie (`thrive_sess` by default) – HS256 with `SESSION_SECRET`.
+* Future-ready for JWT access + refresh token pair (rotation, device/session tracking).
+* Introspection endpoint `/auth/introspect` validates cookie and returns minimal JSON identity for Nginx.
 
-Config Vars:
-- `SESSION_SECRET` (NestJS) – MUST override in production.
-- `SESSION_COOKIE_NAME` (optional) – default `thrive_sess`.
-- `WP_BASE_URL` – base URL used for post-login redirect.
+#### Core Auth Features (Current / Planned)
+| Feature | Status |
+|---------|--------|
+| Email registration & login | In progress / baseline |
+| Google OAuth | Implemented (redirect + session) |
+| Session cookie (HttpOnly) | Implemented |
+| Refresh token rotation | Planned |
+| Email verification | Planned |
+| Password reset | Planned |
+| Rate limiting & lockout | Planned |
+| 2FA (TOTP) for elevated roles | Planned |
 
-Security Notes:
-- Dev secret is insecure; replace before deploy.
-- Cookie: HttpOnly, SameSite=Lax (adjust to `Strict` if compatible), `Secure` automatically when `NODE_ENV=production`.
-- Revocation currently time-based; consider adding a denylist or session store for immediate logout if needed.
+#### Google OAuth Env Vars
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`, `WP_BASE_URL`.
 
-Next Potential Improvements:
-- Refresh endpoint & silent renewal JS.
-- Role synchronization.
-- Optional Redis-backed session for instant revocation.
+#### Roles & Permissions (Conceptual)
+* Roles: public, student, teacher, admin.
+* Expand with resource.action.scope style permissions (e.g. `classes.read.own`).
+
+#### Business Domain Highlights
+* Class types: 1‑to‑1, group (capacity 5 baseline), multi‑session courses.
+* Scheduling: recurring availability, blackout windows, waitlists.
+* Teacher tiers (10/20/30 …; extensible gaps e.g. 15/25).
+* Packages: bundles of various class credits + materials.
+* Cancellation policy & dispute workflow (time‑based forfeits).
+* Materials (PDF/video/audio/link) with access checks.
+
+#### External Integrations (Planned / Future)
+Stripe, Google Classroom, Google Calendar (bi‑directional), AWS S3, feature flags, audit logging.
+
+---
+## 3. WordPress Layer – Reverse Proxy & Session-Aware Integration
+
+WordPress acts purely as the presentation + editorial layer. It does NOT own authentication state. All authenticated rendering depends on headers injected by Nginx after NestJS introspection.
+
+### Auth Flow (Runtime)
+1. Browser → Nginx (single origin http://localhost:8080).
+2. If `thrive_sess` cookie present: Nginx internally calls NestJS `/auth/introspect`.
+3. NestJS validates & returns JSON identity.
+4. Nginx injects headers:
+     * `X-Auth-Email`
+     * `X-Auth-Name`
+     * `X-Auth-User-Id`
+     * `X-Auth-Roles`
+     * `X-Auth-Context` (canonical JSON blob)
+5. WP theme bootstrap (init priority 1) parses `X-Auth-Context` into in‑memory `ThriveAuthContext`.
+6. Templates use `thrive_is_logged_in()` / `thrive_get_auth_context()`.
+
+### Principles
+* Source of truth = session cookie validated by NestJS.
+* Do NOT use `is_user_logged_in()` for proxy sessions.
+* No automatic `wp_users` creation (simplified model). Any persistence must be opt‑in.
+* Role checks should examine `$ctx->roles` not WP roles (unless feature is WP‑local only).
+
+### Helper Functions
+| Helper | Purpose |
+|--------|---------|
+| `thrive_get_auth_context()` | Returns typed context or null |
+| `thrive_is_logged_in()` | Boolean: context/header/cookie present |
+| `thrive_get_auth_context_array()` | Legacy array form for embedding |
+
+Example usage:
+```php
+if ( thrive_is_logged_in() ) {
+    $ctx = thrive_get_auth_context();
+    echo 'Hi ' . esc_html($ctx?->name ?? 'Learner');
+} else {
+    echo '<a href="/api/auth/google">Sign in</a>';
+}
+```
+
+### Security Notes
+* Cookie is HttpOnly, SameSite=Lax (dev); secure in prod.
+* WP never needs session secret.
+* Do not expose sensitive claims to client JS unless minimal + necessary.
+* Guard `X-Auth-Context` size (<= 8KB) – enforced.
+
+### Front-End Decisions
+* Server-render gating first. JS can hydrate from `thrive_get_auth_context_array()` only if needed.
+* Logout → `/api/auth/logout` (NestJS) then redirect clears headers next request.
+
+### Testing Checklist
+1. `make run`.
+2. Home page shows Sign in when unauthenticated.
+3. Google login → redirected; personalized welcome renders.
+4. Confirm headers appear in Network tab.
+5. Logout removes headers / context.
+
+### Common Pitfalls
+* `current_user_can()` false? Not mapping WP users—use context roles.
+* Need WP user ID? Implement explicit sync routine (future), don’t resurrect automatic mapping.
+* Direct API call? Use same origin; browser sends cookie automatically.
+
+---
+## 4. Reverse Proxy / Nginx Contract
+
+Nginx responsibilities:
+* Terminate all client connections on 8080.
+* Route `/api/` (or specific paths) to NestJS while preserving cookies.
+* For HTML/page requests: if session cookie present, perform internal subrequest to `/auth/introspect` and inject auth headers.
+* Strip any inbound spoofed `X-Auth-*` headers from clients.
+
+Config Variables (Environment):
+| Var | Purpose |
+|-----|---------|
+| `SESSION_SECRET` | HS256 signing secret (MUST override in prod) |
+| `SESSION_COOKIE_NAME` | Defaults `thrive_sess` |
+| `WP_BASE_URL` | Redirect target after auth success |
+
+Cookie Characteristics:
+* HttpOnly, SameSite=Lax (adjust to Strict if feasible), Secure flag in production.
+* Expiry currently fixed (e.g., 30m). Consider renewal strategy.
+
+Future Enhancements:
+* Silent refresh endpoint & JS ping.
+* Redis / centralized session store for instant revocation.
+* Role sync for WP plugins needing native capabilities.
+* Capability service consumed by all clients.
+
+---
+## 5. Development Workflow
+
+### Start / Rebuild
+`make run` or `docker-compose up --build`.
+
+### Logs
+| Service | Command |
+|---------|---------|
+| Nginx | `docker-compose logs -f web` |
+| WordPress | `docker-compose logs -f wordpress` |
+| NestJS | `docker-compose logs -f nestjs` |
+
+### Plugin / Theme Dev
+* Files mounted as volumes – immediate reflection on reload.
+* Use `_logs_wp/` for debug output (PHP `error_log`).
+
+### NestJS Dev
+* Hot reload via `npm run start:dev` inside container if configured.
+* Add endpoints in `src/...` – reachable from WP via `http://nestjs:3000/<path>` or browser via `/api/<path>` (if proxied path configured).
+
+---
+## 6. Security & Quality Gates
+
+| Concern | Current Practice | Future Action |
+|---------|------------------|---------------|
+| Secrets | `.env.local` for dev | Vault / secrets manager prod |
+| Session Expiry | Fixed window | Add refresh & rotation |
+| Authorization | Roles array | Fine-grained permissions service |
+| Input Validation | NestJS DTOs planned | Enforce class-validator + Zod tests |
+| PHP Quality | phpstan config present | Raise level & CI gate |
+
+Minimum Dev Checklist Before Commit:
+1. phpstan passes (no new errors).
+2. TypeScript builds without errors.
+3. Added/updated migrations when entity schema changed.
+4. Updated this doc if contract/flow changed.
+
+---
+## 7. Glossary
+| Term | Definition |
+|------|------------|
+| Introspection | Server-side validation of session cookie producing identity headers. |
+| ThriveAuthContext | In-memory PHP object built from `X-Auth-Context`. |
+| Unified Origin | Single base URL for WP + API to simplify cookies & CORS. |
+
+---
+## 8. Quick Reference Snippets
+
+Check login in PHP:
+```php
+if ( thrive_is_logged_in() ) { /* ... */ }
+```
+
+Fetch API from WP (server-side):
+```php
+$resp = wp_remote_get('http://nestjs:3000/health');
+```
+
+Client JS POST (cookie auto-sent):
+```js
+fetch('/api/classes', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({})});
+```
+
+---
+## 9. Roadmap (Prioritized Next Steps)
+1. Add refresh token rotation + silent renew.
+2. Implement role-based permission matrix service.
+3. Stripe integration (payments + packages).
+4. Scheduling + availability modeling.
+5. Material access controls & storage integration.
+6. Email verification + password reset flows.
+7. Audit/event logging pipeline.
+
+---
+Maintainers: Keep this file the canonical truth. If another markdown or instruction file diverges, update or remove the duplicate.
