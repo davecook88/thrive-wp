@@ -10,4 +10,16 @@ export class User extends BaseEntity {
     comment: 'User email address (primary identifier)',
   })
   email: string;
+  @Column({
+    type: 'varchar',
+    length: 255,
+    comment: 'User first name',
+  })
+  firstName: string;
+  @Column({
+    type: 'varchar',
+    length: 255,
+    comment: 'User last name',
+  })
+  lastName: string;
 }

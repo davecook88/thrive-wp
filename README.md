@@ -18,12 +18,6 @@ This project sets up a hybrid web application using WordPress and Node.js, orche
 
 2.  **Create a local environment file:**
 
-    Copy the example environment file to create a local configuration:
-
-    ```bash
-    cp .env.example .env.local
-    ```
-
     Update the values in `.env.local` as needed.
 
 3.  **Build and start the services:**

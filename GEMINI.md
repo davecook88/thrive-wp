@@ -59,7 +59,7 @@ Create a Docker Compose setup with the following services:
 project-root/
 ├── docker-compose.yml
 ├── Dockerfile
-├── .env.example
+├── .env.local
 ├── nestjs/
 │   ├── Dockerfile
 │   ├── package.json

@@ -13,6 +13,8 @@ export class InitialSchema1733770000000 implements MigrationInterface {
       CREATE TABLE IF NOT EXISTS users (
         id int NOT NULL AUTO_INCREMENT,
         email varchar(255) NOT NULL COMMENT 'User email address (primary identifier)',
+        firstName varchar(255) NOT NULL COMMENT 'User first name',
+        lastName varchar(255) NOT NULL COMMENT 'User last name',
         createdAt datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT 'Record creation timestamp in UTC',
         updatedAt datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT 'Record last update timestamp in UTC',
         deletedAt datetime(3) NULL COMMENT 'Soft delete timestamp in UTC',
