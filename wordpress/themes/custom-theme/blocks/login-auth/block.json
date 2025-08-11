@@ -6,7 +6,63 @@
     "category": "widgets",
     "icon": "admin-users",
     "textdomain": "custom-theme",
+    "attributes": {
+        "backgroundColor": {
+            "type": "string"
+        },
+        "textColor": {
+            "type": "string"
+        },
+        "signInText": {
+            "type": "string",
+            "default": "Sign in"
+        },
+        "signOutText": {
+            "type": "string",
+            "default": "Sign out"
+        },
+        "buttonStyle": {
+            "type": "string",
+            "default": "outline"
+        },
+        "buttonAlign": {
+            "type": "string",
+            "default": "center"
+        },
+        "modalTitle": {
+            "type": "string",
+            "default": "Sign In"
+        },
+        "modalDescription": {
+            "type": "string",
+            "default": "Choose a sign-in method"
+        },
+        "showGoogle": {
+            "type": "boolean",
+            "default": true
+        },
+        "showEmail": {
+            "type": "boolean",
+            "default": true
+        },
+        "emailLabel": {
+            "type": "string",
+            "default": "Email"
+        },
+        "passwordLabel": {
+            "type": "string",
+            "default": "Password"
+        },
+        "extraClass": {
+            "type": "string",
+            "default": ""
+        }
+    },
     "supports": {
+        "color": {
+            "background": true,
+            "text": true
+        },
         "html": false,
         "align": [
             "left",
@@ -19,5 +75,6 @@
         "auth",
         "thrive"
     ],
-    "render": "file:./render.php"
+    "render": "file:./render.php",
+    "editorScript": "custom-theme-blocks"
 }

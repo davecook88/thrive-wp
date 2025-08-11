@@ -1,0 +1,7 @@
+{
+    "apiVersion": 2,
+    "name": "thrive/test-block",
+    "title": "Test Block",
+    "render": "file:./render.php",
+    "editorScript": "file:./index.js"
+}

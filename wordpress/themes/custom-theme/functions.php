@@ -164,16 +164,27 @@ add_filter('block_editor_settings_all', 'custom_theme_block_editor_settings', 10
 // Strongly typed auth context integration
 require_once get_template_directory() . '/includes/class-thrive-auth-context.php';
 // Register custom dynamic blocks (metadata based)
+
+// Enqueue built block JS for the editor globally
+add_action('enqueue_block_editor_assets', function () {
+    $build = get_template_directory() . '/build/index.js';
+    error_log('Enqueueing: ' . $build . ' (exists: ' . (file_exists($build) ? 'yes' : 'no') . ')');
+
+    if (file_exists($build)) {
+        wp_enqueue_script(
+            'custom-theme-blocks',
+            get_template_directory_uri() . '/build/index.js',
+            array('wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-i18n'),
+            filemtime($build)
+        );
+    }
+});
+
+// Register all block.json files in /blocks subfolders
 add_action('init', function () {
-    $blocks = [
-        '/blocks/login-auth',
-    ];
-    $base = get_template_directory();
-    foreach ($blocks as $rel) {
-        $dir = $base . $rel;
-        if (file_exists($dir . '/block.json')) {
-            register_block_type($dir);
-        }
+    $blocks_dir = get_template_directory() . '/blocks';
+    foreach (glob($blocks_dir . '/*/block.json') as $block_json) {
+        register_block_type(dirname($block_json));
     }
 });
 
