@@ -2,7 +2,25 @@
 applyTo: 'wordpress/**'
 ---
 
+
 ## WordPress Layer – Reverse Proxy & Session-Aware Integration
+
+### Block-Driven Theme Structure (Editor-First Philosophy)
+
+**Imperative:** All user-facing UI and content should be implemented using WordPress blocks that are easily editable in the block editor. This ensures non-technical admins can update text, colors, layout, and settings directly in the editor without code changes.
+
+**Best Practices:**
+- Use custom blocks (with block.json, JS/TSX, and PHP render) for all dynamic or interactive features.
+- Expose all relevant attributes (text, color, alignment, etc.) in the block editor sidebar using InspectorControls.
+- In the PHP render template, always map all block attributes (including backgroundColor, textColor, align, style, etc.) to the frontend output, so editor changes are faithfully reflected.
+- Avoid hardcoding content or styles in PHP—prefer block attributes and theme.json presets.
+- Document any block-specific conventions in the theme README.
+
+**Example:**
+The login/auth block exposes all button text, modal labels, provider toggles, and color/alignment options as block attributes. The PHP template uses these attributes to render the frontend, ensuring WYSIWYG parity with the editor.
+
+**Why:**
+This approach empowers non-technical site admins to manage and update the site visually, reduces developer bottlenecks, and ensures a modern, maintainable WordPress experience.
 
 System Prompt / Mental Model for Contributors:
 You are working inside a hybrid stack where WordPress is a presentational + editorial layer and MUST treat the NestJS service (behind the same origin via Nginx) as the authority for authentication. Do NOT re‑implement native WP auth flows for users coming through the unified login; the NestJS session cookie is the single source of truth. WordPress should render different states based solely on reverse‑proxy injected headers (or the parsed auth context object), without persisting parallel credentials unless a future feature explicitly requires it.

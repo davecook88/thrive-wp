@@ -77,7 +77,25 @@ The NestJS app is a standalone headless API for multi‑channel consumption (Wor
 Stripe, Google Classroom, Google Calendar (bi‑directional), AWS S3, feature flags, audit logging.
 
 ---
+
 ## 3. WordPress Layer – Reverse Proxy & Session-Aware Integration
+
+### Editor-First, Block-Driven Theme Structure
+
+**Imperative:** All user-facing content and UI must be implemented using WordPress blocks that are easily editable in the block editor. This enables non-technical admins to update text, colors, layout, and settings visually, without code changes.
+
+**Block Development Guidelines:**
+- Use custom blocks (block.json + JS/TSX + PHP render) for dynamic features.
+- Expose all relevant attributes (text, color, alignment, etc.) in the block editor sidebar.
+- Ensure the PHP render template uses all block attributes (backgroundColor, textColor, align, style, etc.) so that changes in the editor are reflected on the frontend.
+- Avoid hardcoded content or styles in PHP; rely on block attributes and theme.json presets.
+- Document block conventions in the theme README for maintainability.
+
+**Example:**
+The login/auth block exposes all button text, modal labels, provider toggles, and color/alignment options as block attributes. The PHP template renders these attributes, ensuring the frontend matches the editor preview.
+
+**Rationale:**
+This structure empowers non-technical admins, reduces developer intervention, and ensures a modern, maintainable, and WYSIWYG WordPress experience.
 
 WordPress acts purely as the presentation + editorial layer. It does NOT own authentication state. All authenticated rendering depends on headers injected by Nginx after NestJS introspection.
 

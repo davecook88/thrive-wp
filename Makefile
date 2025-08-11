@@ -15,7 +15,9 @@ build:
 	docker compose build
 
 run:
-	docker compose up
+	(docker compose up &)
+	(make watch-wp-themes &)
+	wait
 
 stop:
 	docker compose down
@@ -38,6 +40,9 @@ migrate-run:
 
 migrate-revert:
 	docker compose exec $(NESTJS) npm run typeorm -- migration:revert
+
+watch-wp-themes:
+	cd wordpress/themes/custom-theme && npm run start
 
 # Generate a new migration (pass NAME=DescriptiveName)
 migrate-generate:
