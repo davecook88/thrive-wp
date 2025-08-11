@@ -167,13 +167,13 @@ require_once get_template_directory() . '/includes/class-thrive-auth-context.php
 
 // Enqueue built block JS for the editor globally
 add_action('enqueue_block_editor_assets', function () {
-    $build = get_template_directory() . '/build/index.js';
+    $build = get_template_directory() . '/build/index.ts.js';
     error_log('Enqueueing: ' . $build . ' (exists: ' . (file_exists($build) ? 'yes' : 'no') . ')');
 
     if (file_exists($build)) {
         wp_enqueue_script(
             'custom-theme-blocks',
-            get_template_directory_uri() . '/build/index.js',
+            get_template_directory_uri() . '/build/index.ts.js',
             array('wp-blocks', 'wp-element', 'wp-editor', 'wp-components', 'wp-i18n'),
             filemtime($build)
         );

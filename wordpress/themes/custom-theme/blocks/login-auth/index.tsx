@@ -1,18 +1,49 @@
+import { registerBlockType } from "@wordpress/blocks";
+import { useBlockProps, InspectorControls } from "@wordpress/block-editor";
+import {
+  PanelBody,
+  TextControl,
+  SelectControl,
+  ToggleControl,
+} from "@wordpress/components";
+import { Fragment } from "@wordpress/element";
 import ServerSideRender from "@wordpress/server-side-render";
-/**
- * @type {import('@wordpress/blocks')}
- */
-const Blocks = wp.blocks;
-/**
- * @type {import('@wordpress/server-side-render').default}
- */
-const { useBlockProps, InspectorControls } = wp.blockEditor || {};
-const { Fragment } = wp.element;
-const { PanelBody, TextControl, SelectControl, ToggleControl } = wp.components;
-console.log("running");
 
-Blocks.registerBlockType("thrive/login-auth", {
-  edit: function (props) {
+interface LoginAuthBlockProps {
+  attributes: {
+    signInText: string;
+    signOutText: string;
+    buttonStyle: "outline" | "solid" | "rounded";
+    buttonAlign: "left" | "center" | "right";
+    modalTitle: string;
+    modalDescription: string;
+    showGoogle: boolean;
+    showEmail: boolean;
+    emailLabel: string;
+    passwordLabel: string;
+    extraClass: string;
+  };
+  setAttributes: (attrs: any) => void;
+  isSelected: boolean;
+}
+registerBlockType("thrive/login-auth", {
+  name: "thrive/login-auth",
+  title: "Login/Auth Button",
+  category: "widgets",
+  attributes: {
+    signInText: { type: "string", default: "Sign In" },
+    signOutText: { type: "string", default: "Sign Out" },
+    buttonStyle: { type: "string", default: "outline" },
+    buttonAlign: { type: "string", default: "left" },
+    modalTitle: { type: "string", default: "Sign In" },
+    modalDescription: { type: "string", default: "" },
+    showGoogle: { type: "boolean", default: true },
+    showEmail: { type: "boolean", default: true },
+    emailLabel: { type: "string", default: "Email" },
+    passwordLabel: { type: "string", default: "Password" },
+    extraClass: { type: "string", default: "" },
+  },
+  edit: function (props: LoginAuthBlockProps) {
     const { attributes, setAttributes, isSelected } = props;
     const blockProps = useBlockProps();
 

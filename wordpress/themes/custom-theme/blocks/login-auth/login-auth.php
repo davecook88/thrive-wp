@@ -25,17 +25,24 @@ if ($ctx && $ctx->name) {
 $google_url = esc_url(home_url('/api/auth/google'));
 $logout_url = esc_url(home_url('/api/auth/logout'));
 
+
+
 // Define classes using arrays to keep them clean
 // Button style and alignment
+
+// Compose button classes
 $button_classes = [
     'wp-block-button__link',
-    $attributes['buttonStyle'] === 'solid' ? 'is-style-thrive-solid' : ($attributes['buttonStyle'] === 'rounded' ? 'is-style-thrive-rounded' : 'is-style-thrive-outline'),
-    $attributes['buttonAlign'] === 'left' ? 'has-text-align-left' : ($attributes['buttonAlign'] === 'right' ? 'has-text-align-right' : 'has-text-align-center'),
+    isset($attributes['buttonStyle']) && $attributes['buttonStyle'] === 'solid' ? 'is-style-thrive-solid'
+    : (isset($attributes['buttonStyle']) && $attributes['buttonStyle'] === 'rounded' ? 'is-style-thrive-rounded' : 'is-style-thrive-outline'),
+    isset($attributes['buttonAlign']) && $attributes['buttonAlign'] === 'left' ? 'has-text-align-left'
+    : (isset($attributes['buttonAlign']) && $attributes['buttonAlign'] === 'right' ? 'has-text-align-right' : 'has-text-align-center'),
 ];
 if (!empty($attributes['extraClass'])) {
     $button_classes[] = sanitize_html_class($attributes['extraClass']);
 }
-// Get block attributes for color classes
+
+// Color classes for button
 $color_class = '';
 if (!empty($attributes['backgroundColor'])) {
     $color_class .= ' has-' . esc_attr($attributes['backgroundColor']) . '-background-color';
@@ -43,8 +50,39 @@ if (!empty($attributes['backgroundColor'])) {
 if (!empty($attributes['textColor'])) {
     $color_class .= ' has-' . esc_attr($attributes['textColor']) . '-color';
 }
+
+// Compose wrapper classes and styles
+$wrapper_attrs = [
+    'class' => 'thrive-auth-component',
+    'data-thrive-auth' => true,
+];
+if (!empty($attributes['backgroundColor'])) {
+    $wrapper_attrs['class'] .= ' has-' . esc_attr($attributes['backgroundColor']) . '-background-color';
+}
+if (!empty($attributes['textColor'])) {
+    $wrapper_attrs['class'] .= ' has-' . esc_attr($attributes['textColor']) . '-color';
+}
+if (!empty($attributes['align'])) {
+    $wrapper_attrs['class'] .= ' align' . esc_attr($attributes['align']);
+}
+if (!empty($attributes['style']) && is_array($attributes['style'])) {
+    // Inline style support (from block editor)
+    $style_str = '';
+    foreach ($attributes['style'] as $k => $v) {
+        if (is_array($v)) {
+            foreach ($v as $subk => $subv) {
+                $style_str .= esc_attr($k) . '-' . esc_attr($subk) . ':' . esc_attr($subv) . ';';
+            }
+        } else {
+            $style_str .= esc_attr($k) . ':' . esc_attr($v) . ';';
+        }
+    }
+    if ($style_str) {
+        $wrapper_attrs['style'] = $style_str;
+    }
+}
 ?>
-<div <?php echo get_block_wrapper_attributes(['class' => 'thrive-auth-component', 'data-thrive-auth' => true]); ?>>
+<div <?php echo get_block_wrapper_attributes($wrapper_attrs); ?>>
 
     <?php if ($logged_in): ?>
         <form action="<?php echo $logout_url; ?>" method="get" class="thrive-auth-form" style="display:inline;">
@@ -147,6 +185,9 @@ if (!empty($attributes['textColor'])) {
         (function () {
             if (window.__THRIVE_LOGIN_AUTH_INITIALIZED__) return;
             window.__THRIVE_LOGIN_AUTH_INITIALIZED__ = true;
+
+            // console.log(attributes)
+            console.log(<?php echo wp_json_encode($attributes); ?>);
 
             var googleUrl = <?php echo wp_json_encode($google_url); ?>;
 

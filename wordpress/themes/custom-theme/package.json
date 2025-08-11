@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "@types/wordpress__block-editor": "^11.5.17",
     "@wordpress/blocks": "^15.1.0",
     "@wordpress/components": "^30.1.0",
     "@wordpress/data": "^10.28.0",
@@ -9,7 +10,10 @@
     "@wordpress/server-side-render": "^6.4.0"
   },
   "scripts": {
-    "build": "wp-scripts build ./blocks/index.js",
-    "start": "wp-scripts start ./blocks/index.js"
+    "build": "wp-scripts build ./blocks/index.ts",
+    "start": "wp-scripts start ./blocks/index.ts"
+  },
+  "dependencies": {
+    "@wordpress/block-editor": "^15.1.0"
   }
 }
