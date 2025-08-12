@@ -1,0 +1,83 @@
+import { Entity, Column, Index, ManyToOne } from 'typeorm';
+import { BaseEntity } from '../../common/entities/base.entity.js';
+import { Teacher } from './teacher.entity.js';
+
+/**
+ * Enumeration of availability kinds for teachers.
+ * ONE_OFF: Specific single window between startAt & endAt.
+ * RECURRING: Weekly recurrence using weekday + start/end minutes from midnight UTC.
+ * BLACKOUT: Overrides availability (e.g., vacation) between startAt & endAt.
+ */
+export enum TeacherAvailabilityKind {
+  ONE_OFF = 'ONE_OFF',
+  RECURRING = 'RECURRING',
+  BLACKOUT = 'BLACKOUT',
+}
+
+@Entity('teacher_availability')
+@Index(['teacherId'])
+@Index(['teacherId', 'kind'])
+@Index(['teacherId', 'weekday', 'startTimeMinutes'])
+export class TeacherAvailability extends BaseEntity {
+  @Column({ type: 'int', comment: 'FK to teachers.id' })
+  teacherId: number;
+
+  @ManyToOne(() => Teacher, (teacher) => teacher.availability, {
+    onDelete: 'CASCADE',
+  })
+  teacher: Teacher;
+
+  @Column({
+    type: 'enum',
+    enum: TeacherAvailabilityKind,
+    comment: 'Type of availability window',
+  })
+  kind: TeacherAvailabilityKind;
+
+  @Column({
+    type: 'tinyint',
+    nullable: true,
+    comment: '0=Sunday .. 6=Saturday (only for RECURRING)',
+  })
+  weekday: number | null;
+
+  @Column({
+    type: 'smallint',
+    unsigned: true,
+    nullable: true,
+    comment: 'Start minutes from 00:00 UTC (RECURRING only)',
+  })
+  startTimeMinutes: number | null;
+
+  @Column({
+    type: 'smallint',
+    unsigned: true,
+    nullable: true,
+    comment: 'End minutes from 00:00 UTC (RECURRING only)',
+  })
+  endTimeMinutes: number | null;
+
+  @Column({
+    type: 'datetime',
+    precision: 3,
+    nullable: true,
+    comment: 'UTC start datetime (ONE_OFF/BLACKOUT)',
+  })
+  startAt: Date | null;
+
+  @Column({
+    type: 'datetime',
+    precision: 3,
+    nullable: true,
+    comment: 'UTC end datetime (ONE_OFF/BLACKOUT)',
+  })
+  endAt: Date | null;
+
+  @Column({
+    type: 'tinyint',
+    width: 1,
+    default: () => '1',
+    comment: 'Whether this availability entry is active',
+  })
+  isActive: boolean;
+}
