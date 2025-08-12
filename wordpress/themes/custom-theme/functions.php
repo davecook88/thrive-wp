@@ -192,7 +192,9 @@ function thrive_hydrate_user_from_proxy(): void
 {
     // Parse header into context only (no WP user creation / mapping)
     $rawHeader = $_SERVER['HTTP_X_AUTH_CONTEXT'] ?? '';
+    error_log(message: "Raw auth context header: $rawHeader");
     $ctx = ThriveAuthContext::fromJson($rawHeader);
+    error_log("Parsed auth context: " . print_r($ctx, true));
     if ($ctx !== null) {
         $GLOBALS['thrive_auth_context'] = $ctx;
     }

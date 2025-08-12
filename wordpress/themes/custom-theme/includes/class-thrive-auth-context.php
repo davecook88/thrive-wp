@@ -53,21 +53,25 @@ final class ThriveAuthContext
     public static function fromJson(?string $json): ?self
     {
         if ($json === null || $json === '') {
+            error_log("Raw auth context header: $json");
             return null;
         }
 
         if (strlen($json) > 8192) { // Size guard
+            error_log("Auth context header too large");
             return null;
         }
 
         try {
             /** @var mixed $decoded */
-            $decoded = json_decode($json, true, 32, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_IGNORE);
+            $decoded = json_decode(wp_unslash($json), true, 32, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_IGNORE);
         } catch (\Throwable $e) {
+            error_log("Failed to decode JSON: " . $e->getMessage());
             return null;
         }
 
         if (!is_array($decoded)) {
+            error_log("Invalid auth context structure");
             return null;
         }
 

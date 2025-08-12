@@ -1,0 +1,122 @@
+/**
+ * Minimal CSS for the Thrive Login/Auth block.
+ *
+ * This stylesheet focuses on the structural and interactive elements of the modal,
+ * relying on theme.json and WordPress core styles for buttons, colors, and fonts
+ * as much as possible.
+ */
+
+.thrive-login-modal {
+  display: none; /* Hidden by default */
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  align-items: center;
+  justify-content: center;
+}
+
+.thrive-login-modal.is-open {
+  display: flex;
+}
+
+.thrive-login-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.thrive-login-modal__dialog {
+  position: relative;
+  width: min(90%, 420px);
+  border-radius: var(--wp--custom--border-radius--card, 8px);
+  padding: var(--wp--preset--spacing--50, 2rem);
+  z-index: 1;
+}
+
+.thrive-login-modal__close {
+  position: absolute;
+  top: var(--wp--preset--spacing--30, 1rem);
+  right: var(--wp--preset--spacing--30, 1rem);
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  line-height: 1;
+  color: var(--wp--preset--color--contrast);
+}
+
+.thrive-login-provider__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: var(--wp--preset--color--primary);
+  color: var(--wp--preset--color--base);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.thrive-email-login input[type="email"],
+.thrive-email-login input[type="password"],
+.thrive-email-login input[type="text"] {
+  width: 100%;
+  padding: var(--wp--preset--spacing--20, 0.5rem);
+  border: 1px solid var(--wp--preset--color--gray-300, #ccc);
+  border-radius: var(--wp--custom--border-radius--field, 4px);
+}
+
+.thrive-link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+  color: var(--wp--preset--color--primary);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.thrive-feedback {
+  padding: var(--wp--preset--spacing--30, 1rem);
+  border-radius: var(--wp--custom--border-radius--field, 4px);
+  background-color: var(--wp--preset--color--accent-soft, #fff0f0);
+  border: 1px solid var(--wp--preset--color--accent, #f00);
+  color: var(--wp--preset--color--accent-dark, #c00);
+}
+
+/* Utility for when modal is open */
+body.thrive-modal-open {
+  overflow: hidden;
+}
+
+button.is-style-thrive-outline {
+  background: none;
+  border: 1px solid var(--wp--preset--color--primary);
+  border-radius: var(--wp--custom--border-radius--field, 4px);
+  padding: var(--wp--preset--spacing--20, 0.5rem)
+    var(--wp--preset--spacing--30, 1rem);
+  cursor: pointer;
+}
+
+button.is-style-thrive-solid {
+  background: var(--wp--preset--color--primary);
+  border: none;
+  border-radius: var(--wp--custom--border-radius--field, 4px);
+  padding: var(--wp--preset--spacing--20, 0.5rem)
+    var(--wp--preset--spacing--30, 1rem);
+  cursor: pointer;
+}
+
+button.is-style-thrive-rounded {
+  background: var(--wp--preset--color--primary);
+  border: none;
+  border-radius: var(--wp--custom--border-radius--field, 4px);
+  padding: var(--wp--preset--spacing--20, 0.5rem)
+    var(--wp--preset--spacing--30, 1rem);
+  cursor: pointer;
+}

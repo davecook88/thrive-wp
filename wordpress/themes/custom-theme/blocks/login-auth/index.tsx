@@ -15,6 +15,7 @@ interface LoginAuthBlockProps {
     signOutText: string;
     buttonStyle: "outline" | "solid" | "rounded";
     buttonAlign: "left" | "center" | "right";
+    buttonColor: "primary" | "secondary" | "tertiary";
     modalTitle: string;
     modalDescription: string;
     showGoogle: boolean;
@@ -33,6 +34,7 @@ registerBlockType("thrive/login-auth", {
   attributes: {
     signInText: { type: "string", default: "Sign In" },
     signOutText: { type: "string", default: "Sign Out" },
+    buttonColor: { type: "string", default: "blue" },
     buttonStyle: { type: "string", default: "outline" },
     buttonAlign: { type: "string", default: "left" },
     modalTitle: { type: "string", default: "Sign In" },
@@ -70,6 +72,16 @@ registerBlockType("thrive/login-auth", {
                 { label: "Rounded", value: "rounded" },
               ]}
               onChange={(v) => setAttributes({ buttonStyle: v })}
+            />
+            <SelectControl
+              label="Button Color"
+              value={attributes.buttonColor}
+              options={[
+                { label: "Primary", value: "primary" },
+                { label: "Secondary", value: "secondary" },
+                { label: "Tertiary", value: "tertiary" },
+              ]}
+              onChange={(v) => setAttributes({ buttonColor: v })}
             />
             <SelectControl
               label="Button Alignment"

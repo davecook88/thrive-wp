@@ -29,6 +29,10 @@
             "type": "string",
             "default": "center"
         },
+        "buttonColor": {
+            "type": "string",
+            "default": "primary"
+        },
         "modalTitle": {
             "type": "string",
             "default": "Sign In"
@@ -63,7 +67,7 @@
             "background": true,
             "text": true
         },
-        "html": false,
+        "html": true,
         "align": [
             "left",
             "right"
@@ -76,5 +80,6 @@
         "thrive"
     ],
     "render": "file:./render.php",
-    "editorScript": "custom-theme-blocks"
+    "editorScript": "custom-theme-blocks",
+    "style": "file:./style.css"
 }
