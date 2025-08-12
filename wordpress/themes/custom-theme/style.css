@@ -90,12 +90,3 @@ body {
 .thrive-modal-open {
   overflow: hidden;
 }
-
-input[type="email"],
-input[type="password"],
-input[type="text"] {
-  width: 100%;
-  padding: var(--wp--preset--spacing--30);
-  border: 1px solid var(--wp--preset--color--gray-200);
-  border-radius: 8px;
-}

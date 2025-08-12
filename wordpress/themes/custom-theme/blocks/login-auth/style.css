@@ -64,10 +64,15 @@
 .thrive-email-login input[type="email"],
 .thrive-email-login input[type="password"],
 .thrive-email-login input[type="text"] {
-  width: 100%;
+  width: 85%;
   padding: var(--wp--preset--spacing--20, 0.5rem);
   border: 1px solid var(--wp--preset--color--gray-300, #ccc);
   border-radius: var(--wp--custom--border-radius--field, 4px);
+}
+
+.thrive-email-login input:focus {
+  border-color: var(--wp--preset--color--primary, #0073aa);
+  outline: none;
 }
 
 .thrive-link-button {
