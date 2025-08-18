@@ -236,6 +236,28 @@ docker-compose logs wordpress
 - Keep this documentation updated with new learnings
 - Consider automated testing for block validation in CI/CD pipeline
 
+## Homepage Content Source (Added 2025-08-18)
+
+The visible homepage hero ("Thrive in Spanish ...") is NOT rendered directly from the `patterns/thrive-hero.php` file at runtime. Instead, when the pattern was first inserted into the homepage, its block markup was copied into the `wp_posts.post_content` for the homepage (ID 5). Subsequent edits to `patterns/thrive-hero.php` will NOT change the live page automatically. To modify the live hero you must either:
+
+1. Edit the page in the WordPress block editor and adjust the blocks there; or
+2. Run a SQL update against `wp_posts` (ID 5) replacing the relevant block HTML.
+
+Example (token tweak we applied):
+```
+UPDATE wp_posts 
+SET post_content = REPLACE(post_content, 'Thrive in Spanish', 'Thrive in Spanish (Demo Tweak)')
+WHERE ID = 5;
+```
+
+We performed this update to verify end‑to‑end content control; you should now see the heading "Thrive in Spanish (Demo Tweak)" on `http://localhost:8080/`.
+
+Removed Unused Patterns:
+- `patterns/hero-section.php` (not registered or referenced)
+- `patterns/courses-grid.php` (not registered, not referenced in DB) — remove to avoid confusion until/if a courses grid feature is implemented.
+
+To re-add or create new patterns, add a file under `patterns/`, then register it (mirroring the existing registration logic in `functions.php`). Remember: existing pages using older copies will not auto‑update.
+
 ## Authentication UI (Login Modal)
 
 The theme now includes a lightweight, framework-free login modal component:
