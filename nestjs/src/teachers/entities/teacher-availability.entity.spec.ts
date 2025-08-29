@@ -22,9 +22,23 @@ describe('TeacherAvailability Entity', () => {
   });
 
   it('should have expected columns', () => {
-    const columns = getMetadataArgsStorage().columns.filter(
-      (c) => c.target === TeacherAvailability,
-    );
+    // Get columns from the current class and all parent classes
+    const getAllColumns = (target: any) => {
+      const columns: any[] = [];
+      let current = target;
+
+      while (current && current !== Object.prototype) {
+        const classColumns = getMetadataArgsStorage().columns.filter(
+          (c) => c.target === current,
+        );
+        columns.push(...classColumns);
+        current = Object.getPrototypeOf(current);
+      }
+
+      return columns;
+    };
+
+    const columns = getAllColumns(TeacherAvailability);
     const columnProps = columns.map((c) => c.propertyName).sort();
     expect(columnProps).toEqual(
       expect.arrayContaining([

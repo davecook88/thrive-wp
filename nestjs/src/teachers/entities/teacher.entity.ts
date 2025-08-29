@@ -14,7 +14,7 @@ import { TeacherAvailability } from '@/teachers/entities/teacher-availability.en
  * Teacher entity represents extended profile & configuration for a user who can teach.
  * A user may have at most one teacher record (one-to-one). Soft deletes supported.
  */
-@Entity('teachers')
+@Entity('teacher')
 @Index(['userId'], { unique: true })
 @Index(['tier'])
 export class Teacher extends BaseEntity {

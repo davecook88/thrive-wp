@@ -11,7 +11,7 @@ export class AddTeacherAndAvailability1733772000002
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-      CREATE TABLE IF NOT EXISTS teachers (
+      CREATE TABLE IF NOT EXISTS teacher (
         id int NOT NULL AUTO_INCREMENT,
         userId int NOT NULL COMMENT 'FK to users.id (unique 1:1 with users)',
         tier smallint unsigned NOT NULL DEFAULT 10 COMMENT 'Teacher tier (10,20,30...) used for pricing & access control',
@@ -52,6 +52,6 @@ export class AddTeacherAndAvailability1733772000002
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query('DROP TABLE IF EXISTS teacher_availability;');
-    await queryRunner.query('DROP TABLE IF EXISTS teachers;');
+    await queryRunner.query('DROP TABLE IF EXISTS teacher;');
   }
 }

@@ -7,13 +7,27 @@ describe('Teacher Entity', () => {
       (t) => t.target === Teacher,
     );
     expect(entity).toBeDefined();
-    expect(entity?.name).toBe('teachers');
+    expect(entity?.name).toBe('teacher');
   });
 
   it('should have expected columns', () => {
-    const columns = getMetadataArgsStorage().columns.filter(
-      (c) => c.target === Teacher,
-    );
+    // Get columns from the current class and all parent classes
+    const getAllColumns = (target: any) => {
+      const columns: any[] = [];
+      let current = target;
+
+      while (current && current !== Object.prototype) {
+        const classColumns = getMetadataArgsStorage().columns.filter(
+          (c) => c.target === current,
+        );
+        columns.push(...classColumns);
+        current = Object.getPrototypeOf(current);
+      }
+
+      return columns;
+    };
+
+    const columns = getAllColumns(Teacher);
     const columnProps = columns.map((c) => c.propertyName).sort();
     expect(columnProps).toEqual(
       expect.arrayContaining([
