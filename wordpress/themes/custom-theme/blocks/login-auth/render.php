@@ -83,7 +83,8 @@ $block = new Thrive_Login_Auth_Block($attributes);
 <div <?php echo $block->get_wrapper_attributes(); ?>>
     <?php if ($is_logged_in): ?>
         <form action="<?php echo $logout_url; ?>" method="get" class="thrive-auth-form" style="display:inline;">
-            <button class="<?php echo $block->get_button_classes(); ?>" type="submit">
+            <button class="<?php echo $block->get_button_classes(); ?>" type="submit"
+                onclick="window.dispatchEvent(new CustomEvent('thrive:auth:logout'));">
                 <?php echo esc_html($block->get_attribute('signOutText')); ?>
                 <?php if ($ctx->name)
                     echo ' ' . esc_html($ctx->name); ?>
@@ -286,6 +287,8 @@ $block = new Thrive_Login_Auth_Block($attributes);
                                 });
                                 const json = await resp.json().catch(() => ({}));
                                 if (resp.ok && json.redirect) {
+                                    // Dispatch login event before redirect
+                                    window.dispatchEvent(new CustomEvent('thrive:auth:login'));
                                     window.location.href = json.redirect;
                                     return;
                                 }

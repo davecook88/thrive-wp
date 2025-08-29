@@ -26,6 +26,15 @@ add_action('wp_enqueue_scripts', 'custom_theme_styles');
 // Enqueue theme scripts
 function custom_theme_scripts()
 {
+    // Enqueue authentication refresh script
+    wp_enqueue_script(
+        'thrive-auth-refresh',
+        get_template_directory_uri() . '/js/auth-refresh.js',
+        array(),
+        wp_get_theme()->get('Version'),
+        true // Load in footer
+    );
+
     // Auth component logic is now inlined within its template part (login-auth.html).
     // Add other global/enqueued scripts here as needed.
 }
