@@ -149,18 +149,9 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, onMounted, reactive, ref } from 'vue';
+import { defineComponent, onMounted, ref } from 'vue';
+import { useUsers } from '../lib';
 import Banner from './Banner.vue';
-
-type User = {
-  id: number;
-  firstName?: string;
-  lastName?: string;
-  email: string;
-  createdAt: string;
-  admin?: { isActive: boolean } | null;
-  teacher?: { isActive: boolean } | null;
-};
 
 export default defineComponent({
   name: 'Users',
@@ -173,94 +164,52 @@ export default defineComponent({
     initialRole: { type: String, default: '' },
   },
   setup(props) {
-    const users = ref<User[]>([]);
-    const total = ref(0);
-    const totalPages = ref(0);
-    const currentPage = ref<number>(Number(props.initialPage));
-    const loading = ref(false);
-    const error = ref<string | null>(null);
+    const {
+      users,
+      total,
+      totalPages,
+      currentPage,
+      loading,
+      error,
+      filters,
+      hasFilters,
+      visiblePages,
+      loadUsers,
+      handleFilter,
+      clearFilters,
+      changePage,
+      getUserName,
+      getUserRole,
+      getUserStatus,
+      formatDate,
+    } = useUsers({
+      initialPage: Number(props.initialPage),
+      initialSearch: props.initialSearch,
+      initialRole: props.initialRole,
+    });
+
     const showAdminBanner = ref(false);
-    const filters = reactive<{ search: string; role: string }>({
-      search: String(props.initialSearch) || '',
-      role: String(props.initialRole) || ''
-    });
 
-    const hasFilters = computed(() => !!(filters.search || filters.role));
-    const visiblePages = computed(() => {
-      const pages: number[] = [];
-      const start = Math.max(1, currentPage.value - 2);
-      const end = Math.min(totalPages.value, currentPage.value + 2);
-      for (let i = start; i <= end; i++) pages.push(i);
-      return pages;
-    });
-
-    const loadUsers = async () => {
-      loading.value = true;
-      error.value = null;
-      showAdminBanner.value = false;
-      try {
-        const params = new URLSearchParams({
-          page: String(currentPage.value),
-          limit: String(20),
-          search: filters.search,
-          role: filters.role
-        });
-
-        const response = await fetch(window.thriveAdminBridgeAjax?.ajax_url || '', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            action: 'thrive_admin_get_users',
-            nonce: window.thriveAdminBridgeAjax?.nonce || '',
-            params: JSON.stringify(Object.fromEntries(params))
-          })
-        });
-
-        console.log("response ok", response.ok);
-        
-        const result = await response.json();
-        
-        if (!response.ok) {
-          console.log("Response not ok, status:", response.status);
-          // For 401, show admin banner
-          if (response.status === 401) {
-            showAdminBanner.value = true;
-          } else {
-            // For other errors, show the error message
-            error.value = result.data?.message || `Request failed with status ${response.status}`;
-          }
-          users.value = [];
-          total.value = 0;
-          totalPages.value = 0;
-          return;
-        }
-
-        if (result.success) {
-          users.value = (result.data.users || []) as User[];
-          total.value = Number(result.data.total || 0);
-          totalPages.value = Number(result.data.totalPages || 0);
-        } else {
-          error.value = result.data?.message || 'Failed to load users';
-        }
-      } catch (e: any) {
-        error.value = 'Connection failed: ' + e.message;
-      } finally {
-        loading.value = false;
+    // Handle authentication errors
+    const handleApiError = (err: any) => {
+      if (err.message?.includes('401') || err.message?.includes('403')) {
+        showAdminBanner.value = true;
       }
     };
 
-    const handleFilter = () => { currentPage.value = 1; loadUsers(); };
-    const clearFilters = () => { filters.search = ''; filters.role = ''; currentPage.value = 1; loadUsers(); };
-    const changePage = (page: number) => { if (page >= 1 && page <= totalPages.value) { currentPage.value = page; loadUsers(); } };
+    // Override loadUsers to handle auth errors
+    const originalLoadUsers = loadUsers;
+    const enhancedLoadUsers = async () => {
+      try {
+        await originalLoadUsers();
+      } catch (err) {
+        handleApiError(err);
+      }
+    };
 
-    const getUserName = (user: User) => `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'No name';
-    const getUserRole = (user: User) => user.admin?.isActive ? 'Admin' : (user.teacher?.isActive ? `Teacher (Tier ${user.teacher.tier})` : 'Student');
-    const getUserStatus = (user: User) => user.admin?.isActive ? (user.admin.isActive ? 'Active' : 'Inactive') : (user.teacher?.isActive ? (user.teacher.isActive ? 'Active' : 'Inactive') : 'Active');
-    const getStatusClass = (status: string) => status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
-    const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
-    const viewUser = (user: User) => alert(`View user details for ${getUserName(user)} (ID: ${user.id})`);
+    const viewUser = (user: any) => alert(`View user details for ${getUserName(user)} (ID: ${user.id})`);
 
-    onMounted(loadUsers);
+    onMounted(enhancedLoadUsers);
 
     return {
       users,
@@ -273,14 +222,14 @@ export default defineComponent({
       filters,
       hasFilters,
       visiblePages,
-      loadUsers,
+      loadUsers: enhancedLoadUsers,
       handleFilter,
       clearFilters,
       changePage,
       getUserName,
       getUserRole,
       getUserStatus,
-      getStatusClass,
+      getStatusClass: (status: string) => status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800',
       formatDate,
       viewUser
     };

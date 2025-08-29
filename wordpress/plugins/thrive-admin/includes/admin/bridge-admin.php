@@ -14,8 +14,7 @@ class Thrive_Admin_Bridge_Admin
         // Ensure our ESM bundles are loaded as modules (dev + prod)
         add_filter('script_loader_tag', [$this, 'thrive_admin_module_script_tag'], 10, 3);
         add_action('wp_ajax_thrive_admin_test_api_connection', [$this, 'thrive_admin_test_api_connection']);
-        add_action('wp_ajax_thrive_admin_get_users', [$this, 'thrive_admin_get_users_ajax']);
-        add_action('wp_ajax_thrive_admin_save_settings', [$this, 'thrive_admin_save_settings_ajax']);
+        add_action('wp_ajax_thrive_admin_save_settings', callback: [$this, 'thrive_admin_save_settings_ajax']);
         add_action('admin_bar_menu', [$this, 'thrive_admin_add_toolbar_button'], 999);
     }
 
@@ -197,14 +196,13 @@ class Thrive_Admin_Bridge_Admin
 
     public function thrive_admin_users_page()
     {
-        error_log("Loading users Page");
 
         if (!current_user_can('manage_options')) {
             wp_die(__('You do not have sufficient permissions to access this page.'));
         }
 
         // Load the Vue template
-        include plugin_dir_path(__FILE__) . '../templates/users.php';
+        include plugin_dir_path(__FILE__) . '../../templates/users.php';
     }
 
     public function thrive_admin_dashboard_page()
@@ -215,7 +213,7 @@ class Thrive_Admin_Bridge_Admin
         }
 
         // Load the Vue template
-        include plugin_dir_path(__FILE__) . '../templates/dashboard.php';
+        include plugin_dir_path(__FILE__) . '../../templates/dashboard.php';
     }
 
     public function thrive_admin_settings_page()
@@ -231,7 +229,7 @@ class Thrive_Admin_Bridge_Admin
         }
 
         // Load the Vue template
-        include plugin_dir_path(__FILE__) . '../templates/settings.php';
+        include plugin_dir_path(__FILE__) . '../../templates/settings.php';
     }
 
     public function thrive_admin_test_api_connection()
@@ -335,38 +333,7 @@ class Thrive_Admin_Bridge_Admin
         ]);
     }
 
-    /**
-     * AJAX handler for getting users (used by Vue component)
-     */
-    public function thrive_admin_get_users_ajax()
-    {
-        // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'thrive_admin_bridge_users_nonce')) {
-            error_log("Nonce verification failed");
-            wp_die(__('Security check failed', 'thrive-admin-bridge'));
-        }
 
-        // Check user capabilities
-        if (!current_user_can('manage_options')) {
-            error_log("User does not have sufficient permissions");
-            wp_die(__('Insufficient permissions', 'thrive-admin-bridge'));
-        }
-
-        // Get parameters from AJAX request
-        $params = isset($_POST['params']) ? json_decode(stripslashes($_POST['params']), true) : [];
-
-        // Call the API
-        $response = $this->bridge->thrive_admin_get_users($params);
-
-        if (is_wp_error($response)) {
-            $error_data = $response->get_error_data();
-            wp_send_json_error([
-                'message' => $response->get_error_message()
-            ], $error_data['status_code'] ?? 500);
-        }
-
-        wp_send_json_success($response);
-    }
 
     /**
      * AJAX handler for saving settings (used by Vue component)
