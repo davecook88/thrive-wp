@@ -1,10 +1,12 @@
 <?php
 
+use Thrive_Admin_Bridge;
+
 class Thrive_Admin_Bridge_Admin
 {
-    private $bridge;
+    private Thrive_Admin_Bridge $bridge;
 
-    public function __construct($bridge)
+    public function __construct(Thrive_Admin_Bridge $bridge)
     {
         $this->bridge = $bridge;
         add_action('admin_menu', [$this, 'thrive_admin_add_admin_menu']);
@@ -80,12 +82,15 @@ class Thrive_Admin_Bridge_Admin
         // Decide whether to use Vite dev server (only if WP_DEBUG and dev server is reachable)
         $is_dev = $this->thrive_admin_should_use_vite_dev();
 
+        error_log("Is dev: " . ($is_dev ? 'true' : 'false'));
+
         if ($is_dev) {
             // Development mode - use Vite dev server
+            $vite_port = get_option('thrive_admin_vite_port', 5173);
             // With Vite root set to "src", the entry is served at /main.js (not /src/main.js)
-            wp_enqueue_script('vite-client', 'http://localhost:5173/@vite/client', [], null, true);
+            wp_enqueue_script('vite-client', "http://localhost:{$vite_port}/@vite/client", [], null, true);
             // Vite will serve TS entry at /main.ts when root = src
-            wp_enqueue_script('thrive-admin-vue', 'http://localhost:5173/main.ts', ['vite-client'], null, true);
+            wp_enqueue_script('thrive-admin-vue', "http://localhost:{$vite_port}/main.ts", ['vite-client'], null, true);
         } else {
             // Production mode - use built assets
             $manifest_file = $assets_dir . 'manifest.json';
@@ -164,14 +169,25 @@ class Thrive_Admin_Bridge_Admin
         }
 
         $running = false;
+        $port = 5173; // Check common Vite ports
+        $host = 'host.docker.internal';
+
         // Probe the dev server via @vite/client (works for JS/TS)
-        $response = wp_remote_get('http://localhost:5173/@vite/client', [
-            'timeout' => 0.5,
+        $response = wp_remote_get("http://{$host}:{$port}/@vite/client", [
+            'timeout' => 0.75,
             'redirection' => 0,
         ]);
         if (!is_wp_error($response)) {
             $code = (int) wp_remote_retrieve_response_code($response);
-            $running = ($code >= 200 && $code < 400);
+            $body = (string) wp_remote_retrieve_body($response);
+            // Consider 200/3xx; 404 with vite content; and 403 from cross-origin as reachable
+            if (
+                ($code >= 200 && $code < 400)
+                || ($code === 404 && str_contains($body, 'vite/client'))
+                || ($code === 403 && $host === 'host.docker.internal')
+            ) {
+                $running = true;
+            }
         }
 
         // Cache for 30 seconds
@@ -181,6 +197,8 @@ class Thrive_Admin_Bridge_Admin
 
     public function thrive_admin_users_page()
     {
+        error_log("Loading users Page");
+
         if (!current_user_can('manage_options')) {
             wp_die(__('You do not have sufficient permissions to access this page.'));
         }
@@ -191,6 +209,7 @@ class Thrive_Admin_Bridge_Admin
 
     public function thrive_admin_dashboard_page()
     {
+        error_log("Loading Dashboard Page");
         if (!current_user_can('manage_options')) {
             wp_die(__('You do not have sufficient permissions to access this page.'));
         }
@@ -322,11 +341,13 @@ class Thrive_Admin_Bridge_Admin
     {
         // Verify nonce
         if (!wp_verify_nonce($_POST['nonce'], 'thrive_admin_bridge_users_nonce')) {
+            error_log("Nonce verification failed");
             wp_die(__('Security check failed', 'thrive-admin-bridge'));
         }
 
         // Check user capabilities
         if (!current_user_can('manage_options')) {
+            error_log("User does not have sufficient permissions");
             wp_die(__('Insufficient permissions', 'thrive-admin-bridge'));
         }
 

@@ -17,6 +17,7 @@ build:
 run:
 	(docker compose up &)
 	(make watch-wp-themes &)
+	(make watch-admin-plugin &)
 	wait
 
 stop:
@@ -43,6 +44,9 @@ migrate-revert:
 
 watch-wp-themes:
 	cd wordpress/themes/custom-theme && npm run start
+
+watch-admin-plugin:
+	cd wordpress/plugins/thrive-admin && npm run dev
 
 # Generate a new migration (pass NAME=DescriptiveName)
 migrate-generate:

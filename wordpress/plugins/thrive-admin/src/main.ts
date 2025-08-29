@@ -1,4 +1,4 @@
-import { createApp, defineComponent } from "vue";
+import { createApp } from "vue";
 import "./style.css";
 
 import Dashboard from "./components/Dashboard.vue";

@@ -164,7 +164,7 @@ export default defineComponent({
   props: {
     initialPage: { type: Number, default: 1 },
     initialSearch: { type: String, default: '' },
-    initialRole: { type: String, default: '' }
+    initialRole: { type: String, default: '' },
   },
   setup(props) {
     const users = ref<User[]>([]);

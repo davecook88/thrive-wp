@@ -14,6 +14,8 @@ if (!defined('ABSPATH')) {
 $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
 $search = isset($_GET['search']) ? sanitize_text_field($_GET['search']) : '';
 $role = isset($_GET['role']) ? sanitize_text_field($_GET['role']) : '';
+
+
 ?>
 
 <div class="wrap">

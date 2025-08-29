@@ -11,12 +11,12 @@
         <div class="wp-admin-card">
           <h4 class="text-lg font-medium text-gray-800 mb-2">User Management</h4>
           <p class="text-gray-600 text-sm mb-4">View, search, and manage application users</p>
-          <button
-            @click="navigateToUsers"
+          <a
+            :href="usersPageUrl"
             class="wp-admin-button-primary"
           >
             Manage Users
-          </button>
+          </a>
         </div>
 
         <div class="wp-admin-card">
@@ -72,18 +72,25 @@ export default defineComponent({
     description: {
       type: String,
       default: 'Manage your Thrive application users, settings, and more from this central dashboard.'
+    },
+    usersPageUrl: { 
+        type: String, 
+        default: window.location.origin + '/wp-admin/admin.php?page=thrive-admin-users'
     }
+
   },
   setup() {
     const testingApi = ref(false);
     const apiTestResult = ref<ApiTestResult>(null);
 
-    const navigateToUsers = () => {
-      window.location.href = (window.thriveAdminBridgeAjax?.admin_url || '') + '?page=thrive-admin-users';
-    };
+
 
     const navigateToSettings = () => {
       window.location.href = (window.thriveAdminBridgeAjax?.admin_url || '') + '?page=thrive-admin-settings';
+    };
+
+    const navigateToUsers = () => {
+      window.location.href = usersPageUrl;
     };
 
     const testApiConnection = async () => {

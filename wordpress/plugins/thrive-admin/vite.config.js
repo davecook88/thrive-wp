@@ -18,10 +18,10 @@ export default defineConfig({
     manifest: true, // Generate manifest.json for WordPress
     rollupOptions: {
       input: {
-        main: "./src/main.ts",
-        dashboard: "./src/components/Dashboard.vue",
-        users: "./src/components/Users.vue",
-        settings: "./src/components/Settings.vue",
+        main: "./main.ts",
+        dashboard: "./components/Dashboard.vue",
+        users: "./components/Users.vue",
+        settings: "./components/Settings.vue",
       },
       output: {
         entryFileNames: "js/[name].js",
@@ -36,11 +36,19 @@ export default defineConfig({
     },
   },
   server: {
+    // Bind to all interfaces so Docker containers can reach the dev server
     host: "0.0.0.0",
     port: 5173,
+    strictPort: true,
     cors: true,
     hmr: {
+      // Use localhost for browser access; server listens on 0.0.0.0
+      host: "localhost",
       port: 5173,
+      protocol: "ws",
+      clientPort: 5173,
     },
+    // Allow access from Docker containers using this hostname
+    allowedHosts: ["host.docker.internal"],
   },
 });

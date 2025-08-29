@@ -1,5 +1,6 @@
 <?php
 
+
 class Thrive_Admin_Bridge
 {
     public function __construct()
