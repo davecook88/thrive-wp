@@ -6,5 +6,10 @@
       "@wordpress/*": ["node_modules/@wordpress/*"]
     }
   },
-  "include": ["blocks/**/*.js"]
+  "include": [
+    "blocks/**/*.js",
+    "wp-content/**/*.js",
+    "plugins/**/*.js",
+    "**/*.js"
+  ]
 }

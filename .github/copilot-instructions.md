@@ -16,13 +16,23 @@ This entire app must be able to be deployed to a single VPS. This means all serv
 
 ### WordPress-NestJS Bridge Communication
 - WordPress calls NestJS via `http://nestjs:3000/` (Docker internal hostname)
+- External API access via `http://localhost:8080/api/` (through Nginx proxy)
 - Example in `wordpress/plugins/nodejs-bridge/includes/class-nodejs-bridge.php`:
   ```php
   $url = 'http://nestjs:3000/' . $endpoint;  // Use 'nestjs' hostname, not localhost
   $response = wp_remote_request($url, $args);
   ```
 - NestJS endpoints follow REST conventions in `nestjs/src/app.controller.ts`
+- **Important**: Most API endpoints require authentication via JWT token in `thrive_sess` cookie
+- Admin-only endpoints use `AdminGuard` which requires user to have 'admin' role
 - Test bridge with shortcode: `[test_nodejs_bridge]`
+
+### Database Table Names
+- User table: `user` (singular, not `users`)
+- Admin table: `admin`
+- Teacher table: `teacher`
+- Classes table: `classes`
+- WordPress tables: `wp_*` prefix
 
 ### Docker Development Workflow
 ```bash
@@ -76,7 +86,7 @@ Credentials:
 
 You are able to query the database using the CLI like so: docker-compose exec db mysql -u wordpress -p wordpress wordpress.
 
-Remember that page content is stored in the wp_posts table.
+Remember that page content is stored in the wp_posts table and user data is stored in the user table.
 
 You will be required to update the WP site by making changes to the database. You should open the page at http://localhost:8080/ in your browser to check that the changes have been applied.
 

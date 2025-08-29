@@ -13,7 +13,7 @@ services:
         define('WP_DEBUG_DISPLAY', false);
         define('SCRIPT_DEBUG', true);
     volumes:
-      - ./wordpress/plugins/nodejs-bridge:/var/www/html/wp-content/plugins/nodejs-bridge
+      - ./wordpress/plugins/thrive-admin:/var/www/html/wp-content/plugins/thrive-admin
       - ./_logs_wp:/var/www/html/wp-content/debug.log:rw
       - ./wordpress/themes/custom-theme:/var/www/html/wp-content/themes/custom-theme
     depends_on:
