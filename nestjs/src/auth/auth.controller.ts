@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service.js';
-import type { Request, Response } from 'express'; // <-- Add this import
+import type { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import jwt from 'jsonwebtoken';
 
@@ -24,11 +24,23 @@ interface SessionPayload {
   lastName?: string;
   roles: string[];
   sid: string; // session id
+  type: 'access' | 'refresh'; // token type
 }
 
-function signSession(payload: SessionPayload): string {
+function signAccessToken(payload: Omit<SessionPayload, 'type'>): string {
   const secret = process.env.SESSION_SECRET || 'dev_insecure_secret_change_me';
-  return jwt.sign(payload, secret, { algorithm: 'HS256', expiresIn: '30m' });
+  return jwt.sign({ ...payload, type: 'access' }, secret, {
+    algorithm: 'HS256',
+    expiresIn: '1d',
+  });
+}
+
+function signRefreshToken(payload: Omit<SessionPayload, 'type'>): string {
+  const secret = process.env.SESSION_SECRET || 'dev_insecure_secret_change_me';
+  return jwt.sign({ ...payload, type: 'refresh' }, secret, {
+    algorithm: 'HS256',
+    expiresIn: '28d',
+  });
 }
 
 function verifySession(token: string): SessionPayload | null {
@@ -46,6 +58,7 @@ function verifySession(token: string): SessionPayload | null {
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
   @Get('google')
   @UseGuards(AuthGuard('google'))
   googleAuth() {}
@@ -66,16 +79,27 @@ export class AuthController {
       lastName: user.lastName,
       roles,
       sid: randomUUID(),
+      type: 'access',
     };
-    const token = signSession(session);
+    const token = signAccessToken(session);
+    const refreshToken = signRefreshToken(session);
     const cookieName = process.env.SESSION_COOKIE_NAME || 'thrive_sess';
+    const refreshCookieName =
+      process.env.REFRESH_COOKIE_NAME || 'thrive_refresh';
     const isProd = process.env.NODE_ENV === 'production';
     res.cookie(cookieName, token, {
       httpOnly: true,
       sameSite: 'lax',
       secure: isProd,
       path: '/',
-      maxAge: 1000 * 60 * 30, // 30m
+      maxAge: 1000 * 60 * 60 * 24, // 1d to match JWT expiry
+    });
+    res.cookie(refreshCookieName, refreshToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: isProd,
+      path: '/',
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     });
     const redirectBase = process.env.WP_BASE_URL || 'http://localhost:8080';
     return res.redirect(302, `${redirectBase}/?auth=success`);
@@ -110,6 +134,61 @@ export class AuthController {
     return res.send();
   }
 
+  @Post('refresh')
+  @HttpCode(204)
+  async refresh(@Req() req: Request, @Res() res: Response) {
+    const refreshCookieName =
+      process.env.REFRESH_COOKIE_NAME || 'thrive_refresh';
+    const refreshToken =
+      (req as any).cookies?.[refreshCookieName] ||
+      extractCookie(req.headers['cookie'] || '', refreshCookieName);
+
+    if (!refreshToken) return res.sendStatus(401);
+
+    const payload = verifySession(refreshToken);
+    if (!payload || payload.type !== 'refresh') return res.sendStatus(401);
+
+    // Verify user still exists and has same roles
+    const userId = parseInt(payload.sub);
+    const roles = await this.authService.getUserRoles(userId);
+
+    // Issue new tokens
+    const newSession: SessionPayload = {
+      sub: payload.sub,
+      email: payload.email,
+      name: payload.name,
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      roles,
+      sid: randomUUID(),
+      type: 'access',
+    };
+
+    const newToken = signAccessToken(newSession);
+    const newRefreshToken = signRefreshToken(newSession);
+
+    const cookieName = process.env.SESSION_COOKIE_NAME || 'thrive_sess';
+    const isProd = process.env.NODE_ENV === 'production';
+
+    res.cookie(cookieName, newToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: isProd,
+      path: '/',
+      maxAge: 1000 * 60 * 30, // 30m
+    });
+
+    res.cookie(refreshCookieName, newRefreshToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: isProd,
+      path: '/',
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    });
+
+    return res.send();
+  }
+
   @Post('register')
   async register(
     @Body('email') email: string,
@@ -136,9 +215,13 @@ export class AuthController {
       lastName: user.lastName,
       roles,
       sid: randomUUID(),
+      type: 'access',
     };
-    const token = signSession(session);
+    const token = signAccessToken(session);
+    const refreshToken = signRefreshToken(session);
     const cookieName = process.env.SESSION_COOKIE_NAME || 'thrive_sess';
+    const refreshCookieName =
+      process.env.REFRESH_COOKIE_NAME || 'thrive_refresh';
     const isProd = process.env.NODE_ENV === 'production';
     res.cookie(cookieName, token, {
       httpOnly: true,
@@ -146,6 +229,13 @@ export class AuthController {
       secure: isProd,
       path: '/',
       maxAge: 1000 * 60 * 30,
+    });
+    res.cookie(refreshCookieName, refreshToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: isProd,
+      path: '/',
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     });
     const redirectBase = process.env.WP_BASE_URL || 'http://localhost:8080';
     return res.status(201).json({ ok: true, redirect: redirectBase + '/' });
@@ -169,9 +259,13 @@ export class AuthController {
       lastName: user.lastName,
       roles,
       sid: randomUUID(),
+      type: 'access',
     };
-    const token = signSession(session);
+    const token = signAccessToken(session);
+    const refreshToken = signRefreshToken(session);
     const cookieName = process.env.SESSION_COOKIE_NAME || 'thrive_sess';
+    const refreshCookieName =
+      process.env.REFRESH_COOKIE_NAME || 'thrive_refresh';
     const isProd = process.env.NODE_ENV === 'production';
     res.cookie(cookieName, token, {
       httpOnly: true,
@@ -180,6 +274,13 @@ export class AuthController {
       path: '/',
       maxAge: 1000 * 60 * 30,
     });
+    res.cookie(refreshCookieName, refreshToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: isProd,
+      path: '/',
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    });
     const redirectBase = process.env.WP_BASE_URL || 'http://localhost:8080';
     return res.json({ ok: true, redirect: redirectBase + '/' });
   }
@@ -187,16 +288,32 @@ export class AuthController {
   @Get('logout')
   logout(@Req() req: Request, @Res() res: Response) {
     const cookieName = process.env.SESSION_COOKIE_NAME || 'thrive_sess';
+    const refreshCookieName =
+      process.env.REFRESH_COOKIE_NAME || 'thrive_refresh';
     const isProd = process.env.NODE_ENV === 'production';
     const redirectBase = process.env.WP_BASE_URL || 'http://localhost:8080';
-    // Clear cookie (some browsers are picky – use both clearCookie & explicit expired cookie)
+    // Clear both cookies
     res.clearCookie(cookieName, {
       httpOnly: true,
       sameSite: 'lax',
       secure: isProd,
       path: '/',
     });
+    res.clearCookie(refreshCookieName, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: isProd,
+      path: '/',
+    });
     res.cookie(cookieName, '', {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: isProd,
+      path: '/',
+      expires: new Date(0),
+      maxAge: 0,
+    });
+    res.cookie(refreshCookieName, '', {
       httpOnly: true,
       sameSite: 'lax',
       secure: isProd,
