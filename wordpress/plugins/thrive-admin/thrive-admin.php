@@ -1,9 +1,17 @@
 <?php
 /**
  * Plugin Name: Thrive Admin
- * Description: A bridge to communicate with the NodeJS API.
+ * Description: A bridge to communicate with the NodeJS API using Vue.js islands architecture.
  * Version: 1.0
  * Author: Gemini
+ *
+ * This plugin uses Vue.js islands architecture for modern frontend development:
+ * - Vue components for interactive UI elements
+ * - PHP for server-side rendering and WordPress integration
+ * - Tailwind CSS for styling
+ * - Hot reloading during development
+ *
+ * See VUE_ISLANDS_README.md for detailed documentation.
  */
 
 if (!defined('ABSPATH')) {

@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* WordPress Admin Integration */
+@layer base {
+  :root {
+    --wp-admin-primary: #007cba;
+    --wp-admin-secondary: #005a87;
+    --wp-admin-accent: #00a0d2;
+    --wp-admin-background: #f1f1f1;
+    --wp-admin-border: #c3c4c7;
+    --wp-admin-text: #1d2327;
+    --wp-admin-text-secondary: #646970;
+  }
+}
+
+@layer components {
+  .wp-admin-card {
+    @apply bg-white border border-gray-300 rounded-lg p-6 shadow-sm transition-shadow duration-200;
+  }
+
+  .wp-admin-card:hover {
+    @apply shadow-md;
+  }
+
+  .wp-admin-button-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200;
+  }
+
+  .wp-admin-button-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors duration-200;
+  }
+
+  .wp-admin-input {
+    @apply border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+  }
+
+  .wp-admin-table {
+    @apply w-full bg-white border border-gray-300 rounded-lg overflow-hidden;
+  }
+
+  .wp-admin-table th {
+    @apply bg-gray-50 border-b border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700;
+  }
+
+  .wp-admin-table td {
+    @apply border-b border-gray-300 px-4 py-3 text-sm text-gray-900;
+  }
+}

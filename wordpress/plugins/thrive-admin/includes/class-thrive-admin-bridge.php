@@ -86,20 +86,10 @@ class Thrive_Admin_Bridge
      */
     public function thrive_admin_get_users($params = [])
     {
-        // Temporarily return mock data to prevent errors
-        // TODO: Re-enable API call once HTTP issues are resolved
-        return [
-            'users' => [],
-            'total' => 0,
-            'totalPages' => 0,
-            'currentPage' => 1,
-            'limit' => isset($params['limit']) ? intval($params['limit']) : 20
-        ];
+        $query_string = http_build_query($params);
+        $endpoint = 'users' . (!empty($query_string) ? '?' . $query_string : '');
 
-        // $query_string = http_build_query($params);
-        // $endpoint = 'users' . (!empty($query_string) ? '?' . $query_string : '');
-
-        // // For GET requests, don't pass data parameter to avoid WordPress HTTP issues
-        // return $this->thrive_admin_call_node_api($endpoint, null, 'GET');
+        // For GET requests, don't pass data parameter to avoid WordPress HTTP issues
+        return $this->thrive_admin_call_node_api($endpoint, null, 'GET');
     }
 }

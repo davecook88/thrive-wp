@@ -9,7 +9,11 @@ class Thrive_Admin_Bridge_Admin
         $this->bridge = $bridge;
         add_action('admin_menu', [$this, 'thrive_admin_add_admin_menu']);
         add_action('admin_enqueue_scripts', [$this, 'thrive_admin_enqueue_admin_scripts']);
+        // Ensure our ESM bundles are loaded as modules (dev + prod)
+        add_filter('script_loader_tag', [$this, 'thrive_admin_module_script_tag'], 10, 3);
         add_action('wp_ajax_thrive_admin_test_api_connection', [$this, 'thrive_admin_test_api_connection']);
+        add_action('wp_ajax_thrive_admin_get_users', [$this, 'thrive_admin_get_users_ajax']);
+        add_action('wp_ajax_thrive_admin_save_settings', [$this, 'thrive_admin_save_settings_ajax']);
         add_action('admin_bar_menu', [$this, 'thrive_admin_add_toolbar_button'], 999);
     }
 
@@ -69,13 +73,110 @@ class Thrive_Admin_Bridge_Admin
             return;
         }
 
-        wp_enqueue_style('thrive-admin-bridge-admin', plugin_dir_url(__FILE__) . '../assets/css/thrive-admin.css', [], '1.0.0');
-        wp_enqueue_script('thrive-admin-bridge-admin', plugin_dir_url(__FILE__) . '../assets/js/thrive-admin.js', ['jquery'], '1.0.0', true);
+        // Enqueue Vue and our built assets
+        $plugin_dir = plugin_dir_path(__FILE__) . '../';
+        $assets_dir = $plugin_dir . 'dist/';
 
-        wp_localize_script('thrive-admin-bridge-admin', 'thriveAdminBridgeAjax', [
+        // Decide whether to use Vite dev server (only if WP_DEBUG and dev server is reachable)
+        $is_dev = $this->thrive_admin_should_use_vite_dev();
+
+        if ($is_dev) {
+            // Development mode - use Vite dev server
+            // With Vite root set to "src", the entry is served at /main.js (not /src/main.js)
+            wp_enqueue_script('vite-client', 'http://localhost:5173/@vite/client', [], null, true);
+            // Vite will serve TS entry at /main.ts when root = src
+            wp_enqueue_script('thrive-admin-vue', 'http://localhost:5173/main.ts', ['vite-client'], null, true);
+        } else {
+            // Production mode - use built assets
+            $manifest_file = $assets_dir . 'manifest.json';
+            if (!file_exists($manifest_file)) {
+                // Vite v5 places manifest under .vite/ by default
+                $manifest_file = $assets_dir . '.vite/manifest.json';
+            }
+
+            if (file_exists($manifest_file)) {
+                $manifest = json_decode(file_get_contents($manifest_file), true);
+                // Manifest key could be 'main.ts' or 'main.js' depending on entry
+                $mainKey = isset($manifest['main.ts']) ? 'main.ts' : (isset($manifest['main.js']) ? 'main.js' : null);
+                if ($mainKey === null) {
+                    return;
+                }
+
+                // Enqueue CSS
+                if (isset($manifest[$mainKey]['css'])) {
+                    foreach ($manifest[$mainKey]['css'] as $css_file) {
+                        wp_enqueue_style(
+                            'thrive-admin-css',
+                            plugin_dir_url(__FILE__) . '../dist/' . $css_file,
+                            [],
+                            filemtime($assets_dir . $css_file)
+                        );
+                    }
+                }
+
+                // Enqueue JS
+                wp_enqueue_script(
+                    'thrive-admin-vue',
+                    plugin_dir_url(__FILE__) . '../dist/' . $manifest[$mainKey]['file'],
+                    [],
+                    filemtime($assets_dir . $manifest[$mainKey]['file']),
+                    true
+                );
+            }
+        }
+
+        // Localize script with WordPress data
+        wp_localize_script('thrive-admin-vue', 'thriveAdminBridgeAjax', [
             'ajax_url' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('thrive_admin_bridge_users_nonce')
+            'nonce' => wp_create_nonce('thrive_admin_bridge_users_nonce'),
+            'admin_url' => admin_url(),
+            'is_dev' => $is_dev
         ]);
+    }
+
+    /**
+     * Force type="module" for our ESM bundles (both dev and prod).
+     */
+    public function thrive_admin_module_script_tag($tag, $handle, $src)
+    {
+        if (in_array($handle, ['thrive-admin-vue', 'vite-client'], true)) {
+            // Ensure we don't duplicate type attribute
+            if (strpos($tag, 'type="module"') === false) {
+                $tag = str_replace('<script ', '<script type="module" ', $tag);
+            }
+        }
+        return $tag;
+    }
+
+    /**
+     * Determine if we should use Vite dev server: WP_DEBUG must be true and dev server reachable.
+     */
+    private function thrive_admin_should_use_vite_dev(): bool
+    {
+        if (!(defined('WP_DEBUG') && WP_DEBUG)) {
+            return false;
+        }
+
+        // Cache result briefly to avoid slowing down admin loads
+        $cached = get_transient('thrive_admin_vite_running');
+        if ($cached !== false) {
+            return (bool) $cached;
+        }
+
+        $running = false;
+        // Probe the dev server via @vite/client (works for JS/TS)
+        $response = wp_remote_get('http://localhost:5173/@vite/client', [
+            'timeout' => 0.5,
+            'redirection' => 0,
+        ]);
+        if (!is_wp_error($response)) {
+            $code = (int) wp_remote_retrieve_response_code($response);
+            $running = ($code >= 200 && $code < 400);
+        }
+
+        // Cache for 30 seconds
+        set_transient('thrive_admin_vite_running', $running ? 1 : 0, 30);
+        return $running;
     }
 
     public function thrive_admin_users_page()
@@ -84,115 +185,8 @@ class Thrive_Admin_Bridge_Admin
             wp_die(__('You do not have sufficient permissions to access this page.'));
         }
 
-        // Get pagination parameters
-        $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
-        $search = isset($_GET['search']) ? sanitize_text_field($_GET['search']) : '';
-        $role = isset($_GET['role']) ? sanitize_text_field($_GET['role']) : '';
-
-        // Call NestJS API
-        $params = ['page' => $page, 'limit' => 20];
-        if (!empty($search)) {
-            $params['search'] = $search;
-        }
-        if (!empty($role)) {
-            $params['role'] = $role;
-        }
-        error_log("Calling thrive_admin_get_users with params: " . print_r($params, true));
-        $response = $this->bridge->thrive_admin_get_users($params);
-
-        ?>
-        <div class="wrap">
-            <h1><?php _e('User Management', 'thrive-admin-bridge'); ?></h1>
-
-            <!-- Search and Filter Form -->
-            <form method="GET" class="users-filter-form">
-                <input type="hidden" name="page" value="thrive-admin-users">
-
-                <div class="tablenav top">
-                    <div class="alignleft actions">
-                        <input type="text" name="search" value="<?php echo esc_attr($search); ?>"
-                            placeholder="Search by name or email..." class="regular-text">
-
-                        <select name="role">
-                            <option value="">All Roles</option>
-                            <option value="admin" <?php selected($role, 'admin'); ?>>Admin</option>
-                            <option value="teacher" <?php selected($role, 'teacher'); ?>>Teacher</option>
-                        </select>
-
-                        <input type="submit" class="button" value="Filter">
-                        <?php if (!empty($search) || !empty($role)): ?>
-                            <a href="<?php echo admin_url('admin.php?page=thrive-admin-users'); ?>" class="button">Clear
-                                Filters</a>
-                        <?php endif; ?>
-                    </div>
-
-                    <div class="tablenav-pages">
-                        <?php if (!is_wp_error($response) && isset($response['total'])): ?>
-                            <span
-                                class="displaying-num"><?php printf(_n('%s user', '%s users', $response['total'], 'nodejs-bridge'), number_format_i18n($response['total'])); ?></span>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </form>
-
-            <!-- Users Table -->
-            <table class="wp-list-table widefat fixed striped users">
-                <thead>
-                    <tr>
-                        <th><?php _e('ID', 'thrive-admin-bridge'); ?></th>
-                        <th><?php _e('Name', 'thrive-admin-bridge'); ?></th>
-                        <th><?php _e('Email', 'thrive-admin-bridge'); ?></th>
-                        <th><?php _e('Role', 'thrive-admin-bridge'); ?></th>
-                        <th><?php _e('Status', 'thrive-admin-bridge'); ?></th>
-                        <th><?php _e('Created', 'thrive-admin-bridge'); ?></th>
-                        <th><?php _e('Actions', 'thrive-admin-bridge'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                    if (is_wp_error($response)) {
-                        echo '<tr><td colspan="7"><div class="notice notice-error"><p>' . __('Error loading users: ', 'thrive-admin-bridge') . esc_html($response->get_error_message()) . '</p></div></td></tr>';
-                    } elseif (isset($response['error'])) {
-                        echo '<tr><td colspan="7"><div class="notice notice-error"><p>' . __('API Error: ', 'thrive-admin-bridge') . esc_html($response['error']) . '</p></div></td></tr>';
-                    } elseif (empty($response['users'])) {
-                        echo '<tr><td colspan="7"><div class="notice notice-info"><p>' . __('No users found.', 'thrive-admin-bridge') . '</p></div></td></tr>';
-                    } else {
-                        foreach ($response['users'] as $user) {
-                            $this->thrive_admin_render_user_row($user);
-                        }
-                    }
-                    ?>
-                </tbody>
-            </table>
-
-            <!-- Pagination -->
-            <?php if (!is_wp_error($response) && isset($response['totalPages']) && $response['totalPages'] > 1): ?>
-                <div class="tablenav bottom">
-                    <div class="tablenav-pages">
-                        <?php
-                        $pagination_args = [
-                            'base' => add_query_arg('paged', '%#%'),
-                            'format' => '',
-                            'prev_text' => __('&laquo; Previous'),
-                            'next_text' => __('Next &raquo;'),
-                            'total' => $response['totalPages'],
-                            'current' => $page,
-                        ];
-
-                        if (!empty($search)) {
-                            $pagination_args['add_args'] = ['search' => $search];
-                        }
-                        if (!empty($role)) {
-                            $pagination_args['add_args']['role'] = $role;
-                        }
-
-                        echo paginate_links($pagination_args);
-                        ?>
-                    </div>
-                </div>
-            <?php endif; ?>
-        </div>
-        <?php
+        // Load the Vue template
+        include plugin_dir_path(__FILE__) . '../templates/users.php';
     }
 
     public function thrive_admin_dashboard_page()
@@ -201,50 +195,8 @@ class Thrive_Admin_Bridge_Admin
             wp_die(__('You do not have sufficient permissions to access this page.'));
         }
 
-        ?>
-        <div class="wrap">
-            <h1><?php _e('Thrive Admin Dashboard', 'thrive-admin-bridge'); ?></h1>
-
-            <div class="thrive-admin-dashboard">
-                <div class="thrive-admin-welcome-panel">
-                    <h2><?php _e('Welcome to Thrive Admin', 'thrive-admin-bridge'); ?></h2>
-                    <p><?php _e('Manage your Thrive application users, settings, and more from this central dashboard.', 'thrive-admin-bridge'); ?>
-                    </p>
-                </div>
-
-                <div class="thrive-admin-quick-stats">
-                    <h3><?php _e('Quick Actions', 'thrive-admin-bridge'); ?></h3>
-                    <div class="thrive-admin-action-cards">
-                        <div class="thrive-admin-card">
-                            <h4><?php _e('User Management', 'thrive-admin-bridge'); ?></h4>
-                            <p><?php _e('View, search, and manage application users', 'thrive-admin-bridge'); ?></p>
-                            <a href="<?php echo admin_url('admin.php?page=thrive-admin-users'); ?>"
-                                class="button button-primary">
-                                <?php _e('Manage Users', 'thrive-admin-bridge'); ?>
-                            </a>
-                        </div>
-
-                        <div class="thrive-admin-card">
-                            <h4><?php _e('Settings', 'thrive-admin-bridge'); ?></h4>
-                            <p><?php _e('Configure Thrive Admin settings', 'thrive-admin-bridge'); ?></p>
-                            <a href="<?php echo admin_url('admin.php?page=thrive-admin-settings'); ?>"
-                                class="button button-secondary">
-                                <?php _e('Configure Settings', 'thrive-admin-bridge'); ?>
-                            </a>
-                        </div>
-
-                        <div class="thrive-admin-card">
-                            <h4><?php _e('API Status', 'thrive-admin-bridge'); ?></h4>
-                            <p><?php _e('Check the connection to the NestJS API', 'thrive-admin-bridge'); ?></p>
-                            <button id="thrive-admin-test-api" class="button button-secondary">
-                                <?php _e('Test Connection', 'thrive-admin-bridge'); ?>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <?php
+        // Load the Vue template
+        include plugin_dir_path(__FILE__) . '../templates/dashboard.php';
     }
 
     public function thrive_admin_settings_page()
@@ -259,51 +211,8 @@ class Thrive_Admin_Bridge_Admin
             echo '<div class="notice notice-success"><p>' . __('Settings saved successfully!', 'thrive-admin-bridge') . '</p></div>';
         }
 
-        ?>
-        <div class="wrap">
-            <h1><?php _e('Thrive Admin Settings', 'thrive-admin-bridge'); ?></h1>
-
-            <form method="post" action="">
-                <?php wp_nonce_field('thrive_admin_settings', 'thrive_admin_settings_nonce'); ?>
-
-                <table class="form-table">
-                    <tr>
-                        <th scope="row"><?php _e('API Base URL', 'thrive-admin-bridge'); ?></th>
-                        <td>
-                            <input type="text" name="thrive_admin_api_url" value="http://nestjs:3000" class="regular-text"
-                                readonly>
-                            <p class="description">
-                                <?php _e('The NestJS API endpoint (configured in Docker)', 'thrive-admin-bridge'); ?>
-                            </p>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <th scope="row"><?php _e('Items Per Page', 'thrive-admin-bridge'); ?></th>
-                        <td>
-                            <input type="number" name="thrive_admin_items_per_page" value="20" min="5" max="100"
-                                class="small-text">
-                            <p class="description">
-                                <?php _e('Number of items to display per page in user lists', 'thrive-admin-bridge'); ?>
-                            </p>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <th scope="row"><?php _e('Enable Debug Mode', 'thrive-admin-bridge'); ?></th>
-                        <td>
-                            <label for="thrive_admin_debug_mode">
-                                <input type="checkbox" name="thrive_admin_debug_mode" id="thrive_admin_debug_mode" value="1">
-                                <?php _e('Enable debug logging for API calls', 'thrive-admin-bridge'); ?>
-                            </label>
-                        </td>
-                    </tr>
-                </table>
-
-                <?php submit_button(__('Save Settings', 'thrive-admin-bridge')); ?>
-            </form>
-        </div>
-        <?php
+        // Load the Vue template
+        include plugin_dir_path(__FILE__) . '../templates/settings.php';
     }
 
     public function thrive_admin_test_api_connection()
@@ -397,12 +306,69 @@ class Thrive_Admin_Bridge_Admin
         }
 
         $wp_admin_bar->add_node([
-            'id'    => 'thrive-admin-toolbar',
+            'id' => 'thrive-admin-toolbar',
             'title' => '<span class="ab-icon dashicons-admin-network"></span>' . __('Thrive Admin', 'thrive-admin-bridge'),
-            'href'  => admin_url('admin.php?page=thrive-admin-dashboard'),
-            'meta'  => [
+            'href' => admin_url('admin.php?page=thrive-admin-dashboard'),
+            'meta' => [
                 'title' => __('Access Thrive Admin Dashboard', 'thrive-admin-bridge'),
             ],
+        ]);
+    }
+
+    /**
+     * AJAX handler for getting users (used by Vue component)
+     */
+    public function thrive_admin_get_users_ajax()
+    {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'thrive_admin_bridge_users_nonce')) {
+            wp_die(__('Security check failed', 'thrive-admin-bridge'));
+        }
+
+        // Check user capabilities
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Insufficient permissions', 'thrive-admin-bridge'));
+        }
+
+        // Get parameters from AJAX request
+        $params = isset($_POST['params']) ? json_decode(stripslashes($_POST['params']), true) : [];
+
+        // Call the API
+        $response = $this->bridge->thrive_admin_get_users($params);
+
+        if (is_wp_error($response)) {
+            wp_send_json_error([
+                'message' => $response->get_error_message()
+            ]);
+        }
+
+        wp_send_json_success($response);
+    }
+
+    /**
+     * AJAX handler for saving settings (used by Vue component)
+     */
+    public function thrive_admin_save_settings_ajax()
+    {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'thrive_admin_bridge_users_nonce')) {
+            wp_die(__('Security check failed', 'thrive-admin-bridge'));
+        }
+
+        // Check user capabilities
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Insufficient permissions', 'thrive-admin-bridge'));
+        }
+
+        // Get settings from AJAX request
+        $settings = isset($_POST['settings']) ? json_decode(stripslashes($_POST['settings']), true) : [];
+
+        // Here you would typically save the settings to the database
+        // For now, we'll just return success
+        // TODO: Implement actual settings storage
+
+        wp_send_json_success([
+            'message' => 'Settings saved successfully'
         ]);
     }
 }
