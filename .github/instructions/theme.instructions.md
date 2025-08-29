@@ -287,3 +287,59 @@ node scripts/test-login-modal.js
 
 CI suggestion: Add this script to a GitHub Action job after `docker-compose up -d` and a short wait for WordPress readiness.
 
+## Role-Based Features & User Context
+
+### ThriveAuthContext Integration
+The theme integrates with NestJS authentication through the `ThriveAuthContext` system. User information including roles is passed from NestJS via HTTP headers and parsed into a strongly-typed PHP object.
+
+### Available Helper Functions
+```php
+// Authentication checks
+thrive_is_logged_in(): bool
+thrive_get_auth_context(): ?ThriveAuthContext
+
+// Role-based checks
+thrive_is_admin(): bool
+thrive_is_teacher(): bool
+thrive_user_has_role(string|ThriveRole $role): bool
+
+// Role access
+thrive_get_user_roles(): ThriveRole[]        // Enum array
+thrive_get_user_role_strings(): string[]     // String array
+```
+
+### Usage Examples
+```php
+<?php if (thrive_is_logged_in()) : ?>
+    <div class="user-welcome">
+        Welcome, <?php echo esc_html(thrive_get_auth_context()->name ?? 'User'); ?>!
+        
+        <?php if (thrive_is_admin()) : ?>
+            <a href="/admin" class="admin-link">Admin Panel</a>
+        <?php endif; ?>
+        
+        <?php if (thrive_is_teacher()) : ?>
+            <a href="/teacher" class="teacher-link">Teacher Dashboard</a>
+        <?php endif; ?>
+    </div>
+<?php else : ?>
+    <a href="/api/auth/google" class="login-link">Sign In</a>
+<?php endif; ?>
+```
+
+### ThriveRole Enum
+The theme uses a strongly-typed enum for role validation:
+```php
+enum ThriveRole: string
+{
+    case ADMIN = 'admin';
+    case TEACHER = 'teacher';
+}
+```
+
+### Security Best Practices
+- Always check authentication server-side, never rely on client-side state
+- Use the provided helper functions instead of direct header access
+- Role checks should be performed in PHP, not JavaScript
+- Sensitive content should be gated server-side using `thrive_user_has_role()`
+

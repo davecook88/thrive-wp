@@ -16,6 +16,7 @@ This app will share the WP MySQL db for now but it should be treated as if it we
 - All datetime fields must be stored as UTC
 - Implement soft deletes where appropriate
 - Design schema to support multi-tenancy patterns for future scaling
+- DB table names MUST be singular
 
 ## Authentication System
 
@@ -70,17 +71,59 @@ This app will share the WP MySQL db for now but it should be treated as if it we
 
 ## User Roles & Permissions
 
+### Current Implementation
+- **Database Tables**: `user`, `admin`, `teacher` with one-to-one relationships
+- **Role Types**: `admin`, `teacher` (defined as string constants)
+- **Role Detection**: Optimized single SQL query in `getUserRoles()` method
+- **Type Safety**: PHP `ThriveRole` enum provides compile-time validation
+
 ### Base Roles
 - **Public**: Can view available classes and pricing
 - **Student**: Can view own records, available classes, enroll, manage bookings
 - **Teacher**: Can manage own availability, view assigned classes and student records, update class materials
 - **Admin**: Full system access, can edit any record, manage disputes, configure system settings
 
-### Permission System
-- Implement granular permission system beyond base roles
-- Permissions should follow resource.action.scope pattern (e.g., 'classes.read.own', 'users.update.related')
-- Teachers can be admins but admins are not necessarily teachers
-- Support for sub-permissions and role combinations
+### Database Schema
+```sql
+-- User table (base accounts)
+CREATE TABLE user (
+  id int PRIMARY KEY AUTO_INCREMENT,
+  email varchar(255) UNIQUE,
+  firstName varchar(255),
+  lastName varchar(255),
+  passwordHash varchar(255) NULL,
+  createdAt datetime,
+  updatedAt datetime,
+  deletedAt datetime NULL
+);
+
+-- Admin table (one-to-one with user)
+CREATE TABLE admin (
+  id int PRIMARY KEY AUTO_INCREMENT,
+  userId int UNIQUE,
+  role varchar(100) DEFAULT 'admin',
+  isActive tinyint DEFAULT 1,
+  FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE
+);
+
+-- Teacher table (one-to-one with user)
+CREATE TABLE teacher (
+  id int PRIMARY KEY AUTO_INCREMENT,
+  userId int UNIQUE,
+  tier smallint DEFAULT 10,
+  bio text NULL,
+  isActive tinyint DEFAULT 1,
+  FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE
+);
+```
+
+### Role Detection Optimization
+The `getUserRoles()` method uses a single SQL query instead of multiple database calls:
+```sql
+SELECT 'admin' as role FROM admin WHERE userId = ? AND isActive = 1
+UNION ALL
+SELECT 'teacher' as role FROM teacher WHERE userId = ? AND isActive = 1
+```
 
 ## Class Management System
 

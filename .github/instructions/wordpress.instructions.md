@@ -3,7 +3,25 @@ applyTo: 'wordpress/**'
 ---
 
 
-## WordPress Layer – Reverse Proxy & Session-Aware Integration
+## WordPress### Provided Helpers
+* `thrive_get_auth_context(): ?ThriveAuthContext` – returns strongly typed context object (email, name, roles, externalId, raw payload).
+* `thrive_is_logged_in(): bool` – true if context exists OR headers present OR fallback session cookie exists.
+* `thrive_user_has_role(string|ThriveRole $role): bool` – check if user has specific role
+* `thrive_is_admin(): bool` – check if user has admin role
+* `thrive_is_teacher(): bool` – check if user has teacher role
+* `thrive_get_user_roles(): ThriveRole[]` – get all user roles as enum array
+* `thrive_get_user_role_strings(): string[]` – get all user roles as string array
+
+### When to Use Each
+| Need | Use |
+| ---- | --- |
+| Just check if user authenticated | `thrive_is_logged_in()` |
+| Display user's name | `$ctx = thrive_get_auth_context(); $ctx?->name` |
+| Check admin role | `thrive_is_admin()` |
+| Check teacher role | `thrive_is_teacher()` |
+| Check custom role | `thrive_user_has_role('custom_role')` |
+| Get all roles | `thrive_get_user_roles()` |
+| Raw identity debugging | `error_log( wp_json_encode( $ctx->toArray() ) );` |verse Proxy & Session-Aware Integration
 
 ### Block-Driven Theme Structure (Editor-First Philosophy)
 
@@ -67,9 +85,31 @@ Example:
 ```php
 <?php if ( function_exists('thrive_is_logged_in') && thrive_is_logged_in() ) : ?>
 	<p>Welcome back, <?php echo esc_html( thrive_get_auth_context()->name ?? 'Learner' ); ?>!</p>
+	
+	<?php if (thrive_is_admin()) : ?>
+		<a href="/admin">Admin Panel</a>
+	<?php endif; ?>
+	
+	<?php if (thrive_is_teacher()) : ?>
+		<a href="/availability">Manage Availability</a>
+	<?php endif; ?>
 <?php else : ?>
 	<a href="/api/auth/google" class="login-link">Sign in</a>
 <?php endif; ?>
+```
+
+### Role-Based Template Logic
+```php
+// Check specific role
+if (thrive_user_has_role('admin')) {
+    // Show admin features
+}
+
+// Check multiple roles
+$userRoles = thrive_get_user_roles();
+if (in_array(ThriveRole::TEACHER, $userRoles)) {
+    // Show teacher features
+}
 ```
 
 ### Front-End JS Considerations
@@ -93,12 +133,12 @@ Example:
 	"id": "uuid-or-external",
 	"email": "user@example.com",
 	"name": "Jane Doe",
-	"roles": ["subscriber"],
+	"roles": ["admin", "teacher"],
 	"iat": 1733770000,
 	"exp": 1733771800
 }
 ```
-Only `email` is strictly required for a valid context object.
+Only `email` is strictly required for a valid context object. The `roles` array contains validated role strings that map to `ThriveRole` enum values.
 
 ### Testing Checklist
 1. Start stack: `make run` (or docker-compose command per README).

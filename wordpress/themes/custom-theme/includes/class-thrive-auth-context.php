@@ -10,7 +10,7 @@ declare(strict_types=1);
  *     "id": "external-identity",    // string
  *     "email": "user@example.com",  // string (required, used for mapping)
  *     "name": "Jane Doe",           // string
- *     "roles": ["subscriber"],      // array<string>
+ *     "roles": ["admin", "teacher"], // array<ThriveRole>
  *     ...additional fields are retained in raw[]
  *   }
  */
@@ -22,7 +22,7 @@ final class ThriveAuthContext
     public string $email;
     /** @var string|null */
     public ?string $name;
-    /** @var string[] */
+    /** @var ThriveRole[] */
     public array $roles;
     /** @var array<string,mixed> */
     public array $raw; // Entire decoded payload (sanitized)
@@ -31,7 +31,7 @@ final class ThriveAuthContext
      * @param string|null $externalId
      * @param string $email
      * @param string|null $name
-     * @param string[] $roles
+     * @param ThriveRole[] $roles
      * @param array<string,mixed> $raw
      */
     private function __construct(?string $externalId, string $email, ?string $name, array $roles, array $raw)
@@ -90,9 +90,9 @@ final class ThriveAuthContext
             if (!is_string($r)) {
                 continue;
             }
-            $san = sanitize_key($r);
-            if ($san !== '' && !in_array($san, $roles, true)) {
-                $roles[] = $san;
+            $roleEnum = ThriveRole::tryFromString($r);
+            if ($roleEnum !== null && !in_array($roleEnum, $roles, true)) {
+                $roles[] = $roleEnum;
             }
         }
 
@@ -152,7 +152,8 @@ final class ThriveAuthContext
         if (!empty($this->roles)) {
             global $wp_roles;
             if ($wp_roles instanceof WP_Roles) {
-                $valid = array_intersect($this->roles, array_keys($wp_roles->roles));
+                $roleStrings = array_map(fn(ThriveRole $role) => $role->value, $this->roles);
+                $valid = array_intersect($roleStrings, array_keys($wp_roles->roles));
                 if (empty($valid)) {
                     $valid = ['subscriber'];
                 }
@@ -177,7 +178,7 @@ final class ThriveAuthContext
             'external_id' => $this->externalId,
             'email' => $this->email,
             'name' => $this->name,
-            'roles' => $this->roles,
+            'roles' => array_map(fn(ThriveRole $role) => $role->value, $this->roles),
             'raw' => $this->raw,
             'user_id' => get_current_user_id() ?: null,
         ];

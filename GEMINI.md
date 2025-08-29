@@ -1,6 +1,51 @@
 # Platform Architecture & Engineering Guide
 
-This document unifies all operational & architectural instructions for the hybrid WordPress + NestJS language learning platform. It merges the contents of the per-layer Copilot instruction files so contributors have a single authoritative reference. Always update this file when behavior, flows, or guarantees change.
+This document unifies all operational#### Business Domain Highlights
+* **User Management**: `user` table with email/password + Google OAuth
+* **Admin System**: `admin` table with role-based access control
+* **Teacher Management**: `teac### Glossary
+| T### Quick Reference Snippets
+
+Check login in PHP:
+```php
+if ( thrive_is_logged_in() ) { /* ... */ }
+```
+
+Role-based checks:
+```php
+if (thrive_is_admin()) {
+    // Show admin features
+}
+if (thrive_is_teacher()) {
+    // Show teacher features  
+}
+if (thrive_user_has_role(ThriveRole::ADMIN)) {
+    // Alternative syntax
+}
+```
+
+Fetch API from WP (server-side):
+```php
+$resp = wp_remote_get('http://nestjs:3000/health');
+```
+
+Client JS POST (cookie auto-sent):
+```js
+fetch('/api/classes', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({})});
+``` |
+|------|------------|
+| Introspection | Server-side validation of session cookie producing identity headers. |
+| ThriveAuthContext | In-memory PHP object built from `X-Auth-Context`. |
+| ThriveRole | PHP enum for type-safe role definitions (`admin`, `teacher`). |
+| Unified Origin | Single base URL for WP + API to simplify cookies & CORS. |
+| Role Detection | Single SQL query to determine user roles from multiple tables. |
+| Upsert | Atomic database operation combining INSERT and UPDATE. |able with tier system (10/20/30...)
+* **Class types**: 1‑to‑1, group (capacity 5 baseline), multi‑session courses
+* **Scheduling**: recurring availability, blackout windows, waitlists
+* **Teacher tiers** (10/20/30 …; extensible gaps e.g. 15/25)
+* **Packages**: bundles of various class credits + materials
+* **Cancellation policy & dispute workflow** (time‑based forfeits)
+* **Materials** (PDF/video/audio/link) with access checksitectural instructions for the hybrid WordPress + NestJS language learning platform. It merges the contents of the per-layer Copilot instruction files so contributors have a single authoritative reference. Always update this file when behavior, flows, or guarantees change.
 
 ---
 ## 1. Core Services & Deployment Model
@@ -61,9 +106,24 @@ The NestJS app is a standalone headless API for multi‑channel consumption (Wor
 #### Google OAuth Env Vars
 `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`, `WP_BASE_URL`.
 
-#### Roles & Permissions (Conceptual)
-* Roles: public, student, teacher, admin.
-* Expand with resource.action.scope style permissions (e.g. `classes.read.own`).
+#### Roles & Permissions (Current Implementation)
+* **Database Tables**: `user`, `admin`, `teacher` (one-to-one relationships)
+* **Role Types**: `admin`, `teacher` (defined in `ThriveRole` enum)
+* **Role Detection**: Single SQL query in `getUserRoles()` method
+* **Type Safety**: PHP `ThriveRole` enum for compile-time validation
+
+#### Current Role System
+| Role | Table | Description |
+|------|-------|-------------|
+| `admin` | `admin` | Full system access, user management |
+| `teacher` | `teacher` | Teaching capabilities, availability management |
+
+#### Role Detection Flow
+1. NestJS `getUserRoles()` executes single UNION query
+2. Roles included in JWT session payload
+3. Passed to WordPress via `X-Auth-Roles` header
+4. PHP parses into `ThriveRole[]` enum array
+5. Templates use `thrive_user_has_role(ThriveRole::ADMIN)`
 
 #### Business Domain Highlights
 * Class types: 1‑to‑1, group (capacity 5 baseline), multi‑session courses.
@@ -121,15 +181,28 @@ WordPress acts purely as the presentation + editorial layer. It does NOT own aut
 ### Helper Functions
 | Helper | Purpose |
 |--------|---------|
-| `thrive_get_auth_context()` | Returns typed context or null |
+| `thrive_get_auth_context()` | Returns typed `ThriveAuthContext` or null |
 | `thrive_is_logged_in()` | Boolean: context/header/cookie present |
 | `thrive_get_auth_context_array()` | Legacy array form for embedding |
+| `thrive_user_has_role($role)` | Check specific role (accepts string or `ThriveRole`) |
+| `thrive_is_admin()` | Boolean: user has admin role |
+| `thrive_is_teacher()` | Boolean: user has teacher role |
+| `thrive_get_user_roles()` | Returns `ThriveRole[]` enum array |
+| `thrive_get_user_role_strings()` | Returns `string[]` for backward compatibility |
 
 Example usage:
 ```php
 if ( thrive_is_logged_in() ) {
     $ctx = thrive_get_auth_context();
     echo 'Hi ' . esc_html($ctx?->name ?? 'Learner');
+    
+    // Role-based features
+    if (thrive_is_admin()) {
+        echo '<a href="/admin">Admin Panel</a>';
+    }
+    if (thrive_is_teacher()) {
+        echo '<a href="/availability">Manage Availability</a>';
+    }
 } else {
     echo '<a href="/api/auth/google">Sign in</a>';
 }
@@ -140,14 +213,34 @@ if ( thrive_is_logged_in() ) {
 * WP never needs session secret.
 * Do not expose sensitive claims to client JS unless minimal + necessary.
 * Guard `X-Auth-Context` size (<= 8KB) – enforced.
+* **Type Safety**: PHP `ThriveRole` enum prevents invalid role values
+* **Database Optimization**: Single SQL query for role detection (not multiple table lookups)
 
 ### Front-End Decisions
 * Server-render gating first. JS can hydrate from `thrive_get_auth_context_array()` only if needed.
 * Logout → `/api/auth/logout` (NestJS) then redirect clears headers next request.
 
-### Testing Checklist
-1. `make run`.
-2. Home page shows Sign in when unauthenticated.
+### Database Schema & Optimizations
+
+#### Current Tables
+| Table | Purpose | Key Fields |
+|-------|---------|------------|
+| `user` | Base user accounts | `id`, `email`, `firstName`, `lastName`, `passwordHash` |
+| `admin` | Administrative users | `userId` (FK), `role`, `isActive` |
+| `teacher` | Teaching staff | `userId` (FK), `tier`, `bio`, `isActive` |
+| `teacher_availability` | Teacher schedules | `teacherId` (FK), availability patterns |
+
+#### Performance Optimizations
+* **Single Query Role Detection**: `getUserRoles()` uses UNION query instead of multiple table lookups
+* **Upsert Operations**: Google OAuth uses atomic create/update operations
+* **Indexed Foreign Keys**: All relationships properly indexed for performance
+* **Soft Deletes**: All tables support soft deletes with `deletedAt` field
+
+#### Migration Strategy
+* TypeORM migrations for schema evolution
+* Idempotent operations (IF NOT EXISTS guards)
+* Foreign key constraints with CASCADE deletes
+* Proper indexing for query performance
 3. Google login → redirected; personalized welcome renders.
 4. Confirm headers appear in Network tab.
 5. Logout removes headers / context.

@@ -163,6 +163,7 @@ add_filter('block_editor_settings_all', 'custom_theme_block_editor_settings', 10
 
 // Strongly typed auth context integration
 require_once get_template_directory() . '/includes/class-thrive-auth-context.php';
+require_once get_template_directory() . '/includes/class-thrive-role.php';
 // Register custom dynamic blocks (metadata based)
 
 // Enqueue built block JS for the editor globally
@@ -242,6 +243,60 @@ function thrive_get_auth_context_array(): ?array
 {
     $ctx = thrive_get_auth_context();
     return $ctx ? $ctx->toArray() : null;
+}
+
+/**
+ * Check if the current user has a specific role.
+ * @param string|ThriveRole $role The role to check for (string or ThriveRole enum)
+ * @return bool
+ */
+function thrive_user_has_role(string|ThriveRole $role): bool
+{
+    $ctx = thrive_get_auth_context();
+    if (!$ctx) {
+        return false;
+    }
+
+    $roleValue = is_string($role) ? $role : $role->value;
+    return in_array($roleValue, array_map(fn(ThriveRole $r) => $r->value, $ctx->roles), true);
+}
+
+/**
+ * Check if the current user is an admin.
+ * @return bool
+ */
+function thrive_is_admin(): bool
+{
+    return thrive_user_has_role(ThriveRole::ADMIN);
+}
+
+/**
+ * Check if the current user is a teacher.
+ * @return bool
+ */
+function thrive_is_teacher(): bool
+{
+    return thrive_user_has_role(ThriveRole::TEACHER);
+}
+
+/**
+ * Get all roles for the current user as ThriveRole enums.
+ * @return ThriveRole[]
+ */
+function thrive_get_user_roles(): array
+{
+    $ctx = thrive_get_auth_context();
+    return $ctx ? $ctx->roles : [];
+}
+
+/**
+ * Get all roles for the current user as strings (for backward compatibility).
+ * @return string[]
+ */
+function thrive_get_user_role_strings(): array
+{
+    $ctx = thrive_get_auth_context();
+    return $ctx ? array_map(fn(ThriveRole $role) => $role->value, $ctx->roles) : [];
 }
 
 // Server-side replacement for template-part 'login-auth' to use PHP logic.
