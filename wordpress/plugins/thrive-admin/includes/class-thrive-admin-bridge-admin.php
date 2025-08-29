@@ -86,11 +86,11 @@ class Thrive_Admin_Bridge_Admin
 
         if ($is_dev) {
             // Development mode - use Vite dev server
-            $vite_port = get_option('thrive_admin_vite_port', 5173);
+            $vite_port = 5173;
             // With Vite root set to "src", the entry is served at /main.js (not /src/main.js)
             wp_enqueue_script('vite-client', "http://localhost:{$vite_port}/@vite/client", [], null, true);
             // Vite will serve TS entry at /main.ts when root = src
-            wp_enqueue_script('thrive-admin-vue', "http://localhost:{$vite_port}/main.ts", ['vite-client'], null, true);
+            wp_enqueue_script('thrive-admin-vue', "http://localhost:{$vite_port}/src/main.ts", ['vite-client'], null, true);
         } else {
             // Production mode - use built assets
             $manifest_file = $assets_dir . 'manifest.json';
@@ -250,9 +250,10 @@ class Thrive_Admin_Bridge_Admin
         $response = $this->bridge->thrive_admin_call_node_api('health', [], 'GET');
 
         if (is_wp_error($response)) {
+            $error_data = $response->get_error_data();
             wp_send_json_error([
                 'message' => 'Connection failed: ' . $response->get_error_message()
-            ]);
+            ], $error_data['status_code'] ?? 500);
         }
 
         // Check if we got a valid response
@@ -358,9 +359,10 @@ class Thrive_Admin_Bridge_Admin
         $response = $this->bridge->thrive_admin_get_users($params);
 
         if (is_wp_error($response)) {
+            $error_data = $response->get_error_data();
             wp_send_json_error([
                 'message' => $response->get_error_message()
-            ]);
+            ], $error_data['status_code'] ?? 500);
         }
 
         wp_send_json_success($response);

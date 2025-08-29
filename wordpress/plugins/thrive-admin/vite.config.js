@@ -11,17 +11,17 @@ export default defineConfig({
       __dirname + "/templates/**/*.php",
     ]),
   ],
-  root: "src",
+  root: ".",
   build: {
-    outDir: "../dist",
+    outDir: "./dist",
     emptyOutDir: true,
     manifest: true, // Generate manifest.json for WordPress
     rollupOptions: {
       input: {
-        main: "./main.ts",
-        dashboard: "./components/Dashboard.vue",
-        users: "./components/Users.vue",
-        settings: "./components/Settings.vue",
+        main: "./src/main.ts",
+        dashboard: "./src/components/Dashboard.vue",
+        users: "./src/components/Users.vue",
+        settings: "./src/components/Settings.vue",
       },
       output: {
         entryFileNames: "js/[name].js",

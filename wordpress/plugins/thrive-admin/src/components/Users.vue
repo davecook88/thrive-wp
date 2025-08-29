@@ -1,5 +1,12 @@
 <template>
   <div class="thrive-admin-users">
+    <Banner v-if="showAdminBanner" message="You are not a Thrive admin" type="error" />
+    <div v-else-if="error" class="text-center py-8">
+      <div class="bg-red-50 border border-red-200 rounded-md p-4">
+        <p class="text-red-800">{{ error }}</p>
+      </div>
+    </div>
+
     <!-- Search and Filter Form -->
     <div class="wp-admin-card mb-6">
       <form @submit.prevent="handleFilter" class="space-y-4">
@@ -49,11 +56,6 @@
         <p class="mt-2 text-gray-600">Loading users...</p>
       </div>
 
-      <div v-else-if="error" class="text-center py-8">
-        <div class="bg-red-50 border border-red-200 rounded-md p-4">
-          <p class="text-red-800">{{ error }}</p>
-        </div>
-      </div>
 
       <div v-else-if="users.length === 0" class="text-center py-8">
         <p class="text-gray-600">No users found.</p>
@@ -148,6 +150,7 @@
 
 <script lang="ts">
 import { defineComponent, computed, onMounted, reactive, ref } from 'vue';
+import Banner from './Banner.vue';
 
 type User = {
   id: number;
@@ -156,13 +159,16 @@ type User = {
   email: string;
   createdAt: string;
   admin?: { isActive: boolean } | null;
-  teacher?: { isActive: boolean; tier: number } | null;
+  teacher?: { isActive: boolean } | null;
 };
 
 export default defineComponent({
   name: 'Users',
+  components: {
+    Banner
+  },
   props: {
-    initialPage: { type: Number, default: 1 },
+    initialPage: { type: [Number, String], default: 1 },
     initialSearch: { type: String, default: '' },
     initialRole: { type: String, default: '' },
   },
@@ -170,12 +176,13 @@ export default defineComponent({
     const users = ref<User[]>([]);
     const total = ref(0);
     const totalPages = ref(0);
-    const currentPage = ref<number>(props.initialPage as number);
+    const currentPage = ref<number>(Number(props.initialPage));
     const loading = ref(false);
     const error = ref<string | null>(null);
+    const showAdminBanner = ref(false);
     const filters = reactive<{ search: string; role: string }>({
-      search: (props.initialSearch as string) || '',
-      role: (props.initialRole as string) || ''
+      search: String(props.initialSearch) || '',
+      role: String(props.initialRole) || ''
     });
 
     const hasFilters = computed(() => !!(filters.search || filters.role));
@@ -190,6 +197,7 @@ export default defineComponent({
     const loadUsers = async () => {
       loading.value = true;
       error.value = null;
+      showAdminBanner.value = false;
       try {
         const params = new URLSearchParams({
           page: String(currentPage.value),
@@ -207,7 +215,26 @@ export default defineComponent({
             params: JSON.stringify(Object.fromEntries(params))
           })
         });
+
+        console.log("response ok", response.ok);
+        
         const result = await response.json();
+        
+        if (!response.ok) {
+          console.log("Response not ok, status:", response.status);
+          // For 401, show admin banner
+          if (response.status === 401) {
+            showAdminBanner.value = true;
+          } else {
+            // For other errors, show the error message
+            error.value = result.data?.message || `Request failed with status ${response.status}`;
+          }
+          users.value = [];
+          total.value = 0;
+          totalPages.value = 0;
+          return;
+        }
+
         if (result.success) {
           users.value = (result.data.users || []) as User[];
           total.value = Number(result.data.total || 0);
@@ -242,6 +269,7 @@ export default defineComponent({
       currentPage,
       loading,
       error,
+      showAdminBanner,
       filters,
       hasFilters,
       visiblePages,

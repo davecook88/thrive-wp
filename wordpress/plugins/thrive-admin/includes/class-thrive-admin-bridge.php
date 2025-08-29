@@ -53,6 +53,7 @@ class Thrive_Admin_Bridge
 
         $args = [
             'method' => $method,
+            'headers' => [],
         ];
 
         // Handle request body based on method
@@ -62,9 +63,7 @@ class Thrive_Admin_Bridge
             // If data is null, we don't set anything
         } elseif ($data !== null && !empty($data)) {
             // For POST, PUT, etc., set the body and content type only if data is provided
-            $args['headers'] = [
-                'Content-Type' => 'application/json',
-            ];
+            $args['headers']['Content-Type'] = 'application/json';
             $args['body'] = json_encode($data);
         }
 
@@ -79,7 +78,24 @@ class Thrive_Admin_Bridge
             return $response;
         }
 
-        return json_decode(wp_remote_retrieve_body($response), true);
+        $status = wp_remote_retrieve_response_code($response);
+        // Return response appropriate to status code
+        if ($status > 299) {
+            $body = wp_remote_retrieve_body($response);
+            $error_data = json_decode($body, true);
+
+            // Try different possible message fields
+            $error_message = $error_data['message'] ??
+                ($error_data['error'] ??
+                    ($error_data['detail'] ?? 'API Error'));
+
+            error_log("NodeJS API Error: " . $status . " - " . $error_message . " - Body: " . $body);
+            return new WP_Error('api_error', $error_message, ['status_code' => $status, 'body' => $body]);
+        }
+
+        $body = wp_remote_retrieve_body($response);
+
+        return json_decode($body, true);
     }
 
     /**

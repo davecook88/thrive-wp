@@ -12,9 +12,14 @@ function createVueIsland<TProps extends Record<string, unknown>>(
 ) {
   const elements = document.querySelectorAll<HTMLElement>(selector);
   elements.forEach((element) => {
+    // Check if already mounted
+    if (element.hasAttribute("data-vue-mounted")) {
+      return;
+    }
     const props = { ...(element.dataset as unknown as TProps) };
     const app = createApp(component as any, props);
     app.mount(element);
+    element.setAttribute("data-vue-mounted", "true");
   });
 }
 
