@@ -5,9 +5,9 @@ import {
   UseGuards,
   BadRequestException,
 } from '@nestjs/common';
-import { UsersService } from './users.service';
-import { AdminGuard } from '../auth/admin.guard';
-import { PaginatedUsersResponseDto } from './dto/user-response.dto';
+import { AdminGuard } from '../auth/admin.guard.js';
+import { PaginatedUsersResponseDto } from './dto/user-response.dto.js';
+import { UsersService } from './users.service.js';
 
 @Controller('users')
 @UseGuards(AdminGuard)

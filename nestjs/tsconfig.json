@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
     "esModuleInterop": true,
     "isolatedModules": true,
     "declaration": true,
@@ -8,7 +8,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
-    "module": "es2020",
+    "module": "nodenext",
     "target": "ES2020",
     "sourceMap": true,
     "outDir": "./dist",
