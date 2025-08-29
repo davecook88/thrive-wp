@@ -4,3 +4,4 @@ dist
 build
 client_secret.json
 wordpress/vendor
+.vite
