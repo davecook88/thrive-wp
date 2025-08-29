@@ -1,7 +1,7 @@
 import { Entity, Column, Index } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity.js';
 
-@Entity('users')
+@Entity('user')
 @Index(['email'], { unique: true })
 export class User extends BaseEntity {
   @Column({

@@ -10,7 +10,7 @@ export class InitialSchema1733770000000 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-      CREATE TABLE IF NOT EXISTS users (
+      CREATE TABLE IF NOT EXISTS user (
         id int NOT NULL AUTO_INCREMENT,
         email varchar(255) NOT NULL COMMENT 'User email address (primary identifier)',
         firstName varchar(255) NOT NULL COMMENT 'User first name',
