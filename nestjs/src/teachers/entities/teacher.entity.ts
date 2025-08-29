@@ -6,9 +6,9 @@ import {
   JoinColumn,
   OneToMany,
 } from 'typeorm';
-import { BaseEntity } from '@/common/entities/base.entity';
-import { User } from '@/users/entities/user.entity';
-import { TeacherAvailability } from '@/teachers/entities/teacher-availability.entity';
+import { BaseEntity } from '../../common/entities/base.entity.js';
+import type { User } from '../../users/entities/user.entity.js';
+import { TeacherAvailability } from './teacher-availability.entity.js';
 
 /**
  * Teacher entity represents extended profile & configuration for a user who can teach.
@@ -21,7 +21,7 @@ export class Teacher extends BaseEntity {
   @Column({ type: 'int', comment: 'FK to users.id (unique 1:1 with users)' })
   userId: number;
 
-  @OneToOne(() => User, { onDelete: 'CASCADE' })
+  @OneToOne('User', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user: User;
 

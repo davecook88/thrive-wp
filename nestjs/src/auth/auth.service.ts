@@ -55,29 +55,27 @@ export class AuthService {
       throw new Error('Google profile missing email');
     }
 
-    // Use upsert to handle both create and update in a single query
-    const firstName = profile.name?.givenName ?? '';
-    const lastName = profile.name?.familyName ?? '';
+    // Check if user already exists
+    let user = await this.usersRepo.findOne({ where: { email } });
 
-    await this.usersRepo.upsert(
-      {
+    if (user) {
+      // Update existing user
+      const dirtyUser = this.checkDirtyGoogleUser(profile, user);
+      if (dirtyUser) {
+        user = await this.usersRepo.save(dirtyUser);
+        this.logger.log(`Updated Google user ${email}`);
+      }
+    } else {
+      // Create new user
+      user = this.usersRepo.create({
         email,
-        firstName,
-        lastName,
-      },
-      {
-        conflictPaths: ['email'],
-        skipUpdateIfNoValuesChanged: true,
-      },
-    );
-
-    // Fetch the user (will exist after upsert)
-    const user = await this.usersRepo.findOne({ where: { email } });
-    if (!user) {
-      throw new Error('Failed to create or find user');
+        firstName: profile.name?.givenName ?? '',
+        lastName: profile.name?.familyName ?? '',
+      });
+      user = await this.usersRepo.save(user);
+      this.logger.log(`Created new Google user ${email}`);
     }
 
-    this.logger.log(`Processed Google user ${email}`);
     return user;
   }
 

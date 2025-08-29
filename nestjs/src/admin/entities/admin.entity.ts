@@ -1,6 +1,6 @@
 import { Entity, Column, Index, OneToOne, JoinColumn } from 'typeorm';
-import { BaseEntity } from '@/common/entities/base.entity';
-import { User } from '@/users/entities/user.entity';
+import { BaseEntity } from '../../common/entities/base.entity.js';
+import type { User } from '../../users/entities/user.entity.js';
 
 /**
  * Admin entity represents administrative users with elevated privileges.
@@ -12,7 +12,7 @@ export class Admin extends BaseEntity {
   @Column({ type: 'int', comment: 'FK to users.id (unique 1:1 with users)' })
   userId: number;
 
-  @OneToOne(() => User, { onDelete: 'CASCADE' })
+  @OneToOne('User', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user: User;
 

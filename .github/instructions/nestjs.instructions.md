@@ -10,6 +10,10 @@ Build an online language school platform using NestJS that provides a headless R
 This app must be totally standalone and able to be deployed separately in the future if required.
 This app will share the WP MySQL db for now but it should be treated as if it were any db.
 
+## Node Setup
+- DO NOT use commonjs. This must use ESM (ECMAScript Modules)
+- I don't want any .js file extensions in import statements
+
 ## Database Requirements
 
 - Use MySQL database with TypeORM for elegant migration management and version control

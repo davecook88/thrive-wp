@@ -1,6 +1,6 @@
-import { Entity, Column, Index, ManyToOne } from 'typeorm';
+import { Entity, Column, Index, ManyToOne, Relation } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity.js';
-import { Teacher } from './teacher.entity.js';
+import type { Teacher } from './teacher.entity.js';
 
 /**
  * Enumeration of availability kinds for teachers.
@@ -22,7 +22,7 @@ export class TeacherAvailability extends BaseEntity {
   @Column({ type: 'int', comment: 'FK to teachers.id' })
   teacherId: number;
 
-  @ManyToOne(() => Teacher, (teacher) => teacher.availability, {
+  @ManyToOne('Teacher', (teacher: Teacher) => teacher.availability, {
     onDelete: 'CASCADE',
   })
   teacher: Teacher;
