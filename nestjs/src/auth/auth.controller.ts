@@ -52,18 +52,19 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  googleCallback(@Req() req: Request, @Res() res: Response) {
+  async googleCallback(@Req() req: Request, @Res() res: Response) {
     const user: any = (req as any).user;
     if (!user) {
       return res.redirect(302, '/?auth=failed');
     }
+    const roles = await this.authService.getUserRoles(user.id);
     const session: SessionPayload = {
       sub: String(user.id),
       email: user.email,
       name: [user.firstName, user.lastName].filter(Boolean).join(' '),
       firstName: user.firstName,
       lastName: user.lastName,
-      roles: [],
+      roles,
       sid: randomUUID(),
     };
     const token = signSession(session);
@@ -126,13 +127,14 @@ export class AuthController {
       lastName,
     );
     // Issue session cookie same as Google flow
+    const roles = await this.authService.getUserRoles(user.id);
     const session: SessionPayload = {
       sub: String(user.id),
       email: user.email,
       name: [user.firstName, user.lastName].filter(Boolean).join(' '),
       firstName: user.firstName,
       lastName: user.lastName,
-      roles: [],
+      roles,
       sid: randomUUID(),
     };
     const token = signSession(session);
@@ -158,13 +160,14 @@ export class AuthController {
     if (!email || !password)
       throw new BadRequestException('Email & password required');
     const user = await this.authService.validateLocal(email, password);
+    const roles = await this.authService.getUserRoles(user.id);
     const session: SessionPayload = {
       sub: String(user.id),
       email: user.email,
       name: [user.firstName, user.lastName].filter(Boolean).join(' '),
       firstName: user.firstName,
       lastName: user.lastName,
-      roles: [],
+      roles,
       sid: randomUUID(),
     };
     const token = signSession(session);
