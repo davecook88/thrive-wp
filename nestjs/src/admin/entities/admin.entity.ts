@@ -1,0 +1,34 @@
+import { Entity, Column, Index, OneToOne, JoinColumn } from 'typeorm';
+import { BaseEntity } from '@/common/entities/base.entity';
+import { User } from '@/users/entities/user.entity';
+
+/**
+ * Admin entity represents administrative users with elevated privileges.
+ * A user may have at most one admin record (one-to-one). Soft deletes supported.
+ */
+@Entity('admin')
+@Index(['userId'], { unique: true })
+export class Admin extends BaseEntity {
+  @Column({ type: 'int', comment: 'FK to users.id (unique 1:1 with users)' })
+  userId: number;
+
+  @OneToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'userId' })
+  user: User;
+
+  @Column({
+    type: 'varchar',
+    length: 100,
+    default: 'admin',
+    comment: 'Admin role/level (admin, super_admin, etc.)',
+  })
+  role: string;
+
+  @Column({
+    type: 'tinyint',
+    width: 1,
+    default: () => '1',
+    comment: 'Whether the admin account is active',
+  })
+  isActive: boolean;
+}

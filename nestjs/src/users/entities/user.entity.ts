@@ -1,5 +1,7 @@
-import { Entity, Column, Index } from 'typeorm';
+import { Entity, Column, Index, OneToOne } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity.js';
+import { Admin } from '../../admin/entities/admin.entity.js';
+import { Teacher } from '../../teachers/entities/teacher.entity.js';
 
 @Entity('user')
 @Index(['email'], { unique: true })
@@ -30,4 +32,10 @@ export class User extends BaseEntity {
     comment: 'BCrypt password hash for local (email/password) auth',
   })
   passwordHash: string | null;
+
+  @OneToOne(() => Admin, (admin) => admin.user, { nullable: true })
+  admin: Admin | null;
+
+  @OneToOne(() => Teacher, (teacher) => teacher.user, { nullable: true })
+  teacher: Teacher | null;
 }
