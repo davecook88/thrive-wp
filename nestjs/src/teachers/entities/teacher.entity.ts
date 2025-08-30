@@ -60,4 +60,10 @@ export class Teacher extends BaseEntity {
     (avail: TeacherAvailability) => avail.teacher,
   )
   availability: TeacherAvailability[];
+
+  @OneToMany('Session', 'teacher')
+  sessions: any[];
+
+  @OneToMany('CourseTeacher', 'teacher')
+  courseTeachers: any[];
 }

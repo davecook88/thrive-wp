@@ -1,4 +1,11 @@
-import { Entity, Column, Index, OneToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  Index,
+  OneToOne,
+  JoinColumn,
+  OneToMany,
+} from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity.js';
 import type { User } from '../../users/entities/user.entity.js';
 
@@ -19,4 +26,13 @@ export class Student extends BaseEntity {
   @OneToOne('User', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
+
+  @OneToMany('Booking', 'student')
+  bookings: any[];
+
+  @OneToMany('CourseEnrollment', 'student')
+  courseEnrollments: any[];
+
+  @OneToMany('Waitlist', 'student')
+  waitlists: any[];
 }
