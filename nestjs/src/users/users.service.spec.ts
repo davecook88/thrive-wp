@@ -1,10 +1,57 @@
+import { jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UsersService } from './users.service';
-import { User } from './entities/user.entity';
-import { Admin } from '../admin/entities/admin.entity';
-import { Teacher } from '../teachers/entities/teacher.entity';
+import { UsersService } from './users.service.js';
+import { User } from './entities/user.entity.js';
+import { Admin } from '../admin/entities/admin.entity.js';
+import { Teacher } from '../teachers/entities/teacher.entity.js';
+
+// Mock entity types for testing
+type MockUser = {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  passwordHash: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date;
+  admin?: MockAdmin | null;
+  teacher?: MockTeacher | null;
+};
+
+type MockAdmin = {
+  id: number;
+  userId: number;
+  role: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date;
+};
+
+type MockTeacher = {
+  id: number;
+  userId: number;
+  tier: number;
+  bio: string | null;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date;
+};
+
+// Loosely-typed query builder mock to avoid TS friction
+type MockQueryBuilder = {
+  leftJoinAndSelect: any;
+  where: any;
+  orderBy: any;
+  skip: any;
+  take: any;
+  andWhere: any;
+  getManyAndCount: any;
+};
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -43,15 +90,17 @@ describe('UsersService', () => {
 
   describe('getUsersPaginated', () => {
     it('should return paginated users with admin and teacher joins', async () => {
-      const mockUser = {
+      const mockUser: MockUser = {
         id: 1,
         email: 'test@example.com',
         firstName: 'John',
         lastName: 'Doe',
+        passwordHash: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         admin: {
           id: 1,
+          userId: 1,
           role: 'admin',
           isActive: true,
           createdAt: new Date(),
@@ -60,14 +109,16 @@ describe('UsersService', () => {
         teacher: null,
       };
 
-      const mockQueryBuilder = {
+      const mockQueryBuilder: MockQueryBuilder = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
-        getManyAndCount: jest.fn().mockResolvedValue([[mockUser], 1]),
+        getManyAndCount: jest.fn(
+          async () => [[mockUser as unknown as User], 1] as [User[], number],
+        ),
       };
 
       jest
@@ -89,14 +140,14 @@ describe('UsersService', () => {
     });
 
     it('should apply search filter', async () => {
-      const mockQueryBuilder = {
+      const mockQueryBuilder: MockQueryBuilder = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
-        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+        getManyAndCount: jest.fn(async () => [[], 0] as [User[], number]),
       };
 
       jest
@@ -116,14 +167,14 @@ describe('UsersService', () => {
     });
 
     it('should apply role filter for admin', async () => {
-      const mockQueryBuilder = {
+      const mockQueryBuilder: MockQueryBuilder = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
-        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+        getManyAndCount: jest.fn(async () => [[], 0] as [User[], number]),
       };
 
       jest
@@ -138,6 +189,200 @@ describe('UsersService', () => {
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         'admin.id IS NOT NULL AND admin.isActive = 1',
+      );
+    });
+  });
+
+  describe('makeUserAdmin', () => {
+    it('should make a user an admin successfully', async () => {
+      const mockUser: MockUser = {
+        id: 1,
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        passwordHash: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: undefined,
+        admin: null,
+        teacher: null,
+      };
+
+      const mockUpdatedUser: MockUser = {
+        ...mockUser,
+        admin: {
+          id: 1,
+          userId: 1,
+          role: 'admin',
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      };
+
+      jest
+        .spyOn(userRepo, 'findOne')
+        .mockResolvedValueOnce(mockUser as unknown as User) // First call for validation
+        .mockResolvedValueOnce(mockUpdatedUser as unknown as User); // Second call for reload
+
+      const mockAdmin: MockAdmin = {
+        id: 1,
+        userId: 1,
+        role: 'admin',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      jest.spyOn(adminRepo, 'create').mockReturnValue(mockAdmin as any);
+      jest.spyOn(adminRepo, 'save').mockResolvedValue(mockAdmin as any);
+
+      const result = await service.makeUserAdmin(1);
+
+      expect(result.email).toBe('test@example.com');
+      expect(result.admin?.role).toBe('admin');
+      expect(adminRepo.create).toHaveBeenCalledWith({
+        userId: 1,
+        role: 'admin',
+        isActive: true,
+      });
+      expect(adminRepo.save).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if user does not exist', async () => {
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue(null);
+
+      await expect(service.makeUserAdmin(999)).rejects.toThrow(
+        'User not found',
+      );
+    });
+
+    it('should throw ConflictException if user is already an admin', async () => {
+      const mockUser: MockUser = {
+        id: 1,
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        passwordHash: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: undefined,
+        admin: {
+          id: 1,
+          userId: 1,
+          role: 'admin',
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        teacher: null,
+      };
+
+      jest
+        .spyOn(userRepo, 'findOne')
+        .mockResolvedValue(mockUser as unknown as User);
+
+      await expect(service.makeUserAdmin(1)).rejects.toThrow(
+        'User is already an admin',
+      );
+    });
+  });
+
+  describe('makeUserTeacher', () => {
+    it('should make a user a teacher successfully', async () => {
+      const mockUser: MockUser = {
+        id: 1,
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        passwordHash: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: undefined,
+        admin: null,
+        teacher: null,
+      };
+
+      const mockUpdatedUser: MockUser = {
+        ...mockUser,
+        teacher: {
+          id: 1,
+          userId: 1,
+          tier: 10,
+          bio: null,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      };
+
+      jest
+        .spyOn(userRepo, 'findOne')
+        .mockResolvedValueOnce(mockUser as unknown as User) // First call for validation
+        .mockResolvedValueOnce(mockUpdatedUser as unknown as User); // Second call for reload
+
+      const mockTeacher: MockTeacher = {
+        id: 1,
+        userId: 1,
+        tier: 10,
+        bio: null,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      jest.spyOn(teacherRepo, 'create').mockReturnValue(mockTeacher as any);
+      jest.spyOn(teacherRepo, 'save').mockResolvedValue(mockTeacher as any);
+
+      const result = await service.makeUserTeacher(1);
+
+      expect(result.email).toBe('test@example.com');
+      expect(result.teacher?.tier).toBe(10);
+      expect(teacherRepo.create).toHaveBeenCalledWith({
+        userId: 1,
+        tier: 10,
+        bio: null,
+        isActive: true,
+      });
+      expect(teacherRepo.save).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if user does not exist', async () => {
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue(null);
+
+      await expect(service.makeUserTeacher(999)).rejects.toThrow(
+        'User not found',
+      );
+    });
+
+    it('should throw ConflictException if user is already a teacher', async () => {
+      const mockUser: MockUser = {
+        id: 1,
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        passwordHash: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: undefined,
+        admin: null,
+        teacher: {
+          id: 1,
+          userId: 1,
+          tier: 10,
+          bio: null,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      };
+
+      jest
+        .spyOn(userRepo, 'findOne')
+        .mockResolvedValue(mockUser as unknown as User);
+
+      await expect(service.makeUserTeacher(1)).rejects.toThrow(
+        'User is already a teacher',
       );
     });
   });

@@ -1,10 +1,11 @@
+import { jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { AuthService } from './auth.service';
-import { User } from '../users/entities/user.entity';
-import { Admin } from '../admin/entities/admin.entity';
-import { Teacher } from '../teachers/entities/teacher.entity';
+import { AuthService } from './auth.service.js';
+import { User } from '../users/entities/user.entity.js';
+import { Admin } from '../admin/entities/admin.entity.js';
+import { Teacher } from '../teachers/entities/teacher.entity.js';
 
 describe('AuthService', () => {
   let service: AuthService;

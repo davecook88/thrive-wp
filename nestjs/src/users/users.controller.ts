@@ -1,12 +1,15 @@
 import {
   Controller,
   Get,
+  Post,
+  Body,
   Query,
   UseGuards,
   BadRequestException,
 } from '@nestjs/common';
 import { AdminGuard } from '../auth/admin.guard.js';
 import { PaginatedUsersResponseDto } from './dto/user-response.dto.js';
+import { MakeAdminDto, MakeTeacherDto } from './dto/admin-actions.dto.js';
 import { UsersService } from './users.service.js';
 
 @Controller('users')
@@ -41,5 +44,15 @@ export class UsersController {
       search,
       role,
     });
+  }
+
+  @Post('make-admin')
+  async makeUserAdmin(@Body() dto: MakeAdminDto) {
+    return this.usersService.makeUserAdmin(dto.userId);
+  }
+
+  @Post('make-teacher')
+  async makeUserTeacher(@Body() dto: MakeTeacherDto) {
+    return this.usersService.makeUserTeacher(dto.userId);
   }
 }
