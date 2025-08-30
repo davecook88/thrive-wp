@@ -1,5 +1,5 @@
 import { getMetadataArgsStorage } from 'typeorm';
-import { Teacher } from './teacher.entity';
+import { Teacher } from './teacher.entity.js';
 
 describe('Teacher Entity', () => {
   it('should be registered with the correct table name', () => {

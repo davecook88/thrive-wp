@@ -8,18 +8,23 @@ import { Student } from '../../students/entities/student.entity.js';
 @Index(['email'], { unique: true })
 export class User extends BaseEntity {
   @Column({
+    name: 'email',
     type: 'varchar',
     length: 255,
     comment: 'User email address (primary identifier)',
   })
   email: string;
+
   @Column({
+    name: 'first_name',
     type: 'varchar',
     length: 255,
     comment: 'User first name',
   })
   firstName: string;
+
   @Column({
+    name: 'last_name',
     type: 'varchar',
     length: 255,
     comment: 'User last name',
@@ -27,6 +32,7 @@ export class User extends BaseEntity {
   lastName: string;
 
   @Column({
+    name: 'password_hash',
     type: 'varchar',
     length: 255,
     nullable: true,

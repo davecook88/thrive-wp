@@ -9,14 +9,19 @@ import type { User } from '../../users/entities/user.entity.js';
 @Entity('admin')
 @Index(['userId'], { unique: true })
 export class Admin extends BaseEntity {
-  @Column({ type: 'int', comment: 'FK to users.id (unique 1:1 with users)' })
+  @Column({
+    name: 'user_id',
+    type: 'int',
+    comment: 'FK to user.id (unique 1:1 with user)',
+  })
   userId: number;
 
   @OneToOne('User', { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'userId' })
+  @JoinColumn({ name: 'user_id' })
   user: User;
 
   @Column({
+    name: 'role',
     type: 'varchar',
     length: 100,
     default: 'admin',
@@ -25,6 +30,7 @@ export class Admin extends BaseEntity {
   role: string;
 
   @Column({
+    name: 'is_active',
     type: 'tinyint',
     width: 1,
     default: () => '1',

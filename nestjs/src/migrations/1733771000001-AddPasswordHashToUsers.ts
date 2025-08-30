@@ -3,9 +3,9 @@ import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';
 export class AddPasswordHashToUsers1733771000001 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.addColumn(
-      'users',
+      'user',
       new TableColumn({
-        name: 'passwordHash',
+        name: 'password_hash',
         type: 'varchar',
         length: '255',
         isNullable: true,
@@ -15,6 +15,6 @@ export class AddPasswordHashToUsers1733771000001 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropColumn('users', 'passwordHash');
+    await queryRunner.dropColumn('user', 'password_hash');
   }
 }

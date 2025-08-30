@@ -9,10 +9,14 @@ import type { User } from '../../users/entities/user.entity.js';
 @Entity('student')
 @Index(['userId'], { unique: true })
 export class Student extends BaseEntity {
-  @Column({ type: 'int', comment: 'FK to user.id (unique 1:1 with user)' })
+  @Column({
+    name: 'user_id',
+    type: 'int',
+    comment: 'FK to user.id (unique 1:1 with user)',
+  })
   userId: number;
 
   @OneToOne('User', { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'userId' })
+  @JoinColumn({ name: 'user_id' })
   user: User;
 }

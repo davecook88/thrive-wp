@@ -19,7 +19,11 @@ export enum TeacherAvailabilityKind {
 @Index(['teacherId', 'kind'])
 @Index(['teacherId', 'weekday', 'startTimeMinutes'])
 export class TeacherAvailability extends BaseEntity {
-  @Column({ type: 'int', comment: 'FK to teachers.id' })
+  @Column({
+    name: 'teacher_id',
+    type: 'int',
+    comment: 'FK to teacher.id',
+  })
   teacherId: number;
 
   @ManyToOne('Teacher', (teacher: Teacher) => teacher.availability, {
@@ -28,6 +32,7 @@ export class TeacherAvailability extends BaseEntity {
   teacher: Teacher;
 
   @Column({
+    name: 'kind',
     type: 'enum',
     enum: TeacherAvailabilityKind,
     comment: 'Type of availability window',
@@ -35,6 +40,7 @@ export class TeacherAvailability extends BaseEntity {
   kind: TeacherAvailabilityKind;
 
   @Column({
+    name: 'weekday',
     type: 'tinyint',
     nullable: true,
     comment: '0=Sunday .. 6=Saturday (only for RECURRING)',
@@ -42,6 +48,7 @@ export class TeacherAvailability extends BaseEntity {
   weekday: number | null;
 
   @Column({
+    name: 'start_time_minutes',
     type: 'smallint',
     unsigned: true,
     nullable: true,
@@ -50,6 +57,7 @@ export class TeacherAvailability extends BaseEntity {
   startTimeMinutes: number | null;
 
   @Column({
+    name: 'end_time_minutes',
     type: 'smallint',
     unsigned: true,
     nullable: true,
@@ -58,6 +66,7 @@ export class TeacherAvailability extends BaseEntity {
   endTimeMinutes: number | null;
 
   @Column({
+    name: 'start_at',
     type: 'datetime',
     precision: 3,
     nullable: true,
@@ -66,6 +75,7 @@ export class TeacherAvailability extends BaseEntity {
   startAt: Date | null;
 
   @Column({
+    name: 'end_at',
     type: 'datetime',
     precision: 3,
     nullable: true,
@@ -74,6 +84,7 @@ export class TeacherAvailability extends BaseEntity {
   endAt: Date | null;
 
   @Column({
+    name: 'is_active',
     type: 'tinyint',
     width: 1,
     default: () => '1',

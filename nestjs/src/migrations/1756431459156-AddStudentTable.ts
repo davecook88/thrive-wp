@@ -12,13 +12,13 @@ export class AddStudentTable1756431459156 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS student (
         id int NOT NULL AUTO_INCREMENT,
-        userId int NOT NULL COMMENT 'FK to user.id (unique 1:1 with user)',
-        createdAt datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT 'Record creation timestamp in UTC',
-        updatedAt datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT 'Record last update timestamp in UTC',
-        deletedAt datetime(3) NULL COMMENT 'Soft delete timestamp in UTC',
+        user_id int NOT NULL COMMENT 'FK to user.id (unique 1:1 with user)',
+        created_at datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT 'Record creation timestamp in UTC',
+        updated_at datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT 'Record last update timestamp in UTC',
+        deleted_at datetime(3) NULL COMMENT 'Soft delete timestamp in UTC',
         PRIMARY KEY (id),
-        UNIQUE KEY IDX_student_userId_unique (userId),
-        CONSTRAINT FK_student_userId FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE
+        UNIQUE KEY IDX_student_user_id_unique (user_id),
+        CONSTRAINT FK_student_user_id FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
@@ -28,8 +28,8 @@ export class AddStudentTable1756431459156 implements MigrationInterface {
       AFTER INSERT ON user
       FOR EACH ROW
       BEGIN
-        INSERT INTO student (userId, createdAt, updatedAt)
-        VALUES (NEW.id, NEW.createdAt, NEW.createdAt);
+        INSERT INTO student (user_id, created_at, updated_at)
+        VALUES (NEW.id, NEW.created_at, NEW.created_at);
       END;
     `);
   }

@@ -18,14 +18,19 @@ import { TeacherAvailability } from './teacher-availability.entity.js';
 @Index(['userId'], { unique: true })
 @Index(['tier'])
 export class Teacher extends BaseEntity {
-  @Column({ type: 'int', comment: 'FK to users.id (unique 1:1 with users)' })
+  @Column({
+    name: 'user_id',
+    type: 'int',
+    comment: 'FK to user.id (unique 1:1 with user)',
+  })
   userId: number;
 
   @OneToOne('User', { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'userId' })
+  @JoinColumn({ name: 'user_id' })
   user: User;
 
   @Column({
+    name: 'tier',
     type: 'smallint',
     unsigned: true,
     default: 10,
@@ -34,6 +39,7 @@ export class Teacher extends BaseEntity {
   tier: number;
 
   @Column({
+    name: 'bio',
     type: 'text',
     nullable: true,
     comment: 'Public biography / profile information',
@@ -41,6 +47,7 @@ export class Teacher extends BaseEntity {
   bio: string | null;
 
   @Column({
+    name: 'is_active',
     type: 'tinyint',
     width: 1,
     default: () => '1',
