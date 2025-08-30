@@ -2,6 +2,7 @@ import { Entity, Column, Index, OneToOne } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity.js';
 import { Admin } from '../../admin/entities/admin.entity.js';
 import { Teacher } from '../../teachers/entities/teacher.entity.js';
+import { Student } from '../../students/entities/student.entity.js';
 
 @Entity('user')
 @Index(['email'], { unique: true })
@@ -38,4 +39,7 @@ export class User extends BaseEntity {
 
   @OneToOne(() => Teacher, (teacher) => teacher.user, { nullable: true })
   teacher: Teacher | null;
+
+  @OneToOne(() => Student, (student) => student.user, { nullable: true })
+  student: Student | null;
 }

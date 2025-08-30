@@ -8,6 +8,7 @@ import { AppService } from './app.service.js';
 import { AuthModule } from './auth/auth.module.js';
 import configuration, { DatabaseConfig } from './config/configuration.js';
 import { UsersModule } from './users/users.module.js';
+import { StudentsModule } from './students/students.module.js';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { UsersModule } from './users/users.module.js';
     }),
     AuthModule,
     UsersModule,
+    StudentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

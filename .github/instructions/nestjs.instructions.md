@@ -12,7 +12,6 @@ This app will share the WP MySQL db for now but it should be treated as if it we
 
 ## Node Setup
 - DO NOT use commonjs. This must use ESM (ECMAScript Modules)
-- I don't want any .js file extensions in import statements
 
 ## Database Requirements
 
