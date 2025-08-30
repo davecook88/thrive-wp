@@ -102,6 +102,47 @@ export function useUsers(options: UseUsersOptions = {}) {
 
   const refresh = () => loadUsers();
 
+  // User management methods
+  const promoteToAdmin = async (userId: number) => {
+    try {
+      await UsersApiService.promoteToAdmin(userId);
+      await refresh(); // Refresh the list to show updated roles
+    } catch (err: any) {
+      console.error("Error promoting user to admin:", err);
+      throw err;
+    }
+  };
+
+  const demoteFromAdmin = async (userId: number) => {
+    try {
+      await UsersApiService.demoteFromAdmin(userId);
+      await refresh(); // Refresh the list to show updated roles
+    } catch (err: any) {
+      console.error("Error demoting user from admin:", err);
+      throw err;
+    }
+  };
+
+  const promoteToTeacher = async (userId: number, tier: number = 10) => {
+    try {
+      await UsersApiService.promoteToTeacher(userId, tier);
+      await refresh(); // Refresh the list to show updated roles
+    } catch (err: any) {
+      console.error("Error promoting user to teacher:", err);
+      throw err;
+    }
+  };
+
+  const updateTeacherTier = async (userId: number, tier: number) => {
+    try {
+      await UsersApiService.updateTeacherTier(userId, tier);
+      await refresh(); // Refresh the list to show updated roles
+    } catch (err: any) {
+      console.error("Error updating teacher tier:", err);
+      throw err;
+    }
+  };
+
   // User utility methods
   const getUserName = (user: UserResponse) => UserUtils.getDisplayName(user);
   const getUserRole = (user: UserResponse) => UserUtils.getRoleDisplay(user);
@@ -128,6 +169,10 @@ export function useUsers(options: UseUsersOptions = {}) {
     clearFilters,
     changePage,
     refresh,
+    promoteToAdmin,
+    demoteFromAdmin,
+    promoteToTeacher,
+    updateTeacherTier,
 
     // Utilities
     getUserName,
