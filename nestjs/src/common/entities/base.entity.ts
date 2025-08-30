@@ -15,6 +15,7 @@ export abstract class BaseEntity extends TypeOrmBaseEntity {
   id: number;
 
   @CreateDateColumn({
+    name: 'created_at',
     type: 'datetime',
     precision: 3,
     comment: 'Record creation timestamp in UTC',
@@ -22,6 +23,7 @@ export abstract class BaseEntity extends TypeOrmBaseEntity {
   createdAt: Date;
 
   @UpdateDateColumn({
+    name: 'updated_at',
     type: 'datetime',
     precision: 3,
     comment: 'Record last update timestamp in UTC',
@@ -29,6 +31,7 @@ export abstract class BaseEntity extends TypeOrmBaseEntity {
   updatedAt: Date;
 
   @DeleteDateColumn({
+    name: 'deleted_at',
     type: 'datetime',
     precision: 3,
     nullable: true,
