@@ -1,4 +1,12 @@
-import { Entity, Column, Index, ManyToOne, OneToMany, Relation } from 'typeorm';
+import {
+  Entity,
+  Column,
+  Index,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+  Relation,
+} from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity.js';
 import type { Teacher } from './teacher.entity.js';
 
@@ -15,9 +23,9 @@ export enum TeacherAvailabilityKind {
 }
 
 @Entity('teacher_availability')
-@Index(['teacherId'])
-@Index(['teacherId', 'kind'])
-@Index(['teacherId', 'weekday', 'startTimeMinutes'])
+@Index(['teacher_id'], { unique: false })
+@Index(['teacher_id', 'kind'], { unique: false })
+@Index(['teacher_id', 'weekday', 'startTimeMinutes'], { unique: false })
 export class TeacherAvailability extends BaseEntity {
   @Column({
     name: 'teacher_id',
@@ -29,6 +37,7 @@ export class TeacherAvailability extends BaseEntity {
   @ManyToOne('Teacher', (teacher: Teacher) => teacher.availability, {
     onDelete: 'CASCADE',
   })
+  @JoinColumn({ name: 'teacher_id' })
   teacher: Teacher;
 
   @Column({

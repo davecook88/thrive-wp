@@ -112,6 +112,11 @@ registerBlockType<BlockAttributes>("custom-theme/teacher-availability", {
           </div>
           <div style={{ color: "#64748b", fontStyle: "italic" }}>
             Interactive availability management will appear here when published.
+            <br />
+            <small>
+              Features: Weekly rules, date exceptions, calendar preview, and API
+              integration.
+            </small>
           </div>
         </div>
       </>

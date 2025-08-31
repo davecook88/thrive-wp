@@ -13,7 +13,23 @@ import {
 import {
   UpdateAvailabilityDto,
   PreviewAvailabilityDto,
+  AvailabilityRuleDto,
 } from './dto/availability.dto.js';
+
+interface AvailabilityRule {
+  id: number;
+  weekday: number;
+  startTime: string;
+  endTime: string;
+}
+
+interface AvailabilityException {
+  id: number;
+  date: string;
+  startTime?: string;
+  endTime?: string;
+  isBlackout: boolean;
+}
 
 @Injectable()
 export class TeachersService {
@@ -27,7 +43,7 @@ export class TeachersService {
 
   async getTeacherAvailability(teacherId: number) {
     const teacher = await this.teacherRepository.findOne({
-      where: { id: teacherId },
+      where: { userId: teacherId },
     });
 
     if (!teacher) {
@@ -35,18 +51,18 @@ export class TeachersService {
     }
 
     const availabilities = await this.availabilityRepository.find({
-      where: { teacherId, isActive: true },
+      where: { teacherId: teacher.id, isActive: true },
       order: { createdAt: 'ASC' },
     });
 
-    const rules: any[] = [];
-    const exceptions: any[] = [];
+    const rules: AvailabilityRule[] = [];
+    const exceptions: AvailabilityException[] = [];
 
     for (const avail of availabilities) {
       if (avail.kind === TeacherAvailabilityKind.RECURRING) {
         rules.push({
           id: avail.id,
-          weekday: avail.weekday,
+          weekday: avail.weekday!,
           startTime: this.minutesToTimeString(avail.startTimeMinutes!),
           endTime: this.minutesToTimeString(avail.endTimeMinutes!),
         });
@@ -71,7 +87,7 @@ export class TeachersService {
     dto: UpdateAvailabilityDto,
   ) {
     const teacher = await this.teacherRepository.findOne({
-      where: { id: teacherId },
+      where: { userId: teacherId },
     });
 
     if (!teacher) {
@@ -86,7 +102,7 @@ export class TeachersService {
       // Deactivate existing availability
       await manager.update(
         TeacherAvailability,
-        { teacherId, isActive: true },
+        { teacher_id: teacher.id, isActive: true },
         { isActive: false },
       );
 
@@ -100,7 +116,7 @@ export class TeachersService {
         }
 
         await manager.save(TeacherAvailability, {
-          teacherId,
+          teacherId: teacher.id,
           kind: TeacherAvailabilityKind.RECURRING,
           weekday: rule.weekday,
           startTimeMinutes: startMinutes,
@@ -121,7 +137,7 @@ export class TeachersService {
             : new Date(`${exception.date}T23:59:59.999Z`);
 
           await manager.save(TeacherAvailability, {
-            teacherId,
+            teacher_id: teacher.id,
             kind: TeacherAvailabilityKind.BLACKOUT,
             startAt,
             endAt,
@@ -139,7 +155,7 @@ export class TeachersService {
     dto: PreviewAvailabilityDto,
   ) {
     const teacher = await this.teacherRepository.findOne({
-      where: { id: teacherId },
+      where: { userId: teacherId },
     });
 
     if (!teacher) {
@@ -157,7 +173,7 @@ export class TeachersService {
     }
 
     const availabilities = await this.availabilityRepository.find({
-      where: { teacherId, isActive: true },
+      where: { teacherId: teacher.id, isActive: true },
     });
 
     const windows: { start: string; end: string }[] = [];
@@ -232,8 +248,8 @@ export class TeachersService {
     return windows.sort((a, b) => a.start.localeCompare(b.start));
   }
 
-  private validateRules(rules: any[]) {
-    const byWeekday: Record<number, any[]> = {};
+  private validateRules(rules: AvailabilityRuleDto[]) {
+    const byWeekday: Record<number, AvailabilityRuleDto[]> = {};
 
     for (const rule of rules) {
       if (!byWeekday[rule.weekday]) {
@@ -244,7 +260,7 @@ export class TeachersService {
 
     for (const weekdayRules of Object.values(byWeekday)) {
       // Sort by start time
-      weekdayRules.sort((a: any, b: any) =>
+      weekdayRules.sort((a: AvailabilityRuleDto, b: AvailabilityRuleDto) =>
         a.startTime.localeCompare(b.startTime),
       );
 

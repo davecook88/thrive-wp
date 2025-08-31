@@ -20,16 +20,26 @@ $wrapper_attributes = get_block_wrapper_attributes([
 ?>
 
 <div <?php echo $wrapper_attributes; ?>>
-    <div
-        style="background: <?php echo esc_attr($accent_color); ?>20; border: 2px solid <?php echo esc_attr($accent_color); ?>; border-radius: 8px; padding: 20px; margin: 20px 0;">
-        <h3 style="color: <?php echo esc_attr($accent_color); ?>; margin-top: 0;">
-            <?php echo esc_html($heading); ?>
-        </h3>
-        <p style="margin-bottom: 0; color: #666;">
-            <?php echo esc_html($help_text); ?>
-        </p>
-        <small style="color: #999;">
-            Preview weeks: <?php echo esc_html($show_preview_weeks); ?>
-        </small>
-    </div>
+    <?php if (!function_exists('thrive_is_logged_in') || !thrive_is_logged_in()): ?>
+        <!-- Not logged in -->
+        <div style="text-align: center; padding: 2rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <h3 style="color: #64748b; margin-bottom: 1rem;">Sign In Required</h3>
+            <p style="color: #64748b; margin-bottom: 1.5rem;">Please sign in to manage your availability.</p>
+            <a href="/api/auth/google"
+                style="background: <?php echo esc_attr($accent_color); ?>; color: white; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 6px; display: inline-block;">Sign
+                In with Google</a>
+        </div>
+    <?php elseif (!function_exists('thrive_is_teacher') || !thrive_is_teacher()): ?>
+        <!-- Logged in but not a teacher -->
+        <div style="text-align: center; padding: 2rem; background: #fef3c7; border-radius: 8px; border: 1px solid #f59e0b;">
+            <h3 style="color: #92400e; margin-bottom: 1rem;">Teacher Access Required</h3>
+            <p style="color: #92400e; margin-bottom: 0;">This page is only available to teachers. If you believe this is an
+                error, please contact an administrator.</p>
+        </div>
+    <?php else: ?>
+        <!-- Teacher is logged in - render React component -->
+        <div id="teacher-availability-root" data-heading="<?php echo esc_attr($heading); ?>"
+            data-help-text="<?php echo esc_attr($help_text); ?>" data-accent-color="<?php echo esc_attr($accent_color); ?>"
+            data-show-preview-weeks="<?php echo esc_attr($show_preview_weeks); ?>"></div>
+    <?php endif; ?>
 </div>

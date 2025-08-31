@@ -32,5 +32,6 @@
         }
     },
     "editorScript": "custom-theme-blocks",
+    "viewScript": "custom-theme-blocks-view",
     "render": "./render.php"
 }
