@@ -5,3 +5,6 @@ build
 client_secret.json
 wordpress/vendor
 .vite
+_logs_nginx
+_logs_wp
+.playwright-mcp
