@@ -1,9 +1,19 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Teacher } from './entities/teacher.entity.js';
-import { TeacherAvailability, TeacherAvailabilityKind } from './entities/teacher-availability.entity.js';
-import { UpdateAvailabilityDto, PreviewAvailabilityDto } from './dto/availability.dto.js';
+import {
+  TeacherAvailability,
+  TeacherAvailabilityKind,
+} from './entities/teacher-availability.entity.js';
+import {
+  UpdateAvailabilityDto,
+  PreviewAvailabilityDto,
+} from './dto/availability.dto.js';
 
 @Injectable()
 export class TeachersService {
@@ -44,7 +54,9 @@ export class TeachersService {
         exceptions.push({
           id: avail.id,
           date: avail.startAt!.toISOString().split('T')[0],
-          startTime: avail.startAt ? this.dateToTimeString(avail.startAt) : undefined,
+          startTime: avail.startAt
+            ? this.dateToTimeString(avail.startAt)
+            : undefined,
           endTime: avail.endAt ? this.dateToTimeString(avail.endAt) : undefined,
           isBlackout: true,
         });
@@ -54,7 +66,10 @@ export class TeachersService {
     return { rules, exceptions };
   }
 
-  async updateTeacherAvailability(teacherId: number, dto: UpdateAvailabilityDto) {
+  async updateTeacherAvailability(
+    teacherId: number,
+    dto: UpdateAvailabilityDto,
+  ) {
     const teacher = await this.teacherRepository.findOne({
       where: { id: teacherId },
     });
@@ -72,7 +87,7 @@ export class TeachersService {
       await manager.update(
         TeacherAvailability,
         { teacherId, isActive: true },
-        { isActive: false }
+        { isActive: false },
       );
 
       // Insert new rules
@@ -119,7 +134,10 @@ export class TeachersService {
     return this.getTeacherAvailability(teacherId);
   }
 
-  async previewTeacherAvailability(teacherId: number, dto: PreviewAvailabilityDto) {
+  async previewTeacherAvailability(
+    teacherId: number,
+    dto: PreviewAvailabilityDto,
+  ) {
     const teacher = await this.teacherRepository.findOne({
       where: { id: teacherId },
     });
@@ -147,7 +165,10 @@ export class TeachersService {
     // Process each day in the range
     const currentDate = new Date(startDate);
     while (currentDate <= endDate) {
-      const dayWindows = this.expandDayAvailability(currentDate, availabilities);
+      const dayWindows = this.expandDayAvailability(
+        currentDate,
+        availabilities,
+      );
       windows.push(...dayWindows);
       currentDate.setDate(currentDate.getDate() + 1);
     }
@@ -164,7 +185,8 @@ export class TeachersService {
     // Get recurring rules for this weekday (0=Sunday, 6=Saturday)
     const weekday = date.getDay();
     const rules = availabilities.filter(
-      (a) => a.kind === TeacherAvailabilityKind.RECURRING && a.weekday === weekday
+      (a) =>
+        a.kind === TeacherAvailabilityKind.RECURRING && a.weekday === weekday,
     );
 
     // Get blackouts for this date
@@ -173,7 +195,7 @@ export class TeachersService {
         a.kind === TeacherAvailabilityKind.BLACKOUT &&
         a.startAt &&
         a.endAt &&
-        this.isSameDay(a.startAt, date)
+        this.isSameDay(a.startAt, date),
     );
 
     for (const rule of rules) {
@@ -185,8 +207,12 @@ export class TeachersService {
       const month = date.getMonth();
       const day = date.getDate();
 
-      const startUTC = new Date(Date.UTC(year, month, day, ...this.parseTime(startTime)));
-      const endUTC = new Date(Date.UTC(year, month, day, ...this.parseTime(endTime)));
+      const startUTC = new Date(
+        Date.UTC(year, month, day, ...this.parseTime(startTime)),
+      );
+      const endUTC = new Date(
+        Date.UTC(year, month, day, ...this.parseTime(endTime)),
+      );
 
       // Check if this window overlaps with any blackout
       const overlapsBlackout = blackouts.some((blackout) => {
@@ -218,23 +244,29 @@ export class TeachersService {
 
     for (const weekdayRules of Object.values(byWeekday)) {
       // Sort by start time
-      weekdayRules.sort((a: any, b: any) => a.startTime.localeCompare(b.startTime));
+      weekdayRules.sort((a: any, b: any) =>
+        a.startTime.localeCompare(b.startTime),
+      );
 
       for (let i = 0; i < weekdayRules.length - 1; i++) {
         const current = weekdayRules[i];
         const next = weekdayRules[i + 1];
 
         if (current.endTime > next.startTime) {
-          throw new BadRequestException(`Overlapping rules for weekday ${current.weekday}`);
+          throw new BadRequestException(
+            `Overlapping rules for weekday ${current.weekday}`,
+          );
         }
       }
     }
   }
 
   private isSameDay(date1: Date, date2: Date): boolean {
-    return date1.getFullYear() === date2.getFullYear() &&
-           date1.getMonth() === date2.getMonth() &&
-           date1.getDate() === date2.getDate();
+    return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate()
+    );
   }
 
   private parseTime(time: string): [number, number, number, number] {

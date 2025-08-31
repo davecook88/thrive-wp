@@ -1,4 +1,13 @@
-import { IsEnum, IsInt, IsOptional, IsString, Min, Max, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+  Max,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { TeacherAvailabilityKind } from '../entities/teacher-availability.entity.js';
 

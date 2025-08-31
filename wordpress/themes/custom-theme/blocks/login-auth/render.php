@@ -15,7 +15,6 @@ if (!defined('ABSPATH')) {
 
 // Get the authentication context from the Thrive platform.
 $ctx = function_exists('thrive_get_auth_context') ? thrive_get_auth_context() : null;
-error_log("Authentication context: " . print_r($ctx, true));
 $is_logged_in = $ctx !== null;
 
 // Prepare URLs for the auth actions.

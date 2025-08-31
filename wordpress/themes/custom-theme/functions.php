@@ -41,6 +41,8 @@ function custom_theme_scripts()
     // Optional: enqueue the calendar web component bundle (served by Nginx)
     // When not built yet, this will 404 harmlessly in dev.
     $calendar_bundle = home_url('/assets/calendar/thrive-calendar.js');
+
+    // Load thrive-calendar as an ES module
     wp_enqueue_script(
         'thrive-calendar-wc',
         $calendar_bundle,
@@ -48,6 +50,14 @@ function custom_theme_scripts()
         null,
         true
     );
+
+    // Add type="module" attribute to make it load as an ES module
+    add_filter('script_loader_tag', function ($tag, $handle, $src) {
+        if ($handle === 'thrive-calendar-wc') {
+            $tag = '<script type="module" src="' . esc_url($src) . '"></script>';
+        }
+        return $tag;
+    }, 10, 3);
 }
 add_action('wp_enqueue_scripts', 'custom_theme_scripts');
 
@@ -239,9 +249,7 @@ function thrive_hydrate_user_from_proxy(): void
 {
     // Parse header into context only (no WP user creation / mapping)
     $rawHeader = $_SERVER['HTTP_X_AUTH_CONTEXT'] ?? '';
-    error_log(message: "Raw auth context header: $rawHeader");
     $ctx = ThriveAuthContext::fromJson($rawHeader);
-    error_log("Parsed auth context: " . print_r($ctx, true));
     if ($ctx !== null) {
         $GLOBALS['thrive_auth_context'] = $ctx;
     }

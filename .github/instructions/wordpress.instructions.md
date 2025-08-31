@@ -3,7 +3,126 @@ applyTo: 'wordpress/**'
 ---
 
 
-## WordPress### Provided Helpers
+## WordPress
+
+### Custom Block Development Guidelines
+
+**CRITICAL: File-Based vs Callback-Based Rendering**
+
+WordPress blocks can be rendered in two### Contributor DO / DON'T
+DO: Add new PHP conditionals using `thrive_is_logged_in()`.
+DO: Keep auth state server-driven.
+DON'T: Call `is_user_logged_in()` for proxy sessions.
+DON'T: Store sensitive auth data in client-readable cookies or localStorage.
+
+---
+
+## Block Development Best Practices
+
+### Block Registration
+Use the automated registration in `functions.php`:
+```php
+// Register all block.json files in /blocks subfolders
+add_action('init', function () {
+    $blocks_dir = get_template_directory() . '/blocks';
+    foreach (glob($blocks_dir . '/*/block.json') as $block_json) {
+        register_block_type(dirname($block_json));
+    }
+});
+```
+
+### File Structure
+```
+/blocks/
+  /my-block/
+    block.json      # Block metadata and attributes
+    index.tsx       # Editor component (React/JSX)
+    render.php      # Server-side render template
+```
+
+### Block Registration Debugging
+If a block isn't appearing:
+1. Check `block.json` syntax (valid JSON)
+2. Verify block name matches directory name
+3. Ensure `render` path is correct: `"render": "./render.php"`
+4. Check WordPress error logs for registration errors
+
+### Render File Best Practices
+```php
+<?php
+/**
+ * Server render for My Block.
+ *
+ * @param array    $attributes Block attributes.
+ * @param string   $content    Block default content.
+ * @param WP_Block $block      Block instance.
+ */
+
+// Get attributes with fallbacks
+$heading = $attributes['heading'] ?? 'Default Heading';
+$color = $attributes['color'] ?? '#000000';
+
+// Generate wrapper attributes (includes CSS classes, etc.)
+$wrapper_attributes = get_block_wrapper_attributes([
+    'class' => 'my-custom-block'
+]);
+?>
+
+<div <?php echo $wrapper_attributes; ?>>
+    <h3 style="color: <?php echo esc_attr($color); ?>;">
+        <?php echo esc_html($heading); ?>
+    </h3>
+</div>
+```
+
+**Critical:** Always use `echo` in render.php files, never `return`.
+
+### Common Block Issues & Solutions
+
+| Problem | Symptoms | Solution |
+|---------|----------|----------|
+| Block not rendering | Editor shows block, frontend is empty | Use `echo` not `return` in render.php |
+| Block not in inserter | Can't find block when adding | Check block.json syntax and registration |
+| Attributes not working | Default values always used | Verify attribute names match exactly |
+| Styling not applied | Block appears unstyled | Check CSS class names and wrapper attributes |
+| JS errors in editor | Block editor crashes/errors | Check React/JSX syntax in index.tsx |
+
+### Debugging Steps
+1. **Check registration:** Add `error_log()` in the registration loop
+2. **Verify render execution:** Add `error_log()` at top of render.php
+3. **Test output method:** Try callback-based rendering vs file-based
+4. **Inspect HTML:** Use browser dev tools to see if content appears in DOM
+5. **Check logs:** Look for PHP errors in WordPress debug logs
+
+---
+This document is the authoritative reference for WordPress-side behavior in the hybrid auth model. Keep it updated alongside any Nginx or NestJS auth pipeline changes.nd the output method differs:
+
+1. **File-Based Rendering** (`"render": "./render.php"` in block.json):
+   ```php
+   // render.php - MUST use echo, NOT return
+   $output = '<div>Block content</div>';
+   echo $output; // ✅ Correct
+   // return $output; // ❌ WRONG - Content will not appear
+   ```
+
+2. **Callback-Based Rendering** (`render_callback` function):
+   ```php
+   // In functions.php - MUST use return, NOT echo
+   'render_callback' => function($attributes, $content, $block) {
+       $output = '<div>Block content</div>';
+       return $output; // ✅ Correct
+       // echo $output; // ❌ WRONG - May cause output issues
+   }
+   ```
+
+**Common Debugging Symptoms:**
+- Block appears in editor but not on frontend
+- `render.php` executes (logs show execution) but no HTML output
+- `render_block` filter receives empty `$block_content`
+
+**Solution:** Verify you're using the correct output method for your rendering approach.
+
+### Provided Helpers
 * `thrive_get_auth_context(): ?ThriveAuthContext` – returns strongly typed context object (email, name, roles, externalId, raw payload).
 * `thrive_is_logged_in(): bool` – true if context exists OR headers present OR fallback session cookie exists.
 * `thrive_user_has_role(string|ThriveRole $role): bool` – check if user has specific role

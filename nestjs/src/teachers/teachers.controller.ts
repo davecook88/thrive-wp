@@ -1,7 +1,18 @@
-import { Controller, Get, Post, Put, Body, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { TeachersService } from './teachers.service.js';
 import { TeacherGuard } from '../auth/teacher.guard.js';
-import { UpdateAvailabilityDto, PreviewAvailabilityDto } from './dto/availability.dto.js';
+import {
+  UpdateAvailabilityDto,
+  PreviewAvailabilityDto,
+} from './dto/availability.dto.js';
 
 @Controller('teachers/me/availability')
 @UseGuards(TeacherGuard)

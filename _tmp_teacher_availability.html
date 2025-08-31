@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name='robots' content='max-image-preview:large' />
+	<style>img:is([sizes="auto" i], [sizes^="auto," i]) { contain-intrinsic-size: 3000px 1500px }</style>
+	<title>Set Availability &#8211; Thrive in Spanish</title>
+<link rel='dns-prefetch' href='//fonts.googleapis.com' />
+<link rel="alternate" type="application/rss+xml" title="Thrive in Spanish &raquo; Feed" href="http://localhost:8080/feed/" />
+<link rel="alternate" type="application/rss+xml" title="Thrive in Spanish &raquo; Comments Feed" href="http://localhost:8080/comments/feed/" />
+<script>
+window._wpemojiSettings = {"baseUrl":"https:\/\/s.w.org\/images\/core\/emoji\/15.1.0\/72x72\/","ext":".png","svgUrl":"https:\/\/s.w.org\/images\/core\/emoji\/15.1.0\/svg\/","svgExt":".svg","source":{"wpemoji":"http:\/\/localhost:8080\/wp-includes\/js\/wp-emoji.js?ver=6.8.1","twemoji":"http:\/\/localhost:8080\/wp-includes\/js\/twemoji.js?ver=6.8.1"}};
+/**
+ * @output wp-includes/js/wp-emoji-loader.js
+ */
+
+/**
+ * Emoji Settings as exported in PHP via _print_emoji_detection_script().
+ * @typedef WPEmojiSettings
+ * @type {object}
+ * @property {?object} source
+ * @property {?string} source.concatemoji
+ * @property {?string} source.twemoji
+ * @property {?string} source.wpemoji
+ * @property {?boolean} DOMReady
+ * @property {?Function} readyCallback
+ */
+
+/**
+ * Support tests.
+ * @typedef SupportTests
+ * @type {object}
+ * @property {?boolean} flag
+ * @property {?boolean} emoji
+ */
+
+/**
+ * IIFE to detect emoji support and load Twemoji if needed.
+ *
+ * @param {Window} window
+ * @param {Document} document
+ * @param {WPEmojiSettings} settings
+ */
+( function wpEmojiLoader( window, document, settings ) {
+	if ( typeof Promise === 'undefined' ) {
+		return;
+	}
+
+	var sessionStorageKey = 'wpEmojiSettingsSupports';
+	var tests = [ 'flag', 'emoji' ];
+
+	/**
+	 * Checks whether the browser supports offloading to a Worker.
+	 *
+	 * @since 6.3.0
+	 *
+	 * @private
+	 *
+	 * @returns {boolean}
+	 */
+	function supportsWorkerOffloading() {
+		return (
+			typeof Worker !== 'undefined' &&
+			typeof OffscreenCanvas !== 'undefined' &&
+			typeof URL !== 'undefined' &&
+			URL.createObjectURL &&
+			typeof Blob !== 'undefined'
+		);
+	}
+
+	/**
+	 * @typedef SessionSupportTests
+	 * @type {object}
+	 * @property {number} timestamp
+	 * @property {SupportTests} supportTests
+	 */
+
+	/**
+	 * Get support tests from session.
+	 *
+	 * @since 6.3.0
+	 *
+	 * @private
+	 *
+	 * @returns {?SupportTests} Support tests, or null if not set or older than 1 week.
+	 */
+	function getSessionSupportTests() {
+		try {
+			/** @type {SessionSupportTests} */
+			var item = JSON.parse(
+				sessionStorage.getItem( sessionStorageKey )
+			);
+			if (
+				typeof item === 'object' &&
+				typeof item.timestamp === 'number' &&
+				new Date().valueOf() < item.timestamp + 604800 && // Note: Number is a week in seconds.
+				typeof item.supportTests === 'object'
+			) {
+				return item.supportTests;
+			}
+		} catch ( e ) {}
+		return null;
+	}
+
+	/**
+	 * Persist the supports in session storage.
+	 *
+	 * @since 6.3.0
+	 *
+	 * @private
+	 *
+	 * @param {SupportTests} supportTests Support tests.
+	 */
+	function setSessionSupportTests( supportTests ) {
+		try {
+			/** @type {SessionSupportTests} */
+			var item = {
+				supportTests: supportTests,
+				timestamp: new Date().valueOf()
+			};
+
+			sessionStorage.setItem(
+				sessionStorageKey,
+				JSON.stringify( item )
+			);
+		} catch ( e ) {}
+	}
+
+	/**
+	 * Checks if two sets of Emoji characters render the same visually.
+	 *
+	 * This function may be serialized to run in a Worker. Therefore, it cannot refer to variables from the containing
+	 * scope. Everything must be passed by parameters.
+	 *
+	 * @since 4.9.0
+	 *
+	 * @private
+	 *
+	 * @param {CanvasRenderingContext2D} context 2D Context.
+	 * @param {string} set1 Set of Emoji to test.
+	 * @param {string} set2 Set of Emoji to test.
+	 *
+	 * @return {boolean} True if the two sets render the same.
+	 */
+	function emojiSetsRenderIdentically( context, set1, set2 ) {
+		// Cleanup from previous test.
+		context.clearRect( 0, 0, context.canvas.width, context.canvas.height );
+		context.fillText( set1, 0, 0 );
+		var rendered1 = new Uint32Array(
+			context.getImageData(
+				0,
+				0,
+				context.canvas.width,
+				context.canvas.height
+			).data
+		);
+
+		// Cleanup from previous test.
+		context.clearRect( 0, 0, context.canvas.width, context.canvas.height );
+		context.fillText( set2, 0, 0 );
+		var rendered2 = new Uint32Array(
+			context.getImageData(
+				0,
+				0,
+				context.canvas.width,
+				context.canvas.height
+			).data
+		);
+
+		return rendered1.every( function ( rendered2Data, index ) {
+			return rendered2Data === rendered2[ index ];
+		} );
+	}
+
+	/**
+	 * Determines if the browser properly renders Emoji that Twemoji can supplement.
+	 *
+	 * This function may be serialized to run in a Worker. Therefore, it cannot refer to variables from the containing
+	 * scope. Everything must be passed by parameters.
+	 *
+	 * @since 4.2.0
+	 *
+	 * @private
+	 *
+	 * @param {CanvasRenderingContext2D} context 2D Context.
+	 * @param {string} type Whether to test for support of "flag" or "emoji".
+	 * @param {Function} emojiSetsRenderIdentically Reference to emojiSetsRenderIdentically function, needed due to minification.
+	 *
+	 * @return {boolean} True if the browser can render emoji, false if it cannot.
+	 */
+	function browserSupportsEmoji( context, type, emojiSetsRenderIdentically ) {
+		var isIdentical;
+
+		switch ( type ) {
+			case 'flag':
+				/*
+				 * Test for Transgender flag compatibility. Added in Unicode 13.
+				 *
+				 * To test for support, we try to render it, and compare the rendering to how it would look if
+				 * the browser doesn't render it correctly (white flag emoji + transgender symbol).
+				 */
+				isIdentical = emojiSetsRenderIdentically(
+					context,
+					'\uD83C\uDFF3\uFE0F\u200D\u26A7\uFE0F', // as a zero-width joiner sequence
+					'\uD83C\uDFF3\uFE0F\u200B\u26A7\uFE0F' // separated by a zero-width space
+				);
+
+				if ( isIdentical ) {
+					return false;
+				}
+
+				/*
+				 * Test for UN flag compatibility. This is the least supported of the letter locale flags,
+				 * so gives us an easy test for full support.
+				 *
+				 * To test for support, we try to render it, and compare the rendering to how it would look if
+				 * the browser doesn't render it correctly ([U] + [N]).
+				 */
+				isIdentical = emojiSetsRenderIdentically(
+					context,
+					'\uD83C\uDDFA\uD83C\uDDF3', // as the sequence of two code points
+					'\uD83C\uDDFA\u200B\uD83C\uDDF3' // as the two code points separated by a zero-width space
+				);
+
+				if ( isIdentical ) {
+					return false;
+				}
+
+				/*
+				 * Test for English flag compatibility. England is a country in the United Kingdom, it
+				 * does not have a two letter locale code but rather a five letter sub-division code.
+				 *
+				 * To test for support, we try to render it, and compare the rendering to how it would look if
+				 * the browser doesn't render it correctly (black flag emoji + [G] + [B] + [E] + [N] + [G]).
+				 */
+				isIdentical = emojiSetsRenderIdentically(
+					context,
+					// as the flag sequence
+					'\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67\uDB40\uDC7F',
+					// with each code point separated by a zero-width space
+					'\uD83C\uDFF4\u200B\uDB40\uDC67\u200B\uDB40\uDC62\u200B\uDB40\uDC65\u200B\uDB40\uDC6E\u200B\uDB40\uDC67\u200B\uDB40\uDC7F'
+				);
+
+				return ! isIdentical;
+			case 'emoji':
+				/*
+				 * Rise Like a Phoenix.
+				 *
+				 * To test for Emoji 15.1 support, try to render a new emoji: Phoenix.
+				 *
+				 * A phoenix, a mythical immortal bird with flame-like feathers found in the folklore of many global
+				 * cultures. Often used to symbolize renewal or rebirth.
+				 *
+				 * The Phoenix emoji is a ZWJ sequence combining 🐦 Bird, Zero Width Joiner and 🔥 Fire.
+				 * These display as a single emoji on supported platforms.
+				 *
+				 * 0xD83D 0xDC26 (\uD83D\uDC26) == 🐦 Bird
+				 * 0x200D                       == Zero-Width Joiner (ZWJ) that links the code points for the new emoji or
+				 * 0x200B                       == Zero-Width Space (ZWS) that is rendered for clients not supporting the new emoji.
+				 * 0xD83D 0xDD25 (\uD83D\uDD25) == 🔥 Fire
+				 *
+				 * When updating this test for future Emoji releases, ensure that individual emoji that make up the
+				 * sequence come from older emoji standards.
+				 */
+				isIdentical = emojiSetsRenderIdentically(
+					context,
+					'\uD83D\uDC26\u200D\uD83D\uDD25', // as the zero-width joiner sequence
+					'\uD83D\uDC26\u200B\uD83D\uDD25' // separated by a zero-width space
+				);
+
+				return ! isIdentical;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Checks emoji support tests.
+	 *
+	 * This function may be serialized to run in a Worker. Therefore, it cannot refer to variables from the containing
+	 * scope. Everything must be passed by parameters.
+	 *
+	 * @since 6.3.0
+	 *
+	 * @private
+	 *
+	 * @param {string[]} tests Tests.
+	 * @param {Function} browserSupportsEmoji Reference to browserSupportsEmoji function, needed due to minification.
+	 * @param {Function} emojiSetsRenderIdentically Reference to emojiSetsRenderIdentically function, needed due to minification.
+	 *
+	 * @return {SupportTests} Support tests.
+	 */
+	function testEmojiSupports( tests, browserSupportsEmoji, emojiSetsRenderIdentically ) {
+		var canvas;
+		if (
+			typeof WorkerGlobalScope !== 'undefined' &&
+			self instanceof WorkerGlobalScope
+		) {
+			canvas = new OffscreenCanvas( 300, 150 ); // Dimensions are default for HTMLCanvasElement.
+		} else {
+			canvas = document.createElement( 'canvas' );
+		}
+
+		var context = canvas.getContext( '2d', { willReadFrequently: true } );
+
+		/*
+		 * Chrome on OS X added native emoji rendering in M41. Unfortunately,
+		 * it doesn't work when the font is bolder than 500 weight. So, we
+		 * check for bold rendering support to avoid invisible emoji in Chrome.
+		 */
+		context.textBaseline = 'top';
+		context.font = '600 32px Arial';
+
+		var supports = {};
+		tests.forEach( function ( test ) {
+			supports[ test ] = browserSupportsEmoji( context, test, emojiSetsRenderIdentically );
+		} );
+		return supports;
+	}
+
+	/**
+	 * Adds a script to the head of the document.
+	 *
+	 * @ignore
+	 *
+	 * @since 4.2.0
+	 *
+	 * @param {string} src The url where the script is located.
+	 *
+	 * @return {void}
+	 */
+	function addScript( src ) {
+		var script = document.createElement( 'script' );
+		script.src = src;
+		script.defer = true;
+		document.head.appendChild( script );
+	}
+
+	settings.supports = {
+		everything: true,
+		everythingExceptFlag: true
+	};
+
+	// Create a promise for DOMContentLoaded since the worker logic may finish after the event has fired.
+	var domReadyPromise = new Promise( function ( resolve ) {
+		document.addEventListener( 'DOMContentLoaded', resolve, {
+			once: true
+		} );
+	} );
+
+	// Obtain the emoji support from the browser, asynchronously when possible.
+	new Promise( function ( resolve ) {
+		var supportTests = getSessionSupportTests();
+		if ( supportTests ) {
+			resolve( supportTests );
+			return;
+		}
+
+		if ( supportsWorkerOffloading() ) {
+			try {
+				// Note that the functions are being passed as arguments due to minification.
+				var workerScript =
+					'postMessage(' +
+					testEmojiSupports.toString() +
+					'(' +
+					[
+						JSON.stringify( tests ),
+						browserSupportsEmoji.toString(),
+						emojiSetsRenderIdentically.toString()
+					].join( ',' ) +
+					'));';
+				var blob = new Blob( [ workerScript ], {
+					type: 'text/javascript'
+				} );
+				var worker = new Worker( URL.createObjectURL( blob ), { name: 'wpTestEmojiSupports' } );
+				worker.onmessage = function ( event ) {
+					supportTests = event.data;
+					setSessionSupportTests( supportTests );
+					worker.terminate();
+					resolve( supportTests );
+				};
+				return;
+			} catch ( e ) {}
+		}
+
+		supportTests = testEmojiSupports( tests, browserSupportsEmoji, emojiSetsRenderIdentically );
+		setSessionSupportTests( supportTests );
+		resolve( supportTests );
+	} )
+		// Once the browser emoji support has been obtained from the session, finalize the settings.
+		.then( function ( supportTests ) {
+			/*
+			 * Tests the browser support for flag emojis and other emojis, and adjusts the
+			 * support settings accordingly.
+			 */
+			for ( var test in supportTests ) {
+				settings.supports[ test ] = supportTests[ test ];
+
+				settings.supports.everything =
+					settings.supports.everything && settings.supports[ test ];
+
+				if ( 'flag' !== test ) {
+					settings.supports.everythingExceptFlag =
+						settings.supports.everythingExceptFlag &&
+						settings.supports[ test ];
+				}
+			}
+
+			settings.supports.everythingExceptFlag =
+				settings.supports.everythingExceptFlag &&
+				! settings.supports.flag;
+
+			// Sets DOMReady to false and assigns a ready function to settings.
+			settings.DOMReady = false;
+			settings.readyCallback = function () {
+				settings.DOMReady = true;
+			};
+		} )
+		.then( function () {
+			return domReadyPromise;
+		} )
+		.then( function () {
+			// When the browser can not render everything we need to load a polyfill.
+			if ( ! settings.supports.everything ) {
+				settings.readyCallback();
+
+				var src = settings.source || {};
+
+				if ( src.concatemoji ) {
+					addScript( src.concatemoji );
+				} else if ( src.wpemoji && src.twemoji ) {
+					addScript( src.twemoji );
+					addScript( src.wpemoji );
+				}
+			}
+		} );
+} )( window, document, window._wpemojiSettings );
+</script>
+<style id='wp-block-site-title-inline-css'>
+.wp-block-site-title{
+  box-sizing:border-box;
+}
+.wp-block-site-title :where(a){
+  color:inherit;
+  font-family:inherit;
+  font-size:inherit;
+  font-style:inherit;
+  font-weight:inherit;
+  letter-spacing:inherit;
+  line-height:inherit;
+  text-decoration:inherit;
+}
+</style>
+<style id='wp-block-navigation-link-inline-css'>
+.wp-block-navigation .wp-block-navigation-item__label{
+  overflow-wrap:break-word;
+}
+.wp-block-navigation .wp-block-navigation-item__description{
+  display:none;
+}
+
+.link-ui-tools{
+  border-top:1px solid #f0f0f0;
+  padding:8px;
+}
+
+.link-ui-block-inserter{
+  padding-top:8px;
+}
+
+.link-ui-block-inserter__back{
+  margin-left:8px;
+  text-transform:uppercase;
+}
+</style>
+<link rel='stylesheet' id='wp-block-navigation-css' href='http://localhost:8080/wp-includes/blocks/navigation/style.css?ver=6.8.1' media='all' />
+<style id='thrive-login-auth-style-inline-css'>
+/**
+ * Minimal CSS for the Thrive Login/Auth block.
+ *
+ * This stylesheet focuses on the structural and interactive elements of the modal,
+ * relying on theme.json and WordPress core styles for buttons, colors, and fonts
+ * as much as possible.
+ */
+
+.thrive-login-modal {
+  display: none; /* Hidden by default */
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  align-items: center;
+  justify-content: center;
+}
+
+.thrive-login-modal.is-open {
+  display: flex;
+}
+
+.thrive-login-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.thrive-login-modal__dialog {
+  position: relative;
+  width: min(90%, 420px);
+  border-radius: var(--wp--custom--border-radius--card, 8px);
+  padding: var(--wp--preset--spacing--50, 2rem);
+  z-index: 1;
+}
+
+.thrive-login-modal__close {
+  position: absolute;
+  top: var(--wp--preset--spacing--30, 1rem);
+  right: var(--wp--preset--spacing--30, 1rem);
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  line-height: 1;
+  color: var(--wp--preset--color--contrast);
+}
+
+.thrive-login-provider__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: var(--wp--preset--color--primary);
+  color: var(--wp--preset--color--base);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.thrive-email-login input[type="email"],
+.thrive-email-login input[type="password"],
+.thrive-email-login input[type="text"] {
+  width: 85%;
+  padding: var(--wp--preset--spacing--20, 0.5rem);
+  border: 1px solid var(--wp--preset--color--gray-300, #ccc);
+  border-radius: var(--wp--custom--border-radius--field, 4px);
+}
+
+.thrive-email-login input:focus {
+  border-color: var(--wp--preset--color--primary, #0073aa);
+  outline: none;
+}
+
+.thrive-link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+  color: var(--wp--preset--color--primary);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.thrive-feedback {
+  padding: var(--wp--preset--spacing--30, 1rem);
+  border-radius: var(--wp--custom--border-radius--field, 4px);
+  background-color: var(--wp--preset--color--accent-soft, #fff0f0);
+  border: 1px solid var(--wp--preset--color--accent, #f00);
+  color: var(--wp--preset--color--accent-dark, #c00);
+}
+
+/* Utility for when modal is open */
+body.thrive-modal-open {
+  overflow: hidden;
+}
+
+button.is-style-thrive-outline {
+  background: none;
+  border: 1px solid var(--wp--preset--color--primary);
+  border-radius: var(--wp--custom--border-radius--field, 4px);
+  padding: var(--wp--preset--spacing--20, 0.5rem)
+    var(--wp--preset--spacing--30, 1rem);
+  cursor: pointer;
+}
+
+button.is-style-thrive-solid {
+  background: var(--wp--preset--color--primary);
+  border: none;
+  border-radius: var(--wp--custom--border-radius--field, 4px);
+  padding: var(--wp--preset--spacing--20, 0.5rem)
+    var(--wp--preset--spacing--30, 1rem);
+  cursor: pointer;
+}
+
+button.is-style-thrive-rounded {
+  background: var(--wp--preset--color--primary);
+  border: none;
+  border-radius: var(--wp--custom--border-radius--field, 4px);
+  padding: var(--wp--preset--spacing--20, 0.5rem)
+    var(--wp--preset--spacing--30, 1rem);
+  cursor: pointer;
+}
+
+</style>
+<style id='wp-block-group-inline-css'>
+.wp-block-group{
+  box-sizing:border-box;
+}
+
+:where(.wp-block-group.wp-block-group-is-layout-constrained){
+  position:relative;
+}
+</style>
+<style id='wp-block-group-theme-inline-css'>
+:where(.wp-block-group.has-background){
+  padding:1.25em 2.375em;
+}
+</style>
+<style id='wp-block-template-part-theme-inline-css'>
+:root :where(.wp-block-template-part.has-background){
+  margin-bottom:0;
+  margin-top:0;
+  padding:1.25em 2.375em;
+}
+</style>
+<style id='wp-block-paragraph-inline-css'>
+.is-small-text{
+  font-size:.875em;
+}
+
+.is-regular-text{
+  font-size:1em;
+}
+
+.is-large-text{
+  font-size:2.25em;
+}
+
+.is-larger-text{
+  font-size:3em;
+}
+
+.has-drop-cap:not(:focus):first-letter{
+  float:left;
+  font-size:8.4em;
+  font-style:normal;
+  font-weight:100;
+  line-height:.68;
+  margin:.05em .1em 0 0;
+  text-transform:uppercase;
+}
+
+body.rtl .has-drop-cap:not(:focus):first-letter{
+  float:none;
+  margin-left:.1em;
+}
+
+p.has-drop-cap.has-background{
+  overflow:hidden;
+}
+
+:root :where(p.has-background){
+  padding:1.25em 2.375em;
+}
+
+:where(p.has-text-color:not(.has-link-color)) a{
+  color:inherit;
+}
+
+p.has-text-align-left[style*="writing-mode:vertical-lr"],p.has-text-align-right[style*="writing-mode:vertical-rl"]{
+  rotate:180deg;
+}
+</style>
+<style id='wp-block-post-content-inline-css'>
+.wp-block-post-content{
+  display:flow-root;
+}
+</style>
+<style id='wp-emoji-styles-inline-css'>
+
+	img.wp-smiley, img.emoji {
+		display: inline !important;
+		border: none !important;
+		box-shadow: none !important;
+		height: 1em !important;
+		width: 1em !important;
+		margin: 0 0.07em !important;
+		vertical-align: -0.1em !important;
+		background: none !important;
+		padding: 0 !important;
+	}
+</style>
+<style id='wp-block-library-inline-css'>
+:root{
+  --wp-admin-theme-color:#007cba;
+  --wp-admin-theme-color--rgb:0, 124, 186;
+  --wp-admin-theme-color-darker-10:#006ba1;
+  --wp-admin-theme-color-darker-10--rgb:0, 107, 161;
+  --wp-admin-theme-color-darker-20:#005a87;
+  --wp-admin-theme-color-darker-20--rgb:0, 90, 135;
+  --wp-admin-border-width-focus:2px;
+  --wp-block-synced-color:#7a00df;
+  --wp-block-synced-color--rgb:122, 0, 223;
+  --wp-bound-block-color:var(--wp-block-synced-color);
+}
+@media (min-resolution:192dpi){
+  :root{
+    --wp-admin-border-width-focus:1.5px;
+  }
+}
+.wp-element-button{
+  cursor:pointer;
+}
+
+:root{
+  --wp--preset--font-size--normal:16px;
+  --wp--preset--font-size--huge:42px;
+}
+:root .has-very-light-gray-background-color{
+  background-color:#eee;
+}
+:root .has-very-dark-gray-background-color{
+  background-color:#313131;
+}
+:root .has-very-light-gray-color{
+  color:#eee;
+}
+:root .has-very-dark-gray-color{
+  color:#313131;
+}
+:root .has-vivid-green-cyan-to-vivid-cyan-blue-gradient-background{
+  background:linear-gradient(135deg, #00d084, #0693e3);
+}
+:root .has-purple-crush-gradient-background{
+  background:linear-gradient(135deg, #34e2e4, #4721fb 50%, #ab1dfe);
+}
+:root .has-hazy-dawn-gradient-background{
+  background:linear-gradient(135deg, #faaca8, #dad0ec);
+}
+:root .has-subdued-olive-gradient-background{
+  background:linear-gradient(135deg, #fafae1, #67a671);
+}
+:root .has-atomic-cream-gradient-background{
+  background:linear-gradient(135deg, #fdd79a, #004a59);
+}
+:root .has-nightshade-gradient-background{
+  background:linear-gradient(135deg, #330968, #31cdcf);
+}
+:root .has-midnight-gradient-background{
+  background:linear-gradient(135deg, #020381, #2874fc);
+}
+
+.has-regular-font-size{
+  font-size:1em;
+}
+
+.has-larger-font-size{
+  font-size:2.625em;
+}
+
+.has-normal-font-size{
+  font-size:var(--wp--preset--font-size--normal);
+}
+
+.has-huge-font-size{
+  font-size:var(--wp--preset--font-size--huge);
+}
+
+.has-text-align-center{
+  text-align:center;
+}
+
+.has-text-align-left{
+  text-align:left;
+}
+
+.has-text-align-right{
+  text-align:right;
+}
+
+#end-resizable-editor-section{
+  display:none;
+}
+
+.aligncenter{
+  clear:both;
+}
+
+.items-justified-left{
+  justify-content:flex-start;
+}
+
+.items-justified-center{
+  justify-content:center;
+}
+
+.items-justified-right{
+  justify-content:flex-end;
+}
+
+.items-justified-space-between{
+  justify-content:space-between;
+}
+
+.screen-reader-text{
+  border:0;
+  clip-path:inset(50%);
+  height:1px;
+  margin:-1px;
+  overflow:hidden;
+  padding:0;
+  position:absolute;
+  width:1px;
+  word-wrap:normal !important;
+}
+
+.screen-reader-text:focus{
+  background-color:#ddd;
+  clip-path:none;
+  color:#444;
+  display:block;
+  font-size:1em;
+  height:auto;
+  left:5px;
+  line-height:normal;
+  padding:15px 23px 14px;
+  text-decoration:none;
+  top:5px;
+  width:auto;
+  z-index:100000;
+}
+html :where(.has-border-color){
+  border-style:solid;
+}
+
+html :where([style*=border-top-color]){
+  border-top-style:solid;
+}
+
+html :where([style*=border-right-color]){
+  border-right-style:solid;
+}
+
+html :where([style*=border-bottom-color]){
+  border-bottom-style:solid;
+}
+
+html :where([style*=border-left-color]){
+  border-left-style:solid;
+}
+
+html :where([style*=border-width]){
+  border-style:solid;
+}
+
+html :where([style*=border-top-width]){
+  border-top-style:solid;
+}
+
+html :where([style*=border-right-width]){
+  border-right-style:solid;
+}
+
+html :where([style*=border-bottom-width]){
+  border-bottom-style:solid;
+}
+
+html :where([style*=border-left-width]){
+  border-left-style:solid;
+}
+html :where(img[class*=wp-image-]){
+  height:auto;
+  max-width:100%;
+}
+:where(figure){
+  margin:0 0 1em;
+}
+
+html :where(.is-position-sticky){
+  --wp-admin--admin-bar--position-offset:var(--wp-admin--admin-bar--height, 0px);
+}
+
+@media screen and (max-width:600px){
+  html :where(.is-position-sticky){
+    --wp-admin--admin-bar--position-offset:0px;
+  }
+}
+</style>
+<style id='global-styles-inline-css'>
+:root{--wp--preset--aspect-ratio--square: 1;--wp--preset--aspect-ratio--4-3: 4/3;--wp--preset--aspect-ratio--3-4: 3/4;--wp--preset--aspect-ratio--3-2: 3/2;--wp--preset--aspect-ratio--2-3: 2/3;--wp--preset--aspect-ratio--16-9: 16/9;--wp--preset--aspect-ratio--9-16: 9/16;--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #ffffff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--color--base: #FFFFFF;--wp--preset--color--contrast: #1F2937;--wp--preset--color--primary: #ff5722;--wp--preset--color--secondary: #10B981;--wp--preset--color--tertiary: #F3F4F6;--wp--preset--color--accent: #ff5722;--wp--preset--color--foreground: #1F2937;--wp--preset--color--background: #FFFFFF;--wp--preset--color--gray-50: #F9FAFB;--wp--preset--color--gray-100: #F3F4F6;--wp--preset--color--gray-200: #E5E7EB;--wp--preset--color--gray-500: #6B7280;--wp--preset--color--gray-600: #4B5563;--wp--preset--color--gray-900: #111827;--wp--preset--color--indigo: #4F46E5;--wp--preset--color--indigo-dark: #4338CA;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgba(6,147,227,1) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgba(252,185,0,1) 0%,rgba(255,105,0,1) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgba(255,105,0,1) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;--wp--preset--font-size--x-small: 12px;--wp--preset--font-size--xx-large: 32px;--wp--preset--font-size--xxx-large: 48px;--wp--preset--font-family--system: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;--wp--preset--font-family--inter: Inter, sans-serif;--wp--preset--spacing--20: 0.44rem;--wp--preset--spacing--30: 0.67rem;--wp--preset--spacing--40: 1rem;--wp--preset--spacing--50: 1.5rem;--wp--preset--spacing--60: 2.25rem;--wp--preset--spacing--70: 3.38rem;--wp--preset--spacing--80: 5.06rem;--wp--preset--spacing--10: 0.25rem;--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2);--wp--preset--shadow--deep: 12px 12px 50px rgba(0, 0, 0, 0.4);--wp--preset--shadow--sharp: 6px 6px 0px rgba(0, 0, 0, 0.2);--wp--preset--shadow--outlined: 6px 6px 0px -3px rgba(255, 255, 255, 1), 6px 6px rgba(0, 0, 0, 1);--wp--preset--shadow--crisp: 6px 6px 0px rgba(0, 0, 0, 1);--wp--custom--border-radius--field: 12px;}:root { --wp--style--global--content-size: 1200px;--wp--style--global--wide-size: 1400px; }:where(body) { margin: 0; }.wp-site-blocks > .alignleft { float: left; margin-right: 2em; }.wp-site-blocks > .alignright { float: right; margin-left: 2em; }.wp-site-blocks > .aligncenter { justify-content: center; margin-left: auto; margin-right: auto; }:where(.wp-site-blocks) > * { margin-block-start: 1.5rem; margin-block-end: 0; }:where(.wp-site-blocks) > :first-child { margin-block-start: 0; }:where(.wp-site-blocks) > :last-child { margin-block-end: 0; }:root { --wp--style--block-gap: 1.5rem; }:root :where(.is-layout-flow) > :first-child{margin-block-start: 0;}:root :where(.is-layout-flow) > :last-child{margin-block-end: 0;}:root :where(.is-layout-flow) > *{margin-block-start: 1.5rem;margin-block-end: 0;}:root :where(.is-layout-constrained) > :first-child{margin-block-start: 0;}:root :where(.is-layout-constrained) > :last-child{margin-block-end: 0;}:root :where(.is-layout-constrained) > *{margin-block-start: 1.5rem;margin-block-end: 0;}:root :where(.is-layout-flex){gap: 1.5rem;}:root :where(.is-layout-grid){gap: 1.5rem;}.is-layout-flow > .alignleft{float: left;margin-inline-start: 0;margin-inline-end: 2em;}.is-layout-flow > .alignright{float: right;margin-inline-start: 2em;margin-inline-end: 0;}.is-layout-flow > .aligncenter{margin-left: auto !important;margin-right: auto !important;}.is-layout-constrained > .alignleft{float: left;margin-inline-start: 0;margin-inline-end: 2em;}.is-layout-constrained > .alignright{float: right;margin-inline-start: 2em;margin-inline-end: 0;}.is-layout-constrained > .aligncenter{margin-left: auto !important;margin-right: auto !important;}.is-layout-constrained > :where(:not(.alignleft):not(.alignright):not(.alignfull)){max-width: var(--wp--style--global--content-size);margin-left: auto !important;margin-right: auto !important;}.is-layout-constrained > .alignwide{max-width: var(--wp--style--global--wide-size);}body .is-layout-flex{display: flex;}.is-layout-flex{flex-wrap: wrap;align-items: center;}.is-layout-flex > :is(*, div){margin: 0;}body .is-layout-grid{display: grid;}.is-layout-grid > :is(*, div){margin: 0;}body{background-color: var(--wp--preset--color--background);color: var(--wp--preset--color--foreground);font-family: var(--wp--preset--font-family--inter);font-size: var(--wp--preset--font-size--medium);line-height: 1.6;padding-top: 0px;padding-right: 0px;padding-bottom: 0px;padding-left: 0px;}a:where(:not(.wp-element-button)){text-decoration: underline;}:root :where(.wp-element-button, .wp-block-button__link){background-color: #32373c;border-width: 0;color: #fff;font-family: inherit;font-size: inherit;line-height: inherit;padding: calc(0.667em + 2px) calc(1.333em + 2px);text-decoration: none;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-base-color{color: var(--wp--preset--color--base) !important;}.has-contrast-color{color: var(--wp--preset--color--contrast) !important;}.has-primary-color{color: var(--wp--preset--color--primary) !important;}.has-secondary-color{color: var(--wp--preset--color--secondary) !important;}.has-tertiary-color{color: var(--wp--preset--color--tertiary) !important;}.has-accent-color{color: var(--wp--preset--color--accent) !important;}.has-foreground-color{color: var(--wp--preset--color--foreground) !important;}.has-background-color{color: var(--wp--preset--color--background) !important;}.has-gray-50-color{color: var(--wp--preset--color--gray-50) !important;}.has-gray-100-color{color: var(--wp--preset--color--gray-100) !important;}.has-gray-200-color{color: var(--wp--preset--color--gray-200) !important;}.has-gray-500-color{color: var(--wp--preset--color--gray-500) !important;}.has-gray-600-color{color: var(--wp--preset--color--gray-600) !important;}.has-gray-900-color{color: var(--wp--preset--color--gray-900) !important;}.has-indigo-color{color: var(--wp--preset--color--indigo) !important;}.has-indigo-dark-color{color: var(--wp--preset--color--indigo-dark) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-base-background-color{background-color: var(--wp--preset--color--base) !important;}.has-contrast-background-color{background-color: var(--wp--preset--color--contrast) !important;}.has-primary-background-color{background-color: var(--wp--preset--color--primary) !important;}.has-secondary-background-color{background-color: var(--wp--preset--color--secondary) !important;}.has-tertiary-background-color{background-color: var(--wp--preset--color--tertiary) !important;}.has-accent-background-color{background-color: var(--wp--preset--color--accent) !important;}.has-foreground-background-color{background-color: var(--wp--preset--color--foreground) !important;}.has-background-background-color{background-color: var(--wp--preset--color--background) !important;}.has-gray-50-background-color{background-color: var(--wp--preset--color--gray-50) !important;}.has-gray-100-background-color{background-color: var(--wp--preset--color--gray-100) !important;}.has-gray-200-background-color{background-color: var(--wp--preset--color--gray-200) !important;}.has-gray-500-background-color{background-color: var(--wp--preset--color--gray-500) !important;}.has-gray-600-background-color{background-color: var(--wp--preset--color--gray-600) !important;}.has-gray-900-background-color{background-color: var(--wp--preset--color--gray-900) !important;}.has-indigo-background-color{background-color: var(--wp--preset--color--indigo) !important;}.has-indigo-dark-background-color{background-color: var(--wp--preset--color--indigo-dark) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-base-border-color{border-color: var(--wp--preset--color--base) !important;}.has-contrast-border-color{border-color: var(--wp--preset--color--contrast) !important;}.has-primary-border-color{border-color: var(--wp--preset--color--primary) !important;}.has-secondary-border-color{border-color: var(--wp--preset--color--secondary) !important;}.has-tertiary-border-color{border-color: var(--wp--preset--color--tertiary) !important;}.has-accent-border-color{border-color: var(--wp--preset--color--accent) !important;}.has-foreground-border-color{border-color: var(--wp--preset--color--foreground) !important;}.has-background-border-color{border-color: var(--wp--preset--color--background) !important;}.has-gray-50-border-color{border-color: var(--wp--preset--color--gray-50) !important;}.has-gray-100-border-color{border-color: var(--wp--preset--color--gray-100) !important;}.has-gray-200-border-color{border-color: var(--wp--preset--color--gray-200) !important;}.has-gray-500-border-color{border-color: var(--wp--preset--color--gray-500) !important;}.has-gray-600-border-color{border-color: var(--wp--preset--color--gray-600) !important;}.has-gray-900-border-color{border-color: var(--wp--preset--color--gray-900) !important;}.has-indigo-border-color{border-color: var(--wp--preset--color--indigo) !important;}.has-indigo-dark-border-color{border-color: var(--wp--preset--color--indigo-dark) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}.has-x-small-font-size{font-size: var(--wp--preset--font-size--x-small) !important;}.has-xx-large-font-size{font-size: var(--wp--preset--font-size--xx-large) !important;}.has-xxx-large-font-size{font-size: var(--wp--preset--font-size--xxx-large) !important;}.has-system-font-family{font-family: var(--wp--preset--font-family--system) !important;}.has-inter-font-family{font-family: var(--wp--preset--font-family--inter) !important;}
+:root :where(.wp-block-thrive-login-auth){background-color: var(--wp--preset--color--primary);}
+</style>
+<style id='core-block-supports-inline-css'>
+/**
+ * Core styles: block-supports
+ */
+.wp-container-core-navigation-is-layout-f665d2b5 {
+	justify-content: flex-end;
+}
+.wp-elements-ddebbe0412ebb42995d32e9ae212ba95 a:where(:not(.wp-element-button)) {
+	color: var(--wp--preset--color--contrast);
+}
+.wp-container-core-group-is-layout-4fefaf9b {
+	justify-content: space-between;
+	align-items: center;
+}
+.wp-container-core-group-is-layout-b585a4aa {
+	justify-content: space-between;
+}
+
+</style>
+<style id='wp-block-template-skip-link-inline-css'>
+
+		.skip-link.screen-reader-text {
+			border: 0;
+			clip-path: inset(50%);
+			height: 1px;
+			margin: -1px;
+			overflow: hidden;
+			padding: 0;
+			position: absolute !important;
+			width: 1px;
+			word-wrap: normal !important;
+		}
+
+		.skip-link.screen-reader-text:focus {
+			background-color: #eee;
+			clip-path: none;
+			color: #444;
+			display: block;
+			font-size: 1em;
+			height: auto;
+			left: 5px;
+			line-height: normal;
+			padding: 15px 23px 14px;
+			text-decoration: none;
+			top: 5px;
+			width: auto;
+			z-index: 100000;
+		}
+</style>
+<link rel='stylesheet' id='custom-theme-style-css' href='http://localhost:8080/wp-content/themes/custom-theme/style.css?ver=1.0' media='all' />
+<link rel='stylesheet' id='custom-theme-fonts-css' href='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&#038;display=swap' media='all' />
+<script src="http://localhost:8080/wp-includes/js/dist/development/react-refresh-runtime.js?ver=8f1acdfb845f670b0ef2" id="wp-react-refresh-runtime-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/development/react-refresh-entry.js?ver=461b2e321e6e009f2209" id="wp-react-refresh-entry-js"></script>
+<link rel="https://api.w.org/" href="http://localhost:8080/wp-json/" /><link rel="alternate" title="JSON" type="application/json" href="http://localhost:8080/wp-json/wp/v2/pages/46" /><link rel="EditURI" type="application/rsd+xml" title="RSD" href="http://localhost:8080/xmlrpc.php?rsd" />
+<meta name="generator" content="WordPress 6.8.1" />
+<link rel="canonical" href="http://localhost:8080/teacher-availability/" />
+<link rel='shortlink' href='http://localhost:8080/?p=46' />
+<link rel="alternate" title="oEmbed (JSON)" type="application/json+oembed" href="http://localhost:8080/wp-json/oembed/1.0/embed?url=http%3A%2F%2Flocalhost%3A8080%2Fteacher-availability%2F" />
+<link rel="alternate" title="oEmbed (XML)" type="text/xml+oembed" href="http://localhost:8080/wp-json/oembed/1.0/embed?url=http%3A%2F%2Flocalhost%3A8080%2Fteacher-availability%2F&#038;format=xml" />
+<script type="importmap" id="wp-importmap">
+{"imports":{"@wordpress\/interactivity":"http:\/\/localhost:8080\/wp-includes\/js\/dist\/script-modules\/interactivity\/debug.js?ver=beb31ebdbe898d3dd230"}}
+</script>
+<script type="module" src="http://localhost:8080/wp-includes/js/dist/script-modules/block-library/navigation/view.js?ver=0735c27ca16ce2f60efd" id="@wordpress/block-library/navigation/view-js-module"></script>
+<link rel="modulepreload" href="http://localhost:8080/wp-includes/js/dist/script-modules/interactivity/debug.js?ver=beb31ebdbe898d3dd230" id="@wordpress/interactivity-js-modulepreload"></head>
+
+<body class="wp-singular page-template-default page page-id-46 wp-embed-responsive wp-theme-custom-theme">
+
+<div class="wp-site-blocks"><header class="wp-block-template-part">
+<div class="wp-block-group has-background-background-color has-background is-layout-constrained wp-block-group-is-layout-constrained" style="padding-top:1rem;padding-bottom:1rem">
+<div class="wp-block-group is-horizontal is-content-justification-space-between is-layout-flex wp-container-core-group-is-layout-4fefaf9b wp-block-group-is-layout-flex"><p style="font-weight:700;" class="wp-block-site-title has-text-color has-primary-color has-x-large-font-size"><a href="http://localhost:8080" target="_self" rel="home">Thrive in Spanish</a></p>
+
+<nav class="is-responsive items-justified-right wp-block-navigation is-content-justification-right is-layout-flex wp-container-core-navigation-is-layout-f665d2b5 wp-block-navigation-is-layout-flex" 
+		 data-wp-interactive="core/navigation" data-wp-context='{"overlayOpenedBy":{"click":false,"hover":false,"focus":false},"type":"overlay","roleAttribute":"","ariaLabel":"Menu"}'><button aria-haspopup="dialog" aria-label="Open menu" class="wp-block-navigation__responsive-container-open" 
+				data-wp-on-async--click="actions.openMenuOnClick"
+				data-wp-on--keydown="actions.handleMenuKeydown"
+			><svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="7.5" width="16" height="1.5" /><rect x="4" y="15" width="16" height="1.5" /></svg></button>
+				<div class="wp-block-navigation__responsive-container"  id="modal-1" 
+				data-wp-class--has-modal-open="state.isMenuOpen"
+				data-wp-class--is-menu-open="state.isMenuOpen"
+				data-wp-watch="callbacks.initMenu"
+				data-wp-on--keydown="actions.handleMenuKeydown"
+				data-wp-on-async--focusout="actions.handleMenuFocusout"
+				tabindex="-1"
+			>
+					<div class="wp-block-navigation__responsive-close" tabindex="-1">
+						<div class="wp-block-navigation__responsive-dialog" 
+				data-wp-bind--aria-modal="state.ariaModal"
+				data-wp-bind--aria-label="state.ariaLabel"
+				data-wp-bind--role="state.roleAttribute"
+			>
+							<button aria-label="Close menu" class="wp-block-navigation__responsive-container-close" 
+				data-wp-on-async--click="actions.closeMenuOnClick"
+			><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path d="m13.06 12 6.47-6.47-1.06-1.06L12 10.94 5.53 4.47 4.47 5.53 10.94 12l-6.47 6.47 1.06 1.06L12 13.06l6.47 6.47 1.06-1.06L13.06 12Z"></path></svg></button>
+							<div class="wp-block-navigation__responsive-container-content" 
+				data-wp-watch="callbacks.focusFirstElement"
+			 id="modal-1-content">
+								<ul class="wp-block-navigation__container is-responsive items-justified-right wp-block-navigation"><li class=" wp-block-navigation-item wp-block-navigation-link"><a class="wp-block-navigation-item__content"  href="#"><span class="wp-block-navigation-item__label">Home</span></a></li><li class=" wp-block-navigation-item wp-block-navigation-link"><a class="wp-block-navigation-item__content"  href="#courses"><span class="wp-block-navigation-item__label">Courses</span></a></li><li class=" wp-block-navigation-item wp-block-navigation-link"><a class="wp-block-navigation-item__content"  href="#about"><span class="wp-block-navigation-item__label">About</span></a></li><li class=" wp-block-navigation-item wp-block-navigation-link"><a class="wp-block-navigation-item__content"  href="#contact"><span class="wp-block-navigation-item__label">Contact</span></a></li></ul>
+							</div>
+						</div>
+					</div>
+				</div></nav>
+
+
+<div class="wp-block-group is-layout-flow wp-block-group-is-layout-flow">
+<div class="thrive-auth-component wp-elements-ddebbe0412ebb42995d32e9ae212ba95 wp-block-thrive-login-auth has-text-color has-contrast-color has-background has-base-background-color">
+            <button id="thrive-login-button" class="wp-block-button__link is-style-thrive-rounded" type="button"
+            aria-haspopup="dialog" aria-controls="thrive-login-modal">
+            Sign in        </button>
+
+        <div id="thrive-login-modal" class="thrive-login-modal" role="dialog" aria-modal="true" aria-hidden="true"
+            aria-labelledby="thrive-login-title">
+            <div class="thrive-login-modal__backdrop" data-close-modal></div>
+            <div class="thrive-login-modal__dialog wp-block-group has-base-background-color has-contrast-color"
+                role="document">
+                <button class="thrive-login-modal__close" type="button" aria-label="Close" data-close-modal>&times;</button>
+
+                <h2 id="thrive-login-title" class="has-x-large-font-size"
+                    style="margin-bottom: var(--wp--preset--spacing--20);">
+                    Sign In                </h2>
+
+                <p class="has-gray-600-color has-small-font-size"
+                    style="margin-top:0; margin-bottom: var(--wp--preset--spacing--50);">
+                    Choose a sign-in method                </p>
+
+                                    <div class="wp-block-buttons is-vertical" style="gap: var(--wp--preset--spacing--30);">
+                        <div class="wp-block-button">
+                            <button id="thrive-google-login" class="wp-block-button__link" type="button"
+                                style="display:flex; gap: var(--wp--preset--spacing--30); align-items:center; justify-content:center; width:100%; border: 1px solid var(--wp--preset--color--gray-200); background-color: var(--wp--preset--color--base); color: var(--wp--preset--color--contrast);">
+                                <span class="thrive-login-provider__icon" aria-hidden="true">G</span>
+                                <span>Continue with Google</span>
+                            </button>
+                        </div>
+                    </div>
+                
+                                    <form id="thrive-email-login-form" class="thrive-email-login" autocomplete="on"
+                        style="margin-top: var(--wp--preset--spacing--40);">
+                        <div class="thrive-field" style="margin-bottom: var(--wp--preset--spacing--40);">
+                            <label for="thrive-email" class="thrive-label has-gray-900-color"
+                                style="font-weight:500; margin-bottom:var(--wp--preset--spacing--20); display:block;">
+                                Email                            </label>
+                            <input id="thrive-email" name="email" type="email" required autocomplete="email" />
+                        </div>
+                        <div class="thrive-field" style="margin-bottom: var(--wp--preset--spacing--40);">
+                            <label for="thrive-password" class="thrive-label has-gray-900-color"
+                                style="font-weight:500; margin-bottom:var(--wp--preset--spacing--20); display:block;">
+                                Password                            </label>
+                            <input id="thrive-password" name="password" type="password" required
+                                autocomplete="current-password" />
+                        </div>
+                        <div class="thrive-field thrive-field--name wp-block-columns"
+                            style="display:none; margin-bottom:var(--wp--preset--spacing--40);" id="thrive-name-fields">
+                            <div class="wp-block-column">
+                                <label for="thrive-first-name" class="thrive-label has-gray-900-color"
+                                    style="font-weight:500; margin-bottom:var(--wp--preset--spacing--20); display:block;">First name</label>
+                                <input id="thrive-first-name" name="firstName" type="text" autocomplete="given-name" />
+                            </div>
+                            <div class="wp-block-column">
+                                <label for="thrive-last-name" class="thrive-label has-gray-900-color"
+                                    style="font-weight:500; margin-bottom:var(--wp--preset--spacing--20); display:block;">Last name</label>
+                                <input id="thrive-last-name" name="lastName" type="text" autocomplete="family-name" />
+                            </div>
+                        </div>
+                        <div class="thrive-actions-row"
+                            style="display:flex; justify-content:space-between; align-items:center; margin-top:var(--wp--preset--spacing--40);">
+                            <button type="submit" id="thrive-email-submit"
+                                class="wp-block-button__link has-primary-background-color has-base-color">
+                                Sign in with Email                            </button>
+                            <button type="button" id="thrive-toggle-register" class="thrive-link-button has-primary-color"
+                                aria-pressed="false">Create account</button>
+                        </div>
+                        <div id="thrive-email-feedback" class="thrive-feedback has-accent-color" role="alert"
+                            style="display:none; margin-top:var(--wp--preset--spacing--40);"></div>
+                    </form>
+                
+                <p class="has-gray-500-color has-x-small-font-size"
+                    style="margin-top: var(--wp--preset--spacing--50); line-height: 1.3;">
+                    By continuing you agree to our <a href="#" rel="noopener">Terms</a> &amp; <a href="#" rel="noopener">Privacy Policy</a>.                </p>
+            </div>
+        </div>
+
+        <script id="thrive-login-auth-inline-68b4bed608f71">
+            (function () {
+                if (window.__THRIVE_LOGIN_AUTH_INITIALIZED__) return;
+                window.__THRIVE_LOGIN_AUTH_INITIALIZED__ = true;
+
+                const attributes = {"buttonColor":"secondary","buttonStyle":"rounded","buttonAlign":"right","backgroundColor":"base","textColor":"contrast","style":{"elements":{"link":{"color":{"text":"var:preset|color|contrast"}}}},"className":"wp-elements-ddebbe0412ebb42995d32e9ae212ba95","signInText":"Sign in","signOutText":"Sign out","modalTitle":"Sign In","modalDescription":"Choose a sign-in method","showGoogle":true,"showEmail":true,"emailLabel":"Email","passwordLabel":"Password","extraClass":""};
+                const googleUrl = "http:\/\/localhost:8080\/api\/auth\/google";
+
+                function qs(selector, ctx) { return (ctx || document).querySelector(selector); }
+                function qa(selector, ctx) { return Array.from((ctx || document).querySelectorAll(selector)); }
+
+                function trapFocus(modal) {
+                    const focusable = qa('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])', modal).filter(el => !el.hasAttribute('disabled'));
+                    if (!focusable.length) return;
+                    const first = focusable[0];
+                    const last = focusable[focusable.length - 1];
+                    modal.addEventListener('keydown', function (e) {
+                        if (e.key === 'Tab') {
+                            if (e.shiftKey && document.activeElement === first) {
+                                e.preventDefault();
+                                last.focus();
+                            } else if (!e.shiftKey && document.activeElement === last) {
+                                e.preventDefault();
+                                first.focus();
+                            }
+                        } else if (e.key === 'Escape') {
+                            closeModal();
+                        }
+                    });
+                    first.focus();
+                }
+
+                function openModal() {
+                    const modal = qs('#thrive-login-modal');
+                    if (!modal) return;
+                    modal.setAttribute('aria-hidden', 'false');
+                    modal.classList.add('is-open');
+                    document.body.classList.add('thrive-modal-open');
+                    trapFocus(modal);
+                }
+
+                function closeModal() {
+                    const modal = qs('#thrive-login-modal');
+                    if (!modal) return;
+                    modal.setAttribute('aria-hidden', 'true');
+                    modal.classList.remove('is-open');
+                    document.body.classList.remove('thrive-modal-open');
+                    const trigger = qs('#thrive-login-button');
+                    if (trigger) trigger.focus();
+                }
+
+                function init() {
+                    const trigger = qs('#thrive-login-button');
+                    const modal = qs('#thrive-login-modal');
+                    if (!trigger || !modal) return;
+
+                    trigger.addEventListener('click', openModal);
+                    qa('[data-close-modal]', modal).forEach(btn => btn.addEventListener('click', closeModal));
+                    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+                    if (attributes.showGoogle) {
+                        const googleBtn = qs('#thrive-google-login');
+                        if (googleBtn) {
+                            googleBtn.addEventListener('click', () => {
+                                if (googleUrl) {
+                                    window.location.href = googleUrl;
+                                } else {
+                                    console.error('Google auth URL missing');
+                                }
+                            });
+                        }
+                    }
+
+                    if (attributes.showEmail) {
+                        const form = qs('#thrive-email-login-form');
+                        if (!form) return;
+
+                        const toggle = qs('#thrive-toggle-register');
+                        const nameFields = qs('#thrive-name-fields');
+                        const feedback = qs('#thrive-email-feedback');
+                        const submitBtn = qs('#thrive-email-submit');
+                        let mode = 'login'; // or 'register'
+
+                        function setMode(m) {
+                            mode = m;
+                            nameFields.style.display = mode === 'register' ? 'flex' : 'none';
+                            toggle.textContent = mode === 'register' ? 'Have an account? Sign in' : 'Create account';
+                            submitBtn.textContent = mode === 'register' ? 'Create account' : 'Sign in with Email';
+                            toggle.setAttribute('aria-pressed', mode === 'register');
+                        }
+
+                        toggle.addEventListener('click', () => setMode(mode === 'login' ? 'register' : 'login'));
+
+                        form.addEventListener('submit', async (e) => {
+                            e.preventDefault();
+                            feedback.style.display = 'none';
+                            submitBtn.disabled = true;
+                            submitBtn.textContent = 'Please wait...';
+
+                            const payload = Object.fromEntries(new FormData(form).entries());
+                            const endpoint = mode === 'register' ? '/api/auth/register' : '/api/auth/login';
+
+                            try {
+                                const resp = await fetch(endpoint, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(payload)
+                                });
+                                const json = await resp.json().catch(() => ({}));
+                                if (resp.ok && json.redirect) {
+                                    // Dispatch login event before redirect
+                                    window.dispatchEvent(new CustomEvent('thrive:auth:login'));
+                                    window.location.href = json.redirect;
+                                    return;
+                                }
+                                throw new Error(json.message || 'Request failed');
+                            } catch (err) {
+                                feedback.textContent = err.message;
+                                feedback.style.display = 'block';
+                            } finally {
+                                submitBtn.disabled = false;
+                                setMode(mode); // Reset button text
+                            }
+                        });
+                        setMode('login');
+                    }
+                }
+                // Defer script execution until the DOM is fully loaded.
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', init);
+                } else {
+                    init();
+                }
+            })();
+        </script>
+    </div></div>
+</div>
+</div>
+</header>
+
+
+<main class="wp-block-group is-layout-constrained wp-block-group-is-layout-constrained">
+    <div class="entry-content wp-block-post-content is-layout-flow wp-block-post-content-is-layout-flow">
+
+
+<p>abcde</p>
+
+
+
+</div>
+     <div>Page template</div>
+</main>
+
+
+<footer class="wp-block-template-part">
+<div class="wp-block-group has-gray-50-background-color has-background is-layout-constrained wp-block-group-is-layout-constrained" style="padding-top:3rem;padding-bottom:2rem">
+    
+    <div class="wp-block-group is-content-justification-space-between is-layout-flex wp-container-core-group-is-layout-b585a4aa wp-block-group-is-layout-flex">
+        
+        <div class="wp-block-group is-layout-flow wp-block-group-is-layout-flow">
+            <h3 class="wp-block-site-title has-text-color has-foreground-color"><a href="http://localhost:8080" target="_self" rel="home">Thrive in Spanish</a></h3>
+            
+            <p class="has-gray-600-color has-text-color has-small-font-size">Learn Spanish with confidence</p>
+            
+        </div>
+        
+        
+        
+        <div class="wp-block-group is-layout-flow wp-block-group-is-layout-flow">
+            
+            <p class="has-gray-500-color has-text-color has-small-font-size">© 2025 Thrive in Spanish. All rights reserved.</p>
+            
+        </div>
+        
+    </div>
+    
+</div>
+
+</footer>
+</div>
+<script type="speculationrules">
+{"prefetch":[{"source":"document","where":{"and":[{"href_matches":"\/*"},{"not":{"href_matches":["\/wp-*.php","\/wp-admin\/*","\/wp-content\/uploads\/*","\/wp-content\/*","\/wp-content\/plugins\/*","\/wp-content\/themes\/custom-theme\/*","\/*\\?(.+)"]}},{"not":{"selector_matches":"a[rel~=\"nofollow\"]"}},{"not":{"selector_matches":".no-prefetch, .no-prefetch a"}}]},"eagerness":"conservative"}]}
+</script>
+<script id="wp-block-template-skip-link-js-after">
+	( function() {
+		var skipLinkTarget = document.querySelector( 'main' ),
+			sibling,
+			skipLinkTargetID,
+			skipLink;
+
+		// Early exit if a skip-link target can't be located.
+		if ( ! skipLinkTarget ) {
+			return;
+		}
+
+		/*
+		 * Get the site wrapper.
+		 * The skip-link will be injected in the beginning of it.
+		 */
+		sibling = document.querySelector( '.wp-site-blocks' );
+
+		// Early exit if the root element was not found.
+		if ( ! sibling ) {
+			return;
+		}
+
+		// Get the skip-link target's ID, and generate one if it doesn't exist.
+		skipLinkTargetID = skipLinkTarget.id;
+		if ( ! skipLinkTargetID ) {
+			skipLinkTargetID = 'wp--skip-link--target';
+			skipLinkTarget.id = skipLinkTargetID;
+		}
+
+		// Create the skip link.
+		skipLink = document.createElement( 'a' );
+		skipLink.classList.add( 'skip-link', 'screen-reader-text' );
+		skipLink.id = 'wp-skip-link';
+		skipLink.href = '#' + skipLinkTargetID;
+		skipLink.innerText = 'Skip to content';
+
+		// Inject the skip link.
+		sibling.parentElement.insertBefore( skipLink, sibling );
+	}() );
+	
+</script>
+<script src="http://localhost:8080/wp-content/themes/custom-theme/js/auth-refresh.js?ver=1.0" id="thrive-auth-refresh-js"></script>
+<script type="module" src="http://localhost:8080/assets/calendar/thrive-calendar.js"></script><script src="http://localhost:8080/wp-includes/js/dist/vendor/react.js?ver=18.3.1.1" id="react-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/vendor/react-dom.js?ver=18.3.1.1" id="react-dom-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/escape-html.js?ver=93558693d672af42c190" id="wp-escape-html-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/element.js?ver=6bd445740b34f5eae604" id="wp-element-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/vendor/react-jsx-runtime.js?ver=18.3.1" id="react-jsx-runtime-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/dom-ready.js?ver=5b9fa8df0892dc9a7c41" id="wp-dom-ready-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/hooks.js?ver=be67dc331e61e06d52fa" id="wp-hooks-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/i18n.js?ver=5edc734adb78e0d7d00e" id="wp-i18n-js"></script>
+<script id="wp-i18n-js-after">
+wp.i18n.setLocaleData( { 'text direction\u0004ltr': [ 'ltr' ] } );
+</script>
+<script src="http://localhost:8080/wp-includes/js/dist/a11y.js?ver=604a4359a838a9073d9f" id="wp-a11y-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/deprecated.js?ver=741e32edb0e7c2dd30da" id="wp-deprecated-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/dom.js?ver=5c5821604f66f88e084b" id="wp-dom-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/is-shallow-equal.js?ver=58ed73f7376c883f832b" id="wp-is-shallow-equal-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/keycodes.js?ver=2bad5660ad4ebde6540c" id="wp-keycodes-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/priority-queue.js?ver=be4e4334602693fa7256" id="wp-priority-queue-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/compose.js?ver=ccc1a46c6a7b3734d300" id="wp-compose-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/vendor/moment.js?ver=2.30.1" id="moment-js"></script>
+<script id="moment-js-after">
+moment.updateLocale( 'en_US', {"months":["January","February","March","April","May","June","July","August","September","October","November","December"],"monthsShort":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"weekdays":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"weekdaysShort":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],"week":{"dow":1},"longDateFormat":{"LT":"g:i a","LTS":null,"L":null,"LL":"F j, Y","LLL":"F j, Y g:i a","LLLL":null}} );
+</script>
+<script src="http://localhost:8080/wp-includes/js/dist/date.js?ver=93f88d98de5601d8a46d" id="wp-date-js"></script>
+<script id="wp-date-js-after">
+wp.date.setSettings( {"l10n":{"locale":"en_US","months":["January","February","March","April","May","June","July","August","September","October","November","December"],"monthsShort":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"weekdays":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"weekdaysShort":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],"meridiem":{"am":"am","pm":"pm","AM":"AM","PM":"PM"},"relative":{"future":"%s from now","past":"%s ago","s":"a second","ss":"%d seconds","m":"a minute","mm":"%d minutes","h":"an hour","hh":"%d hours","d":"a day","dd":"%d days","M":"a month","MM":"%d months","y":"a year","yy":"%d years"},"startOfWeek":1},"formats":{"time":"g:i a","date":"F j, Y","datetime":"F j, Y g:i a","datetimeAbbreviated":"M j, Y g:i a"},"timezone":{"offset":0,"offsetFormatted":"0","string":"","abbr":""}} );
+</script>
+<script src="http://localhost:8080/wp-includes/js/dist/html-entities.js?ver=0d1913e5b8fb9137bad2" id="wp-html-entities-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/primitives.js?ver=66632613c3c6b0ed6f76" id="wp-primitives-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/private-apis.js?ver=18ea1d568a3bfd485afb" id="wp-private-apis-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/redux-routine.js?ver=9473249104d09cb1245d" id="wp-redux-routine-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/data.js?ver=2797f012cdb7d180a746" id="wp-data-js"></script>
+<script id="wp-data-js-after">
+( function() {
+	var userId = 0;
+	var storageKey = "WP_DATA_USER_" + userId;
+	wp.data
+		.use( wp.data.plugins.persistence, { storageKey: storageKey } );
+} )();
+</script>
+<script src="http://localhost:8080/wp-includes/js/dist/rich-text.js?ver=bc76e6f025d3556aa54a" id="wp-rich-text-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/warning.js?ver=4ecd4ff4d8fa94314090" id="wp-warning-js"></script>
+<script src="http://localhost:8080/wp-includes/js/dist/components.js?ver=0526106ae8fcc5b2e62d" id="wp-components-js"></script>
+<script src="http://localhost:8080/wp-content/themes/custom-theme/build/view.index.ts.js?ver=1756670992" id="custom-theme-blocks-view-js"></script>
+</body>
+</html>

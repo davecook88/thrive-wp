@@ -9,8 +9,8 @@ require_once('/var/www/html/wp-load.php');
 
 // Create teacher home page
 $teacher_home_page = array(
-    'post_title'    => 'Teacher Dashboard',
-    'post_content'  => '<!-- wp:paragraph -->
+    'post_title' => 'Teacher Dashboard',
+    'post_content' => '<!-- wp:paragraph -->
 <p>Welcome to your teacher dashboard! Here you can manage your availability, view your classes, and access teaching resources.</p>
 <!-- /wp:paragraph -->
 
@@ -19,9 +19,9 @@ $teacher_home_page = array(
 <div class="wp-block-button is-style-fill"><a class="wp-block-button__link" href="/teacher/set-availability">Set Availability</a></div>
 <!-- /wp:button --></div>
 <!-- /wp:buttons -->',
-    'post_status'   => 'publish',
-    'post_type'     => 'page',
-    'post_name'     => 'teacher'
+    'post_status' => 'publish',
+    'post_type' => 'page',
+    'post_name' => 'teacher'
 );
 
 // Check if page exists
@@ -39,11 +39,11 @@ if (!$existing_page) {
 
 // Create set availability page
 $availability_page = array(
-    'post_title'    => 'Set Availability',
-    'post_content'  => '<!-- wp:custom-theme/teacher-availability {"heading":"Manage Your Availability","helpText":"Set your weekly schedule and add any exceptions or blackout periods.","accentColor":"#9aa8ff","showPreviewWeeks":2} /-->',
-    'post_status'   => 'publish',
-    'post_type'     => 'page',
-    'post_name'     => 'teacher/set-availability'
+    'post_title' => 'Set Availability',
+    'post_content' => '<!-- wp:custom-theme/teacher-availability {"heading":"Manage Your Availability","helpText":"Set your weekly schedule and add any exceptions or blackout periods.","accentColor":"#9aa8ff","showPreviewWeeks":2} /-->',
+    'post_status' => 'publish',
+    'post_type' => 'page',
+    'post_name' => 'teacher/set-availability'
 );
 
 // Check if page exists

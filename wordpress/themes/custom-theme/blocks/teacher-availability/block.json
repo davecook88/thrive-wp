@@ -32,5 +32,5 @@
         }
     },
     "editorScript": "custom-theme-blocks",
-    "render": "file:./render.php"
+    "render": "./render.php"
 }
