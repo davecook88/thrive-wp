@@ -6,87 +6,94 @@ import type { CalendarEvent } from "../types.js";
 export class ThriveWeekView extends LitElement {
   static styles = css`
     .grid {
-      border: var(--thrive-cal-border);
+      border: 1px solid var(--thrive-grid-line-major, #e6eef6);
       border-top: none;
       border-radius: 0 0 var(--thrive-cal-radius) var(--thrive-cal-radius);
       min-height: 360px;
-      background: var(--thrive-cal-bg, #fff);
+      background: var(--thrive-cal-bg, #fcfcfd);
       overflow: auto;
+      box-shadow: 0 1px 0 rgba(16, 24, 40, 0.02);
     }
     .week-view {
       display: grid;
-      grid-template-columns: 80px repeat(7, 1fr);
-      grid-template-rows: var(--thrive-cal-header-height) auto;
+      grid-template-columns: 72px repeat(7, 1fr);
+      grid-template-rows: var(--thrive-cal-header-height);
       position: relative;
+      gap: 0;
     }
     .week-view .time-label {
-      border-right: var(--thrive-cal-border);
-      padding: 4px 8px 4px 4px;
+      border-right: 1px solid var(--thrive-grid-line-minor, #f1f5f9);
+      padding: 6px 10px 6px 8px;
       font-size: 12px;
-      color: var(--thrive-cal-time-fg);
+      color: var(--thrive-muted-fg, #6b7280);
       text-align: right;
       position: sticky;
       left: 0;
-      background: var(--thrive-cal-bg, #fff);
+      background: var(--thrive-cal-bg, #fcfcfd);
       z-index: 20;
+      height: calc(
+        var(--thrive-cal-hour-height, 40px) * var(--thrive-cal-step-frac, 1)
+      );
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
     }
     .week-view .day-header {
-      border-bottom: var(--thrive-cal-border);
-      padding: 6px 8px;
+      border-bottom: 1px solid var(--thrive-grid-line-major, #e6eef6);
+      padding: 8px 6px;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 2px;
       text-align: center;
-      background: var(--thrive-cal-header-bg);
-      color: var(--thrive-cal-header-fg);
+      background: var(--thrive-cal-header-bg, transparent);
+      color: var(--thrive-heading-fg, #0f172a);
       font-weight: 600;
       position: sticky;
       top: 0;
       z-index: 30;
-      box-shadow: inset 0 -1px 0 var(--thrive-cal-grid-line-major);
     }
     .week-view .day-header .dow {
-      font-size: 11px;
-      letter-spacing: 0.02em;
+      font-size: 12px;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
       opacity: 0.85;
+      font-weight: 700;
+      color: var(--thrive-muted-fg, #64748b);
     }
     .week-view .day-header .date {
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 700;
       line-height: 1;
+      color: var(--thrive-heading-fg, #0f172a);
     }
     .week-view .day-header.is-today {
-      background: var(--thrive-cal-today-bg);
-      color: var(--thrive-cal-today-fg);
-    }
-    .week-view .day-header.is-today::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      border-top: 8px solid var(--thrive-cal-today-fg);
-      border-right: 8px solid transparent;
+      background: var(--thrive-today-bg, #f3f4f6);
+      color: var(--thrive-heading-fg, #0f172a);
+      box-shadow: inset 0 -2px 0 var(--thrive-accent, #c7d2fe);
     }
     .week-view .time-slot {
-      border-right: var(--thrive-cal-border);
-      border-bottom: 1px solid var(--thrive-cal-grid-line-minor);
+      border-right: 1px solid var(--thrive-grid-line-minor, #f1f5f9);
+      border-top: 1px solid var(--thrive-grid-line-minor, #f1f5f9);
       position: relative;
-      min-height: calc(var(--thrive-cal-hour-height) / 2);
+      height: calc(
+        var(--thrive-cal-hour-height, 40px) * var(--thrive-cal-step-frac, 1)
+      );
+      background: transparent;
     }
-    .week-view .time-slot.is-hour {
-      border-bottom: 1px solid var(--thrive-cal-grid-line-major);
-      background: var(--thrive-cal-row-hour-bg, transparent);
+    /* Marks the first slot at the start of an hour boundary */
+    .week-view .time-slot.is-hour-start {
+      border-top: 1px solid var(--thrive-grid-line-major, #e6eef6);
+      background: var(--thrive-row-hour-bg, transparent);
     }
     .week-view .time-slot:hover {
-      background: var(--thrive-cal-slot-hover);
+      background: var(--thrive-hover-bg, #f8fafc);
     }
     .events-layer {
       position: absolute;
       inset: 0;
       display: grid;
-      grid-template-columns: 80px repeat(7, 1fr);
+      grid-template-columns: 72px repeat(7, 1fr);
       grid-template-rows: 1fr;
       pointer-events: none;
       z-index: 1;
@@ -99,67 +106,68 @@ export class ThriveWeekView extends LitElement {
     }
     .event {
       position: absolute;
-      left: 2px;
-      right: 2px;
+      left: 6px;
+      right: 6px;
       box-sizing: border-box;
-      background: var(--thrive-cal-event-bg, #f5f7fa);
-      color: var(--thrive-cal-event-fg, #111827);
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-size: 12px;
+      background: var(--thrive-cal-event-bg, #eef2f7);
+      color: var(--thrive-cal-event-fg, #0f172a);
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-size: 13px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
       cursor: pointer;
       z-index: 10;
       pointer-events: auto;
-      border: 1px solid rgba(17, 24, 39, 0.08);
-      box-shadow: none;
+      border: 1px solid transparent;
+      box-shadow: 0 1px 0 rgba(16, 24, 40, 0.03);
     }
     .event.class {
-      background: var(--thrive-cal-event-class-bg, #10b981);
-      color: var(--thrive-cal-event-class-fg, #ffffff);
-      border: var(--thrive-cal-event-class-border, none);
-      border-radius: var(--thrive-cal-event-radius, 3px);
+      background: var(--thrive-cal-event-class-bg, #c7f9e9);
+      color: var(--thrive-cal-event-class-fg, #064e3b);
+      border: 1px solid rgba(6, 78, 59, 0.06);
+      border-radius: var(--thrive-cal-event-radius, 8px);
     }
     .event.booking {
-      background: var(--thrive-cal-event-booking-bg, #f59e0b);
-      color: var(--thrive-cal-event-booking-fg, #ffffff);
-      border: var(--thrive-cal-event-booking-border, none);
-      border-radius: var(--thrive-cal-event-radius, 3px);
+      background: var(--thrive-cal-event-booking-bg, #fef3e3);
+      color: var(--thrive-cal-event-booking-fg, #92400e);
+      border: 1px solid rgba(249, 115, 22, 0.06);
+      border-radius: var(--thrive-cal-event-radius, 8px);
     }
     .event.availability {
-      background: var(--thrive-cal-availability-bg);
-      color: var(--thrive-cal-availability-fg);
-      border: 1px dashed rgba(16, 185, 129, 0.6);
+      background: var(--thrive-cal-availability-bg, #f0fdf4);
+      color: var(--thrive-cal-availability-fg, #065f46);
+      border: 1px dashed rgba(16, 185, 129, 0.18);
     }
     .event.blackout {
       background: repeating-linear-gradient(
         135deg,
-        var(--thrive-cal-blackout-bg),
-        var(--thrive-cal-blackout-bg) 6px,
-        var(--thrive-cal-blackout-stripe) 6px,
-        var(--thrive-cal-blackout-stripe) 12px
+        var(--thrive-blackout-bg, #efefef),
+        var(--thrive-blackout-bg, #efefef) 6px,
+        var(--thrive-blackout-stripe, #f7f7f7) 6px,
+        var(--thrive-blackout-stripe, #f7f7f7) 12px
       );
       color: #111827;
-      border: 1px solid #dcdfe4;
+      border: 1px solid #e6e9ee;
     }
     .current-time {
       position: absolute;
-      left: 0;
-      right: 0;
+      left: 8px;
+      right: 8px;
       height: 2px;
-      background: #ef4444;
+      background: var(--thrive-accent, #ef4444);
       z-index: 20;
+      opacity: 0.95;
     }
     .current-time::before {
       content: "";
       position: absolute;
-      left: -4px;
-      top: -3px;
+      left: -6px;
+      top: -4px;
       width: 8px;
       height: 8px;
-      background: #ef4444;
+      background: var(--thrive-accent, #ef4444);
       border-radius: 50%;
     }
   `;
@@ -176,6 +184,8 @@ export class ThriveWeekView extends LitElement {
   @property({ type: String }) teacherId?: string;
   @property({ type: String }) timeFormat: "12h" | "24h" = "12h";
   @property({ type: Boolean }) showTimezone: boolean = true;
+  @property({ type: String }) timezone: string =
+    Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC";
 
   private emit(name: string, detail?: any) {
     this.dispatchEvent(
@@ -183,19 +193,50 @@ export class ThriveWeekView extends LitElement {
     );
   }
 
-  private getWeekDates(date: Date): Date[] {
-    const startOfWeek = new Date(date);
-    const day = startOfWeek.getDay();
-    const diff = startOfWeek.getDate() - day;
-    startOfWeek.setDate(diff);
+  // Read the actual pixel rhythm used by the grid from CSS variables so
+  // calculations match the rendered layout even if theme CSS overrides values.
+  private getPxMetrics() {
+    const root = this.renderRoot.querySelector(
+      ".week-view"
+    ) as HTMLElement | null;
+    const styles = root ? getComputedStyle(root) : undefined;
+    const cssHour = styles
+      ? parseFloat(styles.getPropertyValue("--thrive-cal-hour-height"))
+      : NaN;
+    const cssHeader = styles
+      ? parseFloat(styles.getPropertyValue("--thrive-cal-header-height"))
+      : NaN;
 
-    const dates: Date[] = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(startOfWeek);
-      d.setDate(startOfWeek.getDate() + i);
-      dates.push(d);
+    // Fallbacks from props when CSS vars aren't readable
+    let hourHeightPx =
+      Number.isFinite(cssHour) && cssHour > 0 ? cssHour : this.hourHeight;
+    let headerHeightPx =
+      Number.isFinite(cssHeader) && cssHeader >= 0
+        ? cssHeader
+        : this.headerHeight;
+
+    // Measure real per-minute scaling including borders using two consecutive
+    // hour-start slots in the first day column. This captures any border/padding.
+    const hourStarts = Array.from(
+      this.renderRoot.querySelectorAll<HTMLDivElement>(
+        ".time-slot.is-hour-start"
+      )
+    );
+    let pxPerMinute = hourHeightPx / 60; // default
+    let baseOffset = headerHeightPx; // default guess
+    if (root && hourStarts.length >= 8) {
+      const gridTop = root.getBoundingClientRect().top;
+      const first = hourStarts[0]; // day 0, first visible hour
+      const secondSameDay = hourStarts[7]; // day 0, next hour boundary
+      const d =
+        secondSameDay.getBoundingClientRect().top -
+        first.getBoundingClientRect().top;
+      if (d > 0) pxPerMinute = d / 60;
+      // Base offset: distance from top of grid to the top of the first slot
+      baseOffset = first.getBoundingClientRect().top - gridTop;
     }
-    return dates;
+
+    return { pxPerMinute, headerHeightPx, hourHeightPx, baseOffset };
   }
 
   private formatTime(date: Date): string {
@@ -204,13 +245,77 @@ export class ThriveWeekView extends LitElement {
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
+        timeZone: this.timezone,
       });
     }
     return date.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
+      timeZone: this.timezone,
     });
+  }
+
+  // Helpers to work with values in the configured timezone
+  private zonedDateKey(date: Date): string {
+    // Stable YYYY-MM-DD in the configured timezone
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: this.timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(date);
+  }
+
+  private zonedHM(date: Date): { h: number; m: number } {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: this.timezone,
+      hour12: false,
+      hour: "2-digit",
+      minute: "2-digit",
+    }).formatToParts(date);
+    const h = Number(parts.find((p) => p.type === "hour")?.value ?? "0");
+    const m = Number(parts.find((p) => p.type === "minute")?.value ?? "0");
+    return { h, m };
+  }
+
+  private zonedDowIndex(date: Date): number {
+    const dowStr = new Intl.DateTimeFormat("en-US", {
+      timeZone: this.timezone,
+      weekday: "short",
+    }).format(date);
+    const map: Record<string, number> = {
+      Sun: 0,
+      Mon: 1,
+      Tue: 2,
+      Wed: 3,
+      Thu: 4,
+      Fri: 5,
+      Sat: 6,
+    };
+    return map[dowStr as keyof typeof map] ?? 0;
+  }
+
+  // Convert a Date to the configured timezone by creating a local Date that
+  // reflects the wall time in that timezone. Useful for extracting Y/M/D/H/M.
+  private toZoned(date: Date): Date {
+    return new Date(date.toLocaleString("en-US", { timeZone: this.timezone }));
+  }
+
+  private getWeekDates(date: Date): Date[] {
+    // Compute week dates based on configured timezone (Sunday start)
+    const startOfWeek = new Date(date);
+    const dow = this.zonedDowIndex(date);
+    startOfWeek.setHours(0, 0, 0, 0);
+    startOfWeek.setDate(startOfWeek.getDate() - dow);
+
+    const dates: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(startOfWeek);
+      d.setDate(startOfWeek.getDate() + i);
+      dates.push(d);
+    }
+    return dates;
   }
 
   private getEventPosition(event: CalendarEvent): {
@@ -222,21 +327,16 @@ export class ThriveWeekView extends LitElement {
     const end = new Date(event.endUtc);
     const weekDates = this.getWeekDates(this.currentDate);
 
+    const startKey = this.zonedDateKey(start);
     const dayIndex = weekDates.findIndex(
-      (d) => d.toDateString() === start.toDateString()
+      (d) => this.zonedDateKey(d) === startKey
     );
 
     if (dayIndex === -1) return { top: 0, height: 0, dayIndex: -1 };
 
-    const startOfDay = new Date(start);
-    startOfDay.setHours(0, 0, 0, 0);
-    const minutesFromStart = Math.max(
-      0,
-      Math.min(
-        24 * 60,
-        Math.round((start.getTime() - startOfDay.getTime()) / 60000)
-      )
-    );
+    // Minutes from midnight in the configured timezone
+    const hm = this.zonedHM(start);
+    const minutesFromStart = hm.h * 60 + hm.m;
 
     const durationMinutes = Math.max(
       0,
@@ -246,12 +346,14 @@ export class ThriveWeekView extends LitElement {
     const visibleStart = this.startHour * 60;
     const visibleEnd = this.endHour * 60;
     const clampedStart = Math.max(minutesFromStart, visibleStart);
-    const pxPerMinute = this.hourHeight / 60;
-    const top = (clampedStart - visibleStart) * pxPerMinute;
+    const { pxPerMinute, hourHeightPx, baseOffset } = this.getPxMetrics();
+    const top = baseOffset + (clampedStart - visibleStart) * pxPerMinute;
 
-    const dayHeight = (this.endHour - this.startHour) * this.hourHeight;
+    const dayHeight = (this.endHour - this.startHour) * hourHeightPx;
     const heightRaw = durationMinutes * pxPerMinute;
-    const height = Math.max(2, Math.min(heightRaw, dayHeight - top));
+    // Allow height up to the bottom of the visible day window
+    const maxHeight = baseOffset + dayHeight - top;
+    const height = Math.max(2, Math.min(heightRaw, maxHeight));
 
     return { top, height, dayIndex };
   }
@@ -289,17 +391,35 @@ export class ThriveWeekView extends LitElement {
     );
 
     return html`
-      <div class="week-view">
+      <div
+        class="week-view"
+        style="
+          --thrive-cal-hour-height: ${this.hourHeight}px;
+          --thrive-cal-header-height: ${this.headerHeight}px;
+          --thrive-cal-step-frac: ${Math.max(
+          5,
+          Math.min(60, this.slotDuration)
+        ) / 60};
+        "
+      >
         <div class="day-header" style="justify-content:center;">
           ${this.showTimezone
-            ? html`<div class="dow" style="opacity:0.9;">UTC</div>`
+            ? html`<div class="dow" style="opacity:0.9;">${this.timezone}</div>`
             : nothing}
         </div>
         ${weekDates.map((date) => {
           const now = new Date();
-          const isToday = date.toDateString() === now.toDateString();
-          const dow = date.toLocaleDateString("en-US", { weekday: "short" });
-          const day = date.getDate();
+          const isToday = this.zonedDateKey(date) === this.zonedDateKey(now);
+          const dow = date.toLocaleDateString("en-US", {
+            weekday: "short",
+            timeZone: this.timezone,
+          });
+          const day = Number(
+            date.toLocaleDateString("en-CA", {
+              day: "2-digit",
+              timeZone: this.timezone,
+            })
+          );
           return html` <div class="day-header ${isToday ? "is-today" : ""}">
             <div class="dow">${dow}</div>
             <div class="date">${day}</div>
@@ -316,9 +436,9 @@ export class ThriveWeekView extends LitElement {
             ${weekDates.map(
               (_, dayIndex) => html`
                 <div
-                  class="time-slot ${showHourLabel ? "is-hour" : ""}"
-                  style="min-height: calc(var(--thrive-cal-hour-height) * ${step /
-                  60});"
+                  class="time-slot ${showHourLabel
+                    ? "is-hour-start"
+                    : "is-step"}"
                   @click=${() => this.onSlotClick(minutesFromStart, dayIndex)}
                 ></div>
               `
@@ -348,8 +468,7 @@ export class ThriveWeekView extends LitElement {
                   <div
                     class="event ${event.type}"
                     part="event event-${event.type}"
-                    style="top: ${top +
-                    this.headerHeight}px; height: ${height}px;"
+                    style="top: ${top}px; height: ${height}px;"
                     @click=${() => this.onEventClick(event)}
                   >
                     ${event.title}
@@ -367,26 +486,25 @@ export class ThriveWeekView extends LitElement {
     const now = new Date();
     const weekDates = this.getWeekDates(this.currentDate);
     const todayIndex = weekDates.findIndex(
-      (d) => d.toDateString() === now.toDateString()
+      (d) => this.zonedDateKey(d) === this.zonedDateKey(now)
     );
 
     if (todayIndex === -1) return nothing;
 
-    const minutes = now.getHours() * 60 + now.getMinutes();
+    // Use the timezone-aware hour and minute calculation
+    const { h, m } = this.zonedHM(now);
+    const minutes = h * 60 + m;
+
     const visibleStart = this.startHour * 60;
     const visibleEnd = this.endHour * 60;
     const clamped = Math.max(visibleStart, Math.min(minutes, visibleEnd));
-    const rawTop =
-      ((clamped - visibleStart) / 60) * this.hourHeight + this.headerHeight;
-    const maxTop =
-      this.headerHeight + (this.endHour - this.startHour) * this.hourHeight;
-    const top = Math.max(this.headerHeight, Math.min(rawTop, maxTop - 1));
+
+    // Calculate position relative to visible area, using measured CSS rhythm
+    const { pxPerMinute, baseOffset } = this.getPxMetrics();
+    const top = baseOffset + (clamped - visibleStart) * pxPerMinute;
 
     return html`
-      <div
-        class="indicator-wrapper"
-        style="grid-column: ${todayIndex + 2}; position: relative;"
-      >
+      <div class="indicator-wrapper" style="grid-column: ${todayIndex + 2};">
         <div
           class="current-time"
           part="current-time"

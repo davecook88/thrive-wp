@@ -5,36 +5,65 @@ import { customElement, property } from "lit/decorators.js";
 export class ThriveToolbar extends LitElement {
   static styles = css`
     .toolbar {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 16px;
       align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      padding: 8px 12px;
-      border: var(--thrive-cal-border);
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--thrive-grid-line-major);
       border-radius: var(--thrive-cal-radius) var(--thrive-cal-radius) 0 0;
-      background: var(--thrive-cal-toolbar-bg);
+      background: var(--thrive-toolbar-bg, transparent);
+      color: var(--thrive-muted-fg, #334155);
     }
     .toolbar .nav-buttons {
       display: flex;
-      gap: 4px;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+    }
+    .toolbar .center-info {
+      text-align: center;
     }
     .toolbar button {
-      padding: 4px 8px;
-      border: 1px solid #e5e7eb;
-      border-radius: 4px;
-      background: white;
+      padding: 6px 10px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--thrive-muted-fg, #374151);
       cursor: pointer;
+      font-size: 13px;
+      transition: background 0.12s ease, color 0.12s ease,
+        border-color 0.12s ease;
     }
     .toolbar button:hover {
-      background: #f5f7fa;
+      background: var(--thrive-hover-bg, #f5f7fa);
+      border-color: var(--thrive-grid-line-major);
     }
     .toolbar .view-buttons {
       display: flex;
-      gap: 2px;
+      gap: 8px;
     }
     .toolbar .view-buttons button.active {
-      background: #111827;
+      background: var(--thrive-accent, #6b7280);
       color: white;
+    }
+    .toolbar .nav-buttons span {
+      font-weight: 700;
+      color: var(--thrive-heading-fg, #0f172a);
+      text-align: center;
+      letter-spacing: 0.01em;
+    }
+    .toolbar button.today {
+      background: var(--thrive-today-bg, #eef2ff);
+      color: var(--thrive-today-fg, #4338ca);
+      border-color: transparent;
+    }
+    .toolbar button.today:hover {
+      background: color-mix(
+        in srgb,
+        var(--thrive-today-bg, #eef2ff) 85%,
+        transparent
+      );
     }
   `;
 
@@ -62,10 +91,11 @@ export class ThriveToolbar extends LitElement {
   }
 
   private getWeekDates(date: Date): Date[] {
-    const startOfWeek = new Date(date);
+    const zoned = this.toZoned(date);
+    const startOfWeek = new Date(zoned);
     const day = startOfWeek.getDay();
-    const diff = startOfWeek.getDate() - day;
-    startOfWeek.setDate(diff);
+    startOfWeek.setHours(0, 0, 0, 0);
+    startOfWeek.setDate(startOfWeek.getDate() - day);
 
     const dates: Date[] = [];
     for (let i = 0; i < 7; i++) {
@@ -76,6 +106,10 @@ export class ThriveToolbar extends LitElement {
     return dates;
   }
 
+  private toZoned(date: Date): Date {
+    return new Date(date.toLocaleString("en-US", { timeZone: this.timezone }));
+  }
+
   private formatWeekRangeLabel(anchor: Date): string {
     const week = this.getWeekDates(anchor);
     const start = week[0];
@@ -84,11 +118,13 @@ export class ThriveToolbar extends LitElement {
       month: "short",
       day: "numeric",
       year: "numeric",
+      timeZone: this.timezone,
     });
     const endStr = end.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: start.getFullYear() === end.getFullYear() ? undefined : "numeric",
+      timeZone: this.timezone,
     });
     return `${startStr} - ${endStr}`;
   }
@@ -96,22 +132,20 @@ export class ThriveToolbar extends LitElement {
   render() {
     return html`
       <div class="toolbar" role="toolbar" aria-label="Calendar toolbar">
-        <div class="nav-buttons">
-          <button class="today" @click=${this.handleToday}>📅 Today</button>
-          <span style="margin-left: 8px; font-weight: 700;">
-            ${this.formatWeekRangeLabel(this.currentDate)}
-          </span>
-        </div>
+        <button class="today" @click=${this.handleToday}>📅 Today</button>
 
         <div class="nav-buttons">
           <button @click=${() => this.handleNavigate("prev")} title="Previous">
             ←
           </button>
+          <span style="margin-left: 8px; font-weight: 700;">
+            ${this.formatWeekRangeLabel(this.currentDate)}
+          </span>
           <button @click=${() => this.handleNavigate("next")} title="Next">
             →
           </button>
         </div>
-
+        <!-- Navigation buttons  
         <div class="view-buttons">
           <button
             class=${this.view === "week" ? "active" : ""}
@@ -138,8 +172,9 @@ export class ThriveToolbar extends LitElement {
             List
           </button>
         </div>
+        -->
 
-        <div>
+        <div class="center-info">
           <span style="color:#94a3b8">${this.uiMode} • ${this.timezone}</span>
         </div>
       </div>

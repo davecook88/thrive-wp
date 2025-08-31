@@ -22,21 +22,21 @@ export class ThriveCalendar extends LitElement {
       /* Customizable rhythm and palette */
       --thrive-cal-header-height: var(--thrive-header-height, 40px);
       --thrive-cal-hour-height: var(--thrive-hour-height, 40px);
-      --thrive-cal-radius: var(--thrive-radius, 8px);
-      --thrive-cal-border: var(--thrive-border, 1px solid #e5e7eb);
-      --thrive-cal-toolbar-bg: var(--thrive-toolbar-bg, #f8fafc);
-      --thrive-cal-header-bg: var(--thrive-header-bg, #fafafa);
-      --thrive-cal-header-fg: var(--thrive-header-fg, #111827);
-      --thrive-cal-today-bg: var(--thrive-today-bg, #eef2ff);
-      --thrive-cal-today-fg: var(--thrive-today-fg, #4338ca);
-      --thrive-cal-time-fg: var(--thrive-time-fg, #6b7280);
-      --thrive-cal-grid-line-major: var(--thrive-grid-line-major, #eaeef3);
-      --thrive-cal-grid-line-minor: var(--thrive-grid-line-minor, #f3f6fa);
-      --thrive-cal-slot-hover: var(--thrive-slot-hover, #f8fafc);
-      --thrive-cal-availability-bg: var(--thrive-availability-bg, #86efac);
-      --thrive-cal-availability-fg: var(--thrive-availability-fg, #064e3b);
-      --thrive-cal-blackout-bg: var(--thrive-blackout-bg, #e5e7eb);
-      --thrive-cal-blackout-stripe: var(--thrive-blackout-stripe, #f3f4f6);
+      --thrive-cal-radius: var(--thrive-radius, 10px);
+      --thrive-grid-line-major: var(--thrive-grid-line-major, #e6eef6);
+      --thrive-grid-line-minor: var(--thrive-grid-line-minor, #f1f5f9);
+      --thrive-toolbar-bg: var(--thrive-toolbar-bg, transparent);
+      --thrive-cal-header-bg: var(--thrive-header-bg, transparent);
+      --thrive-heading-fg: var(--thrive-heading-fg, #0f172a);
+      --thrive-muted-fg: var(--thrive-muted-fg, #64748b);
+      --thrive-today-bg: var(--thrive-today-bg, #f8fafc);
+      --thrive-today-fg: var(--thrive-today-fg, #4338ca);
+      --thrive-slot-hover: var(--thrive-slot-hover, #f8fafc);
+      --thrive-availability-bg: var(--thrive-availability-bg, #f0fdf4);
+      --thrive-availability-fg: var(--thrive-availability-fg, #065f46);
+      --thrive-blackout-bg: var(--thrive-blackout-bg, #efefef);
+      --thrive-blackout-stripe: var(--thrive-blackout-stripe, #f7f7f7);
+      --thrive-accent: var(--thrive-accent, #9aa8ff);
     }
   `;
 
@@ -46,7 +46,7 @@ export class ThriveCalendar extends LitElement {
   @property({ type: String, reflect: true, attribute: "teacher-id" })
   teacherId?: string;
   @property({ type: String, reflect: true }) timezone: string =
-    Intl.DateTimeFormat().resolvedOptions().timeZone;
+    Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC";
   @property({ type: Number, reflect: true, attribute: "slot-duration" })
   slotDuration: number = 30;
   @property({ type: Number, reflect: true, attribute: "snap-to" })
@@ -200,12 +200,14 @@ export class ThriveCalendar extends LitElement {
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
+        timeZone: this.timezone,
       });
     }
     return date.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
+      timeZone: this.timezone,
     });
   }
 
@@ -214,57 +216,12 @@ export class ThriveCalendar extends LitElement {
       weekday: "short",
       month: "short",
       day: "numeric",
+      timeZone: this.timezone,
     });
   }
 
-  private getEventPosition(event: CalendarEvent): {
-    top: number;
-    height: number;
-    dayIndex: number;
-  } {
-    // Compute position robustly using minutes since local midnight
-    const start = new Date(event.startUtc);
-    const end = new Date(event.endUtc);
-    const weekDates = this.getWeekDates(this.currentDate);
-
-    const dayIndex = weekDates.findIndex(
-      (d) => d.toDateString() === start.toDateString()
-    );
-
-    // If the event isn’t in the visible week, signal to skip it
-    if (dayIndex === -1) return { top: 0, height: 0, dayIndex: -1 };
-
-    // Minutes since local midnight for the event's start
-    const startOfDay = new Date(start);
-    startOfDay.setHours(0, 0, 0, 0);
-    const minutesFromStart = Math.max(
-      0,
-      Math.min(
-        24 * 60,
-        Math.round((start.getTime() - startOfDay.getTime()) / 60000)
-      )
-    );
-
-    // Duration in minutes (ensure non-negative)
-    const durationMinutes = Math.max(
-      0,
-      Math.round((end.getTime() - start.getTime()) / 60000)
-    );
-
-    // Respect visible window between startHour and endHour
-    const visibleStart = this.startHour * 60;
-    const visibleEnd = this.endHour * 60;
-    const clampedStart = Math.max(minutesFromStart, visibleStart);
-    const pxPerMinute = this.hourHeight / 60;
-    const top = (clampedStart - visibleStart) * pxPerMinute; // relative to the top of visible window
-
-    // Clamp height so the event doesn't overflow past the end of the day grid
-    const dayHeight = (this.endHour - this.startHour) * this.hourHeight; // px
-    const heightRaw = durationMinutes * pxPerMinute;
-    const height = Math.max(2, Math.min(heightRaw, dayHeight - top));
-
-    return { top, height, dayIndex };
-  }
+  // Note: event positioning is handled by <thrive-week-view> which is
+  // timezone-aware and reads CSS variables for exact pixel alignment.
 
   private onEventClick(event: CalendarEvent) {
     this.emit("event:click", { event });
