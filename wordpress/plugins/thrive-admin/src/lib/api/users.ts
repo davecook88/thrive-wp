@@ -89,8 +89,8 @@ export class UsersApiService {
     tier: number = 10
   ): Promise<UserResponse> {
     return apiClient.post<UserResponse>(
-      `${this.BASE_ENDPOINT}/${userId}/promote/teacher`,
-      { tier },
+      `${this.BASE_ENDPOINT}/make-teacher`,
+      { tier, userId },
       UserResponseSchema
     );
   }

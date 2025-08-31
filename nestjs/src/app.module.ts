@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module.js';
 import configuration, { DatabaseConfig } from './config/configuration.js';
 import { UsersModule } from './users/users.module.js';
 import { StudentsModule } from './students/students.module.js';
+import { TeachersModule } from './teachers/teachers.module.js';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { StudentsModule } from './students/students.module.js';
     AuthModule,
     UsersModule,
     StudentsModule,
+    TeachersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

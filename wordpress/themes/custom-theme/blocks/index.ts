@@ -2,4 +2,5 @@
 import "./login-auth/index.tsx";
 import "./thrive-calendar/index.tsx";
 import "./thrive-calendar-modal/index.tsx";
+import "./teacher-availability/index.tsx";
 // Add more blocks here as needed

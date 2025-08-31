@@ -136,9 +136,9 @@ export class AuthService {
     // Single query using UNION to check both admin and teacher roles
     const result = await this.usersRepo.query(
       `
-      SELECT 'admin' as role FROM admin WHERE user_id = ? AND isActive = 1
+      SELECT 'admin' as role FROM admin WHERE user_id = ? AND is_active = 1
       UNION ALL
-      SELECT 'teacher' as role FROM teacher WHERE user_id = ? AND isActive = 1
+      SELECT 'teacher' as role FROM teacher WHERE user_id = ? AND is_active = 1
     `,
       [userId, userId],
     );

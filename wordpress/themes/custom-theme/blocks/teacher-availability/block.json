@@ -1,0 +1,36 @@
+{
+    "apiVersion": 3,
+    "name": "custom-theme/teacher-availability",
+    "title": "Teacher Availability",
+    "category": "widgets",
+    "icon": "calendar",
+    "description": "Manage teacher availability with recurring rules and exceptions.",
+    "attributes": {
+        "heading": {
+            "type": "string",
+            "default": "Set Your Availability"
+        },
+        "helpText": {
+            "type": "string",
+            "default": "Configure your weekly schedule and any exceptions."
+        },
+        "accentColor": {
+            "type": "string",
+            "default": "#9aa8ff"
+        },
+        "showPreviewWeeks": {
+            "type": "number",
+            "default": 2
+        }
+    },
+    "supports": {
+        "anchor": true,
+        "align": true,
+        "color": {
+            "background": true,
+            "text": true
+        }
+    },
+    "editorScript": "custom-theme-blocks",
+    "render": "file:./render.php"
+}
