@@ -145,6 +145,24 @@
           <input type="number" id="snap-to" value="15" min="5" max="60">
         </div>
 
+        <div class="control-group">
+          <label for="start-hour">Start Hour (0-24):</label>
+          <input type="number" id="start-hour" value="0" min="0" max="23">
+        </div>
+
+        <div class="control-group">
+          <label for="end-hour">End Hour (1-24):</label>
+          <input type="number" id="end-hour" value="24" min="1" max="24">
+        </div>
+
+        <div class="control-group">
+          <label for="time-format">Time Format:</label>
+          <select id="time-format">
+            <option value="12h" selected>12h</option>
+            <option value="24h">24h</option>
+          </select>
+        </div>
+
         <div class="control-group checkbox-group">
           <input type="checkbox" id="show-classes" checked>
           <label for="show-classes">Show Classes</label>
@@ -161,15 +179,20 @@
         view="week"
         mode="public"
         teacher-id="teacher1"
-        slot-duration="30"
+  slot-duration="30"
         snap-to="15"
         show-classes="true"
         show-bookings="true"
+  start-hour="0"
+  end-hour="24"
+  time-format="12h"
         event-class-bg="#00ff00"
         event-class-fg="#ffffff"
         event-booking-bg="#f59e0b"
         event-booking-fg="#000"
         event-radius="3px"
+  availability-bg="#86efac"
+  availability-fg="#064e3b"
       ></thrive-calendar>
 
       <div class="events-log">
@@ -199,34 +222,19 @@
 
         // Provide demo events from the host page in local time
         const today = new Date();
-        const mk = (h, m) => {
+        const mk = (offsetDays, h, m) => {
           const d = new Date(today);
+          d.setDate(d.getDate() + offsetDays);
           d.setHours(h, m, 0, 0);
           return d.toISOString();
         };
+        // Example events showing availability, blackout, classes, and bookings across the week
         calendar.events = [
-          {
-            id: '1',
-            title: 'Morning Yoga Class',
-            startUtc: mk(8, 0),
-            endUtc: mk(9, 0),
-            type: 'class',
-            teacherId: 'teacher1',
-            classType: 'GROUP',
-            capacityMax: 20,
-            enrolledCount: 12,
-            status: 'SCHEDULED'
-          },
-          {
-            id: '2',
-            title: 'Private Session',
-            startUtc: mk(14, 0),
-            endUtc: mk(15, 0),
-            type: 'booking',
-            teacherId: 'teacher1',
-            sessionId: 'session1',
-            status: 'CONFIRMED'
-          }
+          { id: 'a1', title: 'Availability', startUtc: mk(0, 0, 30), endUtc: mk(0, 3, 30), type: 'availability', teacherId: 'teacher1' },
+          { id: 'a2', title: 'Availability', startUtc: mk(1, 0, 0), endUtc: mk(1, 4, 0), type: 'availability', teacherId: 'teacher1' },
+          { id: 'bo1', title: 'Blackout', startUtc: mk(2, 0, 30), endUtc: mk(2, 2, 30), type: 'blackout', teacherId: 'teacher1' },
+          { id: 'c1', title: 'Group Class', startUtc: mk(3, 1, 30), endUtc: mk(3, 2, 30), type: 'class', teacherId: 'teacher1', classType: 'GROUP', capacityMax: 10, status: 'SCHEDULED' },
+          { id: 'b1', title: 'Private Session', startUtc: mk(4, 2, 0), endUtc: mk(4, 3, 0), type: 'booking', teacherId: 'teacher1', sessionId: 'session1', status: 'CONFIRMED' }
         ];
 
         // Listen for calendar events
@@ -262,6 +270,16 @@
 
         document.getElementById('snap-to').addEventListener('input', (e) => {
           calendar.setAttribute('snap-to', e.target.value);
+        });
+
+        document.getElementById('start-hour').addEventListener('input', (e) => {
+          calendar.setAttribute('start-hour', e.target.value);
+        });
+        document.getElementById('end-hour').addEventListener('input', (e) => {
+          calendar.setAttribute('end-hour', e.target.value);
+        });
+        document.getElementById('time-format').addEventListener('change', (e) => {
+          calendar.setAttribute('time-format', e.target.value);
         });
 
         document.getElementById('show-classes').addEventListener('change', (e) => {

@@ -8,146 +8,35 @@ import type {
   ISODateTimeUTC,
 } from "./types.js";
 
+import "./components/toolbar.ts";
+import "./components/week-view.ts";
+
 @customElement("thrive-calendar")
 export class ThriveCalendar extends LitElement {
   static styles = css`
     :host {
       display: block;
-      font: normal 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu,
+      font: normal 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu,
         Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
       color: var(--thrive-cal-fg, #0f172a);
-    }
-    .toolbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 12px;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px 8px 0 0;
-      background: var(--thrive-cal-toolbar-bg, #f8fafc);
-    }
-    .toolbar .nav-buttons {
-      display: flex;
-      gap: 4px;
-    }
-    .toolbar button {
-      padding: 4px 8px;
-      border: 1px solid #d1d5db;
-      border-radius: 4px;
-      background: white;
-      cursor: pointer;
-    }
-    .toolbar button:hover {
-      background: #f3f4f6;
-    }
-    .toolbar .view-buttons {
-      display: flex;
-      gap: 2px;
-    }
-    .toolbar .view-buttons button.active {
-      background: #3b82f6;
-      color: white;
-    }
-    .grid {
-      border: 1px solid #e5e7eb;
-      border-top: none;
-      border-radius: 0 0 8px 8px;
-      min-height: 360px;
-      background: var(--thrive-cal-bg, #fff);
-      overflow: auto;
-    }
-    .week-view {
-      display: grid;
-      grid-template-columns: 60px repeat(7, 1fr);
-      grid-template-rows: 40px repeat(24, 40px);
-      position: relative; /* Ensure absolutely-positioned events are relative to the grid */
-    }
-    .week-view .time-label {
-      border-right: 1px solid #e5e7eb;
-      padding: 4px;
-      font-size: 12px;
-      color: #6b7280;
-      text-align: center;
-    }
-    .week-view .day-header {
-      border-bottom: 1px solid #e5e7eb;
-      padding: 8px;
-      font-weight: 600;
-      text-align: center;
-      background: #f9fafb;
-    }
-    .week-view .time-slot {
-      border-right: 1px solid #e5e7eb;
-      border-bottom: 1px solid #f3f4f6;
-      position: relative;
-      min-height: 40px;
-    }
-    .week-view .time-slot:hover {
-      background: #f8fafc;
-    }
-    /* Overlay layer spanning the grid to align events with day columns */
-    .events-layer {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      grid-template-columns: 60px repeat(7, 1fr);
-      /* Force a single row so all overlay children share the same vertical origin */
-      grid-template-rows: 1fr;
-      pointer-events: none; /* Let empty space clicks reach slots */
-    }
-    .event-wrapper,
-    .indicator-wrapper {
-      position: relative;
-      /* Place all wrappers in the first (only) grid row to avoid stacking */
-      grid-row: 1;
-      pointer-events: none;
-    }
-    .event {
-      position: absolute;
-      left: 2px;
-      right: 2px;
-      box-sizing: border-box;
-      background: #3b82f6;
-      color: white;
-      padding: 2px 4px;
-      border-radius: 3px;
-      font-size: 12px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      cursor: pointer;
-      z-index: 10;
-      pointer-events: auto; /* clickable over the overlay */
-    }
-    .event.class {
-      background: var(--thrive-cal-event-class-bg, #10b981);
-      color: var(--thrive-cal-event-class-fg, #ffffff);
-      border: var(--thrive-cal-event-class-border, none);
-      border-radius: var(--thrive-cal-event-radius, 3px);
-    }
-    .event.booking {
-      background: var(--thrive-cal-event-booking-bg, #f59e0b);
-      color: var(--thrive-cal-event-booking-fg, #ffffff);
-      border: var(--thrive-cal-event-booking-border, none);
-      border-radius: var(--thrive-cal-event-radius, 3px);
-    }
-    .current-time {
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: #ef4444;
-      z-index: 20;
-    }
-    .current-time::before {
-      content: "";
-      position: absolute;
-      left: -4px;
-      top: -3px;
-      width: 8px;
-      height: 8px;
-      background: #ef4444;
-      border-radius: 50%;
+      /* Customizable rhythm and palette */
+      --thrive-cal-header-height: var(--thrive-header-height, 40px);
+      --thrive-cal-hour-height: var(--thrive-hour-height, 40px);
+      --thrive-cal-radius: var(--thrive-radius, 8px);
+      --thrive-cal-border: var(--thrive-border, 1px solid #e5e7eb);
+      --thrive-cal-toolbar-bg: var(--thrive-toolbar-bg, #f8fafc);
+      --thrive-cal-header-bg: var(--thrive-header-bg, #fafafa);
+      --thrive-cal-header-fg: var(--thrive-header-fg, #111827);
+      --thrive-cal-today-bg: var(--thrive-today-bg, #eef2ff);
+      --thrive-cal-today-fg: var(--thrive-today-fg, #4338ca);
+      --thrive-cal-time-fg: var(--thrive-time-fg, #6b7280);
+      --thrive-cal-grid-line-major: var(--thrive-grid-line-major, #eaeef3);
+      --thrive-cal-grid-line-minor: var(--thrive-grid-line-minor, #f3f6fa);
+      --thrive-cal-slot-hover: var(--thrive-slot-hover, #f8fafc);
+      --thrive-cal-availability-bg: var(--thrive-availability-bg, #86efac);
+      --thrive-cal-availability-fg: var(--thrive-availability-fg, #064e3b);
+      --thrive-cal-blackout-bg: var(--thrive-blackout-bg, #e5e7eb);
+      --thrive-cal-blackout-stripe: var(--thrive-blackout-stripe, #f3f4f6);
     }
   `;
 
@@ -162,10 +51,25 @@ export class ThriveCalendar extends LitElement {
   slotDuration: number = 30;
   @property({ type: Number, reflect: true, attribute: "snap-to" })
   snapTo: number = 15;
+  // Start/End of visible day (hours 0-24)
+  @property({ type: Number, reflect: true, attribute: "start-hour" })
+  startHour: number = 0;
+  @property({ type: Number, reflect: true, attribute: "end-hour" })
+  endHour: number = 24;
+  // 12h vs 24h labels
+  @property({ type: String, reflect: true, attribute: "time-format" })
+  timeFormat: "12h" | "24h" = "12h";
+  // Heights to customize grid rhythm
+  @property({ type: Number, reflect: true, attribute: "hour-height" })
+  hourHeight: number = 40;
+  @property({ type: Number, reflect: true, attribute: "header-height" })
+  headerHeight: number = 40;
   @property({ type: Boolean, reflect: true, attribute: "show-classes" })
   showClasses: boolean = true;
   @property({ type: Boolean, reflect: true, attribute: "show-bookings" })
   showBookings: boolean = true;
+  @property({ type: Boolean, reflect: true, attribute: "show-timezone" })
+  showTimezone: boolean = true;
 
   @state() private _events: CalendarEvent[] = [];
   @state() private currentDate: Date = new Date();
@@ -186,6 +90,13 @@ export class ThriveCalendar extends LitElement {
   @property({ type: String, attribute: "event-booking-fg" })
   eventBookingFg?: string;
   @property({ type: String, attribute: "event-radius" }) eventRadius?: string;
+  @property({ type: String, attribute: "availability-bg" })
+  availabilityBg?: string;
+  @property({ type: String, attribute: "availability-fg" })
+  availabilityFg?: string;
+  @property({ type: String, attribute: "blackout-bg" }) blackoutBg?: string;
+  @property({ type: String, attribute: "blackout-stripe" })
+  blackoutStripe?: string;
 
   private emit<T extends object>(name: string, detail: T) {
     this.dispatchEvent(
@@ -242,6 +153,18 @@ export class ThriveCalendar extends LitElement {
       setVar("--thrive-cal-event-booking-fg", this.eventBookingFg);
     if (changed.has("eventRadius"))
       setVar("--thrive-cal-event-radius", this.eventRadius);
+    if (changed.has("hourHeight"))
+      setVar("--thrive-hour-height", `${this.hourHeight}px`);
+    if (changed.has("headerHeight"))
+      setVar("--thrive-header-height", `${this.headerHeight}px`);
+    if (changed.has("availabilityBg"))
+      setVar("--thrive-availability-bg", this.availabilityBg);
+    if (changed.has("availabilityFg"))
+      setVar("--thrive-availability-fg", this.availabilityFg);
+    if (changed.has("blackoutBg"))
+      setVar("--thrive-blackout-bg", this.blackoutBg);
+    if (changed.has("blackoutStripe"))
+      setVar("--thrive-blackout-stripe", this.blackoutStripe);
   }
 
   private navigateDate(direction: "prev" | "next") {
@@ -272,6 +195,13 @@ export class ThriveCalendar extends LitElement {
   }
 
   private formatTime(date: Date): string {
+    if (this.timeFormat === "24h") {
+      return date.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+    }
     return date.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
@@ -321,12 +251,15 @@ export class ThriveCalendar extends LitElement {
       Math.round((end.getTime() - start.getTime()) / 60000)
     );
 
-    // Map minutes to pixels (40px per hour -> 2/3 px per minute)
-    const pxPerMinute = 40 / 60;
-    const top = minutesFromStart * pxPerMinute; // relative to the start of the time grid (excludes header)
+    // Respect visible window between startHour and endHour
+    const visibleStart = this.startHour * 60;
+    const visibleEnd = this.endHour * 60;
+    const clampedStart = Math.max(minutesFromStart, visibleStart);
+    const pxPerMinute = this.hourHeight / 60;
+    const top = (clampedStart - visibleStart) * pxPerMinute; // relative to the top of visible window
 
     // Clamp height so the event doesn't overflow past the end of the day grid
-    const dayHeight = 24 * 40; // px
+    const dayHeight = (this.endHour - this.startHour) * this.hourHeight; // px
     const heightRaw = durationMinutes * pxPerMinute;
     const height = Math.max(2, Math.min(heightRaw, dayHeight - top));
 
@@ -337,10 +270,12 @@ export class ThriveCalendar extends LitElement {
     this.emit("event:click", { event });
   }
 
-  private onSlotClick(hour: number, dayIndex: number) {
+  private onSlotClick(minutesFromStart: number, dayIndex: number) {
     const weekDates = this.getWeekDates(this.currentDate);
     const clickedDate = new Date(weekDates[dayIndex]);
-    clickedDate.setHours(hour, 0, 0, 0);
+    const h = Math.floor(minutesFromStart / 60);
+    const m = minutesFromStart % 60;
+    clickedDate.setHours(h, m, 0, 0);
 
     const startUtc = clickedDate.toISOString();
     const endUtc = new Date(
@@ -354,154 +289,50 @@ export class ThriveCalendar extends LitElement {
     });
   }
 
-  private renderWeekView() {
-    const weekDates = this.getWeekDates(this.currentDate);
-    const hours = Array.from({ length: 24 }, (_, i) => i);
-
-    return html`
-      <div class="week-view">
-        <!-- Header row -->
-        <div></div>
-        ${weekDates.map(
-          (date) => html`
-            <div class="day-header">${this.formatDate(date)}</div>
-          `
-        )}
-
-        <!-- Time slots -->
-        ${hours.map(
-          (hour) => html`
-            <div class="time-label">
-              ${this.formatTime(new Date(0, 0, 0, hour))}
-            </div>
-            ${weekDates.map(
-              (_, dayIndex) => html`
-                <div
-                  class="time-slot"
-                  @click=${() => this.onSlotClick(hour, dayIndex)}
-                ></div>
-              `
-            )}
-          `
-        )}
-
-        <!-- Overlay for events and indicators -->
-        <div
-          class="events-layer"
-          style="position:absolute;inset:0;display:grid;grid-template-columns:60px repeat(7,1fr);pointer-events:none;"
-        >
-          ${this._events
-            .filter(
-              (ev) =>
-                ((this.showClasses && ev.type === "class") ||
-                  (this.showBookings && ev.type === "booking")) &&
-                (!this.teacherId || ev.teacherId === this.teacherId)
-            )
-            .map((event) => {
-              const { top, height, dayIndex } = this.getEventPosition(event);
-              if (dayIndex === -1) return nothing;
-              return html`
-                <div
-                  class="event-wrapper"
-                  style="grid-column: ${dayIndex + 2}; position: relative;"
-                >
-                  <div
-                    class="event ${event.type}"
-                    part="event event-${event.type}"
-                    style="top: ${top + 40}px; height: ${height}px;"
-                    @click=${() => this.onEventClick(event)}
-                  >
-                    ${event.title}
-                  </div>
-                </div>
-              `;
-            })}
-          ${this.renderCurrentTime()}
-        </div>
-      </div>
-    `;
+  private handleToday() {
+    this.currentDate = new Date();
+    this.selectedDate = new Date();
   }
 
-  private renderCurrentTime() {
-    const now = new Date();
-    const weekDates = this.getWeekDates(this.currentDate);
-    const todayIndex = weekDates.findIndex(
-      (d) => d.toDateString() === now.toDateString()
-    );
+  private handleNavigate(e: CustomEvent<{ direction: "prev" | "next" }>) {
+    this.navigateDate(e.detail.direction);
+  }
 
-    if (todayIndex === -1) return nothing;
-
-    const minutes = now.getHours() * 60 + now.getMinutes();
-    // Compute top in px (40 header + 40px per hour) and clamp to grid height
-    const rawTop = (minutes / 60) * 40 + 40;
-    const maxTop = 40 + 24 * 40;
-    const top = Math.max(40, Math.min(rawTop, maxTop - 1));
-
-    return html`
-      <div
-        class="indicator-wrapper"
-        style="grid-column: ${todayIndex + 2}; position: relative;"
-      >
-        <div
-          class="current-time"
-          part="current-time"
-          style="top: ${top}px;"
-        ></div>
-      </div>
-    `;
+  private handleSetView(e: CustomEvent<{ view: ViewMode }>) {
+    this.setView(e.detail.view);
   }
 
   render() {
     return html`
-      <div class="toolbar" role="toolbar" aria-label="Calendar toolbar">
-        <div class="nav-buttons">
-          <button @click=${() => this.navigateDate("prev")}>←</button>
-          <button @click=${() => this.navigateDate("next")}>→</button>
-          <span style="margin-left: 8px; font-weight: 600;">
-            ${this.currentDate.toLocaleDateString("en-US", {
-              month: "long",
-              year: "numeric",
-            })}
-          </span>
-        </div>
+      <thrive-toolbar
+        .view=${this.view}
+        .uiMode=${this.uiMode}
+        .timezone=${this.timezone}
+        .currentDate=${this.currentDate}
+        @today=${this.handleToday}
+        @navigate=${this.handleNavigate}
+        @set-view=${this.handleSetView}
+      ></thrive-toolbar>
 
-        <div class="view-buttons">
-          <button
-            class=${this.view === "week" ? "active" : ""}
-            @click=${() => this.setView("week")}
-          >
-            Week
-          </button>
-          <button
-            class=${this.view === "day" ? "active" : ""}
-            @click=${() => this.setView("day")}
-          >
-            Day
-          </button>
-          <button
-            class=${this.view === "month" ? "active" : ""}
-            @click=${() => this.setView("month")}
-          >
-            Month
-          </button>
-          <button
-            class=${this.view === "list" ? "active" : ""}
-            @click=${() => this.setView("list")}
-          >
-            List
-          </button>
-        </div>
-
-        <div>
-          <span style="color:#94a3b8">${this.uiMode} • ${this.timezone}</span>
-        </div>
-      </div>
-
-      <div class="grid" role="grid" aria-label="Calendar grid">
-        ${this.view === "week"
-          ? this.renderWeekView()
-          : html`<div>View ${this.view} not implemented yet</div>`}
-      </div>
+      ${this.view === "week"
+        ? html`<thrive-week-view
+            .events=${this._events}
+            .currentDate=${this.currentDate}
+            .startHour=${this.startHour}
+            .endHour=${this.endHour}
+            .hourHeight=${this.hourHeight}
+            .headerHeight=${this.headerHeight}
+            .slotDuration=${this.slotDuration}
+            .showClasses=${this.showClasses}
+            .showBookings=${this.showBookings}
+            .teacherId=${this.teacherId}
+            .timeFormat=${this.timeFormat}
+            .showTimezone=${this.showTimezone}
+            .timezone=${this.timezone}
+            @event:click=${this.onEventClick}
+            @slot:select=${this.onSlotClick}
+          ></thrive-week-view>`
+        : html`<div>View ${this.view} not implemented yet</div>`}
     `;
   }
 }

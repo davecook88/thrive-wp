@@ -34,7 +34,22 @@ export interface BookingEvent extends BaseCalendarEvent {
   cancellationReason?: string;
 }
 
-export type CalendarEvent = ClassEvent | BookingEvent;
+export interface AvailabilityEvent extends BaseCalendarEvent {
+  type: "availability";
+  // Optional metadata for availability slots
+  capacityMax?: number;
+}
+
+export interface BlackoutEvent extends BaseCalendarEvent {
+  type: "blackout";
+  reason?: string;
+}
+
+export type CalendarEvent =
+  | ClassEvent
+  | BookingEvent
+  | AvailabilityEvent
+  | BlackoutEvent;
 
 export interface CalendarRange {
   startUtc: ISODateTimeUTC;
