@@ -1,0 +1,58 @@
+{
+    "apiVersion": 3,
+    "name": "custom-theme/thrive-calendar",
+    "title": "Thrive Calendar",
+    "category": "widgets",
+    "icon": "calendar",
+    "description": "Teacher availability and bookings calendar.",
+    "attributes": {
+        "view": {
+            "type": "string",
+            "default": "week"
+        },
+        "mode": {
+            "type": "string",
+            "default": "auto"
+        },
+        "teacherId": {
+            "type": "string"
+        },
+        "slotDuration": {
+            "type": "number",
+            "default": 30
+        },
+        "snapTo": {
+            "type": "number",
+            "default": 15
+        },
+        "showClasses": {
+            "type": "boolean",
+            "default": true
+        },
+        "showAvailability": {
+            "type": "boolean",
+            "default": true
+        },
+        "showBookings": {
+            "type": "boolean",
+            "default": true
+        },
+        "defaultModalId": {
+            "type": "string"
+        },
+        "oneToOneModalId": {
+            "type": "string"
+        },
+        "groupModalId": {
+            "type": "string"
+        },
+        "courseModalId": {
+            "type": "string"
+        }
+    },
+    "supports": {
+        "anchor": true
+    },
+    "editorScript": "custom-theme-blocks",
+    "render": "file:./render.php"
+}

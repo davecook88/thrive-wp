@@ -37,6 +37,17 @@ function custom_theme_scripts()
 
     // Auth component logic is now inlined within its template part (login-auth.html).
     // Add other global/enqueued scripts here as needed.
+
+    // Optional: enqueue the calendar web component bundle (served by Nginx)
+    // When not built yet, this will 404 harmlessly in dev.
+    $calendar_bundle = home_url('/assets/calendar/thrive-calendar.js');
+    wp_enqueue_script(
+        'thrive-calendar-wc',
+        $calendar_bundle,
+        array(),
+        null,
+        true
+    );
 }
 add_action('wp_enqueue_scripts', 'custom_theme_scripts');
 
@@ -190,6 +201,20 @@ add_action('enqueue_block_editor_assets', function () {
     }
 });
 
+// Enqueue view scripts bundled by wp-scripts for frontend runtime
+add_action('wp_enqueue_scripts', function () {
+    $view = get_template_directory() . '/build/view.index.ts.js';
+    if (file_exists($view)) {
+        wp_enqueue_script(
+            'custom-theme-blocks-view',
+            get_template_directory_uri() . '/build/view.index.ts.js',
+            array('wp-element', 'wp-components'),
+            filemtime($view),
+            true
+        );
+    }
+});
+
 // Register all block.json files in /blocks subfolders
 add_action('init', function () {
     $blocks_dir = get_template_directory() . '/blocks';
@@ -197,6 +222,18 @@ add_action('init', function () {
         register_block_type(dirname($block_json));
     }
 });
+
+// Dev convenience: auto-enable pretty permalinks when WP_DEBUG is true
+add_action('init', function () {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        $structure = get_option('permalink_structure');
+        if (empty($structure)) {
+            global $wp_rewrite;
+            $wp_rewrite->set_permalink_structure('/%postname%/');
+            flush_rewrite_rules();
+        }
+    }
+}, 99);
 
 function thrive_hydrate_user_from_proxy(): void
 {

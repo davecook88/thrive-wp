@@ -10,8 +10,8 @@
     "@wordpress/server-side-render": "^6.4.0"
   },
   "scripts": {
-    "build": "wp-scripts build ./blocks/index.ts",
-    "start": "wp-scripts start ./blocks/index.ts"
+    "build": "wp-scripts build ./blocks/index.ts ./blocks/view.index.ts",
+    "start": "wp-scripts start ./blocks/index.ts ./blocks/view.index.ts"
   },
   "dependencies": {
     "@wordpress/block-editor": "^15.1.0"
