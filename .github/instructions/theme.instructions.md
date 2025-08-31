@@ -273,6 +273,10 @@ Extending:
 1. After implementing NestJS routes `/auth/google` & `/auth/google/callback`, successful auth should 302 back to WordPress (e.g. `/?auth=success`).
 2. You may inject dynamic user state (e.g. replace button with avatar) using `wp_localize_script` or a small REST request to NestJS.
 
+## Modal UI (Frontend React)
+
+For how reusable modal content is authored as blocks and rendered on the frontend using a React Modal, see `docs/thrive-modal-architecture.md`. This doc covers authoring modal blocks, triggering via data attributes, and the frontend runtime wiring.
+
 Testing (Puppeteer):
 `scripts/test-login-modal.js` performs:
 1. Load homepage

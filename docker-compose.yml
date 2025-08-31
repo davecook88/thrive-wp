@@ -75,6 +75,7 @@ services:
       - '8080:80'
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d:ro
+      - ./web-components/thrive-calendar/dist:/usr/share/nginx/html/assets/calendar:ro
     networks:
       - wordpress_net
 

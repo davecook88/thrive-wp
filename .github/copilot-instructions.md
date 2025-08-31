@@ -76,6 +76,7 @@ docker-compose logs -f wordpress
 - `nestjs/src/`: NestJS API code (TypeScript)
 - `docker-compose.yml`: Service orchestration (primary config)
 - `GEMINI.md`: Architecture decisions and requirements (keep updated)
+- `docs/thrive-modal-architecture.md`: Frontend React modal for blocks (authoring, triggers, runtime). Refer here for modal details.
 
 ## Local WP Database
 Credentials:
