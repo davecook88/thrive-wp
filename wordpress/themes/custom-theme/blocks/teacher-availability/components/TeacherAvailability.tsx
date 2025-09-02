@@ -42,6 +42,7 @@ export default function TeacherAvailability({
   const [exceptions, setExceptions] = useState<Exception[]>([]);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState("");
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
   const API_BASE = "/api";
 
@@ -146,6 +147,7 @@ export default function TeacherAvailability({
 
     // Normalize the response by reloading fresh state
     await loadAvailability();
+    setRefreshVersion((v) => v + 1);
     return result;
   };
 
@@ -305,6 +307,7 @@ export default function TeacherAvailability({
       <PreviewSection
         showPreviewWeeks={showPreviewWeeks}
         accentColor={accentColor}
+        refreshVersion={refreshVersion}
       />
     </div>
   );
