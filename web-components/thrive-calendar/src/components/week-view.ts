@@ -17,7 +17,6 @@ export class ThriveWeekView extends LitElement {
     .week-view {
       display: grid;
       grid-template-columns: 72px repeat(7, 1fr);
-      grid-template-rows: var(--thrive-cal-header-height);
       position: relative;
       gap: 0;
     }
@@ -38,40 +37,7 @@ export class ThriveWeekView extends LitElement {
       align-items: center;
       justify-content: flex-end;
     }
-    .week-view .day-header {
-      border-bottom: 1px solid var(--thrive-grid-line-major, #e6eef6);
-      padding: 8px 6px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      text-align: center;
-      background: var(--thrive-cal-header-bg, transparent);
-      color: var(--thrive-heading-fg, #0f172a);
-      font-weight: 600;
-      position: sticky;
-      top: 0;
-      z-index: 30;
-    }
-    .week-view .day-header .dow {
-      font-size: 12px;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      opacity: 0.85;
-      font-weight: 700;
-      color: var(--thrive-muted-fg, #64748b);
-    }
-    .week-view .day-header .date {
-      font-size: 14px;
-      font-weight: 700;
-      line-height: 1;
-      color: var(--thrive-heading-fg, #0f172a);
-    }
-    .week-view .day-header.is-today {
-      background: var(--thrive-today-bg, #f3f4f6);
-      color: var(--thrive-heading-fg, #0f172a);
-      box-shadow: inset 0 -2px 0 var(--thrive-accent, #c7d2fe);
-    }
+
     .week-view .time-slot {
       border-right: 1px solid var(--thrive-grid-line-minor, #f1f5f9);
       border-top: 1px solid var(--thrive-grid-line-minor, #f1f5f9);
@@ -170,6 +136,45 @@ export class ThriveWeekView extends LitElement {
       background: var(--thrive-accent, #ef4444);
       border-radius: 50%;
     }
+    .header {
+      display: grid;
+      grid-template-columns: 72px repeat(7, 1fr);
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: var(--thrive-cal-bg, #fcfcfd);
+    }
+    .header .day-header {
+      border-bottom: 1px solid var(--thrive-grid-line-major, #e6eef6);
+      padding: 8px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      text-align: center;
+      background: var(--thrive-cal-header-bg, transparent);
+      color: var(--thrive-heading-fg, #0f172a);
+      font-weight: 600;
+    }
+    .header .day-header .dow {
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      font-weight: 700;
+      color: var(--thrive-muted-fg, #64748b);
+    }
+    .header .day-header .date {
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--thrive-heading-fg, #0f172a);
+    }
+    .header .day-header.is-today {
+      background: var(--thrive-today-bg, #f3f4f6);
+      color: var(--thrive-heading-fg, #0f172a);
+      box-shadow: inset 0 -2px 0 var(--thrive-accent, #c7d2fe);
+    }
   `;
 
   @property({ type: Array }) events: CalendarEvent[] = [];
@@ -186,6 +191,7 @@ export class ThriveWeekView extends LitElement {
   @property({ type: Boolean }) showTimezone: boolean = true;
   @property({ type: String }) timezone: string =
     Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC";
+  @property({ type: Number }) viewHeight: number = 400;
 
   private emit(name: string, detail?: any) {
     this.dispatchEvent(
@@ -223,7 +229,7 @@ export class ThriveWeekView extends LitElement {
       )
     );
     let pxPerMinute = hourHeightPx / 60; // default
-    let baseOffset = headerHeightPx; // default guess
+    let baseOffset = 0; // default, since header is separate
     if (root && hourStarts.length >= 8) {
       const gridTop = root.getBoundingClientRect().top;
       const first = hourStarts[0]; // day 0, first visible hour
@@ -376,27 +382,10 @@ export class ThriveWeekView extends LitElement {
     });
   }
 
-  private renderWeekView() {
+  private renderHeader() {
     const weekDates = this.getWeekDates(this.currentDate);
-    const step = Math.max(5, Math.min(60, this.slotDuration));
-    const visibleMinutes = (this.endHour - this.startHour) * 60;
-    const steps = Array.from(
-      { length: Math.ceil(visibleMinutes / step) },
-      (_, i) => this.startHour * 60 + i * step
-    );
-
     return html`
-      <div
-        class="week-view"
-        style="
-          --thrive-cal-hour-height: ${this.hourHeight}px;
-          --thrive-cal-header-height: ${this.headerHeight}px;
-          --thrive-cal-step-frac: ${Math.max(
-          5,
-          Math.min(60, this.slotDuration)
-        ) / 60};
-        "
-      >
+      <div class="header">
         <div class="day-header" style="justify-content:center;">
           ${this.showTimezone
             ? html`<div class="dow" style="opacity:0.9;">${this.timezone}</div>`
@@ -420,6 +409,33 @@ export class ThriveWeekView extends LitElement {
             <div class="date">${day}</div>
           </div>`;
         })}
+      </div>
+    `;
+  }
+
+  private renderWeekView() {
+    const weekDates = this.getWeekDates(this.currentDate);
+    const step = Math.max(5, Math.min(60, this.slotDuration));
+    const visibleMinutes = (this.endHour - this.startHour) * 60;
+    const steps = Array.from(
+      { length: Math.ceil(visibleMinutes / step) },
+      (_, i) => this.startHour * 60 + i * step
+    );
+
+    return html`
+      <div
+        class="week-view"
+        style="
+          height: ${this.viewHeight}px;
+          overflow-y: auto;
+          --thrive-cal-hour-height: ${this.hourHeight}px;
+          --thrive-cal-header-height: ${this.headerHeight}px;
+          --thrive-cal-step-frac: ${Math.max(
+          5,
+          Math.min(60, this.slotDuration)
+        ) / 60};
+        "
+      >
         ${steps.map((minutesFromStart) => {
           const labelDate = new Date();
           labelDate.setHours(0, 0, 0, 0);
@@ -512,6 +528,7 @@ export class ThriveWeekView extends LitElement {
   render() {
     return html`
       <div class="grid" role="grid" aria-label="Calendar grid">
+        ${this.renderHeader()}
         ${this.renderWeekView()}
       </div>
     `;
