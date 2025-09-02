@@ -344,16 +344,11 @@ export class ThriveWeekView extends LitElement {
     );
 
     const visibleStart = this.startHour * 60;
-    const visibleEnd = this.endHour * 60;
     const clampedStart = Math.max(minutesFromStart, visibleStart);
-    const { pxPerMinute, hourHeightPx, baseOffset } = this.getPxMetrics();
+    const { pxPerMinute, baseOffset } = this.getPxMetrics();
     const top = baseOffset + (clampedStart - visibleStart) * pxPerMinute;
 
-    const dayHeight = (this.endHour - this.startHour) * hourHeightPx;
-    const heightRaw = durationMinutes * pxPerMinute;
-    // Allow height up to the bottom of the visible day window
-    const maxHeight = baseOffset + dayHeight - top;
-    const height = Math.max(2, Math.min(heightRaw, maxHeight));
+    const height = durationMinutes * pxPerMinute;
 
     return { top, height, dayIndex };
   }
