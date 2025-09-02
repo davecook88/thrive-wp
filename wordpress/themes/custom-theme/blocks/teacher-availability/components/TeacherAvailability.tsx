@@ -112,10 +112,16 @@ export default function TeacherAvailability({
     nextRules: Rule[],
     nextExceptions: Exception[]
   ) => {
-    const toTime = (mins: number) =>
-      `${Math.floor(mins / 60)
+    const toTime = (mins: number) => {
+      // Convert local time minutes to UTC time string
+      const localDate = new Date();
+      localDate.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
+      const utcHours = localDate.getUTCHours();
+      const utcMinutes = localDate.getUTCMinutes();
+      return `${utcHours.toString().padStart(2, "0")}:${utcMinutes
         .toString()
-        .padStart(2, "0")}:${(mins % 60).toString().padStart(2, "0")}`;
+        .padStart(2, "0")}`;
+    };
 
     const payload = {
       rules: nextRules.map((r) => ({

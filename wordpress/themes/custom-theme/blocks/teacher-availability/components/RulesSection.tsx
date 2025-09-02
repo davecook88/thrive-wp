@@ -55,9 +55,12 @@ export default function RulesSection({
   };
 
   const minutesToTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours.toString().padStart(2, "0")}:${mins
+    // Convert UTC minutes to local time for display
+    const utcDate = new Date();
+    utcDate.setUTCHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+    const localHours = utcDate.getHours();
+    const localMinutes = utcDate.getMinutes();
+    return `${localHours.toString().padStart(2, "0")}:${localMinutes
       .toString()
       .padStart(2, "0")}`;
   };

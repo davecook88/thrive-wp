@@ -61,6 +61,7 @@ export default function PreviewSection({
         }
         const data: { windows: Array<{ start: string; end: string }> } =
           await res.json();
+        console.log("preview data", data);
 
         const events = (data.windows || []).map((w, idx) => ({
           id: String(idx + 1),
@@ -69,6 +70,8 @@ export default function PreviewSection({
           endUtc: w.end,
           type: "availability",
         }));
+
+        console.log("events", events);
 
         // Inject events into the web component
         const cal = (calendarRef.current!.firstElementChild ||
