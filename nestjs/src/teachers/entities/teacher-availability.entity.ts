@@ -23,9 +23,10 @@ export enum TeacherAvailabilityKind {
 }
 
 @Entity('teacher_availability')
-@Index(['teacher_id'], { unique: false })
-@Index(['teacher_id', 'kind'], { unique: false })
-@Index(['teacher_id', 'weekday', 'startTimeMinutes'], { unique: false })
+// Indexes must reference entity property names, not DB column names
+@Index(['teacherId'], { unique: false })
+@Index(['teacherId', 'kind'], { unique: false })
+@Index(['teacherId', 'weekday', 'startTimeMinutes'], { unique: false })
 export class TeacherAvailability extends BaseEntity {
   @Column({
     name: 'teacher_id',

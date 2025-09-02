@@ -70,9 +70,33 @@ export default function TeacherAvailability({
   const loadAvailability = async () => {
     try {
       setLoading(true);
-      const data: AvailabilityData = await apiCall("/teachers/me/availability");
-      setRules(data.rules || []);
-      setExceptions(data.exceptions || []);
+      // Backend shape -> UI shape mapping
+      const data = await apiCall("/teachers/me/availability");
+      const toMinutes = (t: string) => {
+        const [h, m] = t.split(":").map(Number);
+        return h * 60 + m;
+      };
+
+      const mappedRules: Rule[] = (data.rules || []).map((r: any) => ({
+        id: String(r.id),
+        weekday: String(r.weekday),
+        startTimeMinutes: toMinutes(r.startTime),
+        endTimeMinutes: toMinutes(r.endTime),
+        kind: "available",
+      }));
+
+      const mappedExceptions: Exception[] = (data.exceptions || []).map(
+        (e: any) => ({
+          id: String(e.id),
+          date: e.date,
+          kind: e.isBlackout ? "unavailable" : "available",
+          startTimeMinutes: e.startTime ? toMinutes(e.startTime) : undefined,
+          endTimeMinutes: e.endTime ? toMinutes(e.endTime) : undefined,
+        })
+      );
+
+      setRules(mappedRules);
+      setExceptions(mappedExceptions);
     } catch (error) {
       console.error("Failed to load availability:", error);
       setRules([]);
@@ -82,26 +106,54 @@ export default function TeacherAvailability({
     }
   };
 
+  // Build DTO and persist full availability snapshot (API uses PUT on the collection)
+  const persistAvailability = async (
+    nextRules: Rule[],
+    nextExceptions: Exception[]
+  ) => {
+    const toTime = (mins: number) =>
+      `${Math.floor(mins / 60)
+        .toString()
+        .padStart(2, "0")}:${(mins % 60).toString().padStart(2, "0")}`;
+
+    const payload = {
+      rules: nextRules.map((r) => ({
+        weekday: Number(r.weekday),
+        startTime: toTime(r.startTimeMinutes),
+        endTime: toTime(r.endTimeMinutes),
+      })),
+      // Only blackout exceptions are currently supported by the API
+      exceptions: nextExceptions
+        .filter((e) => e.kind === "unavailable")
+        .map((e) => ({
+          date: e.date,
+          startTime:
+            typeof e.startTimeMinutes === "number"
+              ? toTime(e.startTimeMinutes)
+              : undefined,
+          endTime:
+            typeof e.endTimeMinutes === "number"
+              ? toTime(e.endTimeMinutes)
+              : undefined,
+          isBlackout: true,
+        })),
+    };
+
+    const result = await apiCall("/teachers/me/availability", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+
+    // Normalize the response by reloading fresh state
+    await loadAvailability();
+    return result;
+  };
+
   const handleAddRule = async (rule: Omit<Rule, "id">) => {
     try {
-      const response = await fetch("/api/teachers/me/availability/rules", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "same-origin",
-        body: JSON.stringify(rule),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log("Rule added:", result);
-
-      // Refresh the availability data
-      await loadAvailability();
+      const next = [...rules, rule];
+      setRules(next);
+      await persistAvailability(next, exceptions);
     } catch (error) {
       console.error("Error adding rule:", error);
       alert("Failed to add rule: " + (error as Error).message);
@@ -117,20 +169,9 @@ export default function TeacherAvailability({
     }
 
     try {
-      const response = await fetch(
-        `/api/teachers/me/availability/rules/${rule.id}`,
-        {
-          method: "DELETE",
-          credentials: "same-origin",
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      // Remove from local state
-      setRules(rules.filter((_, i) => i !== index));
+      const next = rules.filter((_, i) => i !== index);
+      setRules(next);
+      await persistAvailability(next, exceptions);
     } catch (error) {
       console.error("Error removing rule:", error);
       alert("Failed to remove rule: " + (error as Error).message);
@@ -138,25 +179,15 @@ export default function TeacherAvailability({
   };
 
   const handleAddException = async (exception: Omit<Exception, "id">) => {
+    // Only blackout (kind === 'unavailable') is supported by the API currently
+    if (exception.kind !== "unavailable") {
+      alert("Custom availability exceptions are not supported yet.");
+      return;
+    }
     try {
-      const response = await fetch("/api/teachers/me/availability/exceptions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "same-origin",
-        body: JSON.stringify(exception),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log("Exception added:", result);
-
-      // Refresh the availability data
-      await loadAvailability();
+      const next = [...exceptions, exception];
+      setExceptions(next);
+      await persistAvailability(rules, next);
     } catch (error) {
       console.error("Error adding exception:", error);
       alert("Failed to add exception: " + (error as Error).message);
@@ -172,20 +203,9 @@ export default function TeacherAvailability({
     }
 
     try {
-      const response = await fetch(
-        `/api/teachers/me/availability/exceptions/${exception.id}`,
-        {
-          method: "DELETE",
-          credentials: "same-origin",
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      // Remove from local state
-      setExceptions(exceptions.filter((_, i) => i !== index));
+      const next = exceptions.filter((_, i) => i !== index);
+      setExceptions(next);
+      await persistAvailability(rules, next);
     } catch (error) {
       console.error("Error removing exception:", error);
       alert("Failed to remove exception: " + (error as Error).message);
@@ -255,11 +275,6 @@ export default function TeacherAvailability({
         />
       </div>
 
-      <PreviewSection
-        showPreviewWeeks={showPreviewWeeks}
-        accentColor={accentColor}
-      />
-
       {/* Save Button */}
       <div style={{ textAlign: "center", marginBottom: "20px" }}>
         <Button
@@ -286,6 +301,11 @@ export default function TeacherAvailability({
           {saveStatus}
         </span>
       </div>
+
+      <PreviewSection
+        showPreviewWeeks={showPreviewWeeks}
+        accentColor={accentColor}
+      />
     </div>
   );
 }

@@ -224,12 +224,44 @@
             "border": {
               "color": "var(--wp--preset--color--primary)",
               "width": "2px",
-              "style": "solid"
+              "style": "solid",
+              "radius": "12px"
+            },
+            "spacing": {
+              "padding": {
+                "top": "12px",
+                "right": "24px",
+                "bottom": "12px",
+                "left": "24px"
+              }
+            },
+            "typography": {
+              "fontWeight": "600"
+            }
+          },
+          "thrive-secondary": {
+            "color": {
+              "background": "var(--wp--preset--color--gray-100)",
+              "text": "var(--wp--preset--color--gray-600)"
+            },
+            "border": {
+              "radius": "12px"
+            },
+            "spacing": {
+              "padding": {
+                "top": "12px",
+                "right": "24px",
+                "bottom": "12px",
+                "left": "24px"
+              }
+            },
+            "typography": {
+              "fontWeight": "600"
             }
           }
         },
         "border": {
-          "radius": "8px"
+          "radius": "12px"
         },
         "spacing": {
           "padding": {
@@ -240,13 +272,47 @@
           }
         },
         "typography": {
-          "fontWeight": "600"
+          "fontWeight": "600",
+          "fontSize": "var(--wp--preset--font-size--medium)"
+        },
+        "color": {
+          "background": "var(--wp--preset--color--primary)",
+          "text": "var(--wp--preset--color--base)"
         }
       },
       "core/heading": {
         "typography": {
           "fontWeight": "700",
           "lineHeight": "1.2"
+        }
+      }
+    },
+    "elements": {
+      "button": {
+        "color": {
+          "text": "var(--wp--preset--color--base)",
+          "background": "var(--wp--preset--color--primary)"
+        },
+        "border": {
+          "radius": "12px"
+        },
+        "spacing": {
+          "padding": {
+            "top": "12px",
+            "right": "24px",
+            "bottom": "12px",
+            "left": "24px"
+          }
+        },
+        "typography": {
+          "fontFamily": "var(--wp--preset--font-family--inter)",
+          "fontSize": "var(--wp--preset--font-size--medium)",
+          "fontWeight": "600"
+        },
+        ":hover": {
+          "color": {
+            "background": "#e64a19"
+          }
         }
       }
     }

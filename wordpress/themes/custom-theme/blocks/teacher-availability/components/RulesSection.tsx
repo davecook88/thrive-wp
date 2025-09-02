@@ -1,5 +1,7 @@
 import { useState } from "@wordpress/element";
-import { Button, TextControl, SelectControl } from "@wordpress/components";
+import { Button } from "@wordpress/components";
+import CustomSelectControl from "./CustomSelectControl";
+import ClockTimePicker from "./ClockTimePicker";
 
 interface Rule {
   id?: string;
@@ -134,47 +136,49 @@ export default function RulesSection({
             onSubmit={handleSubmit}
             style={{ display: "flex", flexDirection: "column", gap: "10px" }}
           >
-            <SelectControl
+            <CustomSelectControl
               label="Day of Week"
               value={formData.weekday}
               options={weekdays}
+              accentColor={accentColor}
               onChange={(value) => setFormData({ ...formData, weekday: value })}
             />
-            <div style={{ display: "flex", gap: "10px" }}>
-              <TextControl
-                label="Start Time (HH:MM)"
-                value={minutesToTime(formData.startTimeMinutes)}
-                onChange={(value) => {
-                  const [hours, minutes] = value.split(":").map(Number);
-                  setFormData({
-                    ...formData,
-                    startTimeMinutes: hours * 60 + minutes,
-                  });
-                }}
-                type="time"
+            <div
+              style={{ display: "flex", gap: "16px", alignItems: "flex-end" }}
+            >
+              <ClockTimePicker
+                label="Start Time"
+                value={formData.startTimeMinutes}
+                onChange={(minutes) =>
+                  setFormData({ ...formData, startTimeMinutes: minutes })
+                }
+                accentColor={accentColor}
+                is12Hour
               />
-              <TextControl
-                label="End Time (HH:MM)"
-                value={minutesToTime(formData.endTimeMinutes)}
-                onChange={(value) => {
-                  const [hours, minutes] = value.split(":").map(Number);
-                  setFormData({
-                    ...formData,
-                    endTimeMinutes: hours * 60 + minutes,
-                  });
-                }}
-                type="time"
+              <ClockTimePicker
+                label="End Time"
+                value={formData.endTimeMinutes}
+                onChange={(minutes) =>
+                  setFormData({ ...formData, endTimeMinutes: minutes })
+                }
+                accentColor={accentColor}
+                is12Hour
               />
             </div>
             <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
               <Button
                 type="submit"
                 variant="primary"
+                className="btn has-accent-background-color has-white-color"
                 style={{ background: accentColor }}
               >
                 Add Rule
               </Button>
-              <Button variant="secondary" onClick={() => setShowForm(false)}>
+              <Button
+                variant="secondary"
+                onClick={() => setShowForm(false)}
+                className="btn has-secondary-background-color has-white-color"
+              >
                 Cancel
               </Button>
             </div>

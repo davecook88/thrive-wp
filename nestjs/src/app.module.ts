@@ -33,7 +33,9 @@ import { TeachersModule } from './teachers/teachers.module.js';
           username: dbConfig.username,
           password: dbConfig.password,
           database: dbConfig.database,
-          entities: [join(moduleDir, '/**/*.entity{.ts,.js}')],
+          // Important: do NOT start the glob with '/' or join() will discard moduleDir
+          // This pattern works both in ts-node (dev) and compiled dist (prod)
+          entities: [join(moduleDir, '**/*.entity{.ts,.js}')],
           // Force disable auto-sync; rely on migrations to avoid FK/index conflicts
           synchronize: false,
           logging: dbConfig.logging,

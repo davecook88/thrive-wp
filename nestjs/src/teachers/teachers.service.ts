@@ -102,7 +102,7 @@ export class TeachersService {
       // Deactivate existing availability
       await manager.update(
         TeacherAvailability,
-        { teacher_id: teacher.id, isActive: true },
+        { teacherId: teacher.id, isActive: true },
         { isActive: false },
       );
 
@@ -137,7 +137,7 @@ export class TeachersService {
             : new Date(`${exception.date}T23:59:59.999Z`);
 
           await manager.save(TeacherAvailability, {
-            teacher_id: teacher.id,
+            teacherId: teacher.id,
             kind: TeacherAvailabilityKind.BLACKOUT,
             startAt,
             endAt,
