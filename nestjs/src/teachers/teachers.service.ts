@@ -64,7 +64,7 @@ export class TeachersService {
           id: avail.id,
           weekday: avail.weekday!,
           startTime: this.minutesToTimeString(avail.startTimeMinutes!),
-          endTime: this.minutesToTimeString(avail.endTimeMinutes!),
+          endTime: this.minutesToTimeString(avail.endTimeMinutes! % (24 * 60)),
         });
       } else if (avail.kind === TeacherAvailabilityKind.BLACKOUT) {
         exceptions.push({
@@ -108,11 +108,12 @@ export class TeachersService {
 
       // Insert new rules
       for (const rule of dto.rules) {
-        const startMinutes = this.timeStringToMinutes(rule.startTime);
-        const endMinutes = this.timeStringToMinutes(rule.endTime);
+        let startMinutes = this.timeStringToMinutes(rule.startTime);
+        let endMinutes = this.timeStringToMinutes(rule.endTime);
 
-        if (startMinutes >= endMinutes) {
-          throw new BadRequestException('Start time must be before end time');
+        // If end time is before start time, assume it spans to the next day
+        if (endMinutes < startMinutes) {
+          endMinutes += 24 * 60; // Add 24 hours
         }
 
         await manager.save(TeacherAvailability, {
@@ -128,13 +129,22 @@ export class TeachersService {
       // Insert new exceptions
       if (dto.exceptions) {
         for (const exception of dto.exceptions) {
-          const startAt = exception.startTime
+          let startAt = exception.startTime
             ? new Date(`${exception.date}T${exception.startTime}:00.000Z`)
             : new Date(`${exception.date}T00:00:00.000Z`);
 
-          const endAt = exception.endTime
+          let endAt = exception.endTime
             ? new Date(`${exception.date}T${exception.endTime}:00.000Z`)
             : new Date(`${exception.date}T23:59:59.999Z`);
+
+          // If end time is before start time, assume it spans to the next day
+          if (exception.startTime && exception.endTime) {
+            const startMinutes = this.timeStringToMinutes(exception.startTime);
+            const endMinutes = this.timeStringToMinutes(exception.endTime);
+            if (endMinutes < startMinutes) {
+              endAt = new Date(endAt.getTime() + 24 * 60 * 60 * 1000); // Add 1 day
+            }
+          }
 
           await manager.save(TeacherAvailability, {
             teacherId: teacher.id,
@@ -199,7 +209,7 @@ export class TeachersService {
     const windows: { start: string; end: string }[] = [];
 
     // Get recurring rules for this weekday (0=Sunday, 6=Saturday)
-    const weekday = date.getDay();
+    const weekday = date.getUTCDay();
     const rules = availabilities.filter(
       (a) =>
         a.kind === TeacherAvailabilityKind.RECURRING && a.weekday === weekday,
@@ -219,9 +229,9 @@ export class TeachersService {
       const endTime = this.minutesToTimeString(rule.endTimeMinutes!);
 
       // Create UTC datetime for this date and time
-      const year = date.getFullYear();
-      const month = date.getMonth();
-      const day = date.getDate();
+      const year = date.getUTCFullYear();
+      const month = date.getUTCMonth();
+      const day = date.getUTCDate();
 
       const startUTC = new Date(
         Date.UTC(year, month, day, ...this.parseTime(startTime)),
@@ -279,9 +289,9 @@ export class TeachersService {
 
   private isSameDay(date1: Date, date2: Date): boolean {
     return (
-      date1.getFullYear() === date2.getFullYear() &&
-      date1.getMonth() === date2.getMonth() &&
-      date1.getDate() === date2.getDate()
+      date1.getUTCFullYear() === date2.getUTCFullYear() &&
+      date1.getUTCMonth() === date2.getUTCMonth() &&
+      date1.getUTCDate() === date2.getUTCDate()
     );
   }
 
