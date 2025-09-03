@@ -6,4 +6,5 @@ import "./teacher-availability/index.tsx";
 import "./teacher-availability-wrapper/index.tsx";
 import "./thrive-calendar-context/index.tsx";
 import "./selected-event-modal/index.tsx";
+import "./teacher-picker/index.tsx";
 // Add more blocks here as needed

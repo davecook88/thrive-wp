@@ -1,5 +1,7 @@
 import { useEffect, useState } from "@wordpress/element";
 import { Button } from "@wordpress/components";
+import { getCalendarContextSafe } from "../../../types/calendar-utils";
+import type { CalendarEvent } from "../../../types/calendar";
 import RulesSection from "./RulesSection";
 import ExceptionsSection from "./ExceptionsSection";
 
@@ -114,11 +116,14 @@ export default function TeacherAvailability({
     nextExceptions: Exception[]
   ) => {
     const toTime = (mins: number) => {
-      // Convert local time minutes to UTC time string
-      const localDate = new Date();
-      localDate.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
-      const utcHours = localDate.getUTCHours();
-      const utcMinutes = localDate.getUTCMinutes();
+      // Normalize negative minutes to wrap around within 24 hours
+      // (e.g., -30 becomes 1410, which is 23:30)
+      const normalizedMins = ((mins % (24 * 60)) + 24 * 60) % (24 * 60);
+
+      const utcHours = Math.floor(normalizedMins / 60);
+      // Ensure minutes are always positive (JS % can return negative for negatives)
+      const utcMinutes = ((normalizedMins % 60) + 60) % 60;
+
       return `${utcHours.toString().padStart(2, "0")}:${utcMinutes
         .toString()
         .padStart(2, "0")}`;
@@ -162,6 +167,8 @@ export default function TeacherAvailability({
 
   const handleAddRule = async (rule: Omit<Rule, "id">) => {
     try {
+      console.log("Adding rule:", rule);
+      console.log("Current rules:", rules);
       const next = [...rules, rule];
       setRules(next);
       await persistAvailability(next, exceptions);
@@ -242,7 +249,7 @@ export default function TeacherAvailability({
     try {
       const container = document.getElementById("teacher-availability-root");
       if (!container) return;
-      const api = (container as any).__thriveCalCtxApi;
+      const api = getCalendarContextSafe(container);
       if (!api || typeof api.setEventsFromTeacherAvailability !== "function")
         return;
 
@@ -267,7 +274,7 @@ export default function TeacherAvailability({
       )
         ? res.windows
         : [];
-      const events = windows.map((w) => ({
+      const events: CalendarEvent[] = windows.map((w) => ({
         id: `avail:${w.start}|${w.end}`,
         title: "Available",
         startUtc: w.start,

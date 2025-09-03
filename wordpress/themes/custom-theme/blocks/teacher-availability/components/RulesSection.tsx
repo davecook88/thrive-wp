@@ -18,6 +18,11 @@ interface RulesSectionProps {
   accentColor: string;
 }
 
+const toUTC = (mins: number): number => {
+  const timezoneOffset = new Date().getTimezoneOffset();
+  return mins + timezoneOffset;
+};
+
 export default function RulesSection({
   rules,
   onAddRule,
@@ -43,8 +48,14 @@ export default function RulesSection({
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
+    // convert times to UTC
+
     e.preventDefault();
-    onAddRule(formData);
+    onAddRule({
+      ...formData,
+      startTimeMinutes: toUTC(formData.startTimeMinutes),
+      endTimeMinutes: toUTC(formData.endTimeMinutes),
+    });
     setShowForm(false);
     setFormData({
       weekday: "1",

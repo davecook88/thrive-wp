@@ -1,5 +1,6 @@
 import { createElement } from "@wordpress/element";
 import { createRoot } from "react-dom/client";
+import { getCalendarContextSafe } from "../../types/calendar-utils";
 
 import TeacherAvailability from "./components/TeacherAvailability";
 
@@ -30,10 +31,8 @@ document.addEventListener("DOMContentLoaded", () => {
     })
   );
   // Provide a helper on the container to access the context API for children
-  const ctxEl = container.closest(
-    ".wp-block-custom-theme-thrive-calendar-context"
-  ) as HTMLElement | null;
-  if (ctxEl && (ctxEl as any).__thriveCalCtxApi) {
-    (container as any).__thriveCalCtxApi = (ctxEl as any).__thriveCalCtxApi;
+  const contextApi = getCalendarContextSafe(container);
+  if (contextApi) {
+    (container as any).__thriveCalCtxApi = contextApi;
   }
 });

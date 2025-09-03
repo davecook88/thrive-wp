@@ -1,4 +1,24 @@
 <?php
+// Ensure booking page exists after theme setup
+add_action('after_setup_theme', function () {
+    if (defined('WP_INSTALLING') && WP_INSTALLING)
+        return;
+    $title = 'Booking Calendar';
+    $slug = 'booking';
+    $existing = get_page_by_path($slug);
+    if ($existing)
+        return;
+    wp_insert_post([
+        'post_title' => $title,
+        'post_name' => $slug,
+        'post_status' => 'publish',
+        'post_type' => 'page',
+        'post_content' => "",
+        'meta_input' => [
+            '_wp_page_template' => 'page-booking-calendar.php',
+        ],
+    ]);
+});
 /**
  * Theme functions and definitions
  */
