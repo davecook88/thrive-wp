@@ -16,16 +16,11 @@ import {
 type Attrs = {
   view?: "week" | "day" | "month" | "list";
   mode?: "auto" | "public" | "student" | "teacher" | "admin";
-  teacherId?: string;
   slotDuration?: number;
   snapTo?: number;
   showClasses?: boolean;
   showAvailability?: boolean;
   showBookings?: boolean;
-  defaultModalId?: string;
-  oneToOneModalId?: string;
-  groupModalId?: string;
-  courseModalId?: string;
   viewHeight?: number;
 };
 
@@ -43,9 +38,13 @@ registerBlockType<Attrs>("custom-theme/thrive-calendar", {
   icon: "calendar",
   attributes: {},
   edit: (props) => {
-    const { attributes, setAttributes } = props as any as {
+    const { attributes, setAttributes, context } = props as any as {
       attributes: Attrs;
       setAttributes: (a: Partial<Attrs>) => void;
+      context?: {
+        "custom-theme/selectedTeacherId"?: string;
+        "custom-theme/calendarContextId"?: string;
+      };
     };
     const blockProps = useBlockProps({ className: "thrive-calendar-block" });
 
@@ -78,11 +77,6 @@ registerBlockType<Attrs>("custom-theme/thrive-calendar", {
                 { label: "Admin", value: "admin" },
               ]}
               onChange={(mode) => setAttributes({ mode })}
-            />
-            <TextControl
-              label={__("Teacher ID (optional)", "custom-theme")}
-              value={attributes.teacherId || ""}
-              onChange={(teacherId) => setAttributes({ teacherId })}
             />
             <RangeControl
               label={__("Slot Duration (minutes)", "custom-theme")}
@@ -118,30 +112,7 @@ registerBlockType<Attrs>("custom-theme/thrive-calendar", {
               onChange={(showBookings) => setAttributes({ showBookings })}
             />
           </PanelBody>
-          <PanelBody
-            title={__("Modal Mapping", "custom-theme")}
-            initialOpen={false}
-          >
-            <TextControl
-              label={__("Default Modal ID", "custom-theme")}
-              value={attributes.defaultModalId || ""}
-              onChange={(defaultModalId) => setAttributes({ defaultModalId })}
-            />
-            <TextControl
-              label={__("1:1 Modal ID", "custom-theme")}
-              value={attributes.oneToOneModalId || ""}
-              onChange={(oneToOneModalId) => setAttributes({ oneToOneModalId })}
-            />
-            <TextControl
-              label={__("Group Modal ID", "custom-theme")}
-              value={attributes.groupModalId || ""}
-              onChange={(groupModalId) => setAttributes({ groupModalId })}
-            />
-            <TextControl
-              label={__("Course Modal ID", "custom-theme")}
-              value={attributes.courseModalId || ""}
-              onChange={(courseModalId) => setAttributes({ courseModalId })}
-            />
+          <PanelBody title={__("Layout", "custom-theme")} initialOpen={false}>
             <RangeControl
               label={__("View Height (px)", "custom-theme")}
               value={attributes.viewHeight ?? 600}
@@ -191,7 +162,10 @@ registerBlockType<Attrs>("custom-theme/thrive-calendar", {
             <thrive-calendar
               view={attributes.view || "week"}
               mode={attributes.mode || "auto"}
-              teacher-id={attributes.teacherId || undefined}
+              teacher-id={
+                (context && context["custom-theme/selectedTeacherId"]) ||
+                undefined
+              }
             ></thrive-calendar>
           </div>
         </div>

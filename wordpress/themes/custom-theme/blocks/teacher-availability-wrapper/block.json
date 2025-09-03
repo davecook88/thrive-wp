@@ -1,0 +1,25 @@
+{
+    "apiVersion": 3,
+    "name": "custom-theme/teacher-availability-wrapper",
+    "title": "Teacher Availability (Wrapper) [Deprecated]",
+    "category": "widgets",
+    "icon": "columns",
+    "description": "Deprecated: use 'Thrive Calendar Context' instead.",
+    "attributes": {
+        "selectedTeacherId": {
+            "type": "string"
+        },
+        "heading": {
+            "type": "string",
+            "default": "Teacher Availability"
+        }
+    },
+    "providesContext": {
+        "custom-theme/selectedTeacherId": "attributes.selectedTeacherId"
+    },
+    "supports": {
+        "anchor": true
+    },
+    "editorScript": "custom-theme-blocks",
+    "viewScript": "custom-theme-blocks-view"
+}

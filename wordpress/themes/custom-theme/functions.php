@@ -194,6 +194,10 @@ add_filter('block_editor_settings_all', 'custom_theme_block_editor_settings', 10
 // Strongly typed auth context integration
 require_once get_template_directory() . '/includes/class-thrive-auth-context.php';
 require_once get_template_directory() . '/includes/class-thrive-role.php';
+// Theme block patterns
+if (file_exists(get_template_directory() . '/inc/patterns.php')) {
+    require_once get_template_directory() . '/inc/patterns.php';
+}
 // Register custom dynamic blocks (metadata based)
 
 // Enqueue built block JS for the editor globally
@@ -231,6 +235,33 @@ add_action('init', function () {
     foreach (glob($blocks_dir . '/*/block.json') as $block_json) {
         register_block_type(dirname($block_json));
     }
+});
+
+// Register a CPT for designer-authored modal templates
+add_action('init', function () {
+    $labels = [
+        'name' => __('Thrive Modals', 'custom-theme'),
+        'singular_name' => __('Thrive Modal', 'custom-theme'),
+        'add_new' => __('Add New', 'custom-theme'),
+        'add_new_item' => __('Add New Modal', 'custom-theme'),
+        'edit_item' => __('Edit Modal', 'custom-theme'),
+        'new_item' => __('New Modal', 'custom-theme'),
+        'view_item' => __('View Modal', 'custom-theme'),
+        'search_items' => __('Search Modals', 'custom-theme'),
+        'not_found' => __('No modals found', 'custom-theme'),
+        'not_found_in_trash' => __('No modals found in Trash', 'custom-theme'),
+    ];
+    register_post_type('thrive_modal', [
+        'labels' => $labels,
+        'public' => false,
+        'show_ui' => true,
+        'show_in_menu' => true,
+        'show_in_rest' => true,
+        'supports' => ['title', 'editor', 'revisions'],
+        'menu_icon' => 'dashicons-feedback',
+        'rewrite' => false,
+        'capability_type' => 'post',
+    ]);
 });
 
 // Dev convenience: auto-enable pretty permalinks when WP_DEBUG is true

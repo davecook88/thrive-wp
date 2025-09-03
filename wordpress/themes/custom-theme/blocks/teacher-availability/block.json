@@ -23,6 +23,9 @@
             "default": 2
         }
     },
+    "usesContext": [
+        "custom-theme/selectedTeacherId"
+    ],
     "supports": {
         "anchor": true,
         "align": true,

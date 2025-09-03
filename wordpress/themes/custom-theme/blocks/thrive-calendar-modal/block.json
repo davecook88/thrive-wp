@@ -6,6 +6,7 @@
     "icon": "feedback",
     "description": "Reusable modal content for the Thrive Calendar.",
     "parent": [
+        "custom-theme/thrive-calendar-context",
         "custom-theme/thrive-calendar"
     ],
     "attributes": {

@@ -1,0 +1,25 @@
+{
+    "apiVersion": 3,
+    "name": "custom-theme/selected-event-modal",
+    "title": "Selected Event Modal",
+    "category": "widgets",
+    "icon": "welcome-widgets-menus",
+    "description": "Displays a modal for the currently selected calendar event using a chosen template.",
+    "attributes": {
+        "classModalId": {
+            "type": "integer"
+        },
+        "courseModalId": {
+            "type": "integer"
+        },
+        "defaultModalId": {
+            "type": "integer"
+        }
+    },
+    "usesContext": [
+        "custom-theme/calendarContextId"
+    ],
+    "editorScript": "custom-theme-blocks",
+    "viewScript": "custom-theme-blocks-view",
+    "render": "file:./render.php"
+}

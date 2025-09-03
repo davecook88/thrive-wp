@@ -37,7 +37,7 @@ registerBlockType<BlockAttributes>("custom-theme/teacher-availability", {
       default: 2,
     },
   },
-  edit: ({ attributes, setAttributes }) => {
+  edit: ({ attributes, setAttributes, context }) => {
     const { heading, helpText, accentColor, showPreviewWeeks } = attributes;
     const blockProps = useBlockProps();
 

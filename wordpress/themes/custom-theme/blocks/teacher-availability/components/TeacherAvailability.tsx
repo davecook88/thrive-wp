@@ -309,12 +309,6 @@ export default function TeacherAvailability({
           {saveStatus}
         </span>
       </div>
-
-      <PreviewSection
-        showPreviewWeeks={showPreviewWeeks}
-        accentColor={accentColor}
-        refreshVersion={refreshVersion}
-      />
     </div>
   );
 }
