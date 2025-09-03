@@ -2,7 +2,6 @@ import { useEffect, useState } from "@wordpress/element";
 import { Button } from "@wordpress/components";
 import RulesSection from "./RulesSection";
 import ExceptionsSection from "./ExceptionsSection";
-import PreviewSection from "./PreviewSection";
 
 interface Rule {
   id?: string;
