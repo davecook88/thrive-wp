@@ -48,15 +48,47 @@ export type CalendarEvent =
   | AvailabilityEvent
   | BlackoutEvent;
 
+// Minimal client contract exposed on context. Avoid direct imports to prevent cycles.
+export interface ThriveClientApi {
+  fetchAvailabilityPreview(
+    start: Date,
+    end: Date
+  ): Promise<BaseCalendarEvent[]>;
+}
+
+export type CalendarView = "week" | "day" | "month" | "list";
+
 export interface ThriveCalendarContextApi {
+  // Identity
   readonly id: string;
+
+  // Data (read-only views)
+  readonly events: ReadonlyArray<BaseCalendarEvent>;
+  readonly selectedEvent: BaseCalendarEvent | null;
+  readonly view: CalendarView;
+  readonly anchor: Date;
+  readonly selectedTeacherId?: string;
+
+  // Client for API calls
+  readonly thriveClient: ThriveClientApi;
+
+  // Data mutation utilities
   setEventsFromTeacherAvailability(
     startIso: string,
     endIso: string,
-    events: CalendarEvent[]
+    events: BaseCalendarEvent[]
   ): void;
   setSelectedTeacherId(teacherId: string | undefined): void;
+  setSelectedEvent(event: BaseCalendarEvent | null): void;
+
+  // Data fetching
   ensureRange(start: Date, end: Date): Promise<void>;
+
+  // Navigation/view helpers (calendar blocks can call these and then refetch/ensure as needed)
+  setView(view: CalendarView): void;
+  goToToday(): void;
+  navigate(direction: "next" | "prev"): void;
+  setAnchor(date: Date): void;
 }
 
 export class CalendarContextNotFoundError extends Error {
