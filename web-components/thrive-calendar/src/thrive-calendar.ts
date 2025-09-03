@@ -97,6 +97,8 @@ export class ThriveCalendar extends LitElement {
   @property({ type: String, attribute: "blackout-bg" }) blackoutBg?: string;
   @property({ type: String, attribute: "blackout-stripe" })
   blackoutStripe?: string;
+  @property({ type: Number, attribute: "view-height" })
+  viewHeight: number = 600;
 
   private emit<T extends object>(name: string, detail: T) {
     this.dispatchEvent(
@@ -286,6 +288,7 @@ export class ThriveCalendar extends LitElement {
             .timeFormat=${this.timeFormat}
             .showTimezone=${this.showTimezone}
             .timezone=${this.timezone}
+            .viewHeight=${this.viewHeight}
             @event:click=${this.onEventClick}
             @slot:select=${this.onSlotClick}
           ></thrive-week-view>`

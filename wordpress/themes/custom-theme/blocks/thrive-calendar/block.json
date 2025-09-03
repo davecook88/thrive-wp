@@ -48,6 +48,10 @@
         },
         "courseModalId": {
             "type": "string"
+        },
+        "viewHeight": {
+            "type": "number",
+            "default": 600
         }
     },
     "supports": {

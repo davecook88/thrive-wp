@@ -30,6 +30,7 @@ $defaultModalId = isset($attrs['defaultModalId']) ? (string) $attrs['defaultModa
 $oneToOneModalId = isset($attrs['oneToOneModalId']) ? (string) $attrs['oneToOneModalId'] : '';
 $groupModalId = isset($attrs['groupModalId']) ? (string) $attrs['groupModalId'] : '';
 $courseModalId = isset($attrs['courseModalId']) ? (string) $attrs['courseModalId'] : '';
+$viewHeight = isset($attrs['viewHeight']) ? (int) $attrs['viewHeight'] : 600;
 
 // Ensure the WC is enqueued (Nginx serves it)
 wp_enqueue_script('thrive-calendar-wc');
@@ -40,6 +41,7 @@ ob_start();
     slot-duration="<?php echo esc_attr((string) $slotDuration); ?>" snap-to="<?php echo esc_attr((string) $snapTo); ?>"
     show-classes="<?php echo $showClasses ? 'true' : 'false'; ?>"
     show-availability="<?php echo $showAvailability ? 'true' : 'false'; ?>"
+    view-height="<?php echo esc_attr((string) $viewHeight); ?>"
     show-bookings="<?php echo $showBookings ? 'true' : 'false'; ?>" <?php if ($defaultModalId !== ''): ?>
         data-default-modal-id="<?php echo esc_attr($defaultModalId); ?>" <?php endif; ?> <?php if ($oneToOneModalId !== ''): ?> data-one-to-one-modal-id="<?php echo esc_attr($oneToOneModalId); ?>" <?php endif; ?> <?php if ($groupModalId !== ''): ?> data-group-modal-id="<?php echo esc_attr($groupModalId); ?>" <?php endif; ?> <?php if ($courseModalId !== ''): ?> data-course-modal-id="<?php echo esc_attr($courseModalId); ?>" <?php endif; ?>>
     <?php

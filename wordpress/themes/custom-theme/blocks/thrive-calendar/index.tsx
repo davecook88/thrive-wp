@@ -26,6 +26,7 @@ type Attrs = {
   oneToOneModalId?: string;
   groupModalId?: string;
   courseModalId?: string;
+  viewHeight?: number;
 };
 
 declare global {
@@ -140,6 +141,14 @@ registerBlockType<Attrs>("custom-theme/thrive-calendar", {
               label={__("Course Modal ID", "custom-theme")}
               value={attributes.courseModalId || ""}
               onChange={(courseModalId) => setAttributes({ courseModalId })}
+            />
+            <RangeControl
+              label={__("View Height (px)", "custom-theme")}
+              value={attributes.viewHeight ?? 600}
+              min={300}
+              max={1200}
+              step={50}
+              onChange={(viewHeight) => setAttributes({ viewHeight })}
             />
           </PanelBody>
           <PanelBody

@@ -525,11 +525,57 @@ export class ThriveWeekView extends LitElement {
     `;
   }
 
+  private scrollToCurrentTime() {
+    // Scroll the actual scroll container (.week-view) so measurements from
+    // getPxMetrics (which are relative to .week-view) line up with scrollTop.
+    const now = new Date();
+    const weekDates = this.getWeekDates(this.currentDate);
+    const todayIndex = weekDates.findIndex(
+      (d) => this.zonedDateKey(d) === this.zonedDateKey(now)
+    );
+
+    if (todayIndex === -1) return;
+
+    // Use the timezone-aware hour and minute calculation
+    const { h, m } = this.zonedHM(now);
+    const minutes = h * 60 + m;
+
+    const visibleStart = this.startHour * 60;
+    const visibleEnd = this.endHour * 60;
+    const clamped = Math.max(visibleStart, Math.min(minutes, visibleEnd));
+
+    // Calculate position relative to visible area (values are relative to .week-view)
+    const { pxPerMinute, baseOffset } = this.getPxMetrics();
+    const currentTimeTop = baseOffset + (clamped - visibleStart) * pxPerMinute;
+
+    // Get the actual scrollable week view element (it sets height and overflow)
+    const weekView = this.renderRoot.querySelector(
+      ".week-view"
+    ) as HTMLElement | null;
+    if (!weekView) return;
+
+    // Center the current time within the visible viewport of the week view
+    const targetScrollTop = currentTimeTop - weekView.clientHeight / 2;
+
+    // Clamp to valid scroll range
+    const maxScroll = Math.max(
+      0,
+      weekView.scrollHeight - weekView.clientHeight
+    );
+    const clampedScrollTop = Math.max(0, Math.min(targetScrollTop, maxScroll));
+
+    weekView.scrollTo({ top: clampedScrollTop, behavior: "smooth" });
+  }
+
+  firstUpdated() {
+    // Schedule scroll after layout so measurements are stable
+    requestAnimationFrame(() => this.scrollToCurrentTime());
+  }
+
   render() {
     return html`
       <div class="grid" role="grid" aria-label="Calendar grid">
-        ${this.renderHeader()}
-        ${this.renderWeekView()}
+        ${this.renderHeader()} ${this.renderWeekView()}
       </div>
     `;
   }
