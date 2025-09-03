@@ -277,6 +277,16 @@ Extending:
 
 For how reusable modal content is authored as blocks and rendered on the frontend using a React Modal, see `docs/thrive-modal-architecture.md`. This doc covers authoring modal blocks, triggering via data attributes, and the frontend runtime wiring.
 
+## Calendar Context (Scoped Runtime)
+
+The calendar system is scoped per wrapper using a `Thrive Calendar Context` block:
+
+- Wrapper runtime lives in `blocks/thrive-calendar-context/view.ts` and exposes a context-local API via a DOM property (`__thriveCalCtxApi`) on the wrapper element. No globals.
+- Place `teacher-availability`, `thrive-calendar`, and `selected-event-modal` inside the wrapper. They’ll automatically wire up.
+- Availability preview is fetched via `POST /api/teachers/me/availability/preview` and cached by week range.
+
+See docs/thrive-calendar-context.md for the full architecture, API surface, and troubleshooting.
+
 Testing (Puppeteer):
 `scripts/test-login-modal.js` performs:
 1. Load homepage

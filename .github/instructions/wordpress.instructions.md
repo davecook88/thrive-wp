@@ -235,6 +235,9 @@ if (in_array(ThriveRole::TEACHER, $userRoles)) {
 * JS should not attempt to read `thrive_sess` (HttpOnly). All decisions either originate in server-rendered HTML or, if absolutely needed, can be hydrated by embedding a minimal serialized context (e.g., `<script>window.__AUTH__ = <?php echo wp_json_encode(thrive_get_auth_context_array()); ?>;</script>`). Avoid unless necessary.
 * For logout: link or form submit to `/api/auth/logout` (proxied to NestJS). After 302, headers will no longer be injected.
 
+#### Calendar Context (Reference)
+For the scoped calendar runtime and child APIs (`__thriveCalCtxApi`) used by blocks like `teacher-availability` and the `thrive-calendar` web component, see `docs/thrive-calendar-context.md`.
+
 ### Future Extensions (Document Before Implementing)
 * Silent session refresh endpoint (extend Nginx introspection cadence).
 * Role synchronization into WP for plugins that insist on native capabilities.

@@ -96,18 +96,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const event = detail?.event;
       if (!event) return;
 
-      // Choose the closest wrapper (same context) if provided
+      // Choose wrapper in the same calendar context if provided
       let wrapper: HTMLElement | undefined = wrappers[0];
       if (detail?.contextId) {
-        const candidate = document.getElementById(detail.contextId);
-        if (
-          candidate &&
-          candidate.classList.contains(
-            "wp-block-custom-theme-selected-event-modal"
-          )
-        ) {
-          wrapper = candidate as HTMLElement;
-        }
+        const inSameCtx = wrappers.find((w) => {
+          const ctx = w.closest(
+            ".wp-block-custom-theme-thrive-calendar-context"
+          ) as HTMLElement | null;
+          return ctx?.id === detail.contextId;
+        });
+        if (inSameCtx) wrapper = inSameCtx;
       }
       if (!wrapper) return;
 

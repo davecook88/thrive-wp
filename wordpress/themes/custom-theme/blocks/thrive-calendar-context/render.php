@@ -5,11 +5,16 @@
  */
 
 $attrs = $attributes ?? [];
+$selectedTeacherId = isset($attrs['selectedTeacherId']) ? (string) $attrs['selectedTeacherId'] : '';
 
 // Generate wrapper attributes
-$wrapper_attributes = get_block_wrapper_attributes([
+$extra = [];
+if ($selectedTeacherId !== '') {
+    $extra['data-selected-teacher'] = $selectedTeacherId;
+}
+$wrapper_attributes = get_block_wrapper_attributes(array_merge([
     'class' => 'wp-block-custom-theme-thrive-calendar-context',
-]);
+], $extra));
 
 ?>
 <div <?php echo $wrapper_attributes; ?>>

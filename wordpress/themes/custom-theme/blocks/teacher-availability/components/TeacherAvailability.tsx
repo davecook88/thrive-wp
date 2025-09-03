@@ -47,6 +47,8 @@ export default function TeacherAvailability({
 
   useEffect(() => {
     loadAvailability();
+    // Also push an initial preview into the calendar context if present
+    previewAndPushToCalendar(showPreviewWeeks).catch(() => void 0);
   }, []);
 
   const apiCall = async (endpoint: string, options: RequestInit = {}) => {
@@ -153,6 +155,8 @@ export default function TeacherAvailability({
     // Normalize the response by reloading fresh state
     await loadAvailability();
     setRefreshVersion((v) => v + 1);
+    // After save, refresh the calendar preview
+    await previewAndPushToCalendar(showPreviewWeeks);
     return result;
   };
 
@@ -224,6 +228,7 @@ export default function TeacherAvailability({
       setSaveStatus("Refreshing...");
       await loadAvailability();
       setSaveStatus("Refreshed successfully!");
+      await previewAndPushToCalendar(showPreviewWeeks);
       setTimeout(() => setSaveStatus(""), 3000);
     } catch (error) {
       console.error("Refresh error:", error);
@@ -231,6 +236,55 @@ export default function TeacherAvailability({
       setTimeout(() => setSaveStatus(""), 3000);
     }
   };
+
+  // Compute a preview window and push events into the shared calendar context
+  async function previewAndPushToCalendar(weeks: number) {
+    try {
+      const container = document.getElementById("teacher-availability-root");
+      if (!container) return;
+      const api = (container as any).__thriveCalCtxApi;
+      if (!api || typeof api.setEventsFromTeacherAvailability !== "function")
+        return;
+
+      // Compute start of current week (Sunday) and end by weeks
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      const start = new Date(now);
+      const dow = start.getDay();
+      start.setDate(start.getDate() - dow);
+      const end = new Date(start);
+      end.setDate(end.getDate() + Math.max(1, weeks) * 7);
+
+      const res = await apiCall("/teachers/me/availability/preview", {
+        method: "POST",
+        body: JSON.stringify({
+          start: start.toISOString(),
+          end: end.toISOString(),
+        }),
+      });
+      const windows: Array<{ start: string; end: string }> = Array.isArray(
+        res?.windows
+      )
+        ? res.windows
+        : [];
+      const events = windows.map((w) => ({
+        id: `avail:${w.start}|${w.end}`,
+        title: "Available",
+        startUtc: w.start,
+        endUtc: w.end,
+        type: "availability" as const,
+      }));
+
+      api.setEventsFromTeacherAvailability(
+        start.toISOString(),
+        end.toISOString(),
+        events
+      );
+    } catch (e) {
+      // Non-fatal: preview is best-effort
+      console.warn("Failed to push preview to calendar", e);
+    }
+  }
 
   if (loading) {
     return (

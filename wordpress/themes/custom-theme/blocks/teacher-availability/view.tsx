@@ -29,4 +29,11 @@ document.addEventListener("DOMContentLoaded", () => {
       showPreviewWeeks,
     })
   );
+  // Provide a helper on the container to access the context API for children
+  const ctxEl = container.closest(
+    ".wp-block-custom-theme-thrive-calendar-context"
+  ) as HTMLElement | null;
+  if (ctxEl && (ctxEl as any).__thriveCalCtxApi) {
+    (container as any).__thriveCalCtxApi = (ctxEl as any).__thriveCalCtxApi;
+  }
 });
