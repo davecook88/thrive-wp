@@ -22,6 +22,7 @@ export default function PreviewSection({
         const el = document.createElement("thrive-calendar") as any;
         el.style.width = "100%";
         el.style.height = "100%";
+        el["view-height"] = 600;
         // Theme availability color subtly using accent
         el.setAttribute("availability-bg", `${accentColor}20`);
         calendarRef.current!.replaceChildren(el);
@@ -113,7 +114,6 @@ export default function PreviewSection({
       <div
         ref={calendarRef}
         style={{
-          height: "400px",
           border: "1px solid #e2e8f0",
           borderRadius: "6px",
           display: "flex",
