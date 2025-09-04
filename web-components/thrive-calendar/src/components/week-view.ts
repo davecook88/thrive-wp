@@ -299,12 +299,6 @@ export class ThriveWeekView extends LitElement {
     return map[dowStr as keyof typeof map] ?? 0;
   }
 
-  // Convert a Date to the configured timezone by creating a local Date that
-  // reflects the wall time in that timezone. Useful for extracting Y/M/D/H/M.
-  private toZoned(date: Date): Date {
-    return new Date(date.toLocaleString("en-US", { timeZone: this.timezone }));
-  }
-
   private getWeekDates(date: Date): Date[] {
     // Compute week dates based on configured timezone (Sunday start)
     const startOfWeek = new Date(date);

@@ -1,12 +1,6 @@
-import { LitElement, css, html, nothing } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import type {
-  ViewMode,
-  UIMode,
-  CalendarEvent,
-  CalendarRange,
-  ISODateTimeUTC,
-} from "./types.js";
+import type { ViewMode, UIMode, CalendarEvent } from "./types.js";
 
 import "./components/toolbar.ts";
 import "./components/week-view.ts";
@@ -73,7 +67,6 @@ export class ThriveCalendar extends LitElement {
 
   @state() private _events: CalendarEvent[] = [];
   @state() private currentDate: Date = new Date();
-  @state() private selectedDate: Date = new Date();
   // Optional ISO date (YYYY-MM-DD or full ISO) to set the starting date
   @property({ type: String, reflect: true }) date?: string;
   // Public property to pass events in via JS (not via attribute)
@@ -117,7 +110,6 @@ export class ThriveCalendar extends LitElement {
         const parsed = new Date(this.date);
         if (!isNaN(parsed.getTime())) {
           this.currentDate = parsed;
-          this.selectedDate = parsed;
         }
       }
     }
@@ -174,7 +166,6 @@ export class ThriveCalendar extends LitElement {
     const days = this.view === "week" ? 7 : this.view === "day" ? 1 : 30;
     newDate.setDate(newDate.getDate() + (direction === "next" ? days : -days));
     this.currentDate = newDate;
-    this.selectedDate = newDate;
   }
 
   private setView(newView: ViewMode) {
@@ -194,32 +185,6 @@ export class ThriveCalendar extends LitElement {
       dates.push(d);
     }
     return dates;
-  }
-
-  private formatTime(date: Date): string {
-    if (this.timeFormat === "24h") {
-      return date.toLocaleTimeString("en-GB", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-        timeZone: this.timezone,
-      });
-    }
-    return date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-      timeZone: this.timezone,
-    });
-  }
-
-  private formatDate(date: Date): string {
-    return date.toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      timeZone: this.timezone,
-    });
   }
 
   // Note: event positioning is handled by <thrive-week-view> which is
@@ -250,7 +215,6 @@ export class ThriveCalendar extends LitElement {
 
   private handleToday() {
     this.currentDate = new Date();
-    this.selectedDate = new Date();
   }
 
   private handleNavigate(e: CustomEvent<{ direction: "prev" | "next" }>) {
