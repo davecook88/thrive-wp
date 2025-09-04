@@ -88,17 +88,13 @@ export default function TeacherAvailability({
 
         console.log("Teacher Availability: Updating events", events.length);
 
-        // Update the calendar context with the new events
-        api.setEventsFromTeacherAvailability(
-          start.toISOString(),
-          end.toISOString(),
-          events
-        );
+        return events;
       } catch (error) {
         console.warn(
           "Failed to update availability preview on date range change",
           error
         );
+        return [];
       }
     };
 

@@ -60,7 +60,10 @@ function weekRangeFor(date: Date): { start: Date; end: Date } {
     return `${start.toISOString()}__${end.toISOString()}`;
   }
 
-  type DateRangeChangeCallback = (start: Date, end: Date) => void;
+  type DateRangeChangeCallback = (
+    start: Date,
+    end: Date
+  ) => Promise<BaseCalendarEvent[]> | BaseCalendarEvent[];
 
   type SourceState = { events: BaseCalendarEvent[]; ranges: Set<string> };
   type CtxState = {
@@ -82,20 +85,28 @@ function weekRangeFor(date: Date): { start: Date; end: Date } {
     state.events = all;
   }
 
+  function mergeEvents(state: CtxState, events: BaseCalendarEvent[]) {
+    const all = [...state.events, ...events];
+    all.sort((a, b) => a.startUtc.localeCompare(b.startUtc));
+    state.events = all;
+  }
+
   function callDateRangeChangeCallbacks(
     state: CtxState,
     start: Date,
     end: Date
   ) {
-    console.log(
-      "Thrive Calendar Context: Calling date range change callbacks",
-      state.dateRangeChangeCallbacks.length,
-      "callbacks"
-    );
     state.dateRangeChangeCallbacks.forEach((callback, index) => {
       try {
-        console.log("Thrive Calendar Context: Calling callback", index);
-        callback(start, end);
+        const events = callback(start, end);
+
+        if ("then" in events && typeof events?.then === "function") {
+          events.then((resolvedEvents) => {
+            mergeEvents(state, resolvedEvents);
+          });
+        } else {
+          mergeEvents(state, events as BaseCalendarEvent[]);
+        }
       } catch (error) {
         console.error("Error in date range change callback:", error);
       }
@@ -175,37 +186,6 @@ function weekRangeFor(date: Date): { start: Date; end: Date } {
 
     // Expose a context-local API for descendants via DOM property
     const api: ThriveCalendarContextApi = {
-      // identity
-      setEventsFromTeacherAvailability(
-        startIso: string,
-        endIso: string,
-        events: BaseCalendarEvent[]
-      ) {
-        const src = (state.sources["teacher-availability"] ||= {
-          events: [],
-          ranges: new Set(),
-        });
-        const start = new Date(startIso);
-        const end = new Date(endIso);
-        const rKey = rangeKey(start, end);
-        src.events = src.events.filter(
-          (e) => !(e.startUtc >= startIso && e.endUtc <= endIso)
-        );
-        src.events.push(
-          ...events.map((e) =>
-            state.selectedTeacherId && !e.teacherId
-              ? { ...e, teacherId: state.selectedTeacherId }
-              : e
-          )
-        );
-        src.ranges.add(rKey);
-        mergeAllSources(state);
-        const el = document.getElementById(state.id);
-        if (el)
-          el.querySelectorAll<any>("thrive-calendar").forEach(
-            (cal) => (cal.events = state.events)
-          );
-      },
       setSelectedTeacherId(teacherId: string | undefined) {
         state.selectedTeacherId = teacherId;
       },

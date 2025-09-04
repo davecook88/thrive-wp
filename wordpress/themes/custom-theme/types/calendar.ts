@@ -69,20 +69,26 @@ export interface ThriveCalendarContextApi {
   readonly thriveClient: typeof thriveClient;
 
   // Data mutation utilities
-  setEventsFromTeacherAvailability(
-    startIso: string,
-    endIso: string,
-    events: BaseCalendarEvent[]
-  ): void;
+  // setEventsFromTeacherAvailability(
+  //   startIso: string,
+  //   endIso: string,
+  //   events: BaseCalendarEvent[]
+  // ): void;
   setSelectedTeacherId(teacherId: string | undefined): void;
   setSelectedEvent(event: BaseCalendarEvent | null): void;
 
   // Callback registration for date range changes
   registerDateRangeChangeCallback(
-    callback: (start: Date, end: Date) => void
+    callback: (
+      start: Date,
+      end: Date
+    ) => BaseCalendarEvent[] | Promise<BaseCalendarEvent[]>
   ): void;
   unregisterDateRangeChangeCallback(
-    callback: (start: Date, end: Date) => void
+    callback: (
+      start: Date,
+      end: Date
+    ) => BaseCalendarEvent[] | Promise<BaseCalendarEvent[]>
   ): void;
 
   // Data fetching
