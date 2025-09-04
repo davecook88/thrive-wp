@@ -6,3 +6,5 @@ import "./thrive-calendar/view";
 import "./selected-event-modal/view";
 import "./teacher-picker/view";
 // Context-specific logic now lives in ./thrive-calendar-context/view.ts
+import "./hooks/get-context";
+import "./hooks/get-teachers";

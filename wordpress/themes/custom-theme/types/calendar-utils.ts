@@ -37,24 +37,6 @@ export function getCalendarContext(
     );
   }
 
-  // Validate that the API has the expected methods
-  const requiredMethods = [
-    "setEventsFromTeacherAvailability",
-    "setSelectedTeacherId",
-    "ensureRange",
-  ];
-  const missingMethods = requiredMethods.filter(
-    (method) => typeof contextApi[method] !== "function"
-  );
-
-  if (missingMethods.length > 0) {
-    throw new InvalidCalendarContextError(
-      `Calendar context API is missing required methods: ${missingMethods.join(
-        ", "
-      )}`
-    );
-  }
-
   if (typeof contextApi.id !== "string") {
     throw new InvalidCalendarContextError(
       "Calendar context API is missing required id property"

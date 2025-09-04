@@ -4,7 +4,7 @@ import type {
   ThriveCalendarContextApi,
   BaseCalendarEvent,
   CalendarView,
-} from "@/types/calendar";
+} from "../../types/calendar";
 import { thriveClient } from "../../clients/thrive";
 
 function weekRangeFor(date: Date): { start: Date; end: Date } {

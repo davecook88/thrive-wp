@@ -1,72 +1,31 @@
 import { useEffect, useState } from "@wordpress/element";
 import { Button } from "@wordpress/components";
-import { getCalendarContextSafe } from "../../../types/calendar-utils";
-import type { CalendarEvent } from "../../../types/calendar";
 
-interface Teacher {
-  userId: number;
-  teacherId: number;
-  firstName: string;
-  lastName: string;
-  name: string;
-  bio: string | null;
-}
+import type { Teacher } from "../../../types/calendar";
+import { useGetCalendarContext } from "../../hooks/get-context";
+import { useGetTeachers } from "../../hooks/get-teachers";
 
 interface TeacherPickerProps {
   heading: string;
   showFilters: boolean;
+  querySelector: string;
 }
 
 export default function TeacherPicker({
   heading,
   showFilters,
+  querySelector,
 }: TeacherPickerProps) {
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(
     null
   );
 
-  const API_BASE = "/api";
+  console.log("TeacherPicker context:", querySelector);
+  const context = useGetCalendarContext(querySelector);
 
-  useEffect(() => {
-    fetchTeachers();
-  }, []);
-
-  const fetchTeachers = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(`${API_BASE}/teachers`, {
-        credentials: "same-origin",
-      });
-      if (!res.ok) {
-        setTeachers([]);
-        return;
-      }
-      const data = (await res.json()) as Teacher[];
-      setTeachers(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Failed to fetch teachers:", error);
-      setTeachers([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  const { teachers, loading, selectTeacherId } = useGetTeachers(context);
   const handleTeacherSelect = (teacher: Teacher) => {
-    const teacherUserId = String(teacher.userId);
-    setSelectedTeacherId(teacherUserId);
-
-    // Communicate with calendar context using the safe helper function
-    const container = document.querySelector(
-      ".thrive-teacher-picker"
-    ) as HTMLElement;
-    if (container) {
-      const contextApi = getCalendarContextSafe(container);
-      if (contextApi && typeof contextApi.setSelectedTeacherId === "function") {
-        contextApi.setSelectedTeacherId(teacherUserId);
-      }
-    }
+    selectTeacherId(teacher.userId);
   };
 
   const getInitials = (teacher: Teacher) => {

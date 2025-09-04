@@ -1,3 +1,5 @@
+import { thriveClient } from "@/clients/thrive";
+
 // Local type definitions for CalendarEvent to avoid import issues
 export type ISODateTimeUTC = string; // e.g., '2025-09-01T14:00:00Z'
 export type EventType = "availability" | "class" | "booking" | "blackout";
@@ -49,12 +51,6 @@ export type CalendarEvent =
   | BlackoutEvent;
 
 // Minimal client contract exposed on context. Avoid direct imports to prevent cycles.
-export interface ThriveClientApi {
-  fetchAvailabilityPreview(
-    start: Date,
-    end: Date
-  ): Promise<BaseCalendarEvent[]>;
-}
 
 export type CalendarView = "week" | "day" | "month" | "list";
 
@@ -70,7 +66,7 @@ export interface ThriveCalendarContextApi {
   readonly selectedTeacherId?: string;
 
   // Client for API calls
-  readonly thriveClient: ThriveClientApi;
+  readonly thriveClient: typeof thriveClient;
 
   // Data mutation utilities
   setEventsFromTeacherAvailability(
@@ -103,4 +99,13 @@ export class InvalidCalendarContextError extends Error {
     super(message);
     this.name = "InvalidCalendarContextError";
   }
+}
+
+export interface Teacher {
+  userId: number;
+  teacherId: number;
+  firstName: string;
+  lastName: string;
+  name: string;
+  bio: string | null;
 }

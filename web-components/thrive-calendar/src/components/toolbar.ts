@@ -174,9 +174,7 @@ export class ThriveToolbar extends LitElement {
         </div>
         -->
 
-        <div class="center-info">
-          <span style="color:#94a3b8">${this.uiMode} • ${this.timezone}</span>
-        </div>
+        <div class="center-info"></div>
       </div>
     `;
   }

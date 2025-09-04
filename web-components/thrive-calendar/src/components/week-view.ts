@@ -23,7 +23,7 @@ export class ThriveWeekView extends LitElement {
     .week-view .time-label {
       border-right: 1px solid var(--thrive-grid-line-minor, #f1f5f9);
       padding: 6px 10px 6px 8px;
-      font-size: 12px;
+      font-size: 8px;
       color: var(--thrive-muted-fg, #6b7280);
       text-align: right;
       position: sticky;
@@ -33,6 +33,7 @@ export class ThriveWeekView extends LitElement {
       height: calc(
         var(--thrive-cal-hour-height, 40px) * var(--thrive-cal-step-frac, 1)
       );
+
       display: flex;
       align-items: center;
       justify-content: flex-end;
@@ -384,11 +385,17 @@ export class ThriveWeekView extends LitElement {
 
   private renderHeader() {
     const weekDates = this.getWeekDates(this.currentDate);
+    const timezoneOffset = new Date().getTimezoneOffset();
+    const timezoneOffsetString = `UTC${
+      timezoneOffset < 0 ? "+" : "-"
+    }${Math.abs(timezoneOffset / 60)}`;
     return html`
       <div class="header">
         <div class="day-header" style="justify-content:center;">
           ${this.showTimezone
-            ? html`<div class="dow" style="opacity:0.9;">${this.timezone}</div>`
+            ? html`<div class="dow" style="opacity:0.9;">
+                ${timezoneOffsetString}
+              </div>`
             : nothing}
         </div>
         ${weekDates.map((date) => {

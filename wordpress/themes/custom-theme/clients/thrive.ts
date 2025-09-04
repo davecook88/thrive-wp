@@ -1,4 +1,4 @@
-import { BaseCalendarEvent } from "@/types/calendar";
+import { BaseCalendarEvent, Teacher } from "../types/calendar";
 
 const options: Partial<RequestInit> = {
   headers: { "Content-Type": "application/json" },
@@ -12,6 +12,7 @@ export const thriveClient = {
   ): Promise<BaseCalendarEvent[]> => {
     const res = await fetch(`/api/teachers/me/availability/preview`, {
       ...options,
+      method: "POST",
       body: JSON.stringify({
         start: start.toISOString(),
         end: end.toISOString(),
@@ -29,5 +30,53 @@ export const thriveClient = {
       endUtc: w.end,
       type: "availability",
     }));
+  },
+
+  fetchAvailabilityPublic: async ({
+    teacherIds,
+    start,
+    end,
+  }: {
+    teacherIds?: number[];
+    start: Date;
+    end: Date;
+  }): Promise<BaseCalendarEvent[]> => {
+    const res = await fetch(`/api/teachers/availability`, {
+      ...options,
+      method: "POST",
+      body: JSON.stringify({
+        teacherIds,
+        start: start.toISOString(),
+        end: end.toISOString(),
+      }),
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as {
+      windows?: Array<{ start: string; end: string }>;
+    };
+    const wins = Array.isArray(data?.windows) ? data.windows : [];
+    return wins.map((w) => ({
+      id: `avail:${w.start}|${w.end}`,
+      title: "Available",
+      startUtc: w.start,
+      endUtc: w.end,
+      type: "availability",
+    }));
+  },
+
+  fetchTeachers: async () => {
+    try {
+      const res = await fetch(`/api/teachers`, {
+        credentials: "same-origin",
+      });
+      if (!res.ok) {
+        return [];
+      }
+      const data = (await res.json()) as Teacher[];
+      return data;
+    } catch (error) {
+      console.error("Failed to fetch teachers:", error);
+      return [];
+    }
   },
 } as const;
