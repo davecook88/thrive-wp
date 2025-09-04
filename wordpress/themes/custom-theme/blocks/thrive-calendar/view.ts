@@ -37,8 +37,19 @@ function attachCalendar(cal: HTMLElement) {
   if (dateAttr) api.setAnchor(new Date(dateAttr));
   const viewAttr = (cal.getAttribute("view") as any) || undefined;
   if (viewAttr) api.setView(viewAttr);
-  const { start, end } = weekRangeFor(api.anchor);
-  void api.ensureRange(start, end);
+
+  // React to context -> calendar updates
+  const onCtxEvents = (e: Event) => {
+    const detail = (e as CustomEvent).detail as
+      | { contextId?: string; events?: any[] }
+      | undefined;
+    if (!detail) return;
+    (cal as any).events = Array.isArray(detail.events) ? detail.events : [];
+  };
+  ctxEl.addEventListener(
+    "thrive-calendar:events",
+    onCtxEvents as EventListener
+  );
 
   // Wire UI -> context
   cal.addEventListener("event:click", (e: any) => {

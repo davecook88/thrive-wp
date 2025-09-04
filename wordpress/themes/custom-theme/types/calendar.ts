@@ -91,9 +91,6 @@ export interface ThriveCalendarContextApi {
     ) => BaseCalendarEvent[] | Promise<BaseCalendarEvent[]>
   ): void;
 
-  // Data fetching
-  ensureRange(start: Date, end: Date): Promise<void>;
-
   // Navigation/view helpers (calendar blocks can call these and then refetch/ensure as needed)
   setView(view: CalendarView): void;
   goToToday(): void;

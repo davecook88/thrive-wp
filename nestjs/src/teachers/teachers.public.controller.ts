@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Post,
-  Body,
-  ParseIntPipe,
-  Query,
-  BadRequestException,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body } from '@nestjs/common';
 import { TeachersService } from './teachers.service.js';
 import { PreviewAvailabilityDto } from './dto/availability.dto.js';
 import { InjectRepository } from '@nestjs/typeorm';

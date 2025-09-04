@@ -52,15 +52,39 @@ export default function TeacherPicker({
           teacherIds: selectedTeachers.map((t) => t.userId),
         });
 
-        const events: CalendarEvent[] = _events.map((w) => ({
-          id: `avail:${w.startUtc}|${w.endUtc}`,
-          title: "Available",
-          startUtc: w.startUtc,
-          endUtc: w.endUtc,
-          type: "availability" as const,
-        }));
+        console.log(
+          "Teacher Availability: Fetched events",
+          _events.length,
+          _events
+        );
 
-        console.log("Teacher Availability: Updating events", events.length);
+        const events: CalendarEvent[] = _events.flatMap((w) => {
+          const start = new Date(w.startUtc);
+          const end = new Date(w.endUtc);
+          const chunks: CalendarEvent[] = [];
+          let current = new Date(start);
+          while (current < end) {
+            const chunkEnd = new Date(current.getTime() + 30 * 60 * 1000); // 30 minutes
+            if (chunkEnd > end) {
+              chunkEnd.setTime(end.getTime());
+            }
+            chunks.push({
+              id: `avail:${current.toISOString()}|${chunkEnd.toISOString()}`,
+              title: "Available",
+              startUtc: current.toISOString(),
+              endUtc: chunkEnd.toISOString(),
+              type: "availability" as const,
+            });
+            current = new Date(chunkEnd);
+          }
+          return chunks;
+        });
+
+        console.log(
+          "Teacher Availability: Updating events",
+          events.length,
+          events
+        );
 
         return events;
       } catch (error) {

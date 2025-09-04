@@ -239,8 +239,6 @@ export class ThriveWeekView extends LitElement {
       if (d > 0) pxPerMinute = d / 60;
     }
 
-    console.log({ pxPerMinute, headerHeightPx, hourHeightPx, baseOffset });
-
     return { pxPerMinute, headerHeightPx, hourHeightPx, baseOffset };
   }
 

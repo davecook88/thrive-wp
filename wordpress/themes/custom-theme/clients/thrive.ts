@@ -10,6 +10,7 @@ export const thriveClient = {
     start: Date,
     end: Date
   ): Promise<BaseCalendarEvent[]> => {
+    console.trace("Fetching availability preview:", { start, end });
     const res = await fetch(`/api/teachers/me/availability/preview`, {
       ...options,
       method: "POST",
