@@ -18,36 +18,8 @@ function weekRangeFor(date: Date): { start: Date; end: Date } {
   return { start, end };
 }
 
-// All API calls must go through thriveClient, which is exposed on the context.
-
 // '.wp-block-custom-theme-thrive-calendar-context' wrapper.
 (() => {
-  // type CalEvent = {
-  //   id: string;
-  //   title: string;
-  //   startUtc: string;
-  //   endUtc: string;
-  //   type: "availability" | "class" | "booking" | "blackout";
-  //   teacherId?: string;
-  //   [key: string]: any;
-  // };
-
-  // type SourceState = {
-  //   events: CalEvent[];
-  //   ranges: Set<string>; // fetched range keys
-  // };
-
-  // type Ctx = {
-  //   id: string;
-  //   selectedEvent?: any;
-  //   events: CalEvent[];
-  //   sources: Record<string, SourceState>;
-  //   selectedTeacherId?: string;
-  //   view?: "week" | "day" | "month" | "list";
-  //   anchor?: Date;
-  //   pending: Set<string>;
-  // };
-
   const REG = Symbol("thriveCalRegistry");
   type RegMap = Record<string, ThriveCalendarContextApi>;
   function getRegistry(root: Document | ShadowRoot): RegMap {
@@ -160,19 +132,16 @@ function weekRangeFor(date: Date): { start: Date; end: Date } {
   }
 
   function attachContext(ctxEl: HTMLElement) {
-    const registry = getRegistry(document);
     const id =
       ctxEl.getAttribute("id") ||
       `cal-ctx-${Math.random().toString(36).slice(2, 8)}`;
     if (!ctxEl.id) ctxEl.id = id;
-    const selectedTeacherId =
-      ctxEl.getAttribute("data-selected-teacher") || undefined;
+
     const state: CtxState = {
       id,
       events: [],
       selectedEvent: null,
       sources: {},
-      selectedTeacherId,
       view: "week",
       anchor: new Date(),
       pending: new Set(),
@@ -270,9 +239,6 @@ function weekRangeFor(date: Date): { start: Date; end: Date } {
       },
       get anchor() {
         return state.anchor;
-      },
-      get selectedTeacherId() {
-        return state.selectedTeacherId;
       },
     };
 

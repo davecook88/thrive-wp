@@ -41,7 +41,8 @@ export const thriveClient = {
     start: Date;
     end: Date;
   }): Promise<BaseCalendarEvent[]> => {
-    const res = await fetch(`/api/teachers/availability`, {
+    // TODO: This is searching by userId. I need to make sure that the selected teacher IDs are correct
+    const res = await fetch(`/api/teachers/availability/preview`, {
       ...options,
       method: "POST",
       body: JSON.stringify({

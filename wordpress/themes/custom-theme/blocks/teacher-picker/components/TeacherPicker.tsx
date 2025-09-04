@@ -1,7 +1,7 @@
 import { useEffect, useState } from "@wordpress/element";
 import { Button } from "@wordpress/components";
 
-import type { Teacher } from "../../../types/calendar";
+import type { CalendarEvent, Teacher } from "../../../types/calendar";
 import { useGetCalendarContext } from "../../hooks/get-context";
 import { useGetTeachers } from "../../hooks/get-teachers";
 
@@ -16,14 +16,11 @@ export default function TeacherPicker({
   showFilters,
   querySelector,
 }: TeacherPickerProps) {
-  const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(
-    null
-  );
-
   console.log("TeacherPicker context:", querySelector);
   const context = useGetCalendarContext(querySelector);
 
-  const { teachers, loading, selectTeacherId } = useGetTeachers(context);
+  const { teachers, loading, selectTeacherId, selectedTeachers } =
+    useGetTeachers(context);
   const handleTeacherSelect = (teacher: Teacher) => {
     selectTeacherId(teacher.userId);
   };
@@ -31,6 +28,61 @@ export default function TeacherPicker({
   const getInitials = (teacher: Teacher) => {
     return (teacher.firstName || teacher.name || "T").slice(0, 1).toUpperCase();
   };
+
+  // Register callback for date range changes
+  useEffect(() => {
+    if (!context) {
+      console.warn("Teacher Availability: API not available");
+      return;
+    }
+
+    console.log("Teacher Availability: Registering date range change callback");
+
+    const handleDateRangeChange = async (start: Date, end: Date) => {
+      console.log(
+        "Teacher Availability: Date range change callback called",
+        start,
+        end
+      );
+      try {
+        // Fetch availability preview for the new date range
+        const _events = await context.thriveClient.fetchAvailabilityPublic({
+          start,
+          end,
+          teacherIds: selectedTeachers.map((t) => t.userId),
+        });
+
+        const events: CalendarEvent[] = _events.map((w) => ({
+          id: `avail:${w.startUtc}|${w.endUtc}`,
+          title: "Available",
+          startUtc: w.startUtc,
+          endUtc: w.endUtc,
+          type: "availability" as const,
+        }));
+
+        console.log("Teacher Availability: Updating events", events.length);
+
+        return events;
+      } catch (error) {
+        console.warn(
+          "Failed to update availability preview on date range change",
+          error
+        );
+        return [];
+      }
+    };
+
+    // Register the callback
+    context.registerDateRangeChangeCallback(handleDateRangeChange);
+
+    // Cleanup: unregister the callback when component unmounts
+    return () => {
+      console.log(
+        "Teacher Availability: Unregistering date range change callback"
+      );
+      context.unregisterDateRangeChangeCallback(handleDateRangeChange);
+    };
+  }, [context, selectedTeachers]); // Depend on api
 
   if (loading) {
     return (
@@ -91,10 +143,11 @@ export default function TeacherPicker({
                 padding: "10px",
                 border: "1px solid #e5e7eb",
                 borderRadius: "8px",
-                background:
-                  selectedTeacherId === String(teacher.userId)
-                    ? "#f3f4f6"
-                    : "white",
+                background: selectedTeachers.some(
+                  (t) => t.userId === teacher.userId
+                )
+                  ? "#f3f4f6"
+                  : "white",
                 cursor: "pointer",
                 width: "100%",
                 textAlign: "left",
@@ -104,10 +157,11 @@ export default function TeacherPicker({
                 e.currentTarget.style.background = "#f9fafb";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background =
-                  selectedTeacherId === String(teacher.userId)
-                    ? "#f3f4f6"
-                    : "white";
+                e.currentTarget.style.background = selectedTeachers.some(
+                  (t) => t.userId === teacher.userId
+                )
+                  ? "#f3f4f6"
+                  : "white";
               }}
             >
               <div
