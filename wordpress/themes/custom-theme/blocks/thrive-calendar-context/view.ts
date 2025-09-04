@@ -60,6 +60,8 @@ function weekRangeFor(date: Date): { start: Date; end: Date } {
     return `${start.toISOString()}__${end.toISOString()}`;
   }
 
+  type DateRangeChangeCallback = (start: Date, end: Date) => void;
+
   type SourceState = { events: BaseCalendarEvent[]; ranges: Set<string> };
   type CtxState = {
     id: string;
@@ -70,6 +72,7 @@ function weekRangeFor(date: Date): { start: Date; end: Date } {
     view: CalendarView;
     anchor: Date;
     pending: Set<string>;
+    dateRangeChangeCallbacks: DateRangeChangeCallback[];
   };
 
   function mergeAllSources(state: CtxState) {
@@ -77,6 +80,26 @@ function weekRangeFor(date: Date): { start: Date; end: Date } {
     for (const src of Object.values(state.sources)) all.push(...src.events);
     all.sort((a, b) => a.startUtc.localeCompare(b.startUtc));
     state.events = all;
+  }
+
+  function callDateRangeChangeCallbacks(
+    state: CtxState,
+    start: Date,
+    end: Date
+  ) {
+    console.log(
+      "Thrive Calendar Context: Calling date range change callbacks",
+      state.dateRangeChangeCallbacks.length,
+      "callbacks"
+    );
+    state.dateRangeChangeCallbacks.forEach((callback, index) => {
+      try {
+        console.log("Thrive Calendar Context: Calling callback", index);
+        callback(start, end);
+      } catch (error) {
+        console.error("Error in date range change callback:", error);
+      }
+    });
   }
 
   async function ensureRange(
@@ -142,11 +165,13 @@ function weekRangeFor(date: Date): { start: Date; end: Date } {
       view: "week",
       anchor: new Date(),
       pending: new Set(),
+      dateRangeChangeCallbacks: [],
     };
 
     // Initialize anchor and ensure current week is cached, even if no calendars
     const initRange = weekRangeFor(state.anchor);
     ensureRange(state, "teacher-availability", initRange.start, initRange.end);
+    callDateRangeChangeCallbacks(state, initRange.start, initRange.end);
 
     // Expose a context-local API for descendants via DOM property
     const api: ThriveCalendarContextApi = {
@@ -184,6 +209,25 @@ function weekRangeFor(date: Date): { start: Date; end: Date } {
       setSelectedTeacherId(teacherId: string | undefined) {
         state.selectedTeacherId = teacherId;
       },
+      registerDateRangeChangeCallback(callback: DateRangeChangeCallback) {
+        if (!state.dateRangeChangeCallbacks.includes(callback)) {
+          state.dateRangeChangeCallbacks.push(callback);
+          console.log(
+            "Thrive Calendar Context: Registered callback, total callbacks:",
+            state.dateRangeChangeCallbacks.length
+          );
+        }
+      },
+      unregisterDateRangeChangeCallback(callback: DateRangeChangeCallback) {
+        const index = state.dateRangeChangeCallbacks.indexOf(callback);
+        if (index > -1) {
+          state.dateRangeChangeCallbacks.splice(index, 1);
+          console.log(
+            "Thrive Calendar Context: Unregistered callback, total callbacks:",
+            state.dateRangeChangeCallbacks.length
+          );
+        }
+      },
       setSelectedEvent(event: BaseCalendarEvent | null) {
         state.selectedEvent = event;
         document.dispatchEvent(
@@ -196,16 +240,21 @@ function weekRangeFor(date: Date): { start: Date; end: Date } {
         return ensureRange(state, "teacher-availability", start, end);
       },
       setView(view: CalendarView) {
+        console.log("Thrive Calendar Context: setView called", view);
         state.view = view;
         const { start, end } = weekRangeFor(state.anchor);
         void ensureRange(state, "teacher-availability", start, end);
+        callDateRangeChangeCallbacks(state, start, end);
       },
       goToToday() {
+        console.log("Thrive Calendar Context: goToToday called");
         state.anchor = new Date();
         const { start, end } = weekRangeFor(state.anchor);
         void ensureRange(state, "teacher-availability", start, end);
+        callDateRangeChangeCallbacks(state, start, end);
       },
       navigate(direction: "next" | "prev") {
+        console.log("Thrive Calendar Context: navigate called", direction);
         const dir = direction === "next" ? 1 : -1;
         const days = state.view === "week" ? 7 : state.view === "day" ? 1 : 7;
         const anchor = new Date(state.anchor);
@@ -213,11 +262,14 @@ function weekRangeFor(date: Date): { start: Date; end: Date } {
         state.anchor = anchor;
         const { start, end } = weekRangeFor(anchor);
         void ensureRange(state, "teacher-availability", start, end);
+        callDateRangeChangeCallbacks(state, start, end);
       },
       setAnchor(date: Date) {
+        console.log("Thrive Calendar Context: setAnchor called", date);
         state.anchor = new Date(date);
         const { start, end } = weekRangeFor(state.anchor);
         void ensureRange(state, "teacher-availability", start, end);
+        callDateRangeChangeCallbacks(state, start, end);
       },
       // client
       get thriveClient() {
@@ -254,9 +306,13 @@ function weekRangeFor(date: Date): { start: Date; end: Date } {
     ctxEl.querySelectorAll<any>("thrive-calendar").forEach((cal) => {
       if (Array.isArray(state.events)) cal.events = state.events;
       const dateAttr = cal.getAttribute("date");
+      const oldAnchor = state.anchor;
       state.anchor = dateAttr ? new Date(dateAttr) : state.anchor;
-      const { start, end } = weekRangeFor(state.anchor);
-      ensureRange(state, "teacher-availability", start, end);
+      if (state.anchor.getTime() !== oldAnchor.getTime()) {
+        const { start, end } = weekRangeFor(state.anchor);
+        ensureRange(state, "teacher-availability", start, end);
+        callDateRangeChangeCallbacks(state, start, end);
+      }
     });
   }
 

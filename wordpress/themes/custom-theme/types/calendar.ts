@@ -1,4 +1,4 @@
-import { thriveClient } from "@/clients/thrive";
+import { thriveClient } from "../clients/thrive";
 
 // Local type definitions for CalendarEvent to avoid import issues
 export type ISODateTimeUTC = string; // e.g., '2025-09-01T14:00:00Z'
@@ -76,6 +76,14 @@ export interface ThriveCalendarContextApi {
   ): void;
   setSelectedTeacherId(teacherId: string | undefined): void;
   setSelectedEvent(event: BaseCalendarEvent | null): void;
+
+  // Callback registration for date range changes
+  registerDateRangeChangeCallback(
+    callback: (start: Date, end: Date) => void
+  ): void;
+  unregisterDateRangeChangeCallback(
+    callback: (start: Date, end: Date) => void
+  ): void;
 
   // Data fetching
   ensureRange(start: Date, end: Date): Promise<void>;

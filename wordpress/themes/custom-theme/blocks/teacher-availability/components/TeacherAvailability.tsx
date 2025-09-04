@@ -4,6 +4,7 @@ import { getCalendarContextSafe } from "../../../types/calendar-utils";
 import type { CalendarEvent } from "../../../types/calendar";
 import RulesSection from "./RulesSection";
 import ExceptionsSection from "./ExceptionsSection";
+import { useGetCalendarContext } from "../../../blocks/hooks/get-context";
 
 interface Rule {
   id?: string;
@@ -50,8 +51,68 @@ export default function TeacherAvailability({
   useEffect(() => {
     loadAvailability();
     // Also push an initial preview into the calendar context if present
-    previewAndPushToCalendar(showPreviewWeeks).catch(() => void 0);
+    // previewAndPushToCalendar(showPreviewWeeks).catch(() => void 0);
   }, []);
+
+  const api = useGetCalendarContext("#teacher-availability-root");
+
+  // Register callback for date range changes
+  useEffect(() => {
+    if (!api) {
+      console.warn("Teacher Availability: API not available");
+      return;
+    }
+
+    console.log("Teacher Availability: Registering date range change callback");
+
+    const handleDateRangeChange = async (start: Date, end: Date) => {
+      console.log(
+        "Teacher Availability: Date range change callback called",
+        start,
+        end
+      );
+      try {
+        // Fetch availability preview for the new date range
+        const _events = await api.thriveClient.fetchAvailabilityPreview(
+          start,
+          end
+        );
+
+        const events: CalendarEvent[] = _events.map((w) => ({
+          id: `avail:${w.startUtc}|${w.endUtc}`,
+          title: "Available",
+          startUtc: w.startUtc,
+          endUtc: w.endUtc,
+          type: "availability" as const,
+        }));
+
+        console.log("Teacher Availability: Updating events", events.length);
+
+        // Update the calendar context with the new events
+        api.setEventsFromTeacherAvailability(
+          start.toISOString(),
+          end.toISOString(),
+          events
+        );
+      } catch (error) {
+        console.warn(
+          "Failed to update availability preview on date range change",
+          error
+        );
+      }
+    };
+
+    // Register the callback
+    api.registerDateRangeChangeCallback(handleDateRangeChange);
+
+    // Cleanup: unregister the callback when component unmounts
+    return () => {
+      console.log(
+        "Teacher Availability: Unregistering date range change callback"
+      );
+      api.unregisterDateRangeChangeCallback(handleDateRangeChange);
+    };
+  }, [api]); // Depend on api
 
   const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     const response = await fetch(`${API_BASE}${endpoint}`, {
@@ -161,7 +222,7 @@ export default function TeacherAvailability({
     await loadAvailability();
     setRefreshVersion((v) => v + 1);
     // After save, refresh the calendar preview
-    await previewAndPushToCalendar(showPreviewWeeks);
+    // await previewAndPushToCalendar(showPreviewWeeks);
     return result;
   };
 
@@ -235,7 +296,6 @@ export default function TeacherAvailability({
       setSaveStatus("Refreshing...");
       await loadAvailability();
       setSaveStatus("Refreshed successfully!");
-      await previewAndPushToCalendar(showPreviewWeeks);
       setTimeout(() => setSaveStatus(""), 3000);
     } catch (error) {
       console.error("Refresh error:", error);
@@ -243,55 +303,6 @@ export default function TeacherAvailability({
       setTimeout(() => setSaveStatus(""), 3000);
     }
   };
-
-  // Compute a preview window and push events into the shared calendar context
-  async function previewAndPushToCalendar(weeks: number) {
-    try {
-      const container = document.getElementById("teacher-availability-root");
-      if (!container) return;
-      const api = getCalendarContextSafe(container);
-      if (!api || typeof api.setEventsFromTeacherAvailability !== "function")
-        return;
-
-      // Compute start of current week (Sunday) and end by weeks
-      const now = new Date();
-      now.setHours(0, 0, 0, 0);
-      const start = new Date(now);
-      const dow = start.getDay();
-      start.setDate(start.getDate() - dow);
-      const end = new Date(start);
-      end.setDate(end.getDate() + Math.max(1, weeks) * 7);
-
-      const res = await apiCall("/teachers/me/availability/preview", {
-        method: "POST",
-        body: JSON.stringify({
-          start: start.toISOString(),
-          end: end.toISOString(),
-        }),
-      });
-      const windows: Array<{ start: string; end: string }> = Array.isArray(
-        res?.windows
-      )
-        ? res.windows
-        : [];
-      const events: CalendarEvent[] = windows.map((w) => ({
-        id: `avail:${w.start}|${w.end}`,
-        title: "Available",
-        startUtc: w.start,
-        endUtc: w.end,
-        type: "availability" as const,
-      }));
-
-      api.setEventsFromTeacherAvailability(
-        start.toISOString(),
-        end.toISOString(),
-        events
-      );
-    } catch (e) {
-      // Non-fatal: preview is best-effort
-      console.warn("Failed to push preview to calendar", e);
-    }
-  }
 
   if (loading) {
     return (
