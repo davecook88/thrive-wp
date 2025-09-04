@@ -159,6 +159,20 @@ export class ThriveCalendar extends LitElement {
       setVar("--thrive-blackout-bg", this.blackoutBg);
     if (changed.has("blackoutStripe"))
       setVar("--thrive-blackout-stripe", this.blackoutStripe);
+
+    // Notify consumers when the visible date range may have changed
+    if (
+      changed.has("currentDate") ||
+      changed.has("view") ||
+      changed.has("timezone")
+    ) {
+      this.emit("range:change", {
+        fromDate: this.fromDate,
+        untilDate: this.untilDate,
+        timezone: this.timezone,
+        view: this.view,
+      });
+    }
   }
 
   private navigateDate(direction: "prev" | "next") {
@@ -185,6 +199,120 @@ export class ThriveCalendar extends LitElement {
       dates.push(d);
     }
     return dates;
+  }
+
+  // ===== Public date-range exposure (timezone-aware YYYY-MM-DD) =====
+  // Format a stable YYYY-MM-DD in the configured timezone
+  private zonedDateKey(date: Date): string {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: this.timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(date);
+  }
+
+  // Map to Sunday=0 … Saturday=6 in the configured timezone
+  private zonedDowIndex(date: Date): number {
+    const dowStr = new Intl.DateTimeFormat("en-US", {
+      timeZone: this.timezone,
+      weekday: "short",
+    }).format(date);
+    const map: Record<string, number> = {
+      Sun: 0,
+      Mon: 1,
+      Tue: 2,
+      Wed: 3,
+      Thu: 4,
+      Fri: 5,
+      Sat: 6,
+    };
+    return map[dowStr as keyof typeof map] ?? 0;
+  }
+
+  // Compute week dates with week starting on Sunday using the configured timezone
+  private getWeekDatesZoned(date: Date): Date[] {
+    const start = new Date(date);
+    const dow = this.zonedDowIndex(date);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - dow);
+    const days: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      days.push(d);
+    }
+    return days;
+  }
+
+  // Month range (first/last day) in configured timezone
+  private getMonthRangeZoned(date: Date): { start: Date; end: Date } {
+    const year = Number(
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: this.timezone,
+        year: "numeric",
+      }).format(date)
+    );
+    const month = Number(
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: this.timezone,
+        month: "2-digit",
+      }).format(date)
+    );
+    // Construct via local Date, then we only use YYYY-MM-DD keys so absolute time isn't critical here
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0); // last day of month
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    return { start, end };
+  }
+
+  // Public read-only properties: UTC ISO strings marking range
+  // fromDate => inclusive start (T00:00:00.000Z)
+  // untilDate => exclusive end (T00:00:00.000Z of the day AFTER the last visible day)
+  get fromDate(): string {
+    // Determine the first visible calendar day in configured timezone
+    let firstDay: Date;
+    if (this.view === "week") {
+      const week = this.getWeekDatesZoned(this.currentDate);
+      firstDay = week[0];
+    } else if (this.view === "day") {
+      firstDay = new Date(this.currentDate);
+    } else if (this.view === "month") {
+      firstDay = this.getMonthRangeZoned(this.currentDate).start;
+    } else {
+      firstDay = this.getWeekDatesZoned(this.currentDate)[0];
+    }
+    const ymd = this.zonedDateKey(firstDay); // YYYY-MM-DD in view timezone
+    // Interpret that calendar date as UTC midnight
+    return new Date(`${ymd}T00:00:00.000Z`).toISOString();
+  }
+
+  get untilDate(): string {
+    // Determine the day AFTER the last visible calendar day
+    let lastDayPlusOne: Date;
+    if (this.view === "week") {
+      const week = this.getWeekDatesZoned(this.currentDate);
+      const last = new Date(week[6]);
+      last.setDate(last.getDate() + 1);
+      lastDayPlusOne = last;
+    } else if (this.view === "day") {
+      const d = new Date(this.currentDate);
+      d.setDate(d.getDate() + 1);
+      lastDayPlusOne = d;
+    } else if (this.view === "month") {
+      const { end } = this.getMonthRangeZoned(this.currentDate); // last day of month
+      const d = new Date(end);
+      d.setDate(d.getDate() + 1); // first day of next month
+      lastDayPlusOne = d;
+    } else {
+      const week = this.getWeekDatesZoned(this.currentDate);
+      const last = new Date(week[6]);
+      last.setDate(last.getDate() + 1);
+      lastDayPlusOne = last;
+    }
+    const ymd = this.zonedDateKey(lastDayPlusOne); // YYYY-MM-DD in view timezone
+    return new Date(`${ymd}T00:00:00.000Z`).toISOString();
   }
 
   // Note: event positioning is handled by <thrive-week-view> which is

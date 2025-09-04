@@ -1,7 +1,13 @@
 // Frontend view bindings for <thrive-calendar> elements to the Calendar Context API
 import { getCalendarContextSafe } from "../../types/calendar-utils";
+import type {
+  BaseCalendarEvent,
+  ThriveCalendarElement,
+} from "../../types/calendar";
 
-function attachCalendar(cal: HTMLElement) {
+type ThriveCalendarEl = ThriveCalendarElement;
+
+function attachCalendar(cal: ThriveCalendarEl) {
   console.log("Thrive Calendar: Attaching to calendar element", cal);
   const ctxEl = cal.closest(
     ".wp-block-custom-theme-thrive-calendar-context"
@@ -20,9 +26,10 @@ function attachCalendar(cal: HTMLElement) {
   }
 
   console.log("Thrive Calendar: Attaching calendar to context", api.id);
+  api.registerCalendar(cal);
 
   // Initial sync
-  (cal as any).events = api.events;
+  cal.events = api.events as BaseCalendarEvent[];
   const dateAttr = cal.getAttribute("date");
   if (dateAttr) api.setAnchor(new Date(dateAttr));
   const viewAttr = (cal.getAttribute("view") as any) || undefined;
@@ -35,12 +42,24 @@ function attachCalendar(cal: HTMLElement) {
       | { contextId?: string; events?: any[] }
       | undefined;
     if (!detail) return;
-    (cal as any).events = Array.isArray(detail.events) ? detail.events : [];
+    cal.events = Array.isArray(detail.events)
+      ? (detail.events as BaseCalendarEvent[])
+      : [];
   };
   ctxEl.addEventListener(
     "thrive-calendar:events",
     onCtxEvents as EventListener
   );
+
+  // When the calendar’s visible range changes, consumers will fetch using UTC dates
+  const onRange = (e: Event) => {
+    const detail = (e as CustomEvent).detail as
+      | { fromDate?: string; untilDate?: string }
+      | undefined;
+    if (!detail?.fromDate || !detail?.untilDate) return;
+    // Optionally, contexts listening on ctxEl will react; if needed we could forward to API here
+  };
+  cal.addEventListener("range:change", onRange as EventListener);
 
   // Wire UI -> context
   cal.addEventListener("event:click", (e: any) => {
@@ -62,12 +81,14 @@ function attachCalendar(cal: HTMLElement) {
       api.setView(v);
     }
   });
+
+  // TODO: consider an observer to unregister on removal
 }
 
 function onReady() {
   document
     .querySelectorAll<HTMLElement>("thrive-calendar")
-    .forEach((cal) => attachCalendar(cal));
+    .forEach((el) => attachCalendar(el as unknown as ThriveCalendarEl));
 }
 
 if (document.readyState === "loading") {

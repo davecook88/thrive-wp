@@ -4,19 +4,12 @@ import type {
   ThriveCalendarContextApi,
   BaseCalendarEvent,
   CalendarView,
+  ThriveCalendarElement,
 } from "../../types/calendar";
 import { thriveClient } from "../../clients/thrive";
 
-function weekRangeFor(date: Date): { start: Date; end: Date } {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  const dow = d.getDay(); // Sunday start
-  const start = new Date(d);
-  start.setDate(d.getDate() - dow);
-  const end = new Date(start);
-  end.setDate(start.getDate() + 7);
-  return { start, end };
-}
+// Typed Web Component interface for thrive-calendar
+type ThriveCalendarEl = ThriveCalendarElement;
 
 // '.wp-block-custom-theme-thrive-calendar-context' wrapper.
 (() => {
@@ -44,6 +37,7 @@ function weekRangeFor(date: Date): { start: Date; end: Date } {
     anchor: Date;
     pending: Set<string>;
     dateRangeChangeCallbacks: DateRangeChangeCallback[];
+    calendars: Set<ThriveCalendarEl>;
   };
 
   function emitEventsUpdate(state: CtxState) {
@@ -103,12 +97,34 @@ function weekRangeFor(date: Date): { start: Date; end: Date } {
       anchor: new Date(),
       pending: new Set(),
       dateRangeChangeCallbacks: [],
+      calendars: new Set<ThriveCalendarEl>(),
     };
 
-    // Initialize anchor and ensure current week is cached, even if no calendars
-    const initRange = weekRangeFor(state.anchor);
-    // ensureRange(state, "teacher-availability", initRange.start, initRange.end);
-    callDateRangeChangeCallbacks(state, initRange.start, initRange.end);
+    // Helper to emit callbacks based on the union of all attached calendars’ ranges.
+    function emitCurrentRangeFromCalendars() {
+      // Prefer first attached calendar; if none, derive a sensible default
+      const first = state.calendars.values().next().value as
+        | ThriveCalendarEl
+        | undefined;
+      if (first) {
+        // fromDate/untilDate are already UTC ISO strings from the component
+        const start = new Date(first.fromDate);
+        const end = new Date(first.untilDate);
+        callDateRangeChangeCallbacks(state, start, end);
+      } else {
+        // Fallback: week range from current anchor (UTC midnight bounds)
+        const d = new Date(state.anchor);
+        d.setUTCHours(0, 0, 0, 0);
+        const dow = d.getUTCDay();
+        const start = new Date(d);
+        start.setUTCDate(d.getUTCDate() - dow);
+        const end = new Date(start);
+        end.setUTCDate(start.getUTCDate() + 7);
+        callDateRangeChangeCallbacks(state, start, end);
+      }
+    }
+
+    // Do not emit callbacks until a calendar provides its range
 
     // Expose a context-local API for descendants via DOM property
     const api: ThriveCalendarContextApi = {
@@ -118,7 +134,29 @@ function weekRangeFor(date: Date): { start: Date; end: Date } {
       registerDateRangeChangeCallback(callback: DateRangeChangeCallback) {
         if (!state.dateRangeChangeCallbacks.includes(callback)) {
           state.dateRangeChangeCallbacks.push(callback);
-          // call callback immediately for current range
+          // Immediately run the new callback with the current calendar range (UTC)
+          const first = state.calendars.values().next().value as
+            | ThriveCalendarEl
+            | undefined;
+          if (first && first.fromDate && first.untilDate) {
+            try {
+              const start = new Date(first.fromDate);
+              const end = new Date(first.untilDate);
+              const result = callback(start, end);
+              if (result && typeof (result as any).then === "function") {
+                (result as Promise<BaseCalendarEvent[]>).then((evs) =>
+                  mergeEvents(state, evs)
+                );
+              } else {
+                mergeEvents(state, result as BaseCalendarEvent[]);
+              }
+            } catch (err) {
+              console.error(
+                "Error running immediate date range callback:",
+                err
+              );
+            }
+          }
           console.log(
             "Thrive Calendar Context: Registered callback, total callbacks:",
             state.dateRangeChangeCallbacks.length
@@ -143,34 +181,61 @@ function weekRangeFor(date: Date): { start: Date; end: Date } {
           })
         );
       },
+      registerCalendar(el: ThriveCalendarEl) {
+        state.calendars.add(el);
+      },
+      unregisterCalendar(el: ThriveCalendarEl) {
+        state.calendars.delete(el);
+      },
 
       setView(view: CalendarView) {
         console.log("Thrive Calendar Context: setView called", view);
         state.view = view;
-        const { start, end } = weekRangeFor(state.anchor);
-        callDateRangeChangeCallbacks(state, start, end);
+        // Drive registered calendars; they will emit range:change with UTC dates
+        state.calendars.forEach((cal) => cal.setAttribute("view", view));
       },
       goToToday() {
         console.log("Thrive Calendar Context: goToToday called");
         state.anchor = new Date();
-        const { start, end } = weekRangeFor(state.anchor);
-        callDateRangeChangeCallbacks(state, start, end);
+        const ymd = new Date().toISOString().slice(0, 10); // UTC YYYY-MM-DD
+        state.calendars.forEach((cal) => cal.setAttribute("date", ymd));
       },
       navigate(direction: "next" | "prev") {
         console.log("Thrive Calendar Context: navigate called", direction);
         const dir = direction === "next" ? 1 : -1;
-        const days = state.view === "week" ? 7 : state.view === "day" ? 1 : 7;
-        const anchor = new Date(state.anchor);
-        anchor.setDate(anchor.getDate() + dir * days);
-        state.anchor = anchor;
-        const { start, end } = weekRangeFor(anchor);
-        callDateRangeChangeCallbacks(state, start, end);
+        state.calendars.forEach((cal) => {
+          // Use current calendar UTC range to compute next anchor
+          const from = cal.fromDate ? new Date(cal.fromDate) : new Date();
+          const until = cal.untilDate ? new Date(cal.untilDate) : new Date();
+          let next = from; // default
+          if (state.view === "day") {
+            next = new Date(from);
+            next.setUTCDate(from.getUTCDate() + dir * 1);
+          } else if (state.view === "week") {
+            next = new Date(from);
+            next.setUTCDate(from.getUTCDate() + dir * 7);
+          } else if (state.view === "month") {
+            // Approximate using until - from (exclusive range), or +30 days
+            const days = Math.max(
+              28,
+              Math.round((until.getTime() - from.getTime()) / 86400000)
+            );
+            next = new Date(from);
+            next.setUTCDate(from.getUTCDate() + dir * days);
+          } else {
+            next = new Date(from);
+            next.setUTCDate(from.getUTCDate() + dir * 7);
+          }
+          const ymd = next.toISOString().slice(0, 10);
+          cal.setAttribute("date", ymd);
+          state.anchor = new Date(next);
+        });
       },
       setAnchor(date: Date) {
         console.log("Thrive Calendar Context: setAnchor called", date);
         state.anchor = new Date(date);
-        const { start, end } = weekRangeFor(state.anchor);
-        callDateRangeChangeCallbacks(state, start, end);
+        const ymd = new Date(date).toISOString().slice(0, 10);
+        state.calendars.forEach((cal) => cal.setAttribute("date", ymd));
       },
       // client
       get thriveClient() {
@@ -201,16 +266,40 @@ function weekRangeFor(date: Date): { start: Date; end: Date } {
     reg[id] = api;
 
     // Minimal initial sync for any calendars inside this context.
-    ctxEl.querySelectorAll<any>("thrive-calendar").forEach((cal) => {
-      if (Array.isArray(state.events)) cal.events = state.events;
-      const dateAttr = cal.getAttribute("date");
-      const oldAnchor = state.anchor;
-      state.anchor = dateAttr ? new Date(dateAttr) : state.anchor;
-      if (state.anchor.getTime() !== oldAnchor.getTime()) {
-        const { start, end } = weekRangeFor(state.anchor);
-        callDateRangeChangeCallbacks(state, start, end);
-      }
-    });
+    ctxEl
+      .querySelectorAll<ThriveCalendarEl>("thrive-calendar")
+      .forEach((cal) => {
+        state.calendars.add(cal);
+        if (Array.isArray(state.events)) cal.events = state.events;
+        const dateAttr = cal.getAttribute("date");
+        const oldAnchor = state.anchor;
+        state.anchor = dateAttr ? new Date(dateAttr) : state.anchor;
+
+        // Listen for range changes directly from the calendar (UTC dates)
+        const onRangeChange = (e: Event) => {
+          const detail = (e as CustomEvent).detail as
+            | { fromDate?: string; untilDate?: string }
+            | undefined;
+          if (!detail?.fromDate || !detail?.untilDate) return;
+          callDateRangeChangeCallbacks(
+            state,
+            new Date(detail.fromDate),
+            new Date(detail.untilDate)
+          );
+        };
+        cal.addEventListener("range:change", onRangeChange as EventListener);
+
+        // Trigger initial callback run based on this calendar's current range
+        if (cal.fromDate && cal.untilDate) {
+          callDateRangeChangeCallbacks(
+            state,
+            new Date(cal.fromDate),
+            new Date(cal.untilDate)
+          );
+        } else if (state.anchor.getTime() !== oldAnchor.getTime()) {
+          emitCurrentRangeFromCalendars();
+        }
+      });
   }
 
   function onReady() {

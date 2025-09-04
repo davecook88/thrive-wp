@@ -54,6 +54,12 @@ export type CalendarEvent =
 
 export type CalendarView = "week" | "day" | "month" | "list";
 
+export interface ThriveCalendarElement extends HTMLElement {
+  fromDate: string; // UTC ISO inclusive start
+  untilDate: string; // UTC ISO exclusive end
+  events: BaseCalendarEvent[];
+}
+
 export interface ThriveCalendarContextApi {
   // Identity
   readonly id: string;
@@ -96,6 +102,10 @@ export interface ThriveCalendarContextApi {
   goToToday(): void;
   navigate(direction: "next" | "prev"): void;
   setAnchor(date: Date): void;
+
+  // Calendar element registration (for range propagation and lifecycle)
+  registerCalendar(el: ThriveCalendarElement): void;
+  unregisterCalendar(el: ThriveCalendarElement): void;
 }
 
 export class CalendarContextNotFoundError extends Error {
