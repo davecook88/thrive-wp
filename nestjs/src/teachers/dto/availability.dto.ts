@@ -53,10 +53,21 @@ export class UpdateAvailabilityDto {
   exceptions?: AvailabilityExceptionDto[];
 }
 
+export class PreviewMyAvailabilityDto {
+  @IsString()
+  start: string; // ISO date
+
+  @IsString()
+  end: string; // ISO date
+}
+
 export class PreviewAvailabilityDto {
   @IsString()
   start: string; // ISO date
 
   @IsString()
   end: string; // ISO date
+
+  @IsArray()
+  teacherIds: number[];
 }

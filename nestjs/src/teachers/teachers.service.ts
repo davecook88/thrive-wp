@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, In, FindOptionsWhere } from 'typeorm';
 import { Teacher } from './entities/teacher.entity.js';
 import {
   TeacherAvailability,
@@ -14,6 +14,7 @@ import {
   UpdateAvailabilityDto,
   PreviewAvailabilityDto,
   AvailabilityRuleDto,
+  PreviewMyAvailabilityDto,
 } from './dto/availability.dto.js';
 
 interface AvailabilityRule {
@@ -161,33 +162,36 @@ export class TeachersService {
   }
 
   async previewTeacherAvailability(
-    teacherId: number,
-    dto: PreviewAvailabilityDto,
+    teacherIds: number[],
+    dto: PreviewAvailabilityDto | PreviewMyAvailabilityDto,
   ) {
-    const teacher = await this.teacherRepository.findOne({
-      where: { userId: teacherId },
-    });
-
-    if (!teacher) {
-      throw new NotFoundException('Teacher not found');
+    // Validate teachers exist if teacherIds are provided
+    if (teacherIds && teacherIds.length > 0) {
+      for (const teacherId of teacherIds) {
+        const teacher = await this.teacherRepository.findOne({
+          where: { userId: teacherId },
+        });
+        if (!teacher) {
+          throw new NotFoundException('Teacher not found');
+        }
+      }
     }
 
+    const where: FindOptionsWhere<TeacherAvailability> = teacherIds
+      ? { teacherId: In(teacherIds), isActive: true }
+      : { isActive: true };
+    const availabilities = await this.availabilityRepository.find({
+      where,
+    });
+    const windows: { start: string; end: string; teacherIds: number[] }[] = [];
     const startDate = new Date(dto.start);
     const endDate = new Date(dto.end);
-
     // Limit to 90 days
     const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     if (diffDays > 90) {
       throw new BadRequestException('Preview range cannot exceed 90 days');
     }
-
-    const availabilities = await this.availabilityRepository.find({
-      where: { teacherId: teacher.id, isActive: true },
-    });
-
-    const windows: { start: string; end: string }[] = [];
-
     // Process each day in the range
     const currentDate = new Date(startDate);
     while (currentDate <= endDate) {
@@ -198,64 +202,77 @@ export class TeachersService {
       windows.push(...dayWindows);
       currentDate.setDate(currentDate.getDate() + 1);
     }
-
     return { windows };
   }
 
   private expandDayAvailability(
     date: Date,
     availabilities: TeacherAvailability[],
-  ): { start: string; end: string }[] {
-    const windows: { start: string; end: string }[] = [];
-
-    // Get recurring rules for this weekday (0=Sunday, 6=Saturday)
-    const weekday = date.getUTCDay();
-    const rules = availabilities.filter(
-      (a) =>
-        a.kind === TeacherAvailabilityKind.RECURRING && a.weekday === weekday,
-    );
-
-    // Get blackouts for this date
-    const blackouts = availabilities.filter(
-      (a) =>
-        a.kind === TeacherAvailabilityKind.BLACKOUT &&
-        a.startAt &&
-        a.endAt &&
-        this.isSameDay(a.startAt, date),
-    );
-
-    for (const rule of rules) {
-      const startTime = this.minutesToTimeString(rule.startTimeMinutes!);
-      const endTime = this.minutesToTimeString(rule.endTimeMinutes!);
-
-      // Create UTC datetime for this date and time
-      const year = date.getUTCFullYear();
-      const month = date.getUTCMonth();
-      const day = date.getUTCDate();
-
-      const startUTC = new Date(
-        Date.UTC(year, month, day, ...this.parseTime(startTime)),
-      );
-      const endUTC = new Date(
-        Date.UTC(year, month, day, ...this.parseTime(endTime)),
-      );
-
-      // Check if this window overlaps with any blackout
-      const overlapsBlackout = blackouts.some((blackout) => {
-        const blackoutStart = blackout.startAt!;
-        const blackoutEnd = blackout.endAt!;
-        return startUTC < blackoutEnd && endUTC > blackoutStart;
-      });
-
-      if (!overlapsBlackout) {
-        windows.push({
-          start: startUTC.toISOString(),
-          end: endUTC.toISOString(),
-        });
+  ): { start: string; end: string; teacherIds: number[] }[] {
+    {
+      const teacherIds = new Set<number>();
+      for (const avail of availabilities) {
+        teacherIds.add(avail.teacherId);
       }
+      const windowsMap = new Map<
+        string,
+        { start: Date; end: Date; teacherIds: number[] }
+      >();
+      for (const teacher of teacherIds) {
+        const teacherAvailabilities = availabilities.filter(
+          (a) => a.teacherId === teacher,
+        );
+        const weekday = date.getUTCDay();
+        const rules = teacherAvailabilities.filter(
+          (a) =>
+            a.kind === TeacherAvailabilityKind.RECURRING &&
+            a.weekday === weekday,
+        );
+        const blackouts = teacherAvailabilities.filter(
+          (a) =>
+            a.kind === TeacherAvailabilityKind.BLACKOUT &&
+            a.startAt &&
+            a.endAt &&
+            this.isSameDay(a.startAt, date),
+        );
+        for (const rule of rules) {
+          const startTime = this.minutesToTimeString(rule.startTimeMinutes!);
+          const endTime = this.minutesToTimeString(rule.endTimeMinutes!);
+          const year = date.getUTCFullYear();
+          const month = date.getUTCMonth();
+          const day = date.getUTCDate();
+          const startUTC = new Date(
+            Date.UTC(year, month, day, ...this.parseTime(startTime)),
+          );
+          const endUTC = new Date(
+            Date.UTC(year, month, day, ...this.parseTime(endTime)),
+          );
+          const overlapsBlackout = blackouts.some((blackout) => {
+            const blackoutStart = blackout.startAt!;
+            const blackoutEnd = blackout.endAt!;
+            return startUTC < blackoutEnd && endUTC > blackoutStart;
+          });
+          if (!overlapsBlackout) {
+            const key = `${startUTC.toISOString()}-${endUTC.toISOString()}`;
+            if (!windowsMap.has(key)) {
+              windowsMap.set(key, {
+                start: startUTC,
+                end: endUTC,
+                teacherIds: [],
+              });
+            }
+            windowsMap.get(key)!.teacherIds.push(teacher);
+          }
+        }
+      }
+      return Array.from(windowsMap.values())
+        .map((w) => ({
+          start: w.start.toISOString(),
+          end: w.end.toISOString(),
+          teacherIds: w.teacherIds,
+        }))
+        .sort((a, b) => a.start.localeCompare(b.start));
     }
-
-    return windows.sort((a, b) => a.start.localeCompare(b.start));
   }
 
   private validateRules(rules: AvailabilityRuleDto[]) {

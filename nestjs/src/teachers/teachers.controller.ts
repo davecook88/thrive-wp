@@ -12,6 +12,7 @@ import { TeacherGuard } from '../auth/teacher.guard.js';
 import {
   UpdateAvailabilityDto,
   PreviewAvailabilityDto,
+  PreviewMyAvailabilityDto,
 } from './dto/availability.dto.js';
 import type { Request as ExpressRequest } from 'express';
 
@@ -64,9 +65,9 @@ export class TeachersController {
   @Post('preview')
   async previewAvailability(
     @Request() req: AuthenticatedRequest,
-    @Body() dto: PreviewAvailabilityDto,
+    @Body() dto: PreviewMyAvailabilityDto,
   ): Promise<PreviewAvailabilityResponse> {
     const teacherId = req.user.id;
-    return this.teachersService.previewTeacherAvailability(teacherId, dto);
+    return this.teachersService.previewTeacherAvailability([teacherId], dto);
   }
 }

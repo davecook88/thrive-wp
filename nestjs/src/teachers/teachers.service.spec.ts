@@ -375,6 +375,7 @@ describe('TeachersService', () => {
       const dto: PreviewAvailabilityDto = {
         start: '2025-09-03T00:00:00.000Z', // Wednesday
         end: '2025-09-03T23:59:59.999Z',
+        teacherIds: [teacherId],
       };
 
       const mockTeacher = {
@@ -405,7 +406,7 @@ describe('TeachersService', () => {
         .spyOn(availabilityRepo, 'find')
         .mockResolvedValue([mockAvailability as any]);
 
-      const result = await service.previewTeacherAvailability(teacherId, dto);
+      const result = await service.previewTeacherAvailability([teacherId], dto);
 
       expect(result.windows).toHaveLength(1);
 
@@ -421,6 +422,7 @@ describe('TeachersService', () => {
       const dto: PreviewAvailabilityDto = {
         start: '2025-09-01T00:00:00.000Z', // Monday
         end: '2025-09-01T23:59:59.999Z',
+        teacherIds: [teacherId],
       };
 
       const mockTeacher = {
@@ -451,7 +453,7 @@ describe('TeachersService', () => {
         .spyOn(availabilityRepo, 'find')
         .mockResolvedValue([mockAvailability as any]);
 
-      const result = await service.previewTeacherAvailability(teacherId, dto);
+      const result = await service.previewTeacherAvailability([teacherId], dto);
 
       expect(result.windows).toHaveLength(1);
 
@@ -465,6 +467,7 @@ describe('TeachersService', () => {
       const dto: PreviewAvailabilityDto = {
         start: '2025-09-03T00:00:00.000Z', // Wednesday
         end: '2025-09-04T23:59:59.999Z', // Thursday
+        teacherIds: [teacherId],
       };
 
       const mockTeacher = {
@@ -495,7 +498,7 @@ describe('TeachersService', () => {
         .spyOn(availabilityRepo, 'find')
         .mockResolvedValue([mockAvailability as any]);
 
-      const result = await service.previewTeacherAvailability(teacherId, dto);
+      const result = await service.previewTeacherAvailability([teacherId], dto);
 
       expect(result.windows).toHaveLength(1);
 
@@ -509,12 +512,14 @@ describe('TeachersService', () => {
       const dto: PreviewAvailabilityDto = {
         start: '2025-09-03T00:00:00.000Z',
         end: '2025-09-03T23:59:59.999Z',
+        teacherIds: [teacherId],
       };
 
       jest.spyOn(teacherRepo, 'findOne').mockResolvedValue(null);
+      jest.spyOn(availabilityRepo, 'find').mockResolvedValue([]);
 
       await expect(
-        service.previewTeacherAvailability(teacherId, dto),
+        service.previewTeacherAvailability([teacherId], dto),
       ).rejects.toThrow('Teacher not found');
     });
 
@@ -523,6 +528,7 @@ describe('TeachersService', () => {
       const dto: PreviewAvailabilityDto = {
         start: '2025-09-03T00:00:00.000Z',
         end: '2026-12-03T23:59:59.999Z', // More than 90 days
+        teacherIds: [teacherId],
       };
 
       const mockTeacher = {
@@ -536,9 +542,10 @@ describe('TeachersService', () => {
       };
 
       jest.spyOn(teacherRepo, 'findOne').mockResolvedValue(mockTeacher as any);
+      jest.spyOn(availabilityRepo, 'find').mockResolvedValue([]);
 
       await expect(
-        service.previewTeacherAvailability(teacherId, dto),
+        service.previewTeacherAvailability([teacherId], dto),
       ).rejects.toThrow('Preview range cannot exceed 90 days');
     });
   });
