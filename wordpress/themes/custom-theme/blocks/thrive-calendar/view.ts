@@ -1,18 +1,8 @@
 // Frontend view bindings for <thrive-calendar> elements to the Calendar Context API
 import { getCalendarContextSafe } from "../../types/calendar-utils";
 
-function weekRangeFor(date: Date): { start: Date; end: Date } {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  const dow = d.getDay(); // Sunday start
-  const start = new Date(d);
-  start.setDate(d.getDate() - dow);
-  const end = new Date(start);
-  end.setDate(start.getDate() + 7);
-  return { start, end };
-}
-
 function attachCalendar(cal: HTMLElement) {
+  console.log("Thrive Calendar: Attaching to calendar element", cal);
   const ctxEl = cal.closest(
     ".wp-block-custom-theme-thrive-calendar-context"
   ) as HTMLElement | null;
@@ -40,6 +30,7 @@ function attachCalendar(cal: HTMLElement) {
 
   // React to context -> calendar updates
   const onCtxEvents = (e: Event) => {
+    console.log("Thrive Calendar: Context events updated", e);
     const detail = (e as CustomEvent).detail as
       | { contextId?: string; events?: any[] }
       | undefined;
