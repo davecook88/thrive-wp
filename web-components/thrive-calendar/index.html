@@ -130,10 +130,10 @@
           </select>
         </div>
 
-        <div class="control-group">
+        <!-- <div class="control-group">
           <label for="teacher-id">Teacher ID:</label>
           <input type="text" id="teacher-id" placeholder="teacher1" value="teacher1">
-        </div>
+        </div> -->
 
         <div class="control-group">
           <label for="slot-duration">Slot Duration (min):</label>
@@ -230,13 +230,301 @@
         };
         // Example events showing availability, blackout, classes, and bookings across the week
         calendar.events = [
-          { id: 'a1', title: 'Availability', startUtc: mk(0, 15, 30), endUtc: mk(0, 16, 30), type: 'availability', teacherId: 'teacher1' },
-          { id: 'a2', title: 'Availability', startUtc: mk(1, 0, 0), endUtc: mk(1, 4, 0), type: 'availability', teacherId: 'teacher1' },
-          { id: 'bo1', title: 'Blackout', startUtc: mk(2, 0, 30), endUtc: mk(2, 2, 30), type: 'blackout', teacherId: 'teacher1' },
-          { id: 'c1', title: 'Group Class', startUtc: mk(3, 1, 30), endUtc: mk(3, 2, 30), type: 'class', teacherId: 'teacher1', classType: 'GROUP', capacityMax: 10, status: 'SCHEDULED' },
-          { id: 'b1', title: 'Private Session', startUtc: mk(4, 2, 0), endUtc: mk(4, 3, 0), type: 'booking', teacherId: 'teacher1', sessionId: 'session1', status: 'CONFIRMED' }
-        ];
-
+    {
+        "id": "avail:2025-09-01T15:00:00.000Z|2025-09-01T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-09-01T15:00:00.000Z",
+        "endUtc": "2025-09-01T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-09-02T15:00:00.000Z|2025-09-02T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-09-02T15:00:00.000Z",
+        "endUtc": "2025-09-02T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-09-03T18:00:00.000Z|2025-09-04T04:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-09-03T18:00:00.000Z",
+        "endUtc": "2025-09-04T04:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-09-08T15:00:00.000Z|2025-09-08T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-09-08T15:00:00.000Z",
+        "endUtc": "2025-09-08T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-09-09T15:00:00.000Z|2025-09-09T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-09-09T15:00:00.000Z",
+        "endUtc": "2025-09-09T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-09-10T18:00:00.000Z|2025-09-11T04:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-09-10T18:00:00.000Z",
+        "endUtc": "2025-09-11T04:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-09-15T15:00:00.000Z|2025-09-15T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-09-15T15:00:00.000Z",
+        "endUtc": "2025-09-15T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-09-16T15:00:00.000Z|2025-09-16T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-09-16T15:00:00.000Z",
+        "endUtc": "2025-09-16T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-09-17T18:00:00.000Z|2025-09-18T04:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-09-17T18:00:00.000Z",
+        "endUtc": "2025-09-18T04:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-09-22T15:00:00.000Z|2025-09-22T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-09-22T15:00:00.000Z",
+        "endUtc": "2025-09-22T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-09-23T15:00:00.000Z|2025-09-23T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-09-23T15:00:00.000Z",
+        "endUtc": "2025-09-23T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-09-24T18:00:00.000Z|2025-09-25T04:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-09-24T18:00:00.000Z",
+        "endUtc": "2025-09-25T04:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-09-29T15:00:00.000Z|2025-09-29T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-09-29T15:00:00.000Z",
+        "endUtc": "2025-09-29T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-09-30T15:00:00.000Z|2025-09-30T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-09-30T15:00:00.000Z",
+        "endUtc": "2025-09-30T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-10-01T18:00:00.000Z|2025-10-02T04:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-10-01T18:00:00.000Z",
+        "endUtc": "2025-10-02T04:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-10-06T15:00:00.000Z|2025-10-06T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-10-06T15:00:00.000Z",
+        "endUtc": "2025-10-06T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-10-07T15:00:00.000Z|2025-10-07T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-10-07T15:00:00.000Z",
+        "endUtc": "2025-10-07T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-10-08T18:00:00.000Z|2025-10-09T04:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-10-08T18:00:00.000Z",
+        "endUtc": "2025-10-09T04:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-10-13T15:00:00.000Z|2025-10-13T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-10-13T15:00:00.000Z",
+        "endUtc": "2025-10-13T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-10-14T15:00:00.000Z|2025-10-14T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-10-14T15:00:00.000Z",
+        "endUtc": "2025-10-14T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-10-15T18:00:00.000Z|2025-10-16T04:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-10-15T18:00:00.000Z",
+        "endUtc": "2025-10-16T04:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-10-20T15:00:00.000Z|2025-10-20T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-10-20T15:00:00.000Z",
+        "endUtc": "2025-10-20T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-10-21T15:00:00.000Z|2025-10-21T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-10-21T15:00:00.000Z",
+        "endUtc": "2025-10-21T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-10-22T18:00:00.000Z|2025-10-23T04:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-10-22T18:00:00.000Z",
+        "endUtc": "2025-10-23T04:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-10-27T15:00:00.000Z|2025-10-27T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-10-27T15:00:00.000Z",
+        "endUtc": "2025-10-27T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-10-28T15:00:00.000Z|2025-10-28T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-10-28T15:00:00.000Z",
+        "endUtc": "2025-10-28T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-10-29T18:00:00.000Z|2025-10-30T04:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-10-29T18:00:00.000Z",
+        "endUtc": "2025-10-30T04:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-11-03T15:00:00.000Z|2025-11-03T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-11-03T15:00:00.000Z",
+        "endUtc": "2025-11-03T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-11-04T15:00:00.000Z|2025-11-04T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-11-04T15:00:00.000Z",
+        "endUtc": "2025-11-04T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-11-05T18:00:00.000Z|2025-11-06T04:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-11-05T18:00:00.000Z",
+        "endUtc": "2025-11-06T04:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-11-10T15:00:00.000Z|2025-11-10T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-11-10T15:00:00.000Z",
+        "endUtc": "2025-11-10T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-11-11T15:00:00.000Z|2025-11-11T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-11-11T15:00:00.000Z",
+        "endUtc": "2025-11-11T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-11-12T18:00:00.000Z|2025-11-13T04:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-11-12T18:00:00.000Z",
+        "endUtc": "2025-11-13T04:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-11-17T15:00:00.000Z|2025-11-17T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-11-17T15:00:00.000Z",
+        "endUtc": "2025-11-17T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-11-18T15:00:00.000Z|2025-11-18T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-11-18T15:00:00.000Z",
+        "endUtc": "2025-11-18T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-11-19T18:00:00.000Z|2025-11-20T04:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-11-19T18:00:00.000Z",
+        "endUtc": "2025-11-20T04:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-11-24T15:00:00.000Z|2025-11-24T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-11-24T15:00:00.000Z",
+        "endUtc": "2025-11-24T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-11-24T15:00:00.000Z|2025-11-24T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-11-24T15:00:00.000Z",
+        "endUtc": "2025-11-24T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-11-25T15:00:00.000Z|2025-11-25T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-11-25T15:00:00.000Z",
+        "endUtc": "2025-11-25T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-11-25T15:00:00.000Z|2025-11-25T23:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-11-25T15:00:00.000Z",
+        "endUtc": "2025-11-25T23:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-11-26T18:00:00.000Z|2025-11-27T04:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-11-26T18:00:00.000Z",
+        "endUtc": "2025-11-27T04:00:00.000Z",
+        "type": "availability"
+    },
+    {
+        "id": "avail:2025-11-26T18:00:00.000Z|2025-11-27T04:00:00.000Z",
+        "title": "Available",
+        "startUtc": "2025-11-26T18:00:00.000Z",
+        "endUtc": "2025-11-27T04:00:00.000Z",
+        "type": "availability"
+    }
+]
         // Listen for calendar events
         calendar.addEventListener('slot:select', (e) => {
           logEvent('slot:select', e.detail);

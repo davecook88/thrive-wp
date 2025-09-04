@@ -284,7 +284,6 @@ export class ThriveCalendar extends LitElement {
             .slotDuration=${this.slotDuration}
             .showClasses=${this.showClasses}
             .showBookings=${this.showBookings}
-            .teacherId=${this.teacherId}
             .timeFormat=${this.timeFormat}
             .showTimezone=${this.showTimezone}
             .timezone=${this.timezone}

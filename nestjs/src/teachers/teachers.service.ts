@@ -42,17 +42,25 @@ export class TeachersService {
     private dataSource: DataSource,
   ) {}
 
-  async getTeacherAvailability(teacherId: number) {
+  async getTeacherIdByUserId(userId: number): Promise<number> {
     const teacher = await this.teacherRepository.findOne({
-      where: { userId: teacherId },
+      where: { userId },
     });
-
     if (!teacher) {
+      throw new NotFoundException('Teacher not found');
+    }
+    return teacher.id;
+  }
+
+  async getTeacherAvailability(userId: number) {
+    const teacherId = await this.getTeacherIdByUserId(userId);
+
+    if (!teacherId) {
       throw new NotFoundException('Teacher not found');
     }
 
     const availabilities = await this.availabilityRepository.find({
-      where: { teacherId: teacher.id, isActive: true },
+      where: { teacherId, isActive: true },
       order: { createdAt: 'ASC' },
     });
 
@@ -83,12 +91,9 @@ export class TeachersService {
     return { rules, exceptions };
   }
 
-  async updateTeacherAvailability(
-    teacherId: number,
-    dto: UpdateAvailabilityDto,
-  ) {
+  async updateTeacherAvailability(userId: number, dto: UpdateAvailabilityDto) {
     const teacher = await this.teacherRepository.findOne({
-      where: { userId: teacherId },
+      where: { userId },
     });
 
     if (!teacher) {
@@ -158,25 +163,13 @@ export class TeachersService {
       }
     });
 
-    return this.getTeacherAvailability(teacherId);
+    return this.getTeacherAvailability(teacher.id);
   }
 
   async previewTeacherAvailability(
     teacherIds: number[],
     dto: PreviewAvailabilityDto | PreviewMyAvailabilityDto,
   ) {
-    // Validate teachers exist if teacherIds are provided
-    if (teacherIds && teacherIds.length > 0) {
-      for (const teacherId of teacherIds) {
-        const teacher = await this.teacherRepository.findOne({
-          where: { userId: teacherId },
-        });
-        if (!teacher) {
-          throw new NotFoundException('Teacher not found');
-        }
-      }
-    }
-
     const where: FindOptionsWhere<TeacherAvailability> = teacherIds
       ? { teacherId: In(teacherIds), isActive: true }
       : { isActive: true };

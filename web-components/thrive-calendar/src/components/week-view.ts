@@ -187,7 +187,6 @@ export class ThriveWeekView extends LitElement {
   @property({ type: Number }) slotDuration: number = 30;
   @property({ type: Boolean }) showClasses: boolean = true;
   @property({ type: Boolean }) showBookings: boolean = true;
-  @property({ type: String }) teacherId?: string;
   @property({ type: String }) timeFormat: "12h" | "24h" = "12h";
   @property({ type: Boolean }) showTimezone: boolean = true;
   @property({ type: String }) timezone: string =
@@ -230,18 +229,17 @@ export class ThriveWeekView extends LitElement {
       )
     );
     let pxPerMinute = hourHeightPx / 60; // default
-    let baseOffset = 0; // default, since header is separate
+    const baseOffset = 0; // default, since header is separate
     if (root && hourStarts.length >= 8) {
-      const gridTop = root.getBoundingClientRect().top;
       const first = hourStarts[0]; // day 0, first visible hour
       const secondSameDay = hourStarts[7]; // day 0, next hour boundary
       const d =
         secondSameDay.getBoundingClientRect().top -
         first.getBoundingClientRect().top;
       if (d > 0) pxPerMinute = d / 60;
-      // Base offset: distance from top of grid to the top of the first slot
-      baseOffset = first.getBoundingClientRect().top - gridTop;
     }
+
+    console.log({ pxPerMinute, headerHeightPx, hourHeightPx, baseOffset });
 
     return { pxPerMinute, headerHeightPx, hourHeightPx, baseOffset };
   }
@@ -379,7 +377,6 @@ export class ThriveWeekView extends LitElement {
     this.emit("slot:select", {
       startUtc,
       endUtc,
-      teacherId: this.teacherId,
     });
   }
 
@@ -468,12 +465,11 @@ export class ThriveWeekView extends LitElement {
           ${this.events
             .filter(
               (ev) =>
-                ((this.showClasses &&
+                (this.showClasses &&
                   (ev.type === "class" ||
                     ev.type === "availability" ||
                     ev.type === "blackout")) ||
-                  (this.showBookings && ev.type === "booking")) &&
-                (!this.teacherId || ev.teacherId === this.teacherId)
+                (this.showBookings && ev.type === "booking")
             )
             .map((event) => {
               const { top, height, dayIndex } = this.getEventPosition(event);

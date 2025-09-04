@@ -67,7 +67,8 @@ export class TeachersController {
     @Request() req: AuthenticatedRequest,
     @Body() dto: PreviewMyAvailabilityDto,
   ): Promise<PreviewAvailabilityResponse> {
-    const teacherId = req.user.id;
+    const userId = req.user.id;
+    const teacherId = await this.teachersService.getTeacherIdByUserId(userId);
     return this.teachersService.previewTeacherAvailability([teacherId], dto);
   }
 }
