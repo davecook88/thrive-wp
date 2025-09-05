@@ -19,6 +19,16 @@ get_header();
             echo do_blocks('<!-- wp:custom-theme/thrive-calendar {"view":"week","mode":"public","slotDuration":30,"showAvailability":true,"showClasses":true,"showBookings":false,"viewHeight":640} /-->');
             ?>
         </div>
+
+        <?php
+        // Inject a Selected Event Modal wrapper so clicks open a modal by default
+        $default_modal_id = (int) get_option('custom_theme_default_modal_id', 0);
+        if ($default_modal_id): ?>
+            <div class="wp-block-custom-theme-selected-event-modal"
+                data-availability-modal-id="<?php echo esc_attr((string) $default_modal_id); ?>" data-class-modal-id="0"
+                data-course-modal-id="0" data-default-modal-id="<?php echo esc_attr((string) $default_modal_id); ?>"
+                style="display:none"></div>
+        <?php endif; ?>
     </div>
 </main>
 <?php get_footer(); ?>

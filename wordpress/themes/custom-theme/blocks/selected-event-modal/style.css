@@ -1,0 +1,48 @@
+/* Selected Event Modal - frontend styles */
+
+/* Scope to WordPress Modal injected content */
+.thrive-modal.components-modal__frame {
+  max-width: 720px;
+  width: calc(100% - 32px);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Modal content area */
+.thrive-modal .components-modal__content {
+  padding: 24px 28px;
+}
+
+/* Title bar */
+.thrive-modal .components-modal__header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Body content default typography spacing */
+.thrive-modal .thrive-modal-body {
+  font-size: 16px;
+  line-height: 1.6;
+}
+.thrive-modal .thrive-modal-body h1,
+.thrive-modal .thrive-modal-body h2,
+.thrive-modal .thrive-modal-body h3 {
+  margin-top: 0.2em;
+}
+
+/* Primary CTA placed inside modal content by authors; tune default WP button */
+.thrive-modal .wp-element-button,
+.thrive-modal .components-button.is-primary {
+  background: #ff5a1f;
+  border: none;
+  box-shadow: none;
+}
+
+/* Secondary close button spacing */
+.thrive-modal .components-button.is-secondary {
+  margin-top: 8px;
+}
+
+/* Ensure overlay uses full viewport height without causing horizontal scroll */
+.components-modal__screen-overlay {
+  overflow-y: auto;
+}

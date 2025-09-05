@@ -246,14 +246,12 @@ export class ThriveWeekView extends LitElement {
     if (this.timeFormat === "24h") {
       return date.toLocaleTimeString("en-GB", {
         hour: "2-digit",
-        minute: "2-digit",
         hour12: false,
         timeZone: this.timezone,
       });
     }
     return date.toLocaleTimeString("en-US", {
       hour: "numeric",
-      minute: "2-digit",
       hour12: true,
       timeZone: this.timezone,
     });

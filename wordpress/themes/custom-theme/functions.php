@@ -246,6 +246,10 @@ add_action('wp_enqueue_scripts', function () {
             filemtime($view),
             true
         );
+        // Ensure Gutenberg component styles (Modal, Buttons, etc.) are present on the frontend
+        if (wp_style_is('wp-components', 'registered')) {
+            wp_enqueue_style('wp-components');
+        }
     }
 });
 
@@ -255,6 +259,47 @@ add_action('init', function () {
     foreach (glob($blocks_dir . '/*/block.json') as $block_json) {
         register_block_type(dirname($block_json));
     }
+});
+
+// REST endpoint: render modal content server-side with optional event payload
+add_action('rest_api_init', function () {
+    register_rest_route('custom-theme/v1', '/modal/render', [
+        'methods' => ['GET', 'POST'],
+        'callback' => function (WP_REST_Request $request) {
+            $post_id = (int) ($request->get_param('post_id') ?? 0);
+            if (!$post_id) {
+                return new WP_REST_Response('Missing post_id', 400);
+            }
+
+            $post = get_post($post_id);
+            if (!$post || $post->post_type !== 'thrive_modal') {
+                return new WP_REST_Response('Not found', 404);
+            }
+
+            // Get rendered content (block rendering etc.)
+            $content = apply_filters('the_content', $post->post_content);
+
+            // Optional event payload for simple token replacement in PHP
+            $event = $request->get_param('event');
+            if (is_array($event)) {
+                // Basic mustache-style replacement: {{event.foo}}
+                $content = preg_replace_callback('/\{\{\s*event\.([\w\.]+)\s*\}\}/', function ($m) use ($event) {
+                    $path = explode('.', $m[1]);
+                    $v = $event;
+                    foreach ($path as $k) {
+                        $v = is_array($v) && array_key_exists($k, $v) ? $v[$k] : null;
+                        if ($v === null)
+                            break;
+                    }
+                    return $v === null ? '' : esc_html((string) $v);
+                }, $content);
+            }
+
+            // Return JSON with HTML payload to match frontend expectations
+            return rest_ensure_response(['html' => $content]);
+        },
+        'permission_callback' => '__return_true', // Public modal content
+    ]);
 });
 
 // Register a CPT for designer-authored modal templates
@@ -282,6 +327,44 @@ add_action('init', function () {
         'rewrite' => false,
         'capability_type' => 'post',
     ]);
+});
+
+// Ensure a default booking modal exists for availability events (editable in WP Admin)
+add_action('after_setup_theme', function () {
+    if (defined('WP_INSTALLING') && WP_INSTALLING)
+        return;
+    $opt_key = 'custom_theme_default_modal_id';
+    $existing = (int) get_option($opt_key, 0);
+    if ($existing && get_post($existing))
+        return;
+
+    // Create a basic, helpful default modal authors can edit later
+    $content = <<<HTML
+<div class="booking-modal">
+    <h3>Book this time</h3>
+    <p>
+        Teacher ID: {{event.teacherId}}<br/>
+        Starts: {{event.startLocal}}<br/>
+        Ends: {{event.endLocal}}
+    </p>
+    <p>
+        <a class="wp-block-button__link wp-element-button" href="/booking/new?teacher={{event.teacherId}}&start={{event.startUtc}}&end={{event.endUtc}}">
+            Continue to booking
+        </a>
+    </p>
+    <p style="font-size:12px;color:#6b7280;">You can edit this modal in WP Admin → Thrive Modals.</p>
+  
+</div>
+HTML;
+    $post_id = wp_insert_post([
+        'post_title' => 'Default Booking Modal',
+        'post_type' => 'thrive_modal',
+        'post_status' => 'publish',
+        'post_content' => $content,
+    ], true);
+    if (!is_wp_error($post_id) && $post_id) {
+        update_option($opt_key, (int) $post_id);
+    }
 });
 
 // Dev convenience: auto-enable pretty permalinks when WP_DEBUG is true

@@ -5,6 +5,7 @@ import { InspectorControls, useBlockProps } from "@wordpress/block-editor";
 import { useEffect, useState } from "@wordpress/element";
 
 type Attrs = {
+  availabilityModalId?: number;
   classModalId?: number;
   courseModalId?: number;
   defaultModalId?: number;
@@ -44,6 +45,14 @@ registerBlockType<Attrs>("custom-theme/selected-event-modal", {
       <div {...blockProps}>
         <InspectorControls>
           <PanelBody title={__("Modal Templates", "custom-theme")} initialOpen>
+            <SelectControl
+              label={__("AVAILABILITY events → Modal", "custom-theme")}
+              value={String(attributes.availabilityModalId || "")}
+              options={[{ label: "— Select —", value: "" }, ...options]}
+              onChange={(v) =>
+                setAttributes({ availabilityModalId: v ? Number(v) : 0 })
+              }
+            />
             <SelectControl
               label={__("CLASS events → Modal", "custom-theme")}
               value={String(attributes.classModalId || "")}
