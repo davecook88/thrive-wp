@@ -64,13 +64,13 @@ export default function TeacherPicker({
               startUtc: current.toISOString(),
               endUtc: chunkEnd.toISOString(),
               type: "availability" as const,
-              teacherId: w.teacherId,
+              teacherIds: w.teacherIds,
             });
             current = new Date(chunkEnd);
           }
           return chunks;
         });
-
+        console.log("Fetched availability events:", events);
         return events;
       } catch (error) {
         console.warn(

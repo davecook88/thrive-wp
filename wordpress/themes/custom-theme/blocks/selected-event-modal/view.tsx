@@ -15,6 +15,7 @@ type EventDetail = {
 type ModalType = "availability" | "class" | "course" | "default" | string;
 
 function interpolate(html: string, data: Record<string, any>): string {
+  console.log("Interpolating template with data:", data);
   return html.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_m, key) => {
     const path = String(key).split(".");
     let v: any = data;

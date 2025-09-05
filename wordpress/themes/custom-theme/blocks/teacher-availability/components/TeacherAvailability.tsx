@@ -83,7 +83,7 @@ export default function TeacherAvailability({
           startUtc: w.startUtc,
           endUtc: w.endUtc,
           type: "availability" as const,
-          teacherId: w.teacherId || 0,
+          teacherIds: w.teacherIds || [],
         }));
 
         return events;

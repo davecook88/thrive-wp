@@ -36,7 +36,7 @@ export interface BookingEvent extends BaseCalendarEvent {
 export interface AvailabilityEvent extends BaseCalendarEvent {
   type: "availability";
   capacityMax?: number;
-  teacherId: number;
+  teacherIds: number[];
 }
 
 export interface BlackoutEvent extends BaseCalendarEvent {
