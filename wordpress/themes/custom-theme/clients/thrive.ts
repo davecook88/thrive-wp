@@ -1,4 +1,8 @@
-import { BaseCalendarEvent, Teacher } from "../types/calendar";
+import {
+  AvailabilityEvent,
+  BaseCalendarEvent,
+  Teacher,
+} from "../types/calendar";
 
 const options: Partial<RequestInit> = {
   headers: { "Content-Type": "application/json" },
@@ -41,7 +45,7 @@ export const thriveClient = {
     teacherIds?: number[];
     start: Date;
     end: Date;
-  }): Promise<BaseCalendarEvent[]> => {
+  }): Promise<AvailabilityEvent[]> => {
     // TODO: This is searching by userId. I need to make sure that the selected teacher IDs are correct
     const res = await fetch(`/api/teachers/availability/preview`, {
       ...options,
@@ -54,7 +58,7 @@ export const thriveClient = {
     });
     if (!res.ok) return [];
     const data = (await res.json()) as {
-      windows?: Array<{ start: string; end: string }>;
+      windows?: Array<{ start: string; end: string; teacherId: number }>;
     };
     const wins = Array.isArray(data?.windows) ? data.windows : [];
     return wins.map((w) => ({
@@ -63,6 +67,7 @@ export const thriveClient = {
       startUtc: w.start,
       endUtc: w.end,
       type: "availability",
+      teacherId: w.teacherId,
     }));
   },
 

@@ -10,7 +10,6 @@ export interface BaseCalendarEvent {
   startUtc: ISODateTimeUTC;
   endUtc: ISODateTimeUTC;
   type: EventType;
-  teacherId?: string;
   studentId?: string;
   description?: string;
   isActive?: boolean;
@@ -37,6 +36,7 @@ export interface BookingEvent extends BaseCalendarEvent {
 export interface AvailabilityEvent extends BaseCalendarEvent {
   type: "availability";
   capacityMax?: number;
+  teacherId: number;
 }
 
 export interface BlackoutEvent extends BaseCalendarEvent {

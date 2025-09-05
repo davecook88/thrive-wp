@@ -1,7 +1,11 @@
 import { useEffect, useState } from "@wordpress/element";
 import { Button } from "@wordpress/components";
 
-import type { CalendarEvent, Teacher } from "../../../types/calendar";
+import type {
+  AvailabilityEvent,
+  CalendarEvent,
+  Teacher,
+} from "../../../types/calendar";
 import { useGetCalendarContext } from "../../hooks/get-context";
 import { useGetTeachers } from "../../hooks/get-teachers";
 
@@ -58,10 +62,10 @@ export default function TeacherPicker({
           _events
         );
 
-        const events: CalendarEvent[] = _events.flatMap((w) => {
+        const events: AvailabilityEvent[] = _events.flatMap((w) => {
           const start = new Date(w.startUtc);
           const end = new Date(w.endUtc);
-          const chunks: CalendarEvent[] = [];
+          const chunks: AvailabilityEvent[] = [];
           let current = new Date(start);
           while (current < end) {
             const chunkEnd = new Date(current.getTime() + 30 * 60 * 1000); // 30 minutes
@@ -74,6 +78,7 @@ export default function TeacherPicker({
               startUtc: current.toISOString(),
               endUtc: chunkEnd.toISOString(),
               type: "availability" as const,
+              teacherId: w.teacherId,
             });
             current = new Date(chunkEnd);
           }
