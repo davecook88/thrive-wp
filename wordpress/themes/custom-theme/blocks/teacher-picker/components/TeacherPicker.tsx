@@ -22,7 +22,7 @@ export default function TeacherPicker({
   const { teachers, loading, selectTeacherId, selectedTeachers } =
     useGetTeachers(context);
   const handleTeacherSelect = (teacher: Teacher) => {
-    selectTeacherId(teacher.userId);
+    selectTeacherId(teacher.teacherId);
   };
 
   const getInitials = (teacher: Teacher) => {
@@ -49,7 +49,7 @@ export default function TeacherPicker({
         const _events = await context.thriveClient.fetchAvailabilityPublic({
           start,
           end,
-          teacherIds: selectedTeachers.map((t) => t.userId),
+          teacherIds: selectedTeachers.map((t) => t.teacherId),
         });
 
         console.log(
@@ -157,7 +157,7 @@ export default function TeacherPicker({
         >
           {teachers.map((teacher) => (
             <button
-              key={teacher.userId}
+              key={teacher.teacherId}
               type="button"
               onClick={() => handleTeacherSelect(teacher)}
               style={{
@@ -168,7 +168,7 @@ export default function TeacherPicker({
                 border: "1px solid #e5e7eb",
                 borderRadius: "8px",
                 background: selectedTeachers.some(
-                  (t) => t.userId === teacher.userId
+                  (t) => t.teacherId === teacher.teacherId
                 )
                   ? "#f3f4f6"
                   : "white",
@@ -182,7 +182,7 @@ export default function TeacherPicker({
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = selectedTeachers.some(
-                  (t) => t.userId === teacher.userId
+                  (t) => t.teacherId === teacher.teacherId
                 )
                   ? "#f3f4f6"
                   : "white";
