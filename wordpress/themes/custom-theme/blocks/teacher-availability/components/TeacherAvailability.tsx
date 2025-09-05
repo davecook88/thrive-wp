@@ -1,7 +1,7 @@
 import { useEffect, useState } from "@wordpress/element";
 import { Button } from "@wordpress/components";
 import { getCalendarContextSafe } from "../../../types/calendar-utils";
-import type { CalendarEvent } from "../../../types/calendar";
+import type { AvailabilityEvent, CalendarEvent } from "../../../types/calendar";
 import RulesSection from "./RulesSection";
 import ExceptionsSection from "./ExceptionsSection";
 import { useGetCalendarContext } from "../../../blocks/hooks/get-context";
@@ -44,7 +44,6 @@ export default function TeacherAvailability({
   const [exceptions, setExceptions] = useState<Exception[]>([]);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState("");
-  const [refreshVersion, setRefreshVersion] = useState(0);
 
   const API_BASE = "/api";
 
@@ -78,15 +77,14 @@ export default function TeacherAvailability({
           end
         );
 
-        const events: CalendarEvent[] = _events.map((w) => ({
+        const events: AvailabilityEvent[] = _events.map((w) => ({
           id: `avail:${w.startUtc}|${w.endUtc}`,
           title: "Available",
           startUtc: w.startUtc,
           endUtc: w.endUtc,
           type: "availability" as const,
+          teacherId: w.teacherId || 0,
         }));
-
-        console.log("Teacher Availability: Updating events", events.length);
 
         return events;
       } catch (error) {
@@ -216,7 +214,6 @@ export default function TeacherAvailability({
 
     // Normalize the response by reloading fresh state
     await loadAvailability();
-    setRefreshVersion((v) => v + 1);
     // After save, refresh the calendar preview
     // await previewAndPushToCalendar(showPreviewWeeks);
     return result;

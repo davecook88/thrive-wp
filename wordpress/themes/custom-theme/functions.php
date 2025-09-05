@@ -214,6 +214,8 @@ add_filter('block_editor_settings_all', 'custom_theme_block_editor_settings', 10
 // Strongly typed auth context integration
 require_once get_template_directory() . '/includes/class-thrive-auth-context.php';
 require_once get_template_directory() . '/includes/class-thrive-role.php';
+require_once get_template_directory() . '/includes/base-rest-endpoint.php';
+require_once get_template_directory() . '/includes/modal-rest-endpoint.php';
 // Theme block patterns
 if (file_exists(get_template_directory() . '/inc/patterns.php')) {
     require_once get_template_directory() . '/inc/patterns.php';
@@ -261,46 +263,7 @@ add_action('init', function () {
     }
 });
 
-// REST endpoint: render modal content server-side with optional event payload
-add_action('rest_api_init', function () {
-    register_rest_route('custom-theme/v1', '/modal/render', [
-        'methods' => ['GET', 'POST'],
-        'callback' => function (WP_REST_Request $request) {
-            $post_id = (int) ($request->get_param('post_id') ?? 0);
-            if (!$post_id) {
-                return new WP_REST_Response('Missing post_id', 400);
-            }
 
-            $post = get_post($post_id);
-            if (!$post || $post->post_type !== 'thrive_modal') {
-                return new WP_REST_Response('Not found', 404);
-            }
-
-            // Get rendered content (block rendering etc.)
-            $content = apply_filters('the_content', $post->post_content);
-
-            // Optional event payload for simple token replacement in PHP
-            $event = $request->get_param('event');
-            if (is_array($event)) {
-                // Basic mustache-style replacement: {{event.foo}}
-                $content = preg_replace_callback('/\{\{\s*event\.([\w\.]+)\s*\}\}/', function ($m) use ($event) {
-                    $path = explode('.', $m[1]);
-                    $v = $event;
-                    foreach ($path as $k) {
-                        $v = is_array($v) && array_key_exists($k, $v) ? $v[$k] : null;
-                        if ($v === null)
-                            break;
-                    }
-                    return $v === null ? '' : esc_html((string) $v);
-                }, $content);
-            }
-
-            // Return JSON with HTML payload to match frontend expectations
-            return rest_ensure_response(['html' => $content]);
-        },
-        'permission_callback' => '__return_true', // Public modal content
-    ]);
-});
 
 // Register a CPT for designer-authored modal templates
 add_action('init', function () {

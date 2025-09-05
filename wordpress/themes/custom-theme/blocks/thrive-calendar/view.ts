@@ -37,7 +37,6 @@ function attachCalendar(cal: ThriveCalendarEl) {
 
   // React to context -> calendar updates
   const onCtxEvents = (e: Event) => {
-    console.log("Thrive Calendar: Context events updated", e);
     const detail = (e as CustomEvent).detail as
       | { contextId?: string; events?: any[] }
       | undefined;

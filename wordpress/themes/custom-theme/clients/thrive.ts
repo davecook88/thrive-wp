@@ -13,7 +13,7 @@ export const thriveClient = {
   fetchAvailabilityPreview: async (
     start: Date,
     end: Date
-  ): Promise<BaseCalendarEvent[]> => {
+  ): Promise<AvailabilityEvent[]> => {
     console.trace("Fetching availability preview:", { start, end });
     const res = await fetch(`/api/teachers/me/availability/preview`, {
       ...options,
@@ -25,7 +25,7 @@ export const thriveClient = {
     });
     if (!res.ok) return [];
     const data = (await res.json()) as {
-      windows?: Array<{ start: string; end: string }>;
+      windows?: Array<{ start: string; end: string; teacherId: number }>;
     };
     const wins = Array.isArray(data?.windows) ? data.windows : [];
     return wins.map((w) => ({
@@ -34,6 +34,7 @@ export const thriveClient = {
       startUtc: w.start,
       endUtc: w.end,
       type: "availability",
+      teacherId: w.teacherId,
     }));
   },
 

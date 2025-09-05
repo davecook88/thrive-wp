@@ -20,7 +20,6 @@ export default function TeacherPicker({
   showFilters,
   querySelector,
 }: TeacherPickerProps) {
-  console.log("TeacherPicker context:", querySelector);
   const context = useGetCalendarContext(querySelector);
 
   const { teachers, loading, selectTeacherId, selectedTeachers } =
@@ -40,14 +39,7 @@ export default function TeacherPicker({
       return;
     }
 
-    console.log("Teacher Availability: Registering date range change callback");
-
     const handleDateRangeChange = async (start: Date, end: Date) => {
-      console.log(
-        "Teacher Availability: Date range change callback called",
-        start,
-        end
-      );
       try {
         // Fetch availability preview for the new date range
         const _events = await context.thriveClient.fetchAvailabilityPublic({
@@ -55,12 +47,6 @@ export default function TeacherPicker({
           end,
           teacherIds: selectedTeachers.map((t) => t.teacherId),
         });
-
-        console.log(
-          "Teacher Availability: Fetched events",
-          _events.length,
-          _events
-        );
 
         const events: AvailabilityEvent[] = _events.flatMap((w) => {
           const start = new Date(w.startUtc);
@@ -85,12 +71,6 @@ export default function TeacherPicker({
           return chunks;
         });
 
-        console.log(
-          "Teacher Availability: Updating events",
-          events.length,
-          events
-        );
-
         return events;
       } catch (error) {
         console.warn(
@@ -106,9 +86,6 @@ export default function TeacherPicker({
 
     // Cleanup: unregister the callback when component unmounts
     return () => {
-      console.log(
-        "Teacher Availability: Unregistering date range change callback"
-      );
       context.unregisterDateRangeChangeCallback(handleDateRangeChange);
     };
   }, [context, selectedTeachers]); // Depend on api

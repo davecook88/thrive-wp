@@ -52,7 +52,6 @@ type ThriveCalendarEl = ThriveCalendarElement;
   }
 
   function mergeEvents(state: CtxState, events: BaseCalendarEvent[]) {
-    console.log("Merging events from callback:", events.length, events);
     const all = [...state.events, ...events];
     all.sort((a, b) => a.startUtc.localeCompare(b.startUtc));
     state.events = all;
@@ -64,7 +63,6 @@ type ThriveCalendarEl = ThriveCalendarElement;
     start: Date,
     end: Date
   ) {
-    console.log("Thrive Calendar Context: Calling date range change callbacks");
     state.dateRangeChangeCallbacks.forEach((callback, index) => {
       try {
         const events = callback(start, end);
@@ -157,20 +155,12 @@ type ThriveCalendarEl = ThriveCalendarElement;
               );
             }
           }
-          console.log(
-            "Thrive Calendar Context: Registered callback, total callbacks:",
-            state.dateRangeChangeCallbacks.length
-          );
         }
       },
       unregisterDateRangeChangeCallback(callback: DateRangeChangeCallback) {
         const index = state.dateRangeChangeCallbacks.indexOf(callback);
         if (index > -1) {
           state.dateRangeChangeCallbacks.splice(index, 1);
-          console.log(
-            "Thrive Calendar Context: Unregistered callback, total callbacks:",
-            state.dateRangeChangeCallbacks.length
-          );
         }
       },
       setSelectedEvent(event: BaseCalendarEvent | null) {
