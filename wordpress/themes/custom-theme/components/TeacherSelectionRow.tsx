@@ -63,7 +63,6 @@ export default function TeacherSelectionRow({
         display: "flex",
         gap: "1rem",
         overflowX: "auto",
-        paddingBottom: "0.5rem",
         scrollbarWidth: "thin",
         scrollbarColor: "var(--wp--preset--color--gray-300) transparent",
       }}
@@ -77,32 +76,10 @@ export default function TeacherSelectionRow({
             width: "140px",
             textAlign: "center",
             cursor: "pointer",
-            padding: "1rem 0.5rem",
+            padding: "0.5rem",
             borderRadius: "var(--wp--custom--border-radius)",
-            border:
-              selectedTeacher?.teacherId === t.teacherId
-                ? "2px solid var(--wp--preset--color--primary)"
-                : "2px solid transparent",
-            background:
-              selectedTeacher?.teacherId === t.teacherId
-                ? "var(--wp--preset--color--gray-50)"
-                : "transparent",
             transition: "all 0.3s ease",
             position: "relative",
-          }}
-          onMouseEnter={(e) => {
-            if (selectedTeacher?.teacherId !== t.teacherId) {
-              e.currentTarget.style.background =
-                "var(--wp--preset--color--gray-50)";
-              e.currentTarget.style.borderColor =
-                "var(--wp--preset--color--gray-300)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (selectedTeacher?.teacherId !== t.teacherId) {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.borderColor = "transparent";
-            }
           }}
         >
           <img
@@ -112,11 +89,11 @@ export default function TeacherSelectionRow({
             }
             alt={t.name}
             style={{
-              width: 80,
-              height: 80,
+              width: 60,
+              height: 60,
               borderRadius: "50%",
               objectFit: "cover",
-              margin: "0 auto 0.75rem",
+              margin: "0 auto 0.25rem",
               border:
                 selectedTeacher?.teacherId === t.teacherId
                   ? "3px solid var(--wp--preset--color--primary)"
@@ -129,44 +106,10 @@ export default function TeacherSelectionRow({
               fontWeight: "600",
               fontSize: "0.95rem",
               color: "var(--wp--preset--color--foreground)",
-              marginBottom: "0.25rem",
             }}
           >
             {t.name}
           </div>
-          <div
-            style={{
-              fontSize: "0.8rem",
-              color: "var(--wp--preset--color--gray-600)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <span style={{ marginRight: "0.25rem" }}>⭐</span>
-            4.9
-          </div>
-          {selectedTeacher?.teacherId === t.teacherId && (
-            <div
-              style={{
-                position: "absolute",
-                top: "0.5rem",
-                right: "0.5rem",
-                background: "var(--wp--preset--color--primary)",
-                color: "white",
-                borderRadius: "50%",
-                width: "24px",
-                height: "24px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "0.8rem",
-                fontWeight: "bold",
-              }}
-            >
-              ✓
-            </div>
-          )}
         </div>
       ))}
     </div>

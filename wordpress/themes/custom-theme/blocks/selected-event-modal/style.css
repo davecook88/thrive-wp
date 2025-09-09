@@ -46,7 +46,3 @@
 .components-modal__screen-overlay {
   overflow-y: auto;
 }
-
-.components-modal__content {
-  padding: 0 !important;
-}
