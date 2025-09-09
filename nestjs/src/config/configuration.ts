@@ -23,6 +23,11 @@ export interface GoogleOAuthConfig {
   clientSecret: string;
 }
 
+export interface StripeConfig {
+  secretKey: string;
+  publishableKey: string;
+}
+
 export default () => ({
   port: parseInt(process.env.PORT || '3000', 10),
   environment: process.env.NODE_ENV || 'development',
@@ -60,4 +65,9 @@ export default () => ({
     clientId: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   } as GoogleOAuthConfig,
+
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY,
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+  } as StripeConfig,
 });

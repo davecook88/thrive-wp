@@ -3,14 +3,15 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
+import { DatabaseConfig } from './config/configuration.js';
+import configuration from './config/configuration.js';
 import { AuthModule } from './auth/auth.module.js';
-import configuration, { DatabaseConfig } from './config/configuration.js';
 import { UsersModule } from './users/users.module.js';
 import { StudentsModule } from './students/students.module.js';
 import { TeachersModule } from './teachers/teachers.module.js';
-
+import { PaymentsModule } from './payments/payments.module.js';
+import { AppController } from './app.controller.js';
+import { AppService } from './app.service.js';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -49,6 +50,7 @@ import { TeachersModule } from './teachers/teachers.module.js';
     UsersModule,
     StudentsModule,
     TeachersModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -10,6 +10,7 @@ type ModalAvailabilityEvent = AvailabilityEvent & {
 import { useGetTeachers } from "../../hooks/get-teachers";
 import { useGetCalendarContext } from "../../hooks/get-context";
 import { TeacherSelectionRow, TeacherDetails } from "../../../components";
+import { buildBookingUrl } from "../../../utils/booking";
 
 export default function AvailabilityModalContent({
   event,
@@ -53,22 +54,18 @@ export default function AvailabilityModalContent({
     }
   }, [selectedTeacher]);
 
-  const onBook = (useCredits = false) => {
-    if (!selectedTeacher) return;
-
-    setBookingState("pending");
+  const bookingConfirmationUrl = useMemo(() => {
+    if (!selectedTeacher) return null;
     try {
-      window.dispatchEvent(
-        new CustomEvent("thrive-calendar:book", {
-          detail: { event, teacher: selectedTeacher, useCredits },
-        })
-      );
-    } catch (err) {
-      if ((selectedTeacher as any)?.bookingUrl)
-        window.location.href = (selectedTeacher as any).bookingUrl;
+      return buildBookingUrl({
+        startUtc: event.startUtc,
+        endUtc: event.endUtc,
+        teacherId: selectedTeacher.teacherId,
+      });
+    } catch {
+      return null;
     }
-    setTimeout(() => setBookingState("done"), 600);
-  };
+  }, [event, selectedTeacher]);
 
   return (
     <div
@@ -139,29 +136,30 @@ export default function AvailabilityModalContent({
               justifyContent: "flex-end",
             }}
           >
-            <button
-              type="button"
-              className="btn btn--book"
-              onClick={() => onBook(hasCredits)}
-              disabled={!selectedTeacher || bookingState === "pending"}
-              style={{
-                border: "none",
-                borderRadius: 50,
-                padding: "12px 22px",
-                fontWeight: 700,
-                cursor: !selectedTeacher ? "not-allowed" : "pointer",
-                background: selectedTeacher
-                  ? "var(--wp--preset--color--accent)"
-                  : "var(--wp--preset--color--gray-300)",
-                color: selectedTeacher
-                  ? "var(--wp--preset--color--background)"
-                  : "var(--wp--preset--color--gray-700)",
-                opacity: bookingState === "pending" ? 0.8 : 1,
-                transition: "transform 120ms ease, opacity 120ms ease",
-              }}
-            >
-              {bookingState === "pending" ? "Booking…" : "Book Now"}
-            </button>
+            {bookingConfirmationUrl && (
+              <a
+                className="btn btn--book"
+                href={bookingConfirmationUrl ?? "#"}
+                style={{
+                  border: "none",
+                  borderRadius: 50,
+                  padding: "12px 22px",
+                  fontWeight: 700,
+                  textDecoration: "none",
+                  cursor: !selectedTeacher ? "not-allowed" : "pointer",
+                  background: selectedTeacher
+                    ? "var(--wp--preset--color--accent)"
+                    : "var(--wp--preset--color--gray-300)",
+                  color: selectedTeacher
+                    ? "var(--wp--preset--color--background)"
+                    : "var(--wp--preset--color--gray-700)",
+                  opacity: bookingState === "pending" ? 0.8 : 1,
+                  transition: "transform 120ms ease, opacity 120ms ease",
+                }}
+              >
+                {bookingState === "pending" ? "Booking…" : "Book Now"}
+              </a>
+            )}
           </div>
         </div>
 
@@ -339,29 +337,29 @@ export default function AvailabilityModalContent({
                   marginTop: "1rem",
                 }}
               >
-                <button
-                  type="button"
-                  className="btn btn--book"
-                  onClick={() => onBook(hasCredits)}
-                  disabled={!selectedTeacher || bookingState === "pending"}
-                  style={{
-                    border: "none",
-                    borderRadius: 50,
-                    padding: "12px 22px",
-                    fontWeight: 700,
-                    cursor: !selectedTeacher ? "not-allowed" : "pointer",
-                    background: selectedTeacher
-                      ? "var(--wp--preset--color--accent)"
-                      : "var(--wp--preset--color--gray-300)",
-                    color: selectedTeacher
-                      ? "var(--wp--preset--color--background)"
-                      : "var(--wp--preset--color--gray-700)",
-                    opacity: bookingState === "pending" ? 0.8 : 1,
-                    transition: "transform 120ms ease, opacity 120ms ease",
-                  }}
-                >
-                  {bookingState === "pending" ? "Booking…" : "Book Now"}
-                </button>
+                {bookingConfirmationUrl && (
+                  <a
+                    className="btn btn--book"
+                    href={bookingConfirmationUrl}
+                    style={{
+                      border: "none",
+                      borderRadius: 50,
+                      padding: "12px 22px",
+                      fontWeight: 700,
+                      cursor: !selectedTeacher ? "not-allowed" : "pointer",
+                      background: selectedTeacher
+                        ? "var(--wp--preset--color--accent)"
+                        : "var(--wp--preset--color--gray-300)",
+                      color: selectedTeacher
+                        ? "var(--wp--preset--color--background)"
+                        : "var(--wp--preset--color--gray-700)",
+                      opacity: bookingState === "pending" ? 0.8 : 1,
+                      transition: "transform 120ms ease, opacity 120ms ease",
+                    }}
+                  >
+                    {bookingState === "pending" ? "Booking…" : "Book Now"}
+                  </a>
+                )}
               </div>
             </div>
           </section>

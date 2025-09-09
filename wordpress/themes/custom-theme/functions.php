@@ -19,6 +19,27 @@ add_action('after_setup_theme', function () {
         ],
     ]);
 });
+
+// Ensure Booking Confirmation page exists
+add_action('after_setup_theme', function () {
+    if (defined('WP_INSTALLING') && WP_INSTALLING)
+        return;
+    $title = 'Booking Confirmation';
+    $slug = 'booking-confirmation';
+    $existing = get_page_by_path($slug);
+    if ($existing)
+        return;
+    wp_insert_post([
+        'post_title' => $title,
+        'post_name' => $slug,
+        'post_status' => 'publish',
+        'post_type' => 'page',
+        'post_content' => '',
+        'meta_input' => [
+            '_wp_page_template' => 'page-booking-confirmation.php',
+        ],
+    ]);
+});
 /**
  * Theme functions and definitions
  */
@@ -80,6 +101,38 @@ function custom_theme_scripts()
     }, 10, 3);
 }
 add_action('wp_enqueue_scripts', 'custom_theme_scripts');
+
+// Conditionally enqueue Stripe + booking JavaScript on Book Lesson page.
+add_action('wp_enqueue_scripts', function () {
+    if (!is_page())
+        return;
+    $template = get_page_template_slug(get_queried_object_id());
+    if ($template !== 'page-booking-confirmation.php')
+        return;
+
+    error_log('Enqueueing booking.js on booking confirmation page');
+
+    // Stripe.js v3
+    wp_enqueue_script(
+        'stripe-js',
+        'https://js.stripe.com/v3/',
+        array(),
+        null,
+        true
+    );
+
+    // Our booking initializer
+    $booking_js_path = get_template_directory() . '/js/booking.js';
+    if (file_exists($booking_js_path)) {
+        wp_enqueue_script(
+            'thrive-booking',
+            get_template_directory_uri() . '/js/booking.js',
+            array('stripe-js'),
+            filemtime($booking_js_path),
+            true
+        );
+    }
+});
 
 // Add theme support for various features
 function custom_theme_setup()
