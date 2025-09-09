@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "@stripe/stripe-js": "^7.9.0",
     "@wordpress/blocks": "^15.1.0",
     "@wordpress/components": "^30.1.0",
     "@wordpress/data": "^10.28.0",

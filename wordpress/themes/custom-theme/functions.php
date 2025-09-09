@@ -27,8 +27,20 @@ add_action('after_setup_theme', function () {
     $title = 'Booking Confirmation';
     $slug = 'booking-confirmation';
     $existing = get_page_by_path($slug);
-    if ($existing)
+    if ($existing) {
+        // Ensure template is correct even if page already exists
+        $current_tpl = get_page_template_slug($existing->ID);
+        if ($current_tpl !== 'page-booking-confirmation.php') {
+            update_post_meta($existing->ID, '_wp_page_template', 'page-booking-confirmation.php');
+        }
+        if ($existing->post_title !== $title) {
+            wp_update_post([
+                'ID' => $existing->ID,
+                'post_title' => $title,
+            ]);
+        }
         return;
+    }
     wp_insert_post([
         'post_title' => $title,
         'post_name' => $slug,
@@ -106,8 +118,11 @@ add_action('wp_enqueue_scripts', 'custom_theme_scripts');
 add_action('wp_enqueue_scripts', function () {
     if (!is_page())
         return;
-    $template = get_page_template_slug(get_queried_object_id());
-    if ($template !== 'page-booking-confirmation.php')
+    $page_id = get_queried_object_id();
+    $template = get_page_template_slug($page_id) ?: '';
+    $slug = get_post_field('post_name', $page_id);
+    error_log('Booking enqueue check – template: ' . ($template ?: '(none)') . ', slug: ' . $slug);
+    if ($template !== 'page-booking-confirmation.php' && $slug !== 'booking-confirmation')
         return;
 
     error_log('Enqueueing booking.js on booking confirmation page');

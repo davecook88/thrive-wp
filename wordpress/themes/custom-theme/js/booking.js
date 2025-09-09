@@ -1,5 +1,5 @@
 /* global Stripe */
-(function () {
+(async function () {
   function qs(sel) {
     return document.querySelector(sel);
   }
@@ -12,7 +12,7 @@
   async function getClientSecret() {
     // Call WordPress -> NestJS bridge to create a PaymentIntent for this booking
     // Endpoint is expected to validate session and booking details server-side
-    const res = await fetch("/api/booking/payment-intent", {
+    const res = await fetch("/api/payment/payment-intent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -42,10 +42,15 @@
 
     try {
       const { clientSecret, publishableKey } = await getClientSecret();
-      const stripe = Stripe(publishableKey, { apiVersion: "2022-11-15" });
+      /** @type {import('@stripe/stripe-js').StripeConstructor} */
+      const StripeCtor = window.Stripe;
+      if (typeof StripeCtor !== "function") {
+        throw new Error("Stripe.js not loaded.");
+      }
+      const stripe = StripeCtor(publishableKey, { apiVersion: "2022-11-15" });
       const elements = stripe.elements({ clientSecret });
       const paymentElement = elements.create("payment");
-      await paymentElement.mount(paymentElContainer);
+      paymentElement.mount(paymentElContainer);
       if (loader) loader.style.display = "none";
 
       payBtn.addEventListener("click", async () => {
