@@ -1,4 +1,11 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { TeachersService } from './teachers.service.js';
 import { PreviewAvailabilityDto } from './dto/availability.dto.js';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -47,6 +54,15 @@ export class TeachersPublicController {
           .join(' ') || 'Teacher',
       bio: t.bio ?? null,
     }));
+  }
+
+  @Get(':id')
+  async getTeacher(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<PublicTeacherDto> {
+    // Delegate to service to fetch public teacher profile
+    const t = await this.teachersService.getPublicTeacherById(id);
+    return t;
   }
 
   @Post('availability/preview')

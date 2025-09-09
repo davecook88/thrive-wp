@@ -87,4 +87,20 @@ export const thriveClient = {
       return [];
     }
   },
+  fetchTeacher: async (id: number): Promise<Teacher | null> => {
+    try {
+      const res = await fetch(
+        `/api/teachers/${encodeURIComponent(String(id))}`,
+        {
+          credentials: "same-origin",
+        }
+      );
+      if (!res.ok) return null;
+      const data = (await res.json()) as Teacher;
+      return data;
+    } catch (err) {
+      console.error("Failed to fetch teacher:", err);
+      return null;
+    }
+  },
 } as const;

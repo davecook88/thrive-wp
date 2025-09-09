@@ -198,6 +198,32 @@ export class TeachersService {
     return { windows };
   }
 
+  async getPublicTeacherById(id: number) {
+    const t = await this.teacherRepository
+      .createQueryBuilder('t')
+      .leftJoinAndSelect('t.user', 'u')
+      .where('t.id = :id', { id })
+      .andWhere('t.is_active = 1')
+      .getOne();
+    if (!t) {
+      throw new NotFoundException('Teacher not found');
+    }
+    return {
+      userId: t.userId,
+      teacherId: t.id,
+      firstName: (t.user as any)?.firstName ?? '',
+      lastName: (t.user as any)?.lastName ?? '',
+      name:
+        [
+          ((t.user as any)?.firstName ?? '').trim(),
+          ((t.user as any)?.lastName ?? '').trim(),
+        ]
+          .filter(Boolean)
+          .join(' ') || 'Teacher',
+      bio: t.bio ?? null,
+    };
+  }
+
   private expandDayAvailability(
     date: Date,
     availabilities: TeacherAvailability[],
