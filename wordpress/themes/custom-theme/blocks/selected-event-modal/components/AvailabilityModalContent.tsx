@@ -14,6 +14,11 @@ type ModalAvailabilityEvent = AvailabilityEvent & {
 };
 import { useGetTeachers } from "../../hooks/get-teachers";
 import { useGetCalendarContext } from "../../hooks/get-context";
+import {
+  TeacherSelectionRow,
+  TeacherDetails,
+  BookingSection,
+} from "../../../components";
 
 export default function AvailabilityModalContent({
   event,
@@ -40,18 +45,21 @@ export default function AvailabilityModalContent({
   }, [event]);
 
   const [bookingState, setBookingState] = useState<null | string>(null);
+  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
 
-  const onBook = (teacher: Teacher, useCredits = false) => {
+  const onBook = (useCredits = false) => {
+    if (!selectedTeacher) return;
+
     setBookingState("pending");
     try {
       window.dispatchEvent(
         new CustomEvent("thrive-calendar:book", {
-          detail: { event, teacher, useCredits },
+          detail: { event, teacher: selectedTeacher, useCredits },
         })
       );
     } catch (err) {
-      if ((teacher as any)?.bookingUrl)
-        window.location.href = (teacher as any).bookingUrl;
+      if ((selectedTeacher as any)?.bookingUrl)
+        window.location.href = (selectedTeacher as any).bookingUrl;
     }
     setTimeout(() => setBookingState("done"), 600);
   };
@@ -60,153 +68,120 @@ export default function AvailabilityModalContent({
     <div
       className="selected-event-modal__availability"
       style={{
-        width: "80vw",
-        maxWidth: 1100,
-        maxHeight: "80vh",
-        overflowY: "auto",
-        padding: 20,
-        boxSizing: "border-box",
+        width: "95vw",
+        maxWidth: 1400,
+        maxHeight: "90vh",
+        display: "flex",
+        flexDirection: "column",
+        fontFamily: "var(--wp--preset--font-family--inter)",
       }}
     >
-      <header style={{ display: "flex", justifyContent: "space-between" }}>
-        <div>
-          <h2 style={{ margin: 0 }}>{event?.title || "Available times"}</h2>
-          <div style={{ color: "#666", marginTop: 6 }}>
-            {event?.startLocal}
-            {event?.endLocal ? ` — ${event.endLocal}` : ""}
-          </div>
+      {/* Header */}
+      <header
+        style={{
+          padding: "2rem 2rem 1rem",
+          textAlign: "center",
+          borderBottom: "1px solid var(--wp--preset--color--gray-200)",
+        }}
+      >
+        <h1
+          style={{
+            margin: "0 0 0.5rem 0",
+            fontSize: "2.5rem",
+            fontWeight: "700",
+            color: "var(--wp--preset--color--foreground)",
+            lineHeight: "1.2",
+          }}
+        >
+          Choose Your Teacher
+        </h1>
+        <div
+          style={{
+            fontSize: "1.1rem",
+            color: "var(--wp--preset--color--gray-600)",
+            marginBottom: "1rem",
+          }}
+        >
+          {event?.startLocal}
+          {event?.endLocal ? ` — ${event.endLocal}` : ""}
         </div>
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 12, color: "#888" }}>Limited spots</div>
-          <div style={{ fontWeight: 600, color: "#222" }}>
-            {event?.teacherIds?.length ?? 0} teacher
-            {(event?.teacherIds?.length ?? 0) !== 1 ? "s" : ""} available
-          </div>
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            background: "var(--wp--preset--color--gray-100)",
+            padding: "0.5rem 1rem",
+            borderRadius: "var(--wp--custom--border-radius)",
+            fontSize: "0.9rem",
+            fontWeight: "600",
+            color: "var(--wp--preset--color--gray-600)",
+          }}
+        >
+          <span style={{ marginRight: "0.5rem" }}>👥</span>
+          {event?.teacherIds?.length ?? 0} Teacher
+          {(event?.teacherIds?.length ?? 0) !== 1 ? "s" : ""} Available
         </div>
       </header>
 
-      <section style={{ marginTop: 18 }}>
-        <p style={{ color: "#444" }}>
-          Choose a teacher below — we’ll reserve the spot when you complete
-          booking. Prefer a particular teacher? Select them and continue to the
-          booking flow.
-        </p>
-
-        <div
-          className="availability__grid"
+      {/* Main Content */}
+      <div
+        style={{
+          flex: 1,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {/* Teacher Selection Row */}
+        <section
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: 12,
-            marginTop: 12,
+            padding: "1.5rem 2rem",
+            borderBottom: selectedTeacher
+              ? "1px solid var(--wp--preset--color--gray-200)"
+              : "none",
           }}
         >
-          {loadingTeachers ? (
-            <div>Loading teachers…</div>
-          ) : teachers.length ? (
-            teachers.map((t) => (
-              <div
-                key={t.teacherId}
-                className="teacher-card"
-                style={{
-                  border: "1px solid #e6e6e6",
-                  borderRadius: 8,
-                  padding: 12,
-                  background: "#fff",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                }}
-              >
-                <div>
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <img
-                      src={(t as any)?.avatar || ""}
-                      alt={t.name}
-                      style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 999,
-                        objectFit: "cover",
-                        marginRight: 12,
-                        background: "#f2f2f2",
-                      }}
-                    />
-                    <div>
-                      <div style={{ fontWeight: 700 }}>{t.name}</div>
-                      <div style={{ fontSize: 13, color: "#666" }}>
-                        {t.firstName} {t.lastName}
-                      </div>
-                    </div>
-                  </div>
+          <h3
+          // style={{
+          //   margin: "0 0 1rem 0",
+          //   fontSize: "1.2rem",
+          //   fontWeight: "600",
+          //   color: "var(--wp--preset--color--foreground)",
+          // }}
+          >
+            Select a Teacher
+          </h3>
 
-                  {t.bio && (
-                    <p style={{ marginTop: 10, color: "#444", fontSize: 13 }}>
-                      {t.bio}
-                    </p>
-                  )}
-                </div>
+          <TeacherSelectionRow
+            teachers={teachers}
+            selectedTeacher={selectedTeacher}
+            onTeacherSelect={setSelectedTeacher}
+            loading={loadingTeachers}
+          />
+        </section>
 
-                <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-                  <button
-                    className="button button-primary"
-                    onClick={() => onBook(t, false)}
-                    style={{ flex: 1 }}
-                    aria-label={`Book with ${t.name}`}
-                  >
-                    Book now
-                  </button>
-
-                  {hasCredits ? (
-                    <button
-                      className="button button-secondary"
-                      onClick={() => onBook(t, true)}
-                      style={{ flex: 0 }}
-                      aria-label={`Book with credits with ${t.name}`}
-                    >
-                      Use credits
-                    </button>
-                  ) : (
-                    <button
-                      className="button button-secondary"
-                      onClick={() =>
-                        window.alert(
-                          "No credits found — add credits in your account."
-                        )
-                      }
-                      aria-label="No credits"
-                    >
-                      No credits
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))
-          ) : (
-            <div style={{ color: "#666" }}>
-              No teachers available for this slot.
-            </div>
-          )}
-        </div>
-      </section>
-
-      <footer style={{ marginTop: 18, color: "#666", fontSize: 13 }}>
-        <div>
-          Quick tip: bookings are first-come, first-served. If you have package
-          credits, selecting "Use credits" will attempt to reserve from your
-          balance.
-        </div>
-        {bookingState === "pending" && (
-          <div style={{ marginTop: 8, color: "#0a84ff" }}>
-            Reserving your spot…
-          </div>
+        {/* Selected Teacher Details */}
+        {selectedTeacher && (
+          <section
+            style={{
+              flex: 1,
+              padding: "2rem",
+              overflowY: "auto",
+              background: "var(--wp--preset--color--gray-50)",
+            }}
+          >
+            <TeacherDetails teacher={selectedTeacher} />
+          </section>
         )}
-        {bookingState === "done" && (
-          <div style={{ marginTop: 8, color: "#0a8f3b" }}>
-            Booked — check your email for details.
-          </div>
-        )}
-      </footer>
+
+        {/* Booking Section */}
+        <BookingSection
+          selectedTeacher={selectedTeacher}
+          hasCredits={hasCredits}
+          bookingState={bookingState}
+          onBook={onBook}
+        />
+      </div>
     </div>
   );
 }

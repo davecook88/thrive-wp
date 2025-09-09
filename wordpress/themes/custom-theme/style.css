@@ -99,3 +99,7 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
 }
+
+.components-modal__content {
+  padding: 0 !important;
+}

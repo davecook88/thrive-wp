@@ -100,13 +100,26 @@ function ModalPortal({
           title={title || "Event"}
           onRequestClose={close}
           shouldCloseOnEsc
+          __experimentalHideHeader={true}
+          bodyOpenClassName="selected-event-modal--open"
         >
+          <Button
+            onClick={close}
+            style={{
+              position: "absolute",
+              top: "10px",
+              right: "10px",
+              zIndex: 1,
+              background: "transparent",
+              border: "none",
+              fontSize: "20px",
+              cursor: "pointer",
+              color: "#000",
+            }}
+          >
+            ×
+          </Button>
           <SelectedEventModalContent event={event} modalType={modalType} />
-          <div style={{ marginTop: 12 }}>
-            <Button variant="secondary" onClick={close}>
-              Close
-            </Button>
-          </div>
         </Modal>
       )}
     </Fragment>
