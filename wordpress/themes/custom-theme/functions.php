@@ -215,7 +215,6 @@ add_filter('block_editor_settings_all', 'custom_theme_block_editor_settings', 10
 require_once get_template_directory() . '/includes/class-thrive-auth-context.php';
 require_once get_template_directory() . '/includes/class-thrive-role.php';
 require_once get_template_directory() . '/includes/base-rest-endpoint.php';
-require_once get_template_directory() . '/includes/modal-rest-endpoint.php';
 // Theme block patterns
 if (file_exists(get_template_directory() . '/inc/patterns.php')) {
     require_once get_template_directory() . '/inc/patterns.php';
@@ -263,72 +262,6 @@ add_action('init', function () {
     }
 });
 
-
-
-// Register a CPT for designer-authored modal templates
-add_action('init', function () {
-    $labels = [
-        'name' => __('Thrive Modals', 'custom-theme'),
-        'singular_name' => __('Thrive Modal', 'custom-theme'),
-        'add_new' => __('Add New', 'custom-theme'),
-        'add_new_item' => __('Add New Modal', 'custom-theme'),
-        'edit_item' => __('Edit Modal', 'custom-theme'),
-        'new_item' => __('New Modal', 'custom-theme'),
-        'view_item' => __('View Modal', 'custom-theme'),
-        'search_items' => __('Search Modals', 'custom-theme'),
-        'not_found' => __('No modals found', 'custom-theme'),
-        'not_found_in_trash' => __('No modals found in Trash', 'custom-theme'),
-    ];
-    register_post_type('thrive_modal', [
-        'labels' => $labels,
-        'public' => false,
-        'show_ui' => true,
-        'show_in_menu' => true,
-        'show_in_rest' => true,
-        'supports' => ['title', 'editor', 'revisions'],
-        'menu_icon' => 'dashicons-feedback',
-        'rewrite' => false,
-        'capability_type' => 'post',
-    ]);
-});
-
-// Ensure a default booking modal exists for availability events (editable in WP Admin)
-add_action('after_setup_theme', function () {
-    if (defined('WP_INSTALLING') && WP_INSTALLING)
-        return;
-    $opt_key = 'custom_theme_default_modal_id';
-    $existing = (int) get_option($opt_key, 0);
-    if ($existing && get_post($existing))
-        return;
-
-    // Create a basic, helpful default modal authors can edit later
-    $content = <<<HTML
-<div class="booking-modal">
-    <h3>Book this time</h3>
-    <p>
-        Teacher ID: {{event.teacherId}}<br/>
-        Starts: {{event.startLocal}}<br/>
-        Ends: {{event.endLocal}}
-    </p>
-    <p>
-        <a class="wp-block-button__link wp-element-button" href="/booking/new?teacher={{event.teacherId}}&start={{event.startUtc}}&end={{event.endUtc}}">
-            Continue to booking
-        </a>
-    </p>
-    <p style="font-size:12px;color:#6b7280;">You can edit this modal in WP Admin → Thrive Modals.</p>
-  
-</div>
-HTML;
-    $post_id = wp_insert_post([
-        'post_title' => 'Default Booking Modal',
-        'post_type' => 'thrive_modal',
-        'post_status' => 'publish',
-        'post_content' => $content,
-    ], true);
-    if (!is_wp_error($post_id) && $post_id) {
-        update_option($opt_key, (int) $post_id);
-    }
-});
 
 // Dev convenience: auto-enable pretty permalinks when WP_DEBUG is true
 add_action('init', function () {

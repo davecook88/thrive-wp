@@ -153,6 +153,17 @@ This document is the authoritative reference for WordPress-side behavior in the 
 - Avoid hardcoding content or styles in PHP—prefer block attributes and theme.json presets.
 - Document any block-specific conventions in the theme README.
 
+### Selected event modal blocks
+
+Important: The `selected-event-modal` block and similar UI-driven modals should no longer source their full HTML content from `wp_posts` records. Instead, modal contents must be implemented as React components inside the theme's block folder and rendered client-side. This keeps modal markup type-safe, easier to test, and avoids mixing editorial content with UI logic.
+
+Guidelines:
+- Create a `components/` folder next to the block `view.tsx` and export small focused components for each modal type (for example `ClassModalContent`, `AvailabilityModalContent`, `CourseModalContent`, `DefaultModalContent`).
+- The block's `view.tsx` should pick the component based on the event `type` and pass a minimal `event` object (including pre-computed `startLocal`/`endLocal` strings) as props.
+- Do not fetch rendered HTML from REST endpoints for these modals. Server-side rendering may still be used for fallback content, but the default UX is React-rendered.
+- Keep any translations, ARIA attributes, and security-conscious link handling inside the React components.
+
+
 **Example:**
 The login/auth block exposes all button text, modal labels, provider toggles, and color/alignment options as block attributes. The PHP template uses these attributes to render the frontend, ensuring WYSIWYG parity with the editor.
 

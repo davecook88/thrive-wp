@@ -2,10 +2,15 @@ import {
   createElement,
   Fragment,
   useEffect,
+  useMemo,
   useState,
 } from "@wordpress/element";
 import { createRoot } from "react-dom/client";
 import { Modal, Button } from "@wordpress/components";
+import ClassModalContent from "./components/ClassModalContent";
+import AvailabilityModalContent from "./components/AvailabilityModalContent";
+import CourseModalContent from "./components/CourseModalContent";
+import DefaultModalContent from "./components/DefaultModalContent";
 
 type EventDetail = {
   event?: any;
@@ -14,16 +19,6 @@ type EventDetail = {
 
 type ModalType = "availability" | "class" | "course" | "default" | string;
 
-function interpolate(html: string, data: Record<string, any>): string {
-  console.log("Interpolating template with data:", data);
-  return html.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_m, key) => {
-    const path = String(key).split(".");
-    let v: any = data;
-    for (const k of path) v = v?.[k];
-    return v == null ? "" : String(v);
-  });
-}
-
 function SelectedEventModalContent({
   event,
   modalType,
@@ -31,56 +26,47 @@ function SelectedEventModalContent({
   event: any;
   modalType: ModalType;
 }) {
-  const [content, setContent] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Precompute friendly local time strings once per event
+  const derived = useMemo(() => {
+    const start = event?.startUtc ? new Date(event.startUtc) : undefined;
+    const end = event?.endUtc ? new Date(event.endUtc) : undefined;
+    const startLocal = start
+      ? start.toLocaleString(undefined, {
+          dateStyle: "medium",
+          timeStyle: "short",
+        })
+      : "";
+    const endLocal = end
+      ? end.toLocaleString(undefined, {
+          dateStyle: "medium",
+          timeStyle: "short",
+        })
+      : "";
+    return { startLocal, endLocal };
+  }, [event?.startUtc, event?.endUtc]);
+
   useEffect(() => {
-    let cancelled = false;
-
-    const run = async () => {
-      setLoading(true);
-
-      // Prepare derived friendly local time strings for convenience in templates
-      const start = event?.startUtc ? new Date(event.startUtc) : undefined;
-      const end = event?.endUtc ? new Date(event.endUtc) : undefined;
-      const startLocal = start
-        ? start.toLocaleString(undefined, {
-            dateStyle: "medium",
-            timeStyle: "short",
-          })
-        : "";
-      const endLocal = end
-        ? end.toLocaleString(undefined, {
-            dateStyle: "medium",
-            timeStyle: "short",
-          })
-        : "";
-
-      const html = await fetchModalContentByType(modalType);
-
-      if (!cancelled) {
-        const interpolated = html
-          ? interpolate(html, {
-              event: {
-                ...event,
-                startLocal,
-                endLocal,
-              },
-            })
-          : "";
-        setContent(interpolated);
-        setLoading(false);
-      }
-    };
-
-    run();
-    return () => {
-      cancelled = true;
-    };
+    // small UX delay to avoid flash when opening modal very quickly
+    let tid = setTimeout(() => setLoading(false), 50);
+    return () => clearTimeout(tid);
   }, [event, modalType]);
 
   if (loading) return <div>Loading…</div>;
-  return <div dangerouslySetInnerHTML={{ __html: content }} />;
+
+  const props = { event: { ...event, ...derived } };
+
+  switch ((modalType || "").toString().toLowerCase()) {
+    case "class":
+      return <ClassModalContent {...props} />;
+    case "availability":
+      return <AvailabilityModalContent {...props} />;
+    case "course":
+      return <CourseModalContent {...props} />;
+    default:
+      return <DefaultModalContent {...props} />;
+  }
 }
 
 function ModalPortal({
@@ -125,30 +111,6 @@ function ModalPortal({
       )}
     </Fragment>
   );
-}
-
-async function fetchModalContentByType(
-  type: ModalType,
-  payload?: any
-): Promise<string | null> {
-  if (!type) return null;
-  try {
-    const res = await fetch(
-      `/wp-json/custom-theme/v1/modal/render?type=${encodeURIComponent(
-        String(type)
-      )}`,
-      {
-        method: "GET", // Always GET for caching
-        credentials: "same-origin",
-      }
-    );
-    if (!res.ok) return null;
-    const data = await res.json().catch(() => null as any);
-    const html = data && typeof data.html === "string" ? data.html : null;
-    return html;
-  } catch {
-    return null;
-  }
 }
 
 function mountModal(event: any, modalType: ModalType, title?: string) {
