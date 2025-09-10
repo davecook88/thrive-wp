@@ -16,6 +16,7 @@ import {
   AvailabilityRuleDto,
   PreviewMyAvailabilityDto,
 } from './dto/availability.dto.js';
+import { Session, SessionStatus } from '../sessions/entities/session.entity.js';
 
 interface AvailabilityRule {
   id: number;
@@ -39,6 +40,8 @@ export class TeachersService {
     private teacherRepository: Repository<Teacher>,
     @InjectRepository(TeacherAvailability)
     private availabilityRepository: Repository<TeacherAvailability>,
+    @InjectRepository(Session)
+    private sessionRepository: Repository<Session>,
     private dataSource: DataSource,
   ) {}
 
@@ -186,6 +189,7 @@ export class TeachersService {
     const availabilities = await this.availabilityRepository.find({
       where,
     });
+    console.log('Found availabilities:', availabilities);
     const windows: { start: string; end: string; teacherIds: number[] }[] = [];
     const startDate = new Date(dto.start);
     const endDate = new Date(dto.end);
@@ -195,15 +199,51 @@ export class TeachersService {
     if (diffDays > 90) {
       throw new BadRequestException('Preview range cannot exceed 90 days');
     }
+    // Prefetch all scheduled sessions for the full range in one query
+    const rangeStart = new Date(startDate);
+    rangeStart.setUTCHours(0, 0, 0, 0);
+    const rangeEnd = new Date(endDate);
+    rangeEnd.setUTCHours(23, 59, 59, 999);
+
+    const teacherIdSet = new Set<number>(teacherIds ?? []);
+    // Fall back to teacher IDs inferred from availabilities if none supplied
+    if (teacherIdSet.size === 0) {
+      for (const a of availabilities) teacherIdSet.add(a.teacherId);
+    }
+
+    const allSessions = await this.getScheduledSessionsForRange(
+      Array.from(teacherIdSet),
+      rangeStart,
+      rangeEnd,
+    );
+    const sessionsByTeacher = new Map<
+      number,
+      Array<{ startAt: Date; endAt: Date }>
+    >();
+    for (const s of allSessions) {
+      const arr = sessionsByTeacher.get(s.teacherId) ?? [];
+      arr.push({ startAt: s.startAt, endAt: s.endAt });
+      sessionsByTeacher.set(s.teacherId, arr);
+    }
+
     // Process each day in the range
     const currentDate = new Date(startDate);
     while (currentDate <= endDate) {
-      const dayWindows = this.expandDayAvailability(
+      console.log('Processing date:', currentDate.toISOString());
+      const dayWindows = await this.expandDayAvailability(
         currentDate,
         availabilities,
+        sessionsByTeacher,
+      );
+      console.log(
+        'Day windows for',
+        currentDate.toISOString(),
+        ':',
+        dayWindows,
       );
       windows.push(...dayWindows);
-      currentDate.setDate(currentDate.getDate() + 1);
+      // advance by one day in UTC to avoid local timezone shifting weekdays
+      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
     }
     return { windows };
   }
@@ -234,29 +274,41 @@ export class TeachersService {
     };
   }
 
-  private expandDayAvailability(
+  private async expandDayAvailability(
     date: Date,
     availabilities: TeacherAvailability[],
-  ): { start: string; end: string; teacherIds: number[] }[] {
+    sessionsByTeacher: Map<number, Array<{ startAt: Date; endAt: Date }>>,
+  ): Promise<{ start: string; end: string; teacherIds: number[] }[]> {
     {
       const teacherIds = new Set<number>();
       for (const avail of availabilities) {
         teacherIds.add(avail.teacherId);
       }
-      const windowsMap = new Map<
-        string,
-        { start: Date; end: Date; teacherIds: number[] }
+      // Collect per-teacher raw available intervals first
+      const perTeacherIntervals = new Map<
+        number,
+        Array<{ start: Date; end: Date }>
       >();
+
+      // Define day boundaries (UTC) once to filter preloaded sessions
+      const dayStart = new Date(date);
+      dayStart.setUTCHours(0, 0, 0, 0);
+      const dayEnd = new Date(date);
+      dayEnd.setUTCHours(23, 59, 59, 999);
+
       for (const teacher of teacherIds) {
         const teacherAvailabilities = availabilities.filter(
           (a) => a.teacherId === teacher,
         );
+        // Use UTC weekday since availability rules are interpreted with UTC-stored times
         const weekday = date.getUTCDay();
+        console.log('Processing teacher', teacher, 'weekday', weekday);
         const rules = teacherAvailabilities.filter(
           (a) =>
             a.kind === TeacherAvailabilityKind.RECURRING &&
             a.weekday === weekday,
         );
+        console.log('Found rules for teacher:', rules);
         const blackouts = teacherAvailabilities.filter(
           (a) =>
             a.kind === TeacherAvailabilityKind.BLACKOUT &&
@@ -264,6 +316,14 @@ export class TeachersService {
             a.endAt &&
             this.isSameDay(a.startAt, date),
         );
+        console.log('Found blackouts for teacher:', blackouts);
+
+        // Get preloaded sessions for this specific teacher that intersect the day
+        const teacherSessions = (sessionsByTeacher.get(teacher) ?? [])
+          // Ensure we only consider sessions that overlap the day
+          .filter((s) => s.startAt < dayEnd && s.endAt > dayStart);
+        console.log('Teacher sessions:', teacherSessions);
+
         for (const rule of rules) {
           const startTime = this.minutesToTimeString(rule.startTimeMinutes!);
           const endTime = this.minutesToTimeString(rule.endTimeMinutes!);
@@ -276,31 +336,151 @@ export class TeachersService {
           const endUTC = new Date(
             Date.UTC(year, month, day, ...this.parseTime(endTime)),
           );
-          const overlapsBlackout = blackouts.some((blackout) => {
-            const blackoutStart = blackout.startAt!;
-            const blackoutEnd = blackout.endAt!;
-            return startUTC < blackoutEnd && endUTC > blackoutStart;
-          });
-          if (!overlapsBlackout) {
-            const key = `${startUTC.toISOString()}-${endUTC.toISOString()}`;
-            if (!windowsMap.has(key)) {
-              windowsMap.set(key, {
-                start: startUTC,
-                end: endUTC,
-                teacherIds: [],
+          console.log(
+            'Processing rule:',
+            startTime,
+            'to',
+            endTime,
+            '->',
+            startUTC.toISOString(),
+            'to',
+            endUTC.toISOString(),
+          );
+
+          // Build list of blocked intervals (blackouts + scheduled sessions) intersecting this rule
+          const blockedIntervals: { start: Date; end: Date }[] = [];
+
+          for (const blackout of blackouts) {
+            const bStart = blackout.startAt!;
+            const bEnd = blackout.endAt!;
+            if (startUTC < bEnd && endUTC > bStart) {
+              blockedIntervals.push({
+                start: new Date(Math.max(startUTC.getTime(), bStart.getTime())),
+                end: new Date(Math.min(endUTC.getTime(), bEnd.getTime())),
               });
             }
-            windowsMap.get(key)!.teacherIds.push(teacher);
+          }
+
+          for (const session of teacherSessions) {
+            const sStart = session.startAt;
+            const sEnd = session.endAt;
+            console.log(
+              'Checking session overlap:',
+              sStart.toISOString(),
+              'to',
+              sEnd.toISOString(),
+            );
+            if (startUTC < sEnd && endUTC > sStart) {
+              blockedIntervals.push({
+                start: new Date(Math.max(startUTC.getTime(), sStart.getTime())),
+                end: new Date(Math.min(endUTC.getTime(), sEnd.getTime())),
+              });
+            }
+          }
+
+          // If no blocks, add full window
+          if (blockedIntervals.length === 0) {
+            const arr = perTeacherIntervals.get(teacher) ?? [];
+            arr.push({ start: startUTC, end: endUTC });
+            perTeacherIntervals.set(teacher, arr);
+            continue;
+          }
+
+          // Merge overlapping/adjacent blocked intervals
+          blockedIntervals.sort(
+            (a, b) => a.start.getTime() - b.start.getTime(),
+          );
+          const merged: { start: Date; end: Date }[] = [];
+          for (const interval of blockedIntervals) {
+            if (
+              merged.length === 0 ||
+              interval.start.getTime() > merged[merged.length - 1].end.getTime()
+            ) {
+              merged.push({
+                start: new Date(interval.start),
+                end: new Date(interval.end),
+              });
+            } else {
+              // Overlap or touch: extend end
+              merged[merged.length - 1].end = new Date(
+                Math.max(
+                  merged[merged.length - 1].end.getTime(),
+                  interval.end.getTime(),
+                ),
+              );
+            }
+          }
+
+          // Subtract merged blocks from rule window
+          let cursor = new Date(startUTC);
+          for (const block of merged) {
+            if (block.start.getTime() > cursor.getTime()) {
+              const s = new Date(cursor);
+              const e = new Date(block.start);
+              const arr = perTeacherIntervals.get(teacher) ?? [];
+              arr.push({ start: s, end: e });
+              perTeacherIntervals.set(teacher, arr);
+            }
+            // Move cursor past the block
+            if (block.end.getTime() > cursor.getTime()) {
+              cursor = new Date(block.end);
+            }
+          }
+          // Remainder after last block
+          if (cursor.getTime() < endUTC.getTime()) {
+            const s = new Date(cursor);
+            const e = new Date(endUTC);
+            const arr = perTeacherIntervals.get(teacher) ?? [];
+            arr.push({ start: s, end: e });
+            perTeacherIntervals.set(teacher, arr);
           }
         }
       }
-      return Array.from(windowsMap.values())
+
+      // Global segmentation: split the day by all edges to align windows across teachers
+      const edgeTimes = new Set<number>();
+      for (const intervals of perTeacherIntervals.values()) {
+        for (const it of intervals) {
+          if (it.start.getTime() < it.end.getTime()) {
+            edgeTimes.add(it.start.getTime());
+            edgeTimes.add(it.end.getTime());
+          }
+        }
+      }
+
+      const edges = Array.from(edgeTimes.values()).sort((a, b) => a - b);
+      const segments: { start: Date; end: Date; teacherIds: number[] }[] = [];
+      for (let i = 0; i < edges.length - 1; i++) {
+        const segStart = new Date(edges[i]);
+        const segEnd = new Date(edges[i + 1]);
+        if (segStart.getTime() >= segEnd.getTime()) continue;
+        const teachersCovering: number[] = [];
+        for (const [tId, intervals] of perTeacherIntervals.entries()) {
+          const covers = intervals.some(
+            (iv) =>
+              iv.start.getTime() <= segStart.getTime() &&
+              iv.end.getTime() >= segEnd.getTime(),
+          );
+          if (covers) teachersCovering.push(tId);
+        }
+        if (teachersCovering.length > 0) {
+          segments.push({
+            start: segStart,
+            end: segEnd,
+            teacherIds: teachersCovering.sort((a, b) => a - b),
+          });
+        }
+      }
+
+      const result = segments
         .map((w) => ({
           start: w.start.toISOString(),
           end: w.end.toISOString(),
           teacherIds: w.teacherIds,
         }))
         .sort((a, b) => a.start.localeCompare(b.start));
+      console.log('Final result for day:', result);
+      return result;
     }
   }
 
@@ -359,5 +539,40 @@ export class TeachersService {
 
   private dateToTimeString(date: Date): string {
     return date.toISOString().substring(11, 16);
+  }
+
+  private async getScheduledSessionsForRange(
+    teacherIds: number[],
+    start: Date,
+    end: Date,
+  ): Promise<Array<{ teacherId: number; startAt: Date; endAt: Date }>> {
+    if (teacherIds.length === 0) return [];
+    // Use raw SQL for efficiency; ensure snake_case and status filter
+    const params: any[] = [];
+    const teacherPlaceholders = teacherIds
+      .map((id) => {
+        params.push(id);
+        return '?';
+      })
+      .join(',');
+    // Overlap condition: session.start_at <= rangeEnd AND session.end_at >= rangeStart
+    params.push(end);
+    params.push(start);
+    const sql = `
+      SELECT teacher_id AS teacherId, start_at AS startAt, end_at AS endAt
+      FROM session
+      WHERE deleted_at IS NULL
+        AND status = 'SCHEDULED'
+        AND teacher_id IN (${teacherPlaceholders})
+    AND start_at <= ?
+    AND end_at >= ?
+    `;
+    const rows = await this.dataSource.query(sql, params);
+    // Normalize to Date objects
+    return rows.map((r: any) => ({
+      teacherId: Number(r.teacherId),
+      startAt: new Date(r.startAt),
+      endAt: new Date(r.endAt),
+    }));
   }
 }

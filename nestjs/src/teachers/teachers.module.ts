@@ -5,12 +5,13 @@ import { TeachersService } from './teachers.service.js';
 import { TeacherAvailabilityService } from './services/teacher-availability.service.js';
 import { Teacher } from './entities/teacher.entity.js';
 import { TeacherAvailability } from './entities/teacher-availability.entity.js';
+import { Session } from '../sessions/entities/session.entity.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { TeachersPublicController } from './teachers.public.controller.js';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Teacher, TeacherAvailability]),
+    TypeOrmModule.forFeature([Teacher, TeacherAvailability, Session]),
     AuthModule, // Import AuthModule to make AuthService available
   ],
   controllers: [TeachersController, TeachersPublicController],

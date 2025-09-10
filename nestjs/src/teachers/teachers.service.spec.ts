@@ -12,6 +12,7 @@ import {
   UpdateAvailabilityDto,
   PreviewAvailabilityDto,
 } from './dto/availability.dto.js';
+import { Session } from '../sessions/entities/session.entity.js';
 
 // Mock types
 type MockTeacher = {
@@ -32,6 +33,7 @@ describe('TeachersService', () => {
   let service: TeachersService;
   let teacherRepo: Repository<Teacher>;
   let availabilityRepo: Repository<TeacherAvailability>;
+  let sessionRepo: Repository<Session>;
   let dataSource: DataSource;
 
   beforeEach(async () => {
@@ -44,6 +46,10 @@ describe('TeachersService', () => {
         },
         {
           provide: getRepositoryToken(TeacherAvailability),
+          useClass: Repository,
+        },
+        {
+          provide: getRepositoryToken(Session),
           useClass: Repository,
         },
         {
@@ -60,6 +66,7 @@ describe('TeachersService', () => {
     availabilityRepo = module.get<Repository<TeacherAvailability>>(
       getRepositoryToken(TeacherAvailability),
     );
+    sessionRepo = module.get<Repository<Session>>(getRepositoryToken(Session));
     dataSource = module.get<DataSource>(DataSource);
   });
 
@@ -405,6 +412,7 @@ describe('TeachersService', () => {
       jest
         .spyOn(availabilityRepo, 'find')
         .mockResolvedValue([mockAvailability as any]);
+      jest.spyOn(sessionRepo, 'find').mockResolvedValue([]);
 
       const result = await service.previewTeacherAvailability([teacherId], dto);
 
@@ -452,6 +460,7 @@ describe('TeachersService', () => {
       jest
         .spyOn(availabilityRepo, 'find')
         .mockResolvedValue([mockAvailability as any]);
+      jest.spyOn(sessionRepo, 'find').mockResolvedValue([]);
 
       const result = await service.previewTeacherAvailability([teacherId], dto);
 
@@ -497,6 +506,7 @@ describe('TeachersService', () => {
       jest
         .spyOn(availabilityRepo, 'find')
         .mockResolvedValue([mockAvailability as any]);
+      jest.spyOn(sessionRepo, 'find').mockResolvedValue([]);
 
       const result = await service.previewTeacherAvailability([teacherId], dto);
 

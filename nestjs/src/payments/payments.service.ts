@@ -306,6 +306,7 @@ export class PaymentsService {
   private async handlePaymentIntentSucceeded(
     paymentIntent: Stripe.PaymentIntent,
   ): Promise<void> {
+    console.log('Handling payment_intent.succeeded event');
     const metadata: ParsedStripeMetadata = StripeMetadataUtils.fromStripeFormat(
       paymentIntent.metadata || {},
     );
