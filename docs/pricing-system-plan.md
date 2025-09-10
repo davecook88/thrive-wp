@@ -1,6 +1,6 @@
 # Pricing System Plan — Stripe as Source of Truth (SoT)
 
-We will author Products and Prices directly in Stripe and treat them as the catalog source of truth. The application resolves what to sell using a simple key (e.g., ONE_ON_ONE) or a specific Stripe Price ID, creates an Order snapshot locally, and uses Stripe PaymentIntents. On success (via webhook), we finalize fulfillment (e.g., create a Booking).
+We author Products and Prices directly in Stripe and treat them as the catalog source of truth. The application resolves what to sell using a simple key (e.g., ONE_ON_ONE) or a specific Stripe Price ID, and uses Stripe PaymentIntents. On success (via webhook), we finalize fulfillment (e.g., create a Booking). We no longer persist local Orders/OrderItems; Stripe is the source of truth for payment state and amount.
 
 Primary outcomes:
 - Remove local price table entirely; lean on Stripe’s Products/Prices.
@@ -53,36 +53,9 @@ Tables:
 
 We can operate with only stripe_price_map using price_key; product_map is optional.
 
-## Orders, Items, and Fulfillment
+## Fulfillment
 
-We still need Orders for auditability and to reconcile payments to actions in our system.
-
-order
-- id (PK)
-- student_id int NOT NULL (FK student.id)
-- status enum('pending','requires_payment','paid','cancelled','refunded','failed') default 'pending'
-- currency char(3) NOT NULL
-- subtotal_minor int NOT NULL
-- discount_minor int NOT NULL default 0
-- tax_minor int NOT NULL default 0 (Phase 1: 0)
-- total_minor int NOT NULL
-- stripe_payment_intent_id varchar(64) NULL
-- stripe_customer_id varchar(64) NULL
-- created_at, updated_at datetime(3)
-
-order_item
-- id (PK)
-- order_id int NOT NULL (FK order.id)
-- item_type enum('session','course','package','service')
-- item_ref varchar(120) NOT NULL  // e.g., 'ONE_ON_ONE', 'COURSE:123', 'SESSION:456'
-- title varchar(200) NOT NULL      // snapshot for display
-- quantity int NOT NULL default 1
-- amount_minor int NOT NULL        // unit amount snapshot from Stripe Price
-- currency char(3) NOT NULL
-- stripe_price_id varchar(64) NOT NULL
-- metadata json NULL
-
-We already have Booking; on success, create Booking for a Session purchase. For Courses/Packages, see Entitlements below.
+On webhook success, we create fulfillment directly from Stripe metadata (student_id, service_type, teacher_id, start_at, end_at). For sessions, we create a Session and a Booking. For courses/packages, future phases may add entitlements.
 
 student.stripe_customer_id (column on student)
 - Reuse Stripe customer for future checkouts and saved methods.
@@ -100,9 +73,8 @@ Server behavior:
    - If stripePriceId: verify it exists in stripe_price_map and is active; optional authorization to scope if provided.
 2) Fetch the Price from Stripe to ensure active and to read unit_amount/currency (server trust only).
 3) Create or fetch Stripe Customer for the authenticated student; store student.stripe_customer_id if missing.
-4) Create Order + OrderItem snapshot (subtotal = unit_amount * qty; total = subtotal for Phase 1).
-5) Create PaymentIntent with amount=total_minor, currency, customer, and metadata { order_id, student_id, price_key/price_id }.
-6) Return { clientSecret, orderId, amountMinor, currency }.
+4) Create PaymentIntent with amount=unit_amount * qty, currency, customer, and metadata { student_id, service_type, teacher_id, start_at, end_at, product_id, price_id }.
+5) Return { clientSecret, amountMinor, currency }.
 
 Validation errors from amount/currency disappear because the client no longer provides them.
 
@@ -111,13 +83,11 @@ Validation errors from amount/currency disappear because the client no longer pr
 POST /payment/webhook
 - Handle: payment_intent.succeeded, payment_intent.payment_failed, charge.refunded
 - On succeeded:
-  - Mark order paid (idempotent by payment_intent.id).
   - Fulfillment:
-    - If item_type='session': create Booking (respect unique(sessionId, studentId)).
-    - If package: grant credits (see Entitlements) and do not book a specific session yet.
-    - If course: enroll student or create bookings for included sessions per course policy.
-- On failed: mark order failed.
-- On refund: mark refunded and optionally revoke entitlements.
+    - For session purchase metadata: create Session (if needed) and Booking (respect unique(sessionId, studentId)).
+    - Packages/courses: planned via entitlements in a future phase.
+- On failed: log failure (no local order state).
+- On refund: future work (consider revoking entitlements/cancelling bookings).
 
 ## Entitlements for Packages (optional Phase 1, recommended Phase 2)
 
@@ -167,10 +137,8 @@ Booking flow for packages: when student books a session, consume a credit (atomi
 ## Minimal Migration Set
 
 1) Create table `stripe_price_map` (structure above). Optionally `stripe_product_map`.
-2) Create/extend `order` and `order_item`:
-   - Ensure `order_item` has: item_type, item_ref, amount_minor, currency, stripe_price_id, quantity.
-3) Add `student.stripe_customer_id` varchar(64) NULL.
-4) (Optional Phase 2) Add `credit_grant` and `credit_ledger` for packages.
+2) Add `student.stripe_customer_id` varchar(64) NULL.
+3) (Optional Phase 2) Add `credit_grant` and `credit_ledger` for packages.
 
 
 ## Optional: Stripe Checkout Sessions

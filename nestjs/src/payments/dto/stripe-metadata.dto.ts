@@ -36,7 +36,6 @@ export type StripeMetadata = z.infer<typeof StripeMetadataSchema>;
  * Metadata for PaymentIntent objects
  */
 export const PaymentIntentMetadataSchema = StripeMetadataSchema.extend({
-  order_id: z.string(),
   student_id: z.string(),
   user_id: z.string(),
   service_type: z.enum(ServiceType),
@@ -137,10 +136,9 @@ export class StripeMetadataUtils {
   }
 
   /**
-   * Create payment intent metadata from order data
+   * Create payment intent metadata from booking/session request
    */
   static createPaymentIntentMetadata(params: {
-    orderId: number;
     studentId: number;
     userId: number;
     serviceType: ServiceType;
@@ -153,7 +151,6 @@ export class StripeMetadataUtils {
     source?: string;
   }): PaymentIntentMetadata {
     return {
-      order_id: params.orderId.toString(),
       student_id: params.studentId.toString(),
       user_id: params.userId.toString(),
       service_type: params.serviceType,

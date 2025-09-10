@@ -2,8 +2,8 @@
   // Run and debug tests from VS Code matching our TS specs
   "jestrunner.include": ["**/*.spec.ts", "**/*.e2e.spec.ts"],
 
-  // Point Jest Runner to the NestJS project config
-  "jestrunner.configPath": "nestjs/jest.config.mjs",
+  // Point Jest Runner to the NestJS project config (relative to projectPath)
+  "jestrunner.configPath": "jest.config.mjs",
 
   // Run tests via our npm script so Node flags and env (.env.test) are applied
   // Note: projectPath makes the command run inside the nestjs folder

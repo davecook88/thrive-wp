@@ -9,8 +9,6 @@ import { Repository } from 'typeorm';
 import Stripe from 'stripe';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto.js';
 import { Student } from '../students/entities/student.entity.js';
-import { Order, OrderStatus } from './entities/order.entity.js';
-import { OrderItem, ItemType } from './entities/order-item.entity.js';
 import { StripeProductMap } from './entities/stripe-product-map.entity.js';
 import {
   Session,
@@ -31,7 +29,6 @@ import { SessionsService } from '../sessions/services/sessions.service.js';
 export interface CreatePaymentIntentResponse {
   clientSecret: string;
   publishableKey: string;
-  orderId: number;
   amountMinor: number;
   currency: string;
 }
@@ -43,10 +40,6 @@ export class PaymentsService {
   constructor(
     @InjectRepository(Student)
     private studentRepository: Repository<Student>,
-    @InjectRepository(Order)
-    private orderRepository: Repository<Order>,
-    @InjectRepository(OrderItem)
-    private orderItemRepository: Repository<OrderItem>,
     @InjectRepository(StripeProductMap)
     private stripeProductMapRepository: Repository<StripeProductMap>,
     @InjectRepository(Session)
@@ -148,47 +141,9 @@ export class PaymentsService {
       await this.studentRepository.save(student);
     }
 
-    // Create order
-    const order = this.orderRepository.create({
-      studentId: student.id,
-      status: OrderStatus.REQUIRES_PAYMENT,
-      currency,
-      subtotalMinor,
-      discountMinor: 0,
-      taxMinor: 0,
-      totalMinor,
-      stripeCustomerId,
-    });
-
-    const savedOrder = await this.orderRepository.save(order);
-
-    // Create order item
-    const sessionPriceKey = `SESSION:${createPaymentIntentDto.serviceType}:${createPaymentIntentDto.start}:${createPaymentIntentDto.teacher}`;
-    const orderItem = this.orderItemRepository.create({
-      orderId: savedOrder.id,
-      itemType: ItemType.SESSION,
-      itemRef: sessionPriceKey,
-      title: `${createPaymentIntentDto.serviceType} Class with ${createPaymentIntentDto.teacher}`,
-      quantity,
-      amountMinor: unitAmount,
-      currency,
-      stripePriceId: stripePrice.id,
-      metadata: {
-        start: createPaymentIntentDto.start,
-        end: createPaymentIntentDto.end,
-        teacher: createPaymentIntentDto.teacher,
-        serviceType: createPaymentIntentDto.serviceType,
-        notes: createPaymentIntentDto.notes,
-        productId: productMapping.stripeProductId,
-      },
-    });
-
-    await this.orderItemRepository.save(orderItem);
-
     // Create Stripe PaymentIntent
     const paymentIntentMetadata =
       StripeMetadataUtils.createPaymentIntentMetadata({
-        orderId: savedOrder.id,
         studentId: student.id,
         userId,
         serviceType: createPaymentIntentDto.serviceType,
@@ -207,10 +162,6 @@ export class PaymentsService {
       metadata: StripeMetadataUtils.toStripeFormat(paymentIntentMetadata),
     });
 
-    // Update order with PaymentIntent ID
-    savedOrder.stripePaymentIntentId = paymentIntent.id;
-    await this.orderRepository.save(savedOrder);
-
     const publishableKey =
       this.configService.get<string>('stripe.publishableKey') ||
       'pk_test_placeholder';
@@ -224,7 +175,6 @@ export class PaymentsService {
     return {
       clientSecret: paymentIntent.client_secret as string,
       publishableKey,
-      orderId: savedOrder.id,
       amountMinor: totalMinor,
       currency,
     };
@@ -310,75 +260,40 @@ export class PaymentsService {
     const metadata: ParsedStripeMetadata = StripeMetadataUtils.fromStripeFormat(
       paymentIntent.metadata || {},
     );
-    const orderId = metadata.order_id;
-
-    if (!orderId || typeof orderId !== 'string') {
-      console.warn('PaymentIntent missing valid order_id metadata');
-      return;
-    }
-
-    const order = await this.orderRepository.findOne({
-      where: { id: parseInt(orderId, 10) },
-      relations: ['student'],
-    });
-
-    if (!order) {
-      console.warn(`Order ${orderId} not found`);
-      return;
-    }
-
-    // Update order status
-    order.status = OrderStatus.PAID;
-    await this.orderRepository.save(order);
-
-    // Get order items to create sessions and bookings
-    const orderItems = await this.orderItemRepository.find({
-      where: { orderId: order.id },
-    });
-
-    for (const item of orderItems) {
-      if (item.itemType === ItemType.SESSION) {
-        await this.createSessionAndBookingFromOrderItem(order, item, metadata);
-      }
-    }
+    await this.createSessionAndBookingFromMetadata(metadata);
   }
 
   private async handlePaymentIntentFailed(
     paymentIntent: Stripe.PaymentIntent,
   ): Promise<void> {
-    const orderId = paymentIntent.metadata?.order_id;
-    if (!orderId) {
-      console.warn('PaymentIntent missing order_id metadata');
-      return;
-    }
-
-    const order = await this.orderRepository.findOne({
-      where: { id: parseInt(orderId, 10) },
-    });
-    if (!order) {
-      console.warn(`Order ${orderId} not found`);
-      return;
-    }
-
-    order.status = OrderStatus.FAILED;
-    await this.orderRepository.save(order);
+    // For now, we only log failures; fulfillment is driven by success events.
+    console.warn(
+      `Payment failed for intent ${paymentIntent.id}: ${paymentIntent.last_payment_error?.message}`,
+    );
   }
 
-  private async createSessionAndBookingFromOrderItem(
-    order: Order,
-    orderItem: OrderItem,
+  private async createSessionAndBookingFromMetadata(
     metadata: ParsedStripeMetadata,
   ): Promise<void> {
     try {
-      // Parse the metadata from the order item
-      const itemMetadata = orderItem.metadata || {};
+      // Determine student from metadata
+      const studentIdRaw = metadata.student_id;
+      if (!studentIdRaw) {
+        console.error('Stripe metadata missing student_id; cannot fulfill');
+        return;
+      }
 
-      // Create session
+      const studentId =
+        typeof studentIdRaw === 'string'
+          ? parseInt(studentIdRaw, 10)
+          : (studentIdRaw as number);
+
+      // Create session using intent metadata
       const session = this.sessionRepository.create({
-        type: itemMetadata.serviceType || metadata.service_type,
-        teacherId: parseInt(itemMetadata.teacher || metadata.teacher_id, 10),
-        startAt: new Date(itemMetadata.start || metadata.start_at),
-        endAt: new Date(itemMetadata.end || metadata.end_at),
+        type: metadata.service_type as any, // validated by schema upstream
+        teacherId: parseInt(String(metadata.teacher_id), 10),
+        startAt: new Date(String(metadata.start_at)),
+        endAt: new Date(String(metadata.end_at)),
         capacityMax: 1, // Private sessions have capacity of 1
         status: SessionStatus.SCHEDULED,
         visibility: SessionVisibility.PRIVATE,
@@ -391,7 +306,7 @@ export class PaymentsService {
       // Create booking
       const booking = this.bookingRepository.create({
         sessionId: savedSession.id,
-        studentId: order.studentId,
+        studentId,
         status: BookingStatus.CONFIRMED,
         acceptedAt: new Date(),
       });
@@ -399,13 +314,10 @@ export class PaymentsService {
       await this.bookingRepository.save(booking);
 
       console.log(
-        `Created session ${savedSession.id} and booking for student ${order.studentId}`,
+        `Created session ${savedSession.id} and booking for student ${studentId}`,
       );
     } catch (error) {
-      console.error(
-        'Error creating session and booking from order item:',
-        error,
-      );
+      console.error('Error creating session and booking from intent:', error);
       // Don't throw - we don't want webhook processing to fail
     }
   }

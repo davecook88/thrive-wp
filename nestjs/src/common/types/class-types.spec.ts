@@ -7,18 +7,6 @@ import {
 } from './class-types.js';
 
 describe('Service Types', () => {
-  describe('ServiceType enum', () => {
-    it('should have correct values', () => {
-      expect(ServiceType.PRIVATE).toBe('PRIVATE');
-    });
-  });
-
-  describe('ServiceKey enum', () => {
-    it('should have correct values', () => {
-      expect(ServiceKey.PRIVATE_CLASS).toBe('PRIVATE_CLASS');
-    });
-  });
-
   describe('ServiceTypeSchema', () => {
     it('should validate correct ServiceType values', () => {
       expect(ServiceTypeSchema.safeParse('PRIVATE').success).toBe(true);
