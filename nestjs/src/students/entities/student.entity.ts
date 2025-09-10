@@ -23,6 +23,16 @@ export class Student extends BaseEntity {
   })
   userId: number;
 
+  @Column({
+    name: 'stripe_customer_id',
+    type: 'varchar',
+    length: 64,
+    nullable: true,
+    comment: 'Stripe Customer ID for reuse',
+  })
+  @Index({ unique: true })
+  stripeCustomerId?: string;
+
   @OneToOne('User', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;

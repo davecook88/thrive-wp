@@ -10,7 +10,7 @@
   }
 
   async function getClientSecret() {
-    // Call WordPress -> NestJS bridge to create a PaymentIntent for this booking
+    // Call WordPress -> NDestJS bridge to create a PaymentIntent for this booking
     // Endpoint is expected to validate session and booking details server-side
     const res = await fetch("/api/payment/payment-intent", {
       method: "POST",

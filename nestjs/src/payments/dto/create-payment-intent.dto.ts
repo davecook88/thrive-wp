@@ -1,9 +1,16 @@
-import { IsNumber, IsString } from 'class-validator';
+import { IsString, IsOptional, IsDateString } from 'class-validator';
 
 export class CreatePaymentIntentDto {
-  @IsNumber()
-  amount: number;
+  @IsDateString()
+  start: string;
+
+  @IsDateString()
+  end: string;
 
   @IsString()
-  currency: string;
+  teacher: string;
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
 }
