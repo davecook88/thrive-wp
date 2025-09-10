@@ -61,7 +61,7 @@
         const result = await stripe.confirmPayment({
           elements,
           confirmParams: {
-            return_url: window.location.origin + "/booking/complete",
+            return_url: window.location.origin + "/booking-complete",
           },
         });
         if (result.error) {
