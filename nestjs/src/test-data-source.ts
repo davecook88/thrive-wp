@@ -45,7 +45,8 @@ export const TestDataSource = new DataSource({
     currentDir + '/waitlists/entities/*.entity{.ts,.js}',
   ],
   migrations: [currentDir + '/migrations/*{.ts,.js}'],
-  synchronize: false, // Use migrations instead for proper foreign key handling
+  // For test runs we rely on TypeORM to build a fresh schema quickly
+  synchronize: true,
   dropSchema: testDbConfig.dropSchema,
   logging: false, // Disable logging for tests
   timezone: 'Z',
