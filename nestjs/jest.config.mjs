@@ -2,12 +2,17 @@
 const config = {
   preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
-  roots: ['<rootDir>/src'],
-  testMatch: ['**/*.spec.ts'],
+  roots: ['<rootDir>/src', '<rootDir>/test'],
+  testMatch: ['**/*.spec.ts', '**/*.e2e-spec.ts'],
   moduleFileExtensions: ['ts', 'js', 'json', 'mjs'],
   extensionsToTreatAsEsm: ['.ts'],
   collectCoverageFrom: ['src/**/*.(t|j)s'],
   coverageDirectory: 'coverage',
+  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
+  testEnvironmentOptions: {
+    NODE_ENV: 'test',
+  },
+  testTimeout: 30000, // Increase timeout for database tests
   transform: {
     '^.+\\.ts$': [
       'ts-jest',

@@ -10,7 +10,7 @@ describe('SessionsService', () => {
 
   beforeEach(async () => {
     const mockTeacherAvailabilityService = {
-      validatePrivateSession: jest.fn(),
+      validateAvailability: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -31,7 +31,7 @@ describe('SessionsService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('validatePrivateSession', () => {
+  describe('validateAvailability', () => {
     const mockParams = {
       teacherId: 1,
       startAt: '2025-09-10T10:00:00Z',
