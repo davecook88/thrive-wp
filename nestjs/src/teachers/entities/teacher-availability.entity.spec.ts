@@ -2,7 +2,7 @@ import { getMetadataArgsStorage } from 'typeorm';
 import {
   TeacherAvailability,
   TeacherAvailabilityKind,
-} from './teacher-availability.entity';
+} from './teacher-availability.entity.js';
 
 describe('TeacherAvailability Entity', () => {
   it('should be registered with the correct table name', () => {

@@ -3,7 +3,7 @@ const config = {
   preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
   roots: ['<rootDir>/src', '<rootDir>/test'],
-  testMatch: ['**/*.spec.ts', '**/*.e2e-spec.ts'],
+  testMatch: ['**/*.spec.ts', '**/*.e2e.spec.ts'],
   moduleFileExtensions: ['ts', 'js', 'json', 'mjs'],
   extensionsToTreatAsEsm: ['.ts'],
   collectCoverageFrom: ['src/**/*.(t|j)s'],

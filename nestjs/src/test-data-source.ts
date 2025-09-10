@@ -5,8 +5,9 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 
 // __dirname isn't available in ESM; reconstruct it for glob patterns used below
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// In Jest test environment, __dirname might already be available
+const currentDir =
+  (globalThis as any).__dirname || path.resolve(process.cwd(), 'src');
 
 // Build configuration once (not using ConfigService here since this file is used by CLI)
 const appConfig = configuration();
@@ -29,21 +30,21 @@ export const TestDataSource = new DataSource({
   password: testDbConfig.password,
   database: testDbConfig.database,
   entities: [
-    __dirname + '/**/*.entity{.ts,.js}',
-    __dirname + '/common/entities/*.entity{.ts,.js}',
-    __dirname + '/users/entities/*.entity{.ts,.js}',
-    __dirname + '/teachers/entities/*.entity{.ts,.js}',
-    __dirname + '/admin/entities/*.entity{.ts,.js}',
-    __dirname + '/classes/entities/*.entity{.ts,.js}',
-    __dirname + '/courses/entities/*.entity{.ts,.js}',
-    __dirname + '/course-teachers/entities/*.entity{.ts,.js}',
-    __dirname + '/enrollments/entities/*.entity{.ts,.js}',
-    __dirname + '/payments/entities/*.entity{.ts,.js}',
-    __dirname + '/sessions/entities/*.entity{.ts,.js}',
-    __dirname + '/students/entities/*.entity{.ts,.js}',
-    __dirname + '/waitlists/entities/*.entity{.ts,.js}',
+    currentDir + '/**/*.entity{.ts,.js}',
+    currentDir + '/common/entities/*.entity{.ts,.js}',
+    currentDir + '/users/entities/*.entity{.ts,.js}',
+    currentDir + '/teachers/entities/*.entity{.ts,.js}',
+    currentDir + '/admin/entities/*.entity{.ts,.js}',
+    currentDir + '/classes/entities/*.entity{.ts,.js}',
+    currentDir + '/courses/entities/*.entity{.ts,.js}',
+    currentDir + '/course-teachers/entities/*.entity{.ts,.js}',
+    currentDir + '/enrollments/entities/*.entity{.ts,.js}',
+    currentDir + '/payments/entities/*.entity{.ts,.js}',
+    currentDir + '/sessions/entities/*.entity{.ts,.js}',
+    currentDir + '/students/entities/*.entity{.ts,.js}',
+    currentDir + '/waitlists/entities/*.entity{.ts,.js}',
   ],
-  migrations: [__dirname + '/migrations/*{.ts,.js}'],
+  migrations: [currentDir + '/migrations/*{.ts,.js}'],
   synchronize: false, // Use migrations instead for proper foreign key handling
   dropSchema: testDbConfig.dropSchema,
   logging: false, // Disable logging for tests

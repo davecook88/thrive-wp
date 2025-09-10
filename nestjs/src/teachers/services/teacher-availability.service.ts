@@ -20,7 +20,7 @@ export class TeacherAvailabilityService {
     private dataSource: DataSource,
   ) {}
 
-  async validatePrivateSession({
+  async validateAvailability({
     teacherId,
     startAt,
     endAt,
@@ -30,7 +30,7 @@ export class TeacherAvailabilityService {
     endAt: string;
   }): Promise<ValidateAvailabilityResult> {
     // Raw SQL query to check teacher availability, blackouts, and existing bookings
-    // Assumes tables: teacher, teacher_availability, classes (with snake_case columns)
+    // Assumes tables: teacher, teacher_availability, session (with snake_case columns)
     const sql = `
       SELECT
         t.id AS teacher_id,
@@ -64,10 +64,10 @@ export class TeacherAvailabilityService {
         -- Check for conflicting bookings
         CASE
           WHEN EXISTS (
-            SELECT 1 FROM classes c
-            WHERE c.teacher_id = t.id
-              AND c.start_at < ? AND c.end_at > ?
-              AND c.deleted_at IS NULL
+            SELECT 1 FROM session s
+            WHERE s.teacher_id = t.id
+              AND s.start_at < ? AND s.end_at > ?
+              AND s.deleted_at IS NULL
           ) THEN 1 ELSE 0
         END AS has_conflict
       FROM teacher t
