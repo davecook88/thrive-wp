@@ -1,7 +1,7 @@
 import {
   Controller,
   Post,
-  Body,
+  RawBody,
   Headers,
   BadRequestException,
   Logger,
@@ -16,11 +16,20 @@ export class WebhooksController {
 
   @Post('stripe')
   async handleStripeWebhook(
-    @Body() rawBody: Buffer,
+    @RawBody() rawBody: Buffer,
     @Headers('stripe-signature') signature: string,
   ): Promise<{ received: boolean }> {
+    this.logger.log(
+      `Received webhook - rawBody length: ${rawBody?.length}, signature: ${signature?.substring(0, 20)}...`,
+    );
+
     if (!signature) {
       throw new BadRequestException('Missing Stripe signature');
+    }
+
+    if (!rawBody || rawBody.length === 0) {
+      this.logger.error('No webhook payload provided');
+      throw new BadRequestException('No webhook payload provided');
     }
 
     try {

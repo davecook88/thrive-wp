@@ -61,6 +61,7 @@ export default function AvailabilityModalContent({
         startUtc: event.startUtc,
         endUtc: event.endUtc,
         teacherId: selectedTeacher.teacherId,
+        serviceType: event.type === "availability" ? "PRIVATE" : event.type,
       });
     } catch {
       return null;

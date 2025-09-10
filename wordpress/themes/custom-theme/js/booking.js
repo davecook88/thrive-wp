@@ -19,7 +19,8 @@
       body: JSON.stringify({
         start: getQueryParam("start"),
         end: getQueryParam("end"),
-        teacher: getQueryParam("teacher"),
+        teacher: Number(getQueryParam("teacher")),
+        serviceType: getQueryParam("serviceType"),
       }),
     });
     if (!res.ok) {

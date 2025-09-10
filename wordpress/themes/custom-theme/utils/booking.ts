@@ -16,6 +16,7 @@ export interface BuildBookingUrlParams {
    * You can override via a global (window.thriveBookingBasePath) or by passing here.
    */
   basePath?: string;
+  serviceType: "PRIVATE" | "GROUP" | "COURSE";
 }
 
 /**
@@ -26,6 +27,7 @@ export function buildBookingUrl(params: BuildBookingUrlParams): string {
     startUtc,
     endUtc,
     teacherId,
+    serviceType,
     basePath = (globalThis as any)?.thriveBookingBasePath ||
       DEFAULT_BOOKING_PATH,
   } = params;
@@ -34,6 +36,7 @@ export function buildBookingUrl(params: BuildBookingUrlParams): string {
   qp.set("start", String(startUtc));
   qp.set("end", String(endUtc));
   qp.set("teacher", String(teacherId));
+  qp.set("serviceType", serviceType);
 
   // Ensure basePath starts with a slash
   const normalizedBase = basePath.startsWith("/") ? basePath : `/${basePath}`;

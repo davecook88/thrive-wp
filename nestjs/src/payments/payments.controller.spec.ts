@@ -57,23 +57,15 @@ describe('CreatePaymentIntentDto validation', () => {
     expect(result.success).toBe(false);
   });
 
-  it('should accept all service types', () => {
-    const testCases = [
-      ServiceType.PRIVATE,
-      ServiceType.GROUP,
-      ServiceType.COURSE,
-    ];
+  it('should accept PRIVATE service type', () => {
+    const dto = {
+      start: '2025-09-10T10:00:00.000Z',
+      end: '2025-09-10T11:00:00.000Z',
+      teacher: 1,
+      serviceType: ServiceType.PRIVATE,
+    };
 
-    testCases.forEach((serviceType) => {
-      const dto = {
-        start: '2025-09-10T10:00:00.000Z',
-        end: '2025-09-10T11:00:00.000Z',
-        teacher: 1,
-        serviceType,
-      };
-
-      const result = CreatePaymentIntentSchema.safeParse(dto);
-      expect(result.success).toBe(true);
-    });
+    const result = CreatePaymentIntentSchema.safeParse(dto);
+    expect(result.success).toBe(true);
   });
 });

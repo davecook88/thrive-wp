@@ -14,9 +14,9 @@ import { OrderItem, ItemType } from './entities/order-item.entity.js';
 import { StripeProductMap } from './entities/stripe-product-map.entity.js';
 import {
   ServiceType,
-  ServiceKey,
   serviceTypeToServiceKey,
 } from '../common/types/class-types.js';
+import { SessionsService } from '../sessions/services/sessions.service.js';
 
 export interface CreatePaymentIntentResponse {
   clientSecret: string;
@@ -40,6 +40,7 @@ export class PaymentsService {
     @InjectRepository(StripeProductMap)
     private stripeProductMapRepository: Repository<StripeProductMap>,
     private configService: ConfigService,
+    private sessionsService: SessionsService,
   ) {
     const secretKey = this.configService.get<string>('stripe.secretKey');
     if (!secretKey) {
@@ -83,6 +84,15 @@ export class PaymentsService {
       throw new NotFoundException(
         `Student record not found for user ${userId}`,
       );
+    }
+
+    // Validate teacher availability for private sessions
+    if (createPaymentIntentDto.serviceType === ServiceType.PRIVATE) {
+      await this.sessionsService.validatePrivateSession({
+        teacherId: createPaymentIntentDto.teacher,
+        startAt: createPaymentIntentDto.start,
+        endAt: createPaymentIntentDto.end,
+      });
     }
 
     // Get the default active price for this product from Stripe
