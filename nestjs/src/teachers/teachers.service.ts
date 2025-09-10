@@ -170,6 +170,16 @@ export class TeachersService {
     teacherIds: number[],
     dto: PreviewAvailabilityDto | PreviewMyAvailabilityDto,
   ) {
+    // Check if all teachers exist
+    for (const teacherId of teacherIds) {
+      const teacher = await this.teacherRepository.findOne({
+        where: { id: teacherId },
+      });
+      if (!teacher) {
+        throw new NotFoundException('Teacher not found');
+      }
+    }
+
     const where: FindOptionsWhere<TeacherAvailability> = teacherIds
       ? { teacherId: In(teacherIds), isActive: true }
       : { isActive: true };

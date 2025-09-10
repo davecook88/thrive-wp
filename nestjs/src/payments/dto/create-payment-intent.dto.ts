@@ -6,12 +6,10 @@ import { z } from 'zod';
  * Use this for runtime validation of payment intent creation requests.
  */
 export const CreatePaymentIntentSchema = z.object({
-  start: z
-    .string()
-    .datetime({ message: 'Start must be a valid ISO datetime string' }),
-  end: z
-    .string()
-    .datetime({ message: 'End must be a valid ISO datetime string' }),
+  start: z.iso.datetime({
+    message: 'Start must be a valid ISO datetime string',
+  }),
+  end: z.iso.datetime({ message: 'End must be a valid ISO datetime string' }),
   teacher: z
     .number()
     .int()
