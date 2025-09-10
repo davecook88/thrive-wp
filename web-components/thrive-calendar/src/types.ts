@@ -4,6 +4,9 @@ export type ViewMode = "week" | "day" | "month" | "list";
 export type UIMode = "admin" | "teacher" | "student" | "public";
 export type EventType = "availability" | "class" | "booking" | "blackout";
 
+// Class types - these should match the backend ServiceType enum
+export type ServiceType = "PRIVATE" | "GROUP" | "COURSE";
+
 export interface BaseCalendarEvent {
   id: string;
   title: string;

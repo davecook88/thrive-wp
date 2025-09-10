@@ -59,6 +59,7 @@ This project sets up a hybrid web application using WordPress and Node.js, orche
 
 ## Docs
 
+- Service Types System: `docs/service-types-system.md`
 - Reusable Calendar Component Plan: `docs/reusable-calendar-plan.md`
 - Gutenberg Calendar Block Guide: `docs/gutenberg-calendar-block.md`
 - Thrive Modal Architecture (frontend React modal for blocks): `docs/thrive-modal-architecture.md`

@@ -7,9 +7,11 @@ import {
   UseGuards,
   BadRequestException,
 } from '@nestjs/common';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { AdminGuard } from '../auth/admin.guard.js';
 import { PaginatedUsersResponseDto } from './dto/user-response.dto.js';
-import { MakeAdminDto, MakeTeacherDto } from './dto/admin-actions.dto.js';
+import { MakeAdminSchema, MakeTeacherSchema } from './dto/admin-actions.dto.js';
+import type { MakeAdminDto, MakeTeacherDto } from './dto/admin-actions.dto.js';
 import { UsersService } from './users.service.js';
 
 @Controller('users')
@@ -47,12 +49,16 @@ export class UsersController {
   }
 
   @Post('make-admin')
-  async makeUserAdmin(@Body() dto: MakeAdminDto) {
+  async makeUserAdmin(
+    @Body(new ZodValidationPipe(MakeAdminSchema)) dto: MakeAdminDto,
+  ) {
     return this.usersService.makeUserAdmin(dto.userId);
   }
 
   @Post('make-teacher')
-  async makeUserTeacher(@Body() dto: MakeTeacherDto) {
+  async makeUserTeacher(
+    @Body(new ZodValidationPipe(MakeTeacherSchema)) dto: MakeTeacherDto,
+  ) {
     return this.usersService.makeUserTeacher(dto.userId);
   }
 }

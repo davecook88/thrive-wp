@@ -2,6 +2,9 @@
 export type ISODateTimeUTC = string; // e.g., '2025-09-01T14:00:00Z'
 export type EventType = "availability" | "class" | "booking" | "blackout";
 
+// Class types - these should match the backend ServiceType enum
+export type ServiceType = "PRIVATE" | "GROUP" | "COURSE";
+
 export interface BaseCalendarEvent {
   id: string;
   title: string;

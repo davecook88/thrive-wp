@@ -78,6 +78,81 @@ docker-compose logs -f wordpress
 - `GEMINI.md`: Architecture decisions and requirements (keep updated)
 - `docs/thrive-modal-architecture.md`: Frontend React modal for blocks (authoring, triggers, runtime). Refer here for modal details.
 
+## Service Types System
+
+The application uses a centralized ServiceType system for consistent class/service type definitions:
+
+### ServiceType Enum (`nestjs/src/common/types/class-types.ts`)
+- **PRIVATE**: One-to-one individual sessions
+- **GROUP**: Group classes with enrollment limits
+- **COURSE**: Multi-session programs with structured curriculum
+
+### ServiceKey Enum (for Stripe integration)
+- **PRIVATE_CLASS**: Maps to Stripe products for private sessions
+- **GROUP_CLASS**: Maps to Stripe products for group classes
+- **COURSE_CLASS**: Maps to Stripe products for courses
+
+### Usage
+```typescript
+import { ServiceType, ServiceKey, serviceTypeToServiceKey } from '../common/types/class-types.js';
+
+// Convert between types
+const serviceKey = serviceTypeToServiceKey(ServiceType.PRIVATE); // Returns ServiceKey.PRIVATE_CLASS
+
+// Runtime validation with Zod
+import { ServiceTypeSchema } from '../common/types/class-types.js';
+const result = ServiceTypeSchema.safeParse('PRIVATE');
+```
+
+### Consistency Rules
+- All class types must use the ServiceType enum values
+- Frontend types must match: `"PRIVATE" | "GROUP" | "COURSE"`
+- Database stores enum values as strings
+- Stripe product mappings use ServiceKey values
+- All references must be consistent across NestJS, WordPress, and web components
+
+## DTO Validation with nestjs-zod
+
+The application uses `nestjs-zod` for streamlined DTO validation:
+
+### Global Setup
+```typescript
+// src/app.module.ts
+import { ZodValidationPipe } from 'nestjs-zod';
+
+@Module({
+  providers: [
+    {
+      provide: APP_PIPE,
+      useClass: ZodValidationPipe,
+    },
+  ],
+})
+export class AppModule {}
+```
+
+### Zod DTOs
+```typescript
+export const CreatePaymentIntentSchema = z.object({
+  start: z.string().datetime(),
+  end: z.string().datetime(),
+  teacher: z.number().int().positive(),
+  serviceType: z.nativeEnum(ServiceType),
+  notes: z.string().optional(),
+});
+
+export type CreatePaymentIntentDto = z.infer<typeof CreatePaymentIntentSchema>;
+```
+
+### Controller Usage
+```typescript
+@Post()
+createPaymentIntent(
+  @Body(new ZodValidationPipe(CreatePaymentIntentSchema))
+  dto: CreatePaymentIntentDto,
+): Promise<Response>
+```
+
 ## Local WP Database
 Credentials:
 "MYSQL_HOST": "localhost",

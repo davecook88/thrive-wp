@@ -52,7 +52,6 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./nestjs:/usr/src/app
-      - /usr/src/app/node_modules
     env_file:
       - ./nestjs/.env
     networks:

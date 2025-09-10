@@ -23,7 +23,8 @@ export class StripeProductMap extends BaseEntity {
     name: 'service_key',
     type: 'varchar',
     length: 120,
-    comment: 'Human-readable key like ONE_TO_ONE_CLASS, COURSE:123',
+    comment:
+      'Human-readable key like PRIVATE_CLASS, GROUP_CLASS, COURSE_CLASS, or COURSE:123',
   })
   serviceKey: string;
 

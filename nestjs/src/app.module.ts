@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_PIPE } from '@nestjs/core';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -53,6 +55,12 @@ import { AppService } from './app.service.js';
     PaymentsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_PIPE,
+      useClass: ZodValidationPipe,
+    },
+  ],
 })
 export class AppModule {}

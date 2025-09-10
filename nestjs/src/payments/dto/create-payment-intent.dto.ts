@@ -1,16 +1,25 @@
-import { IsString, IsOptional, IsDateString } from 'class-validator';
+import { ServiceType } from '../../common/types/class-types.js';
+import { z } from 'zod';
 
-export class CreatePaymentIntentDto {
-  @IsDateString()
-  start: string;
+/**
+ * Zod schema for validating CreatePaymentIntentDto.
+ * Use this for runtime validation of payment intent creation requests.
+ */
+export const CreatePaymentIntentSchema = z.object({
+  start: z
+    .string()
+    .datetime({ message: 'Start must be a valid ISO datetime string' }),
+  end: z
+    .string()
+    .datetime({ message: 'End must be a valid ISO datetime string' }),
+  teacher: z
+    .number()
+    .int()
+    .positive({ message: 'Teacher ID must be a positive integer' }),
+  serviceType: z.enum(ServiceType, {
+    message: 'Service type must be PRIVATE, GROUP, or COURSE',
+  }),
+  notes: z.string().optional(),
+});
 
-  @IsDateString()
-  end: string;
-
-  @IsString()
-  teacher: string;
-
-  @IsString()
-  @IsOptional()
-  notes?: string;
-}
+export type CreatePaymentIntentDto = z.infer<typeof CreatePaymentIntentSchema>;

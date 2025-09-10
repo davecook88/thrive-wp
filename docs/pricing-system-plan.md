@@ -162,6 +162,7 @@ Booking flow for packages: when student books a session, consume a credit (atomi
 - Security: Never trust client amounts or currency; only trust Stripe Price data fetched server-side.
 - Quantity: Allow quantity > 1 for packages; for sessions, force quantity=1.
 - Time windows: Encode in Stripe metadata, enforce on server (reject if outside sale window).
+- When generating a booking, we need to think about race conditions - what happens if another booking comes in before the webhook confirming payment has been resolved? - Create booking in draft state first, then confirm/reject on webhook
 
 ## Minimal Migration Set
 
@@ -171,10 +172,6 @@ Booking flow for packages: when student books a session, consume a credit (atomi
 3) Add `student.stripe_customer_id` varchar(64) NULL.
 4) (Optional Phase 2) Add `credit_grant` and `credit_ledger` for packages.
 
-## Why this fixes the current 400
-
-- The client no longer sends amount/currency. The DTO accepts {priceKey|stripePriceId}, and the server fetches the Stripe Price to set amount/currency.
-- Class-validator errors about amount/currency go away; data is consistent with Stripe.
 
 ## Optional: Stripe Checkout Sessions
 
@@ -188,6 +185,3 @@ Booking flow for packages: when student books a session, consume a credit (atomi
 - Do we need per-region tax handling now (Stripe Tax) or later?
 - Should priceKey be a stable slug (e.g., ONE_ON_ONE) or a typed ref like SERVICE:ONE_ON_ONE vs COURSE:123?
 
----
-
-If you’re aligned, I’ll: add migrations (stripe_price_map, orders/items, student.stripe_customer_id), update the payments DTO/controller to accept priceKey/stripePriceId, implement price resolution against Stripe, and scaffold webhooks + optional credits.

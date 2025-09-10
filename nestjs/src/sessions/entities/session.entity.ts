@@ -10,15 +10,7 @@ import { BaseEntity } from '../../common/entities/base.entity.js';
 import { Course } from '../../courses/entities/course.entity.js';
 import { Teacher } from '../../teachers/entities/teacher.entity.js';
 import { TeacherAvailability } from '../../teachers/entities/teacher-availability.entity.js';
-
-/**
- * Enumeration of session types.
- */
-export enum SessionType {
-  PRIVATE = 'PRIVATE',
-  GROUP = 'GROUP',
-  COURSE = 'COURSE',
-}
+import { ServiceType } from '../../common/types/class-types.js';
 
 /**
  * Enumeration of session statuses.
@@ -50,10 +42,10 @@ export class Session extends BaseEntity {
   @Column({
     name: 'type',
     type: 'enum',
-    enum: SessionType,
+    enum: ServiceType,
     comment: 'Type of session',
   })
-  type: SessionType;
+  type: ServiceType;
 
   @Column({
     name: 'course_id',

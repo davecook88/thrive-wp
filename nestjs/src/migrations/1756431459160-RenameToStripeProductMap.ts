@@ -4,7 +4,9 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * Rename stripe_price_map to stripe_product_map and remove price-specific fields.
  * We now fetch prices dynamically from Stripe instead of storing them.
  */
-export class RenameToStripeProductMap1756431459160 implements MigrationInterface {
+export class RenameToStripeProductMap1756431459160
+  implements MigrationInterface
+{
   name = 'RenameToStripeProductMap1756431459160';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -12,7 +14,7 @@ export class RenameToStripeProductMap1756431459160 implements MigrationInterface
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS stripe_product_map (
         id int NOT NULL AUTO_INCREMENT,
-        service_key varchar(120) NOT NULL COMMENT 'Human-readable key like ONE_TO_ONE_CLASS, COURSE:123',
+        service_key varchar(120) NOT NULL COMMENT 'Human-readable key like PRIVATE_CLASS, GROUP_CLASS, COURSE_CLASS, or COURSE:123',
         stripe_product_id varchar(64) NOT NULL COMMENT 'Stripe Product ID',
         active tinyint(1) NOT NULL DEFAULT 1 COMMENT 'Whether mapping is active',
         scope_type enum('course','session','package','service') NULL COMMENT 'Optional type classification',

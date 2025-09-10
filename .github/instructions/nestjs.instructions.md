@@ -160,10 +160,10 @@ SELECT 'student' as role FROM student WHERE user_id = ? AND deleted_at IS NULL
 
 ## Class Management System
 
-### Class Types
-- **One-to-One**: Individual sessions with teacher selection and time slot booking
-- **Group Classes**: Fixed schedule with enrollment limits (configurable max 5 students initially)
-- **Courses**: Multi-session programs with structured curriculum and materials
+### Service Types
+- **PRIVATE**: One-to-one individual sessions with teacher selection and time slot booking
+- **GROUP**: Group classes with enrollment limits (configurable max 5 students initially)
+- **COURSE**: Multi-session programs with structured curriculum and materials
 
 ### Scheduling Requirements
 - Teachers set availability as one-off or recurring patterns
@@ -181,14 +181,14 @@ SELECT 'student' as role FROM student WHERE user_id = ? AND deleted_at IS NULL
 - Teacher tier affects package restrictions and pricing
 
 ### Package & Pricing System
-- Primary sales model: packages/bundles containing combinations of class types
-- Packages can include: one-to-one classes, group class credits, course enrollments, materials
+- Primary sales model: packages/bundles containing combinations of service types
+- Packages can include: private sessions, group class credits, course enrollments, materials
 - Package restrictions: specific teacher tiers, subjects, validity periods
 - Support bulk pricing discounts
-- Course packages may include one-to-one class allowances
+- Course packages may include private session allowances
 
 ### Cancellation & Dispute System
-- Configurable cancellation policies per class type
+- Configurable cancellation policies per service type
 - Time-based cancellation rules (hours before class)
 - Automatic forfeit system for late cancellations
 - Student dispute system with admin review workflow
