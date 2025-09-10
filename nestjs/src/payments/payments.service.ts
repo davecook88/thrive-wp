@@ -13,9 +13,19 @@ import { Order, OrderStatus } from './entities/order.entity.js';
 import { OrderItem, ItemType } from './entities/order-item.entity.js';
 import { StripeProductMap } from './entities/stripe-product-map.entity.js';
 import {
+  Session,
+  SessionStatus,
+  SessionVisibility,
+} from '../sessions/entities/session.entity.js';
+import { Booking, BookingStatus } from './entities/booking.entity.js';
+import {
   ServiceType,
   serviceTypeToServiceKey,
 } from '../common/types/class-types.js';
+import {
+  StripeMetadataUtils,
+  ParsedStripeMetadata,
+} from './dto/stripe-metadata.dto.js';
 import { SessionsService } from '../sessions/services/sessions.service.js';
 
 export interface CreatePaymentIntentResponse {
@@ -39,6 +49,10 @@ export class PaymentsService {
     private orderItemRepository: Repository<OrderItem>,
     @InjectRepository(StripeProductMap)
     private stripeProductMapRepository: Repository<StripeProductMap>,
+    @InjectRepository(Session)
+    private sessionRepository: Repository<Session>,
+    @InjectRepository(Booking)
+    private bookingRepository: Repository<Booking>,
     private configService: ConfigService,
     private sessionsService: SessionsService,
   ) {
@@ -119,11 +133,13 @@ export class PaymentsService {
     // Create or get Stripe customer
     let stripeCustomerId = student.stripeCustomerId;
     if (!stripeCustomerId) {
+      const customerMetadata = StripeMetadataUtils.createCustomerMetadata({
+        userId,
+        studentId: student.id,
+      });
+
       const customer = await this.stripe.customers.create({
-        metadata: {
-          user_id: userId.toString(),
-          student_id: student.id.toString(),
-        },
+        metadata: StripeMetadataUtils.toStripeFormat(customerMetadata),
       });
       stripeCustomerId = customer.id;
 
@@ -170,21 +186,25 @@ export class PaymentsService {
     await this.orderItemRepository.save(orderItem);
 
     // Create Stripe PaymentIntent
+    const paymentIntentMetadata =
+      StripeMetadataUtils.createPaymentIntentMetadata({
+        orderId: savedOrder.id,
+        studentId: student.id,
+        userId,
+        serviceType: createPaymentIntentDto.serviceType,
+        teacherId: createPaymentIntentDto.teacher,
+        startAt: createPaymentIntentDto.start,
+        endAt: createPaymentIntentDto.end,
+        productId: productMapping.stripeProductId,
+        priceId: stripePrice.id,
+        notes: createPaymentIntentDto.notes,
+      });
+
     const paymentIntent = await this.stripe.paymentIntents.create({
       amount: totalMinor,
       currency,
       customer: stripeCustomerId,
-      metadata: {
-        order_id: savedOrder.id.toString(),
-        student_id: student.id.toString(),
-        user_id: userId.toString(),
-        price_key: sessionPriceKey,
-        start: createPaymentIntentDto.start,
-        end: createPaymentIntentDto.end,
-        teacher: createPaymentIntentDto.teacher.toString(),
-        service_type: createPaymentIntentDto.serviceType,
-        product_id: productMapping.stripeProductId,
-      },
+      metadata: StripeMetadataUtils.toStripeFormat(paymentIntentMetadata),
     });
 
     // Update order with PaymentIntent ID
@@ -286,22 +306,40 @@ export class PaymentsService {
   private async handlePaymentIntentSucceeded(
     paymentIntent: Stripe.PaymentIntent,
   ): Promise<void> {
-    const orderId = paymentIntent.metadata?.order_id;
-    if (!orderId) {
-      console.warn('PaymentIntent missing order_id metadata');
+    const metadata: ParsedStripeMetadata = StripeMetadataUtils.fromStripeFormat(
+      paymentIntent.metadata || {},
+    );
+    const orderId = metadata.order_id;
+
+    if (!orderId || typeof orderId !== 'string') {
+      console.warn('PaymentIntent missing valid order_id metadata');
       return;
     }
 
     const order = await this.orderRepository.findOne({
       where: { id: parseInt(orderId, 10) },
+      relations: ['student'],
     });
+
     if (!order) {
       console.warn(`Order ${orderId} not found`);
       return;
     }
 
+    // Update order status
     order.status = OrderStatus.PAID;
     await this.orderRepository.save(order);
+
+    // Get order items to create sessions and bookings
+    const orderItems = await this.orderItemRepository.find({
+      where: { orderId: order.id },
+    });
+
+    for (const item of orderItems) {
+      if (item.itemType === ItemType.SESSION) {
+        await this.createSessionAndBookingFromOrderItem(order, item, metadata);
+      }
+    }
   }
 
   private async handlePaymentIntentFailed(
@@ -323,5 +361,51 @@ export class PaymentsService {
 
     order.status = OrderStatus.FAILED;
     await this.orderRepository.save(order);
+  }
+
+  private async createSessionAndBookingFromOrderItem(
+    order: Order,
+    orderItem: OrderItem,
+    metadata: ParsedStripeMetadata,
+  ): Promise<void> {
+    try {
+      // Parse the metadata from the order item
+      const itemMetadata = orderItem.metadata || {};
+
+      // Create session
+      const session = this.sessionRepository.create({
+        type: itemMetadata.serviceType || metadata.service_type,
+        teacherId: parseInt(itemMetadata.teacher || metadata.teacher_id, 10),
+        startAt: new Date(itemMetadata.start || metadata.start_at),
+        endAt: new Date(itemMetadata.end || metadata.end_at),
+        capacityMax: 1, // Private sessions have capacity of 1
+        status: SessionStatus.SCHEDULED,
+        visibility: SessionVisibility.PRIVATE,
+        requiresEnrollment: false,
+        sourceTimezone: 'UTC', // Store in UTC
+      });
+
+      const savedSession = await this.sessionRepository.save(session);
+
+      // Create booking
+      const booking = this.bookingRepository.create({
+        sessionId: savedSession.id,
+        studentId: order.studentId,
+        status: BookingStatus.CONFIRMED,
+        acceptedAt: new Date(),
+      });
+
+      await this.bookingRepository.save(booking);
+
+      console.log(
+        `Created session ${savedSession.id} and booking for student ${order.studentId}`,
+      );
+    } catch (error) {
+      console.error(
+        'Error creating session and booking from order item:',
+        error,
+      );
+      // Don't throw - we don't want webhook processing to fail
+    }
   }
 }
