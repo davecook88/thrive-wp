@@ -1,0 +1,45 @@
+{
+    "apiVersion": 3,
+    "name": "custom-theme/booking-status",
+    "title": "Booking Status",
+    "category": "widgets",
+    "icon": "yes",
+    "description": "Display booking completion status based on Stripe payment parameters.",
+    "attributes": {
+        "successTitle": {
+            "type": "string",
+            "default": "Booking Confirmed!"
+        },
+        "successMessage": {
+            "type": "string",
+            "default": "Your booking has been successfully confirmed and payment processed."
+        },
+        "failureTitle": {
+            "type": "string",
+            "default": "Booking Failed"
+        },
+        "failureMessage": {
+            "type": "string",
+            "default": "There was an issue processing your booking. Please try again or contact support."
+        },
+        "pendingTitle": {
+            "type": "string",
+            "default": "Processing Payment"
+        },
+        "pendingMessage": {
+            "type": "string",
+            "default": "Please wait while we process your payment..."
+        }
+    },
+    "supports": {
+        "anchor": true,
+        "align": [
+            "wide",
+            "full"
+        ],
+        "color": {
+            "background": true,
+            "text": true
+        }
+    }
+}

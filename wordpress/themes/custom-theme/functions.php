@@ -52,6 +52,53 @@ add_action('after_setup_theme', function () {
         ],
     ]);
 });
+
+// Ensure Booking Complete page exists
+add_action('after_setup_theme', function () {
+    if (defined('WP_INSTALLING') && WP_INSTALLING)
+        return;
+    $title = 'Booking Complete';
+    $slug = 'booking-complete';
+    $existing = get_page_by_path($slug);
+    if ($existing) {
+        // Ensure template is correct even if page already exists
+        $current_tpl = get_page_template_slug($existing->ID);
+        if ($current_tpl !== 'page-booking-complete.php') {
+            update_post_meta($existing->ID, '_wp_page_template', 'page-booking-complete.php');
+        }
+        if ($existing->post_title !== $title) {
+            wp_update_post([
+                'ID' => $existing->ID,
+                'post_title' => $title,
+            ]);
+        }
+        return;
+    }
+    wp_insert_post([
+        'post_title' => $title,
+        'post_name' => $slug,
+        'post_status' => 'publish',
+        'post_type' => 'page',
+        'post_content' => '<!-- wp:paragraph -->
+<p>Thank you for your booking! Your payment has been processed successfully.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:custom-theme/booking-status /-->
+
+<!-- wp:paragraph -->
+<p>You will receive a confirmation email shortly with the details of your session. If you have any questions, please don\'t hesitate to contact us.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:buttons -->
+<div class="wp-block-buttons"><!-- wp:button {"className":"is-style-fill"} -->
+<div class="wp-block-button is-style-fill"><a class="wp-block-button__link" href="/">Return to Home</a></div>
+<!-- /wp:button --></div>
+<!-- /wp:buttons -->',
+        'meta_input' => [
+            '_wp_page_template' => 'page-booking-complete.php',
+        ],
+    ]);
+});
 /**
  * Theme functions and definitions
  */
