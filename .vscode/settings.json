@@ -1,0 +1,21 @@
+{
+  // Run and debug tests from VS Code matching our TS specs
+  "jestrunner.include": ["**/*.spec.ts", "**/*.e2e.spec.ts"],
+
+  // Point Jest Runner to the NestJS project config
+  "jestrunner.configPath": "nestjs/jest.config.mjs",
+
+  // Run tests via our npm script so Node flags and env (.env.test) are applied
+  // Note: projectPath makes the command run inside the nestjs folder
+  "jestrunner.jestCommand": "npm run test --",
+  "jestrunner.projectPath": "./nestjs",
+
+  // Helpful defaults for DB-based e2e tests
+  "jestrunner.runOptions": ["--runInBand", "--colors"],
+
+  // Ensure debug runs also use Node's ESM vm modules
+  "jestrunner.debugOptions": {
+    "runtimeExecutable": "node",
+    "runtimeArgs": ["--experimental-vm-modules"]
+  }
+}

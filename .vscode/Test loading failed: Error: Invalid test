@@ -1,0 +1,22 @@
+Test loading failed: Error: Invalid test discovery output!
+
+Error: Invalid test discovery output!
+
+    at parseTestSuites (/Users/davidcook/.vscode/extensions/littlefoxteam.vscode-python-test-adapter-0.8.2/out/src/pytest/pytestTestCollectionParser.js:14:15)
+    at PytestTestRunner.<anonymous> (/Users/davidcook/.vscode/extensions/littlefoxteam.vscode-python-test-adapter-0.8.2/out/src/pytest/pytestTestRunner.js:60:76)
+    at Generator.next (<anonymous>)
+    at fulfilled (/Users/davidcook/.vscode/extensions/littlefoxteam.vscode-python-test-adapter-0.8.2/node_modules/tslib/tslib.js:114:62)
+
+
+Stacktrace: 
+    at S.syncTopLevel (/Users/davidcook/.vscode/extensions/ms-vscode.test-adapter-converter-0.2.1/out/extension.js:6:3)
+    at Jh.value (/Users/davidcook/.vscode/extensions/ms-vscode.test-adapter-converter-0.2.1/out/extension.js:3:4541)
+    at $.C (file:///Applications/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:27:2373)
+    at $.fire (file:///Applications/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:27:2591)
+    at Jh.value (/Users/davidcook/.vscode/extensions/hbenl.vscode-test-explorer-2.22.1/out/hub/testHub.js:53:43)
+    at $.C (file:///Applications/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:27:2373)
+    at $.D (file:///Applications/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:27:2443)
+    at $.fire (file:///Applications/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js:27:2660)
+    at PythonTestAdapter.<anonymous> (/Users/davidcook/.vscode/extensions/littlefoxteam.vscode-python-test-adapter-0.8.2/out/src/pythonTestAdapter.js:89:35)
+    at Generator.throw (<anonymous>)
+    at rejected (/Users/davidcook/.vscode/extensions/littlefoxteam.vscode-python-test-adapter-0.8.2/node_modules/tslib/tslib.js:115:69)
