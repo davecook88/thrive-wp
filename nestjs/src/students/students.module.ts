@@ -3,11 +3,20 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { StudentsService } from './students.service.js';
 import { StudentsController } from './students.controller.js';
 import { Student } from './entities/student.entity.js';
+import { CourseEnrollment } from '../enrollments/entities/course-enrollment.entity.js';
+import { Course } from '../courses/entities/course.entity.js';
+import { AuthModule } from '../auth/auth.module.js';
+import { StudentAvailabilityService } from './services/student-availability.service.js';
+import { Booking } from '../payments/entities/booking.entity.js';
+import { Session } from '../sessions/entities/session.entity.js';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Student])],
+  imports: [
+    TypeOrmModule.forFeature([Student, CourseEnrollment, Course, Booking, Session]),
+    AuthModule,
+  ],
   controllers: [StudentsController],
-  providers: [StudentsService],
-  exports: [StudentsService],
+  providers: [StudentsService, StudentAvailabilityService],
+  exports: [StudentsService, StudentAvailabilityService],
 })
 export class StudentsModule {}

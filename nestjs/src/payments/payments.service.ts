@@ -99,6 +99,7 @@ export class PaymentsService {
         teacherId: createPaymentIntentDto.teacher,
         startAt: createPaymentIntentDto.start,
         endAt: createPaymentIntentDto.end,
+        studentId: student.id,
       });
     }
 
@@ -288,34 +289,115 @@ export class PaymentsService {
           ? parseInt(studentIdRaw, 10)
           : (studentIdRaw as number);
 
-      // Create session using intent metadata
-      const session = this.sessionRepository.create({
-        type: metadata.service_type as any, // validated by schema upstream
-        teacherId: parseInt(String(metadata.teacher_id), 10),
-        startAt: new Date(String(metadata.start_at)),
-        endAt: new Date(String(metadata.end_at)),
-        capacityMax: 1, // Private sessions have capacity of 1
-        status: SessionStatus.SCHEDULED,
-        visibility: SessionVisibility.PRIVATE,
-        requiresEnrollment: false,
-        sourceTimezone: 'UTC', // Store in UTC
-      });
+      const serviceType = metadata.service_type as ServiceType;
 
-      const savedSession = await this.sessionRepository.save(session);
+      let sessionId: number;
 
-      // Create booking
-      const booking = this.bookingRepository.create({
-        sessionId: savedSession.id,
-        studentId,
-        status: BookingStatus.CONFIRMED,
-        acceptedAt: new Date(),
-      });
+      // Handle session creation vs. existing session lookup
+      if (metadata.session_id) {
+        // For GROUP and COURSE sessions: session already exists, just create booking
+        sessionId = parseInt(String(metadata.session_id), 10);
 
-      await this.bookingRepository.save(booking);
+        // Verify the session exists and is appropriate for this service type
+        const existingSession = await this.sessionRepository.findOne({
+          where: { id: sessionId },
+        });
 
-      console.log(
-        `Created session ${savedSession.id} and booking for student ${studentId}`,
-      );
+        if (!existingSession) {
+          console.error(`Session ${sessionId} not found or has been deleted`);
+          return;
+        }
+
+        if (existingSession.type !== serviceType) {
+          console.error(
+            `Session type mismatch: expected ${serviceType}, got ${existingSession.type}`,
+          );
+          return;
+        }
+
+        console.log(
+          `Using existing ${serviceType} session ${sessionId} for student ${studentId}`,
+        );
+      } else {
+        // For PRIVATE sessions: create new session (existing behavior)
+        if (serviceType !== ServiceType.PRIVATE) {
+          console.error(
+            `Cannot create ${serviceType} session without existing session_id`,
+          );
+          return;
+        }
+
+        // Validate availability before creating session
+        try {
+          await this.sessionsService.validatePrivateSession({
+            teacherId: parseInt(String(metadata.teacher_id), 10),
+            startAt: String(metadata.start_at),
+            endAt: String(metadata.end_at),
+            studentId,
+          });
+        } catch (error) {
+          console.error(
+            `Availability validation failed for PRIVATE session: ${error.message}`,
+          );
+          return;
+        }
+
+        // Use transaction to atomically create session and booking
+        const result = await this.sessionRepository.manager.transaction(async (transactionalEntityManager) => {
+          // Create session
+          const session = transactionalEntityManager.create(Session, {
+            type: ServiceType.PRIVATE,
+            teacherId: parseInt(String(metadata.teacher_id), 10),
+            startAt: new Date(String(metadata.start_at)),
+            endAt: new Date(String(metadata.end_at)),
+            capacityMax: 1, // Private sessions have capacity of 1
+            status: SessionStatus.SCHEDULED,
+            visibility: SessionVisibility.PRIVATE,
+            requiresEnrollment: false,
+            sourceTimezone: 'UTC', // Store in UTC
+          });
+
+          const savedSession = await transactionalEntityManager.save(Session, session);
+
+          // Create booking immediately after session creation
+          const booking = transactionalEntityManager.create(Booking, {
+            sessionId: savedSession.id,
+            studentId,
+            status: BookingStatus.CONFIRMED,
+            acceptedAt: new Date(),
+          });
+
+          await transactionalEntityManager.save(Booking, booking);
+
+          return { session: savedSession, booking };
+        });
+
+        sessionId = result.session.id;
+
+        console.log(
+          `Created new PRIVATE session ${sessionId} and booking for student ${studentId} in single transaction`,
+        );
+      }
+
+      // For GROUP/COURSE sessions, create booking only (session already exists)
+      if (metadata.session_id) {
+        // Use transaction for booking creation to ensure consistency
+        await this.sessionRepository.manager.transaction(async (transactionalEntityManager) => {
+          const booking = transactionalEntityManager.create(Booking, {
+            sessionId,
+            studentId,
+            status: BookingStatus.CONFIRMED,
+            acceptedAt: new Date(),
+          });
+
+          await transactionalEntityManager.save(Booking, booking);
+        });
+
+        console.log(
+          `Created booking for existing ${serviceType} session ${sessionId} and student ${studentId}`,
+        );
+      }
+
     } catch (error) {
       console.error('Error creating session and booking from intent:', error);
       // Don't throw - we don't want webhook processing to fail

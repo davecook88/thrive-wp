@@ -73,6 +73,71 @@ Constraints
 Indexes: IDX_booking_session, IDX_booking_student
 FKs: session_id → session(id), student_id → student(id)
 
+## Student-Session Relationships by Service Type
+
+Students are related to sessions through the `booking` table, which represents a student's seat/reservation in a session. This creates a **many-to-many relationship** where one student can book multiple sessions, and one session can have multiple students (up to `capacity_max`). The relationship works differently for each service type:
+
+### PRIVATE Sessions
+- **Relationship**: Direct booking via `booking` table
+- **Capacity**: Usually 1 (one-to-one), but can be >1 for small private groups
+- **Visibility**: `visibility='PRIVATE'` - only teacher, admins, and invited participants can access
+- **Booking Process**: 
+  - Student-initiated: Student books from teacher's availability → creates session + booking with `status='CONFIRMED'`
+  - Teacher-initiated: Teacher creates session → creates booking with `status='INVITED'` → student accepts → status becomes `'CONFIRMED'`
+- **Query Example**: Find student's private sessions
+  ```sql
+  SELECT s.* FROM session s 
+  JOIN booking b ON s.id = b.session_id 
+  WHERE b.student_id = ? AND s.type = 'PRIVATE' AND b.status = 'CONFIRMED' AND s.deleted_at IS NULL
+  ```
+
+### GROUP Sessions  
+- **Relationship**: Direct booking via `booking` table
+- **Capacity**: >1 (multiple students per session)
+- **Visibility**: Usually `visibility='PUBLIC'` - appears in public catalog
+- **Booking Process**: Student books directly → creates booking with `status='CONFIRMED'` → enforces `COUNT(bookings) < capacity_max`
+- **Query Example**: Find student's group sessions
+  ```sql
+  SELECT s.* FROM session s 
+  JOIN booking b ON s.id = b.session_id 
+  WHERE b.student_id = ? AND s.type = 'GROUP' AND b.status = 'CONFIRMED' AND s.deleted_at IS NULL
+  ```
+
+### COURSE Sessions
+- **Relationship**: Two-tier relationship system
+  1. **Course Enrollment** (optional): Student enrolls in course via `course_enrollment` table
+  2. **Session Booking**: Student books specific sessions via `booking` table
+- **Capacity**: >1 (multiple students per session)
+- **Visibility**: Controlled by `requires_enrollment` flag
+  - `requires_enrollment=0`: Public booking like GROUP sessions
+  - `requires_enrollment=1`: Only enrolled students can book/view
+- **Booking Process**: 
+  - If `requires_enrollment=1`: Must have `course_enrollment` record first, then can book sessions
+  - If `requires_enrollment=0`: Can book directly like GROUP sessions
+- **Query Example**: Find student's course sessions (with enrollment check)
+  ```sql
+  SELECT s.* FROM session s 
+  JOIN booking b ON s.id = b.session_id 
+  LEFT JOIN course_enrollment ce ON ce.course_id = s.course_id AND ce.student_id = b.student_id
+  WHERE b.student_id = ? AND s.type = 'COURSE' AND b.status = 'CONFIRMED' 
+  AND s.deleted_at IS NULL AND (s.requires_enrollment = 0 OR ce.status = 'ACTIVE')
+  ```
+
+### Relationship Summary Table
+
+| Service Type | Relationship Table | Enrollment Required | Capacity | Visibility |
+|-------------|-------------------|-------------------|----------|------------|
+| PRIVATE | `booking` | No | 1 (usually) | PRIVATE |
+| GROUP | `booking` | No | >1 | PUBLIC |
+| COURSE | `booking` + `course_enrollment` | Optional (via `requires_enrollment`) | >1 | PUBLIC/PRIVATE/HIDDEN |
+
+### Key Relationship Rules
+1. **Unique Constraint**: One active booking per student per session (`UNIQUE(session_id, student_id)`)
+2. **Capacity Enforcement**: `COUNT(bookings WHERE status='CONFIRMED') < capacity_max`
+3. **Soft Deletes**: All relationships respect `deleted_at IS NULL` filtering
+4. **Status Tracking**: Booking status tracks participation state ('CONFIRMED', 'CANCELLED', etc.)
+5. **Cascade Deletes**: Deleting a session cascades to delete related bookings
+
 4) waitlist (optional v1.1)
 - Holds queued students for a full class.
 

@@ -139,8 +139,10 @@ export class AuthService {
       SELECT 'admin' as role FROM admin WHERE user_id = ? AND is_active = 1
       UNION ALL
       SELECT 'teacher' as role FROM teacher WHERE user_id = ? AND is_active = 1
+      UNION ALL
+      SELECT 'student' as role FROM student WHERE user_id = ? AND deleted_at IS NULL
     `,
-      [userId, userId],
+      [userId, userId, userId],
     );
 
     // Extract roles from the result

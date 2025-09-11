@@ -14,8 +14,8 @@ export const CreatePaymentIntentSchema = z.object({
     .number()
     .int()
     .positive({ message: 'Teacher ID must be a positive integer' }),
-  serviceType: z.enum(ServiceType, {
-    message: 'Service type must be PRIVATE',
+  serviceType: z.nativeEnum(ServiceType, {
+    message: 'Service type must be one of: PRIVATE, GROUP, COURSE',
   }),
   notes: z.string().optional(),
 });
