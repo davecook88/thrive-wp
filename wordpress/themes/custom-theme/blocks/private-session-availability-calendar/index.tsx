@@ -1,6 +1,12 @@
 import { registerBlockType } from "@wordpress/blocks";
 import { __ } from "@wordpress/i18n";
-import { PanelBody, SelectControl, RangeControl, TextControl, ToggleControl } from "@wordpress/components";
+import {
+  PanelBody,
+  SelectControl,
+  RangeControl,
+  TextControl,
+  ToggleControl,
+} from "@wordpress/components";
 import { InspectorControls, useBlockProps } from "@wordpress/block-editor";
 
 type Attrs = {
@@ -10,6 +16,10 @@ type Attrs = {
   viewHeight?: number;
   heading?: string;
   showFilters?: boolean;
+  availabilityModalId?: number;
+  classModalId?: number;
+  courseModalId?: number;
+  defaultModalId?: number;
 };
 
 declare global {
@@ -34,12 +44,17 @@ registerBlockType<Attrs>("custom-theme/private-session-availability-calendar", {
       attributes: Attrs;
       setAttributes: (a: Partial<Attrs>) => void;
     };
-    const blockProps = useBlockProps({ className: "private-session-availability-calendar-block" });
+    const blockProps = useBlockProps({
+      className: "private-session-availability-calendar-block",
+    });
 
     return (
       <div {...blockProps}>
         <InspectorControls>
-          <PanelBody title={__("Calendar Settings", "custom-theme")} initialOpen>
+          <PanelBody
+            title={__("Calendar Settings", "custom-theme")}
+            initialOpen
+          >
             <SelectControl
               label={__("View", "custom-theme")}
               value={attributes.view || "week"}
@@ -89,6 +104,34 @@ registerBlockType<Attrs>("custom-theme/private-session-availability-calendar", {
               checked={attributes.showFilters ?? true}
               onChange={(showFilters) => setAttributes({ showFilters })}
             />
+            <TextControl
+              label={__("Availability Modal ID", "custom-theme")}
+              type="number"
+              value={attributes.availabilityModalId ?? 0}
+              onChange={(v) =>
+                setAttributes({ availabilityModalId: Number(v) || 0 })
+              }
+            />
+            <TextControl
+              label={__("Class Modal ID", "custom-theme")}
+              type="number"
+              value={attributes.classModalId ?? 0}
+              onChange={(v) => setAttributes({ classModalId: Number(v) || 0 })}
+            />
+            <TextControl
+              label={__("Course Modal ID", "custom-theme")}
+              type="number"
+              value={attributes.courseModalId ?? 0}
+              onChange={(v) => setAttributes({ courseModalId: Number(v) || 0 })}
+            />
+            <TextControl
+              label={__("Default Modal ID", "custom-theme")}
+              type="number"
+              value={attributes.defaultModalId ?? 0}
+              onChange={(v) =>
+                setAttributes({ defaultModalId: Number(v) || 0 })
+              }
+            />
           </PanelBody>
         </InspectorControls>
 
@@ -101,7 +144,9 @@ registerBlockType<Attrs>("custom-theme/private-session-availability-calendar", {
             borderRadius: 8,
           }}
         >
-          <strong>{__("Private Session Availability Preview", "custom-theme")}</strong>
+          <strong>
+            {__("Private Session Availability Preview", "custom-theme")}
+          </strong>
           <div style={{ marginTop: 8, fontSize: "12px", color: "#6b7280" }}>
             {__(
               "Students will see available private-session time slots to book.",

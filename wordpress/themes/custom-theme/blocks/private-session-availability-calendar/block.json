@@ -1,19 +1,55 @@
 {
-  "apiVersion": 3,
-  "name": "custom-theme/private-session-availability-calendar",
-  "title": "Private Session Availability Calendar",
-  "category": "widgets",
-  "icon": "calendar",
-  "description": "Let students browse teachers' private-session availability and pick a time.",
-  "attributes": {
-    "view": { "type": "string", "default": "week" },
-    "slotDuration": { "type": "number", "default": 30 },
-    "snapTo": { "type": "number", "default": 15 },
-    "viewHeight": { "type": "number", "default": 600 },
-    "heading": { "type": "string", "default": "Book a Private Session" },
-    "showFilters": { "type": "boolean", "default": true }
-  },
-  "supports": { "anchor": true },
-  "editorScript": "custom-theme-blocks",
-  "render": "file:./render.php"
+    "apiVersion": 3,
+    "name": "custom-theme/private-session-availability-calendar",
+    "title": "Private Session Availability Calendar",
+    "category": "widgets",
+    "icon": "calendar",
+    "description": "Let students browse teachers' private-session availability and pick a time.",
+    "attributes": {
+        "view": {
+            "type": "string",
+            "default": "week"
+        },
+        "slotDuration": {
+            "type": "number",
+            "default": 30
+        },
+        "snapTo": {
+            "type": "number",
+            "default": 15
+        },
+        "viewHeight": {
+            "type": "number",
+            "default": 600
+        },
+        "heading": {
+            "type": "string",
+            "default": "Book a Private Session"
+        },
+        "showFilters": {
+            "type": "boolean",
+            "default": true
+        },
+        "availabilityModalId": {
+            "type": "integer",
+            "default": 0
+        },
+        "classModalId": {
+            "type": "integer",
+            "default": 0
+        },
+        "courseModalId": {
+            "type": "integer",
+            "default": 0
+        },
+        "defaultModalId": {
+            "type": "integer",
+            "default": 0
+        }
+    },
+    "supports": {
+        "anchor": true
+    },
+    "editorScript": "custom-theme-blocks",
+    "render": "file:./render.php"
 }

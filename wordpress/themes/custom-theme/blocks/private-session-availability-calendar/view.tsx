@@ -13,13 +13,22 @@ document.addEventListener("DOMContentLoaded", () => {
     (container as any)._reactRoot = root;
 
     const view =
-      (container.getAttribute("data-view") as "week" | "day" | "month" | "list") ||
-      "week";
-    const slotDuration = parseInt(container.getAttribute("data-slot-duration") || "30");
+      (container.getAttribute("data-view") as
+        | "week"
+        | "day"
+        | "month"
+        | "list") || "week";
+    const slotDuration = parseInt(
+      container.getAttribute("data-slot-duration") || "30"
+    );
     const snapTo = parseInt(container.getAttribute("data-snap-to") || "15");
-    const viewHeight = parseInt(container.getAttribute("data-view-height") || "600");
-    const heading = container.getAttribute("data-heading") || "Book a Private Session";
-    const showFilters = (container.getAttribute("data-show-filters") || "true") === "true";
+    const viewHeight = parseInt(
+      container.getAttribute("data-view-height") || "600"
+    );
+    const heading =
+      container.getAttribute("data-heading") || "Book a Private Session";
+    const showFilters =
+      (container.getAttribute("data-show-filters") || "true") === "true";
 
     root.render(
       createElement(PrivateSessionAvailabilityCalendar, {

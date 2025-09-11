@@ -17,13 +17,7 @@ export default function AvailabilityModalContent({
 }: {
   event: ModalAvailabilityEvent;
 }) {
-  console.log("AvailabilityModalContent render", { window });
-  const context = useGetCalendarContext(".thrive-teacher-picker");
-  const {
-    getTeacherById,
-    loading: loadingTeachers,
-    teachers,
-  } = useGetTeachers(context);
+  const { loading: loadingTeachers, teachers } = useGetTeachers();
 
   console.log({ loadingTeachers, teachers });
 

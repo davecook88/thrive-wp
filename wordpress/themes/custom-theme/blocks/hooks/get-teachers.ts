@@ -1,24 +1,23 @@
 import { Teacher, ThriveCalendarContextApi } from "../../types/calendar";
 import { useEffect, useMemo, useState } from "@wordpress/element";
 import CacheStore from "../utils/CacheStore";
+import { thriveClient } from "../../clients/thrive";
 
 const teachersCache = new CacheStore("thrive-teachers", 1000 * 60 * 15);
 
-export const useGetTeachers = (
-  context: ThriveCalendarContextApi | null,
-  opts?: { forceRefresh?: boolean }
-) => {
-  console.trace("useGetTeachers", { context, opts });
+export const useGetTeachers = (opts?: {
+  forceRefresh?: boolean;
+  id?: string;
+}) => {
+  console.trace("useGetTeachers", { opts });
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<number[]>([]);
 
   useEffect(() => {
-    if (!context) return;
-    const key = context?.id ? `ctx-${context.id}` : "global";
-
     const fetchTeachers = async () => {
       setLoading(true);
+      const key = opts?.id ? `ctx-${opts.id}` : "global";
 
       if (!opts?.forceRefresh) {
         const cached = teachersCache.read<Teacher[]>(key);
@@ -31,7 +30,7 @@ export const useGetTeachers = (
       }
 
       try {
-        const data = await context.thriveClient.fetchTeachers();
+        const data = await thriveClient.fetchTeachers();
         setTeachers(data);
         teachersCache.write(key, data);
       } catch (err) {
@@ -42,7 +41,7 @@ export const useGetTeachers = (
     };
 
     fetchTeachers();
-  }, [context, opts?.forceRefresh]);
+  }, [opts?.forceRefresh]);
 
   const selectedTeachers = useMemo(() => {
     if (!selectedTeacherIds.length) return teachers;
@@ -60,7 +59,7 @@ export const useGetTeachers = (
   };
 
   const invalidate = (forceKey?: string) => {
-    const key = context?.id ? `ctx-${context.id}` : "global";
+    const key = opts?.id ? `ctx-${opts.id}` : "global";
     teachersCache.invalidate(forceKey || key);
   };
 
@@ -73,9 +72,8 @@ export const useGetTeachers = (
       const cached = teachersCache.read<Teacher>(tkey);
       if (cached) return cached;
     }
-    if (!context) return null;
     try {
-      const t = await context.thriveClient.fetchTeacher(teacherId);
+      const t = await thriveClient.fetchTeacher(teacherId);
       if (t) teachersCache.write(tkey, t);
       return t;
     } catch (err) {
