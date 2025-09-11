@@ -13,6 +13,7 @@ import { StudentsModule } from './students/students.module.js';
 import { TeachersModule } from './teachers/teachers.module.js';
 import { PaymentsModule } from './payments/payments.module.js';
 import { SessionsModule } from './sessions/sessions.module.js';
+import { PackagesModule } from './packages/packages.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 @Module({
@@ -55,6 +56,7 @@ import { AppService } from './app.service.js';
     TeachersModule,
     PaymentsModule,
     SessionsModule,
+    PackagesModule,
   ],
   controllers: [AppController],
   providers: [

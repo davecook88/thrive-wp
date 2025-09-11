@@ -1,0 +1,18 @@
+import { z } from 'zod';
+
+export const PackageResponseSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  serviceType: z.string(),
+  credits: z.number(),
+  creditUnitMinutes: z.number(),
+  expiresInDays: z.number().nullable(),
+  stripe: z.object({
+    productId: z.string(),
+    priceId: z.string(),
+    lookupKey: z.string(),
+  }),
+  active: z.boolean(),
+});
+
+export type PackageResponseDto = z.infer<typeof PackageResponseSchema>;

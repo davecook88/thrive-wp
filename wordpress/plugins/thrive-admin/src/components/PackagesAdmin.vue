@@ -281,13 +281,16 @@ export default defineComponent({
       error.value = null;
       
       try {
-        // TODO: Replace with actual API call to NestJS
-        // const response = await fetch('/api/admin/packages');
-        // const data = await response.json();
-        // packages.value = data;
+        const response = await fetch('/api/admin/packages', {
+          credentials: 'same-origin',
+        });
         
-        // Mock data for now
-        packages.value = [];
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        packages.value = data;
       } catch (err: any) {
         error.value = err.message || 'Failed to load packages';
       } finally {
@@ -300,23 +303,23 @@ export default defineComponent({
       error.value = null;
 
       try {
-        // TODO: Replace with actual API call to NestJS
-        // const response = await fetch('/api/admin/packages', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({
-        //     ...form.value,
-        //     serviceType: 'PRIVATE'
-        //   })
-        // });
-        // 
-        // if (!response.ok) {
-        //   throw new Error('Failed to create package');
-        // }
-
-        console.log('Creating package:', form.value);
-        alert('Package creation functionality will be implemented when NestJS API is ready');
+        const response = await fetch('/api/admin/packages', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+          },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            ...form.value,
+            serviceType: 'PRIVATE'
+          })
+        });
         
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+          throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
         // Reset form and reload packages
         resetForm();
         await loadPackages();
@@ -334,10 +337,16 @@ export default defineComponent({
       }
 
       try {
-        // TODO: Replace with actual API call to NestJS
-        // await fetch(`/api/admin/packages/${pkg.id}/deactivate`, { method: 'POST' });
-        console.log('Deactivating package:', pkg);
-        alert('Package deactivation functionality will be implemented when NestJS API is ready');
+        const response = await fetch(`/api/admin/packages/${pkg.id}/deactivate`, { 
+          method: 'POST',
+          credentials: 'same-origin',
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+          throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         await loadPackages();
       } catch (err: any) {
         error.value = err.message || 'Failed to deactivate package';
