@@ -103,3 +103,26 @@ body {
 .components-modal__content {
   padding: 0 !important;
 }
+
+/* Student Calendar Styles */
+.student-calendar-wrapper {
+  position: relative;
+}
+
+.student-calendar-login-required {
+  padding: 2rem;
+  text-align: center;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #6b7280;
+}
+
+.student-calendar-login-required a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+.student-calendar-login-required a:hover {
+  text-decoration: underline;
+}

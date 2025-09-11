@@ -7,7 +7,7 @@ import {
   CourseEnrollmentStatus,
 } from '../enrollments/entities/course-enrollment.entity.js';
 import { Course } from '../courses/entities/course.entity.js';
-import { Session } from 'inspector/promises';
+import { Session } from '../sessions/entities/session.entity.js';
 
 export interface CalendarEvent {
   id: string;
@@ -28,10 +28,7 @@ export class StudentsService {
   constructor(
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
-    @InjectRepository(CourseEnrollment)
-    private readonly courseEnrollmentRepository: Repository<CourseEnrollment>,
-    @InjectRepository(Course)
-    private readonly courseRepository: Repository<Course>,
+
     @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
@@ -60,19 +57,61 @@ export class StudentsService {
     startDate?: string,
     endDate?: string,
   ): Promise<CalendarEvent[]> {
-    // in future we'll have to get sessions attached to courses and groups that the student is enrolled in too.
-    // for now just return booked private sessions
-    const result = await this.dataSource.query<Session[]>(
+    // Get all sessions for the student through bookings
+    const result = await this.dataSource.query(
       `
       WITH student AS (SELECT id FROM student WHERE user_id = ?)
-      SELECT * FROM session
-      WHERE student_id = (SELECT id FROM student)
-      AND deleted_at IS NULL;
+      -- All sessions through confirmed bookings (covers private, group, and course sessions)
+      SELECT
+        s.id,
+        s.type as class_type,
+        s.start_at,
+        s.end_at,
+        s.status,
+        s.teacher_id,
+        s.course_id,
+        s.capacity_max,
+        s.visibility,
+        s.requires_enrollment,
+        s.created_at,
+        s.updated_at,
+        s.deleted_at,
+        CASE
+          WHEN s.type = 'PRIVATE' THEN 'private'
+          WHEN s.type = 'GROUP' THEN 'group'
+          WHEN s.type = 'COURSE' THEN 'course'
+          ELSE 'unknown'
+        END as session_source
+      FROM session s
+      JOIN booking b ON b.session_id = s.id
+      WHERE b.student_id = (SELECT id FROM student)
+      AND s.deleted_at IS NULL
+      AND b.status = 'CONFIRMED'
+      ${startDate ? 'AND s.start_at >= ?' : ''}
+      ${endDate ? 'AND s.start_at <= ?' : ''}
       `,
-      [userId],
+      [
+        userId,
+        ...(startDate ? [startDate] : []),
+        ...(endDate ? [endDate] : []),
+      ],
     );
 
-    console.log('getStudentSessions result:', result);
-    return [];
+    // Transform results into CalendarEvent format
+    const calendarEvents: CalendarEvent[] = result.map((row: any) => ({
+      id: row.id.toString(),
+      title: `${row.class_type} Session`,
+      startUtc: row.start_at,
+      endUtc: row.end_at,
+      type: 'class' as const,
+      teacherId: row.teacher_id,
+      studentId: userId, // The student user ID
+      classType: row.class_type as 'PRIVATE' | 'GROUP' | 'COURSE',
+      status: row.status as 'SCHEDULED' | 'CANCELLED' | 'COMPLETED',
+      courseId: row.course_id,
+      description: `${row.session_source} session`,
+    }));
+
+    return calendarEvents;
   }
 }

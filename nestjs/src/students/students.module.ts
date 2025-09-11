@@ -12,7 +12,13 @@ import { Session } from '../sessions/entities/session.entity.js';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Student, CourseEnrollment, Course, Booking, Session]),
+    TypeOrmModule.forFeature([
+      Student,
+      CourseEnrollment,
+      Course,
+      Booking,
+      Session,
+    ]),
     AuthModule,
   ],
   controllers: [StudentsController],

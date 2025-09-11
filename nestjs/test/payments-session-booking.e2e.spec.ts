@@ -6,9 +6,15 @@ import { PaymentsService } from '../src/payments/payments.service.js';
 import { SessionsService } from '../src/sessions/services/sessions.service.js';
 import { StudentAvailabilityService } from '../src/students/services/student-availability.service.js';
 import { TeacherAvailabilityService } from '../src/teachers/services/teacher-availability.service.js';
-import { StripeMetadataUtils, ParsedStripeMetadata } from '../src/payments/dto/stripe-metadata.dto.js';
+import {
+  StripeMetadataUtils,
+  ParsedStripeMetadata,
+} from '../src/payments/dto/stripe-metadata.dto.js';
 import { ServiceType } from '../src/common/types/class-types.js';
-import { SessionStatus, SessionVisibility } from '../src/sessions/entities/session.entity.js';
+import {
+  SessionStatus,
+  SessionVisibility,
+} from '../src/sessions/entities/session.entity.js';
 import { BookingStatus } from '../src/payments/entities/booking.entity.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Student } from '../src/students/entities/student.entity.js';
@@ -97,14 +103,16 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
       'INSERT INTO student (user_id, created_at, updated_at) VALUES (?, NOW(), NOW())',
       [userId],
     );
-    studentId = (studentResult as any)[0]?.insertId || (studentResult as any).insertId;
+    studentId =
+      (studentResult as any)[0]?.insertId || (studentResult as any).insertId;
 
     // Create test teacher
     const teacherResult = await dataSource.query(
       'INSERT INTO teacher (user_id, tier, is_active, created_at, updated_at) VALUES (?, 10, 1, NOW(), NOW())',
       [userId],
     );
-    teacherId = (teacherResult as any)[0]?.insertId || (teacherResult as any).insertId;
+    teacherId =
+      (teacherResult as any)[0]?.insertId || (teacherResult as any).insertId;
 
     // Create teacher availability for testing
     await dataSource.query(
@@ -117,14 +125,18 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
       'INSERT INTO session (type, teacher_id, start_at, end_at, capacity_max, status, visibility, requires_enrollment, created_at, updated_at) VALUES (?, ?, "2025-09-12 14:00:00", "2025-09-12 15:00:00", 5, "SCHEDULED", "PUBLIC", 0, NOW(), NOW())',
       [ServiceType.GROUP, teacherId],
     );
-    existingGroupSessionId = (groupSessionResult as any)[0]?.insertId || (groupSessionResult as any).insertId;
+    existingGroupSessionId =
+      (groupSessionResult as any)[0]?.insertId ||
+      (groupSessionResult as any).insertId;
 
     // Create existing COURSE session for testing
     const courseSessionResult = await dataSource.query(
       'INSERT INTO session (type, teacher_id, start_at, end_at, capacity_max, status, visibility, requires_enrollment, created_at, updated_at) VALUES (?, ?, "2025-09-12 16:00:00", "2025-09-12 17:00:00", 5, "SCHEDULED", "PRIVATE", 1, NOW(), NOW())',
       [ServiceType.COURSE, teacherId],
     );
-    existingCourseSessionId = (courseSessionResult as any)[0]?.insertId || (courseSessionResult as any).insertId;
+    existingCourseSessionId =
+      (courseSessionResult as any)[0]?.insertId ||
+      (courseSessionResult as any).insertId;
 
     // Create Stripe product mappings
     await dataSource.query(
@@ -156,7 +168,9 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
         };
 
         // Call the method using reflection to access private method
-        const method = (paymentsService as any).createSessionAndBookingFromMetadata.bind(paymentsService);
+        const method = (
+          paymentsService as any
+        ).createSessionAndBookingFromMetadata.bind(paymentsService);
         await method(metadata);
 
         // Verify session was created
@@ -166,7 +180,9 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
         );
         expect((sessions as any[]).length).toBe(1);
         expect((sessions as any[])[0].capacity_max).toBe(1);
-        expect((sessions as any[])[0].visibility).toBe(SessionVisibility.PRIVATE);
+        expect((sessions as any[])[0].visibility).toBe(
+          SessionVisibility.PRIVATE,
+        );
         expect((sessions as any[])[0].status).toBe(SessionStatus.SCHEDULED);
 
         // Verify booking was created
@@ -197,7 +213,9 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
         };
 
         // Call the method - should not create anything due to availability conflict
-        const method = (paymentsService as any).createSessionAndBookingFromMetadata.bind(paymentsService);
+        const method = (
+          paymentsService as any
+        ).createSessionAndBookingFromMetadata.bind(paymentsService);
         await method(metadata);
 
         // Verify no new session was created
@@ -221,7 +239,9 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
         };
 
         // Call the method
-        const method = (paymentsService as any).createSessionAndBookingFromMetadata.bind(paymentsService);
+        const method = (
+          paymentsService as any
+        ).createSessionAndBookingFromMetadata.bind(paymentsService);
         await method(metadata);
 
         // Verify session still exists (unchanged)
@@ -252,7 +272,9 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
         };
 
         // Call the method - should not create booking
-        const method = (paymentsService as any).createSessionAndBookingFromMetadata.bind(paymentsService);
+        const method = (
+          paymentsService as any
+        ).createSessionAndBookingFromMetadata.bind(paymentsService);
         await method(metadata);
 
         // Verify no booking was created
@@ -274,7 +296,9 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
         };
 
         // Call the method - should not create booking
-        const method = (paymentsService as any).createSessionAndBookingFromMetadata.bind(paymentsService);
+        const method = (
+          paymentsService as any
+        ).createSessionAndBookingFromMetadata.bind(paymentsService);
         await method(metadata);
 
         // Verify no booking was created
@@ -298,7 +322,9 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
         };
 
         // Call the method
-        const method = (paymentsService as any).createSessionAndBookingFromMetadata.bind(paymentsService);
+        const method = (
+          paymentsService as any
+        ).createSessionAndBookingFromMetadata.bind(paymentsService);
         await method(metadata);
 
         // Verify booking was created
@@ -325,7 +351,9 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
         };
 
         // Should not throw, just log error and return
-        const method = (paymentsService as any).createSessionAndBookingFromMetadata.bind(paymentsService);
+        const method = (
+          paymentsService as any
+        ).createSessionAndBookingFromMetadata.bind(paymentsService);
         await expect(method(metadata)).resolves.not.toThrow();
 
         // Verify no session was created
@@ -349,7 +377,9 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
         };
 
         // Should not throw, just log error and return
-        const method = (paymentsService as any).createSessionAndBookingFromMetadata.bind(paymentsService);
+        const method = (
+          paymentsService as any
+        ).createSessionAndBookingFromMetadata.bind(paymentsService);
         await expect(method(metadata)).resolves.not.toThrow();
 
         // Verify no session was created

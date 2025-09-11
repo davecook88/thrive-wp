@@ -1,0 +1,31 @@
+{
+    "apiVersion": 3,
+    "name": "custom-theme/student-calendar",
+    "title": "Student Calendar",
+    "category": "widgets",
+    "icon": "calendar-alt",
+    "description": "Calendar showing the logged-in student's sessions and bookings.",
+    "attributes": {
+        "view": {
+            "type": "string",
+            "default": "week"
+        },
+        "slotDuration": {
+            "type": "number",
+            "default": 30
+        },
+        "snapTo": {
+            "type": "number",
+            "default": 15
+        },
+        "viewHeight": {
+            "type": "number",
+            "default": 600
+        }
+    },
+    "supports": {
+        "anchor": true
+    },
+    "editorScript": "custom-theme-blocks",
+    "render": "file:./render.php"
+}

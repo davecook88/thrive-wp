@@ -343,34 +343,39 @@ export class PaymentsService {
         }
 
         // Use transaction to atomically create session and booking
-        const result = await this.sessionRepository.manager.transaction(async (transactionalEntityManager) => {
-          // Create session
-          const session = transactionalEntityManager.create(Session, {
-            type: ServiceType.PRIVATE,
-            teacherId: parseInt(String(metadata.teacher_id), 10),
-            startAt: new Date(String(metadata.start_at)),
-            endAt: new Date(String(metadata.end_at)),
-            capacityMax: 1, // Private sessions have capacity of 1
-            status: SessionStatus.SCHEDULED,
-            visibility: SessionVisibility.PRIVATE,
-            requiresEnrollment: false,
-            sourceTimezone: 'UTC', // Store in UTC
-          });
+        const result = await this.sessionRepository.manager.transaction(
+          async (transactionalEntityManager) => {
+            // Create session
+            const session = transactionalEntityManager.create(Session, {
+              type: ServiceType.PRIVATE,
+              teacherId: parseInt(String(metadata.teacher_id), 10),
+              startAt: new Date(String(metadata.start_at)),
+              endAt: new Date(String(metadata.end_at)),
+              capacityMax: 1, // Private sessions have capacity of 1
+              status: SessionStatus.SCHEDULED,
+              visibility: SessionVisibility.PRIVATE,
+              requiresEnrollment: false,
+              sourceTimezone: 'UTC', // Store in UTC
+            });
 
-          const savedSession = await transactionalEntityManager.save(Session, session);
+            const savedSession = await transactionalEntityManager.save(
+              Session,
+              session,
+            );
 
-          // Create booking immediately after session creation
-          const booking = transactionalEntityManager.create(Booking, {
-            sessionId: savedSession.id,
-            studentId,
-            status: BookingStatus.CONFIRMED,
-            acceptedAt: new Date(),
-          });
+            // Create booking immediately after session creation
+            const booking = transactionalEntityManager.create(Booking, {
+              sessionId: savedSession.id,
+              studentId,
+              status: BookingStatus.CONFIRMED,
+              acceptedAt: new Date(),
+            });
 
-          await transactionalEntityManager.save(Booking, booking);
+            await transactionalEntityManager.save(Booking, booking);
 
-          return { session: savedSession, booking };
-        });
+            return { session: savedSession, booking };
+          },
+        );
 
         sessionId = result.session.id;
 
@@ -382,22 +387,23 @@ export class PaymentsService {
       // For GROUP/COURSE sessions, create booking only (session already exists)
       if (metadata.session_id) {
         // Use transaction for booking creation to ensure consistency
-        await this.sessionRepository.manager.transaction(async (transactionalEntityManager) => {
-          const booking = transactionalEntityManager.create(Booking, {
-            sessionId,
-            studentId,
-            status: BookingStatus.CONFIRMED,
-            acceptedAt: new Date(),
-          });
+        await this.sessionRepository.manager.transaction(
+          async (transactionalEntityManager) => {
+            const booking = transactionalEntityManager.create(Booking, {
+              sessionId,
+              studentId,
+              status: BookingStatus.CONFIRMED,
+              acceptedAt: new Date(),
+            });
 
-          await transactionalEntityManager.save(Booking, booking);
-        });
+            await transactionalEntityManager.save(Booking, booking);
+          },
+        );
 
         console.log(
           `Created booking for existing ${serviceType} session ${sessionId} and student ${studentId}`,
         );
       }
-
     } catch (error) {
       console.error('Error creating session and booking from intent:', error);
       // Don't throw - we don't want webhook processing to fail

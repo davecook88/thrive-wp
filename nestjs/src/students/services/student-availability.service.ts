@@ -2,8 +2,14 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { Student } from '../entities/student.entity.js';
-import { Booking, BookingStatus } from '../../payments/entities/booking.entity.js';
-import { Session, SessionStatus } from '../../sessions/entities/session.entity.js';
+import {
+  Booking,
+  BookingStatus,
+} from '../../payments/entities/booking.entity.js';
+import {
+  Session,
+  SessionStatus,
+} from '../../sessions/entities/session.entity.js';
 
 @Injectable()
 export class StudentAvailabilityService {
@@ -49,13 +55,10 @@ export class StudentAvailabilityService {
       .andWhere('session.status = :sessionStatus', {
         sessionStatus: SessionStatus.SCHEDULED,
       })
-      .andWhere(
-        '(session.startAt < :endAt AND session.endAt > :startAt)',
-        {
-          startAt: new Date(startAt),
-          endAt: new Date(endAt),
-        },
-      )
+      .andWhere('(session.startAt < :endAt AND session.endAt > :startAt)', {
+        startAt: new Date(startAt),
+        endAt: new Date(endAt),
+      })
       .getMany();
 
     if (conflictingBookings.length > 0) {
