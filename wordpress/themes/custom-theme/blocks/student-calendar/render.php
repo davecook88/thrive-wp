@@ -5,14 +5,16 @@
 
 // Ensure auth helpers exist
 if (!function_exists('thrive_is_logged_in')) {
-    return '';
+    echo '';
+    return;
 }
 
 // Only show for logged-in users
 if (!thrive_is_logged_in()) {
-    return '<div class="student-calendar-login-required">' .
+    echo '<div class="student-calendar-login-required">' .
         '<p>Please <a href="/api/auth/google">sign in</a> to view your sessions.</p>' .
         '</div>';
+    return;
 }
 
 $attrs = $attributes ?? [];
@@ -27,10 +29,8 @@ $viewHeight = isset($attrs['viewHeight']) ? (int) $attrs['viewHeight'] : 600;
 wp_enqueue_script('thrive-calendar-wc');
 
 ?>
-<div class="student-calendar-wrapper">
-    <thrive-calendar view="<?php echo esc_attr($view); ?>" mode="<?php echo esc_attr($mode); ?>"
-        slot-duration="<?php echo esc_attr((string) $slotDuration); ?>"
-        snap-to="<?php echo esc_attr((string) $snapTo); ?>" show-classes="true" show-availability="false"
-        show-bookings="true" view-height="<?php echo esc_attr((string) $viewHeight); ?>">
-    </thrive-calendar>
+<div class="student-calendar-block" data-view="<?php echo esc_attr($view); ?>"
+    data-slot-duration="<?php echo esc_attr((string) $slotDuration); ?>"
+    data-snap-to="<?php echo esc_attr((string) $snapTo); ?>"
+    data-view-height="<?php echo esc_attr((string) $viewHeight); ?>">
 </div>

@@ -85,8 +85,13 @@ function attachCalendar(cal: ThriveCalendarEl) {
 }
 
 function onReady() {
+  // Only attach calendars that live inside a Thrive Calendar Context wrapper.
+  // This avoids interfering with standalone calendars (e.g., student-calendar block)
+  // that manage their own lifecycle and do not use the shared context runtime.
   document
-    .querySelectorAll<HTMLElement>("thrive-calendar")
+    .querySelectorAll<HTMLElement>(
+      ".wp-block-custom-theme-thrive-calendar-context thrive-calendar"
+    )
     .forEach((el) => attachCalendar(el as unknown as ThriveCalendarEl));
 }
 

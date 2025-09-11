@@ -1,8 +1,4 @@
-import {
-  AvailabilityEvent,
-  BaseCalendarEvent,
-  Teacher,
-} from "../types/calendar";
+import { AvailabilityEvent, CalendarEvent, Teacher } from "../types/calendar";
 
 const options: Partial<RequestInit> = {
   headers: { "Content-Type": "application/json" },
@@ -70,6 +66,25 @@ export const thriveClient = {
       type: "availability",
       teacherIds: w.teacherIds,
     }));
+  },
+
+  fetchStudentCalendarEvents: async (
+    start: Date,
+    end: Date
+  ): Promise<CalendarEvent[]> => {
+    console.trace("Fetching student calendar events:", { start, end });
+    const res = await fetch(
+      `/api/students/me/sessions?start=${encodeURIComponent(
+        start.toISOString()
+      )}&end=${encodeURIComponent(end.toISOString())}`,
+      {
+        ...options,
+        method: "GET",
+      }
+    );
+    if (!res.ok) return [];
+    const data = (await res.json()) as CalendarEvent[];
+    return Array.isArray(data) ? data : [];
   },
 
   fetchTeachers: async () => {

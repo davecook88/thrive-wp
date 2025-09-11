@@ -501,3 +501,14 @@ function thrive_get_user_role_strings(): array
 // Server-side replacement for template-part 'login-auth' to use PHP logic.
 // Legacy template-part override removed in favor of dynamic block.
 
+// Register thrive-calendar web component script
+add_action('wp_enqueue_scripts', function () {
+    wp_register_script(
+        'thrive-calendar-wc',
+        home_url('/assets/calendar/thrive-calendar.js'),
+        [],
+        null,
+        ['in_footer' => true]
+    );
+});
+
