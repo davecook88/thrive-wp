@@ -20,7 +20,7 @@ export const ServiceTypeSchema = z.enum(ServiceType);
  * Maps service types to Stripe products.
  */
 export enum ServiceKey {
-  PRIVATE_CLASS = 'PRIVATE_CLASS', // Maps to Stripe products for private sessions
+  PRIVATE_CLASS = 'PRIVATE', // Maps to Stripe products for private sessions
   GROUP_CLASS = 'GROUP_CLASS', // Maps to Stripe products for group classes
   COURSE_CLASS = 'COURSE_CLASS', // Maps to Stripe products for courses
 }
@@ -28,7 +28,7 @@ export enum ServiceKey {
 /**
  * Zod schema for validating ServiceKey enum values.
  */
-export const ServiceKeySchema = z.nativeEnum(ServiceKey);
+export const ServiceKeySchema = z.enum(ServiceKey);
 
 /**
  * Convert ServiceType to ServiceKey.

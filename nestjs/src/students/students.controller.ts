@@ -6,7 +6,7 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
-import { StudentsService, CalendarEvent } from './students.service.js';
+import { StudentsService } from './students.service.js';
 import { Student } from './entities/student.entity.js';
 import { StudentGuard } from '../auth/student.guard.js';
 import type { Request as ExpressRequest } from 'express';

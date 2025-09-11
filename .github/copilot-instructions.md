@@ -88,7 +88,7 @@ The application uses a centralized ServiceType system for consistent class/servi
 - **COURSE**: Multi-session programs with structured curriculum
 
 ### ServiceKey Enum (for Stripe integration)
-- **PRIVATE_CLASS**: Maps to Stripe products for private sessions
+- **PRIVATE**: Maps to Stripe products for private sessions
 - **GROUP_CLASS**: Maps to Stripe products for group classes
 - **COURSE_CLASS**: Maps to Stripe products for courses
 

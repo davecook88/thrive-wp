@@ -30,6 +30,7 @@ export default function PrivateSessionAvailabilityCalendar({
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<number[]>(
     teachers?.length ? teachers.map((t) => t.teacherId) : []
   );
+  const [sessionDuration, setSessionDuration] = useState<number>(60); // Default to 1 hour
 
   useEffect(() => {
     if (!teachers?.length || selectedTeacherIds.length) return;
@@ -57,25 +58,34 @@ export default function PrivateSessionAvailabilityCalendar({
       end,
       teacherIds: selectedTeacherIds.length ? selectedTeacherIds : undefined,
     });
-    // Chunk windows into slot-sized availability events
-    const chunkMinutes = Math.max(5, Number(slotDuration) || 30);
+    // Chunk windows into session-sized availability events
+    // Only include teachers available for the complete session duration
+    const sessionMinutes = sessionDuration;
     const chunks: AvailabilityEvent[] = avail.flatMap((w) => {
       const winStart = new Date(w.startUtc);
       const winEnd = new Date(w.endUtc);
       const out: AvailabilityEvent[] = [];
       let current = new Date(winStart);
       while (current < winEnd) {
-        const next = new Date(current.getTime() + chunkMinutes * 60 * 1000);
-        const chunkEnd = next > winEnd ? new Date(winEnd) : next;
-        out.push({
-          id: `avail:${current.toISOString()}|${chunkEnd.toISOString()}`,
-          title: "Available",
-          startUtc: current.toISOString(),
-          endUtc: chunkEnd.toISOString(),
-          type: "availability",
-          teacherIds: w.teacherIds,
-        });
-        current = new Date(chunkEnd);
+        const sessionEnd = new Date(
+          current.getTime() + sessionMinutes * 60 * 1000
+        );
+        // Only create a chunk if the entire session fits within the availability window
+        if (sessionEnd <= winEnd) {
+          out.push({
+            id: `avail:${current.toISOString()}|${sessionEnd.toISOString()}`,
+            title: "Available",
+            startUtc: current.toISOString(),
+            endUtc: sessionEnd.toISOString(),
+            type: "availability",
+            teacherIds: w.teacherIds,
+          });
+        }
+        // Move to next potential session start (using slotDuration for navigation)
+        current = new Date(
+          current.getTime() +
+            Math.max(5, Number(slotDuration) || 30) * 60 * 1000
+        );
       }
       return out;
     });
@@ -106,7 +116,7 @@ export default function PrivateSessionAvailabilityCalendar({
     return () => {
       calendar.removeEventListener("range:change", handleRangeChange);
     };
-  }, [selectedTeacherIds]);
+  }, [selectedTeacherIds, sessionDuration]);
 
   // Push events to calendar element
   useEffect(() => {
@@ -153,79 +163,111 @@ export default function PrivateSessionAvailabilityCalendar({
         <div style={{ marginBottom: 12 }}>
           {heading && <h3 style={{ margin: "0 0 8px 0" }}>{heading}</h3>}
           {showFilters && (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-                gap: "8px",
-                marginBottom: 8,
-              }}
-            >
-              {teachers.map((t) => (
-                <button
-                  key={t.teacherId}
-                  type="button"
-                  onClick={() => toggleTeacher(t.teacherId)}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ marginBottom: 16 }}>
+                <label
+                  htmlFor="session-duration"
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: 10,
-                    border: "1px solid #e5e7eb",
-                    borderRadius: 8,
-                    background: selectedTeacherIds.includes(t.teacherId)
-                      ? "#f3f4f6"
-                      : "white",
-                    cursor: "pointer",
-                    textAlign: "left",
+                    display: "block",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    marginBottom: 8,
+                    color: "#374151",
                   }}
                 >
-                  <div
+                  Session Duration
+                </label>
+                <select
+                  id="session-duration"
+                  value={sessionDuration}
+                  onChange={(e) => setSessionDuration(Number(e.target.value))}
+                  style={{
+                    padding: "8px 12px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: 6,
+                    fontSize: 14,
+                    backgroundColor: "white",
+                    minWidth: 120,
+                  }}
+                >
+                  <option value={30}>30 minutes</option>
+                  <option value={60}>1 hour</option>
+                </select>
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+                  gap: "8px",
+                  marginBottom: 8,
+                }}
+              >
+                {teachers.map((t) => (
+                  <button
+                    key={t.teacherId}
+                    type="button"
+                    onClick={() => toggleTeacher(t.teacherId)}
                     style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: "50%",
-                      background: "#e5e7eb",
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "center",
-                      color: "#374151",
-                      fontWeight: 700,
-                      fontSize: 14,
-                      flexShrink: 0,
+                      gap: 10,
+                      padding: 10,
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 8,
+                      background: selectedTeacherIds.includes(t.teacherId)
+                        ? "#f3f4f6"
+                        : "white",
+                      cursor: "pointer",
+                      textAlign: "left",
                     }}
                   >
-                    {getInitials(t)}
-                  </div>
-                  <div style={{ minWidth: 0, flex: 1 }}>
                     <div
                       style={{
-                        fontWeight: 600,
+                        width: 36,
+                        height: 36,
+                        borderRadius: "50%",
+                        background: "#e5e7eb",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#374151",
+                        fontWeight: 700,
                         fontSize: 14,
-                        marginBottom: 2,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
+                        flexShrink: 0,
                       }}
                     >
-                      {t.name || `${t.firstName} ${t.lastName}`.trim()}
+                      {getInitials(t)}
                     </div>
-                    {t.bio && (
+                    <div style={{ minWidth: 0, flex: 1 }}>
                       <div
                         style={{
-                          fontSize: 12,
-                          color: "#6b7280",
+                          fontWeight: 600,
+                          fontSize: 14,
+                          marginBottom: 2,
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {t.bio}
+                        {t.name || `${t.firstName} ${t.lastName}`.trim()}
                       </div>
-                    )}
-                  </div>
-                </button>
-              ))}
+                      {t.bio && (
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: "#6b7280",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {t.bio}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -235,7 +277,7 @@ export default function PrivateSessionAvailabilityCalendar({
         ref={calendarRef as any}
         view={view}
         mode="public"
-        slot-duration={slotDuration.toString()}
+        slot-duration={sessionDuration.toString()}
         snap-to={snapTo.toString()}
         show-classes="false"
         show-availability="true"
