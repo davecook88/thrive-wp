@@ -3,6 +3,7 @@ import "./teacher-availability/view";
 import "./thrive-calendar-context/view";
 import "./thrive-calendar/view";
 import "./student-calendar/view";
+import "./private-session-availability-calendar/view";
 import "./selected-event-modal/view";
 import "./teacher-picker/view";
 // Context-specific logic now lives in ./thrive-calendar-context/view.ts
