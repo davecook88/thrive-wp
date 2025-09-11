@@ -4,6 +4,7 @@ import "./style.css";
 import Dashboard from "./components/Dashboard.vue";
 import Users from "./components/Users.vue";
 import Settings from "./components/Settings.vue";
+import PackagesAdmin from "./components/PackagesAdmin.vue";
 
 // The data-* attributes come in as strings; we keep them generic to avoid over-assumptions.
 function createVueIsland<TProps extends Record<string, unknown>>(
@@ -27,6 +28,7 @@ const init = () => {
   createVueIsland('[data-vue-component="dashboard"]', Dashboard);
   createVueIsland('[data-vue-component="users"]', Users);
   createVueIsland('[data-vue-component="settings"]', Settings);
+  createVueIsland('[data-vue-component="packages-admin"]', PackagesAdmin);
 };
 
 document.addEventListener("DOMContentLoaded", init);

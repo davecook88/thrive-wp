@@ -15,6 +15,8 @@ class Thrive_Admin_Bridge_Admin
         add_filter('script_loader_tag', [$this, 'thrive_admin_module_script_tag'], 10, 3);
         add_action('wp_ajax_thrive_admin_test_api_connection', [$this, 'thrive_admin_test_api_connection']);
         add_action('wp_ajax_thrive_admin_save_settings', callback: [$this, 'thrive_admin_save_settings_ajax']);
+        add_action('wp_ajax_thrive_admin_packages_list', [$this, 'thrive_admin_packages_list']);
+        add_action('wp_ajax_thrive_admin_packages_create', [$this, 'thrive_admin_packages_create']);
         add_action('admin_bar_menu', [$this, 'thrive_admin_add_toolbar_button'], 999);
     }
 
@@ -51,6 +53,16 @@ class Thrive_Admin_Bridge_Admin
             [$this, 'thrive_admin_users_page']
         );
 
+        // Submenu: Products (Packages)
+        add_submenu_page(
+            'thrive-admin-dashboard',
+            'Products',
+            'Products',
+            'manage_options',
+            'thrive-admin-products',
+            [$this, 'thrive_admin_products_page']
+        );
+
         // Submenu: Settings
         add_submenu_page(
             'thrive-admin-dashboard',
@@ -67,6 +79,7 @@ class Thrive_Admin_Bridge_Admin
         $allowed_hooks = [
             'toplevel_page_thrive-admin-dashboard',
             'thrive-admin_page_thrive-admin-users',
+            'thrive-admin_page_thrive-admin-products',
             'thrive-admin_page_thrive-admin-settings'
         ];
 
@@ -214,6 +227,16 @@ class Thrive_Admin_Bridge_Admin
 
         // Load the Vue template
         include plugin_dir_path(__FILE__) . '../../templates/dashboard.php';
+    }
+
+    public function thrive_admin_products_page()
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.'));
+        }
+
+        // Load the Vue template
+        include plugin_dir_path(__FILE__) . '../../templates/packages.php';
     }
 
     public function thrive_admin_settings_page()
