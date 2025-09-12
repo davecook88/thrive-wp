@@ -11,7 +11,7 @@ export const CreatePackageSchema = z.object({
     z.literal(45),
     z.literal(60),
   ]),
-  expiresInDays: z.union([z.number().int().positive(), z.null()]).optional(),
+  expiresInDays: z.number().int().positive().nullable().optional(),
   currency: z.string().length(3).default('USD'),
   amountMinor: z.number().int().positive(),
   lookupKey: z.string().optional(),
