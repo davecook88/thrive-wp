@@ -409,4 +409,91 @@ export class PaymentsService {
       // Don't throw - we don't want webhook processing to fail
     }
   }
+
+  // Cache for Stripe publishable key (unlikely to change)
+  private cachedPublishableKey: string | null = null;
+
+  async getStripePublishableKey(): Promise<{ publishableKey: string }> {
+    if (!this.cachedPublishableKey) {
+      const key = this.configService.get<string>('stripe.publishableKey');
+      if (!key) {
+        throw new Error('Stripe publishable key is not configured');
+      }
+      this.cachedPublishableKey = key;
+    }
+    return { publishableKey: this.cachedPublishableKey };
+  }
+
+  async createPaymentSession(
+    priceId: string,
+    bookingData: any,
+    userId: number,
+  ): Promise<{ clientSecret: string }> {
+    // Get the student record
+    const student = await this.studentRepository.findOne({
+      where: { userId },
+    });
+
+    if (!student) {
+      throw new NotFoundException(
+        `Student record not found for user ${userId}`,
+      );
+    }
+
+    // Create or get Stripe customer
+    let stripeCustomerId = student.stripeCustomerId;
+    if (!stripeCustomerId) {
+      const customerMetadata = StripeMetadataUtils.createCustomerMetadata({
+        userId,
+        studentId: student.id,
+      });
+
+      const customer = await this.stripe.customers.create({
+        metadata: StripeMetadataUtils.toStripeFormat(customerMetadata),
+      });
+      stripeCustomerId = customer.id;
+
+      // Update student with Stripe customer ID
+      student.stripeCustomerId = stripeCustomerId;
+      await this.studentRepository.save(student);
+    }
+
+    // Get the price details from Stripe
+    const stripePrice = await this.stripe.prices.retrieve(priceId);
+    
+    if (!stripePrice.active) {
+      throw new BadRequestException('Selected package is no longer available');
+    }
+
+    // Create PaymentIntent for the package
+    const paymentIntentMetadata =
+      StripeMetadataUtils.createPaymentIntentMetadata({
+        studentId: student.id,
+        userId,
+        serviceType: ServiceType.PRIVATE, // Default to private for packages
+        teacherId: parseInt(bookingData.teacher) || 0,
+        startAt: bookingData.start || '',
+        endAt: bookingData.end || '',
+        productId: stripePrice.product as string,
+        priceId: stripePrice.id,
+        notes: `Package purchase - ${JSON.stringify(bookingData)}`,
+        source: 'booking-confirmation',
+      });
+
+    const paymentIntent = await this.stripe.paymentIntents.create({
+      amount: stripePrice.unit_amount || 0,
+      currency: stripePrice.currency,
+      customer: stripeCustomerId,
+      metadata: StripeMetadataUtils.toStripeFormat(paymentIntentMetadata),
+      automatic_payment_methods: {
+        enabled: true,
+      },
+    });
+
+    if (!paymentIntent.client_secret) {
+      throw new BadRequestException('Failed to create payment session');
+    }
+
+    return { clientSecret: paymentIntent.client_secret };
+  }
 }

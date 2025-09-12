@@ -1,0 +1,54 @@
+{
+    "apiVersion": 3,
+    "name": "custom-theme/package-selection",
+    "title": "Package Selection",
+    "category": "widgets",
+    "icon": "products",
+    "description": "Display available packages for upselling during booking confirmation.",
+    "attributes": {
+        "heading": {
+            "type": "string",
+            "default": "Choose Your Package"
+        },
+        "description": {
+            "type": "string",
+            "default": "Select a package that works for you. Each package includes multiple sessions with your chosen teacher."
+        },
+        "showCredits": {
+            "type": "boolean",
+            "default": true
+        },
+        "showDuration": {
+            "type": "boolean",
+            "default": true
+        },
+        "showExpiry": {
+            "type": "boolean",
+            "default": true
+        },
+        "loadingMessage": {
+            "type": "string",
+            "default": "Loading available packages..."
+        },
+        "errorMessage": {
+            "type": "string",
+            "default": "Unable to load packages at this time. Please refresh and try again."
+        },
+        "noPackagesMessage": {
+            "type": "string",
+            "default": "No packages are currently available."
+        }
+    },
+    "supports": {
+        "anchor": true,
+        "align": [
+            "wide",
+            "full"
+        ],
+        "color": {
+            "background": true,
+            "text": true
+        }
+    },
+    "render": "file:./render.php"
+}

@@ -1,0 +1,54 @@
+{
+    "apiVersion": 3,
+    "name": "custom-theme/conditional-stripe-payment",
+    "title": "Conditional Stripe Payment",
+    "category": "widgets",
+    "icon": "money-alt",
+    "description": "Display Stripe payment form only when a package is selected.",
+    "attributes": {
+        "heading": {
+            "type": "string",
+            "default": "Complete Your Payment"
+        },
+        "selectPackageMessage": {
+            "type": "string",
+            "default": "Please select a package above to continue with payment."
+        },
+        "confirmButtonText": {
+            "type": "string",
+            "default": "Confirm and Pay"
+        },
+        "cancelButtonText": {
+            "type": "string",
+            "default": "Cancel"
+        },
+        "loadingText": {
+            "type": "string",
+            "default": "Preparing secure payment..."
+        },
+        "showBackLink": {
+            "type": "boolean",
+            "default": true
+        },
+        "backLinkUrl": {
+            "type": "string",
+            "default": "/booking"
+        },
+        "backLinkText": {
+            "type": "string",
+            "default": "Back to Calendar"
+        }
+    },
+    "supports": {
+        "anchor": true,
+        "align": [
+            "wide",
+            "full"
+        ],
+        "color": {
+            "background": true,
+            "text": true
+        }
+    },
+    "render": "file:./render.php"
+}

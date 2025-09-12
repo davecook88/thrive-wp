@@ -20,36 +20,54 @@ add_action('after_setup_theme', function () {
     ]);
 });
 
-// Ensure Booking Confirmation page exists
+// Ensure Booking Confirmation page exists with Gutenberg blocks
 add_action('after_setup_theme', function () {
     if (defined('WP_INSTALLING') && WP_INSTALLING)
         return;
+    
     $title = 'Booking Confirmation';
     $slug = 'booking-confirmation';
+    $block_content = '<!-- wp:heading {"level":1} -->
+<h1 class="wp-block-heading">Confirm Your Booking</h1>
+<!-- /wp:heading -->
+
+<!-- wp:custom-theme/booking-session-details /-->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">Choose Your Package</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Select a package that works for you. Each package includes multiple sessions with your chosen teacher.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:custom-theme/package-selection /-->
+
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">Complete Your Payment</h2>
+<!-- /wp:heading -->
+
+<!-- wp:custom-theme/conditional-stripe-payment /-->';
+
     $existing = get_page_by_path($slug);
     if ($existing) {
-        // Ensure template is correct even if page already exists
-        $current_tpl = get_page_template_slug($existing->ID);
-        if ($current_tpl !== 'page-booking-confirmation.php') {
-            update_post_meta($existing->ID, '_wp_page_template', 'page-booking-confirmation.php');
-        }
-        if ($existing->post_title !== $title) {
-            wp_update_post([
-                'ID' => $existing->ID,
-                'post_title' => $title,
-            ]);
-        }
+        // Update to use new block-based content and remove custom template
+        wp_update_post([
+            'ID' => $existing->ID,
+            'post_title' => $title,
+            'post_content' => $block_content,
+        ]);
+        // Remove custom template meta to use default
+        delete_post_meta($existing->ID, '_wp_page_template');
         return;
     }
+    
     wp_insert_post([
         'post_title' => $title,
         'post_name' => $slug,
         'post_status' => 'publish',
         'post_type' => 'page',
-        'post_content' => '',
-        'meta_input' => [
-            '_wp_page_template' => 'page-booking-confirmation.php',
-        ],
+        'post_content' => $block_content,
     ]);
 });
 

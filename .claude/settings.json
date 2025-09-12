@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "mcpServers": {
+    "airbnb": {
+      "command": "npx",
+      "args": ["-y", "@openbnb/mcp-server-airbnb", "--ignore-robots-txt"]
+    },
+    "mysql": {
+      "command": "npx",
+      "args": ["-y", "@f4ww4z/mcp-mysql-server"],
+      "env": {
+        "MYSQL_HOST": "localhost",
+        "MYSQL_USER": "wordpress",
+        "MYSQL_PASSWORD": "wordpress",
+        "MYSQL_DATABASE": "wordpress"
+      }
+    },
+    "browsermcp": {
+      "command": "npx",
+      "args": ["@browsermcp/mcp@latest"]
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"],
+      "gallery": true
+    },
+    "canva": {
+      "type": "transport",
+      "transport": "http",
+      "url": "https://mcp.canva.com/mcp",
+      "args": []
+    }
+  }
+}

@@ -106,6 +106,8 @@ export class PackagesService {
           productId: stripeProduct.id,
           priceId: stripePrice.id,
           lookupKey: lookupKey,
+          unitAmount: stripePrice.unit_amount || 0,
+          currency: stripePrice.currency || 'usd',
         },
         active: true,
       };
@@ -127,7 +129,6 @@ export class PackagesService {
     const mappings = await this.stripeProductMapRepository.find({
       where: { 
         scopeType: ScopeType.PACKAGE,
-        active: true,
       },
       order: { createdAt: 'DESC' },
     });
@@ -164,6 +165,68 @@ export class PackagesService {
             productId: stripeProduct.id,
             priceId: stripePrice.id,
             lookupKey: stripePrice.lookup_key || mapping.serviceKey,
+            unitAmount: stripePrice.unit_amount || 0,
+            currency: stripePrice.currency || 'usd',
+          },
+          active: mapping.active && stripeProduct.active,
+        });
+      } catch (error) {
+        console.warn(`Failed to fetch Stripe data for mapping ${mapping.id}:`, error.message);
+        // Continue with other packages
+      }
+    }
+
+    return packages;
+  }
+
+  async getActivePackages(): Promise<PackageResponseDto[]> {
+    const mappings = await this.stripeProductMapRepository.find({
+      where: { 
+        scopeType: ScopeType.PACKAGE,
+        active: true,
+      },
+      order: { createdAt: 'DESC' },
+    });
+
+    const packages: PackageResponseDto[] = [];
+
+    for (const mapping of mappings) {
+      try {
+        // Get fresh data from Stripe
+        const stripeProduct = await this.stripe.products.retrieve(mapping.stripeProductId);
+        
+        // Skip if product is not active in Stripe
+        if (!stripeProduct.active) {
+          continue;
+        }
+        
+        // Get the first price for this product
+        const prices = await this.stripe.prices.list({
+          product: mapping.stripeProductId,
+          active: true,
+          limit: 1,
+        });
+
+        if (prices.data.length === 0) {
+          continue; // Skip if no active prices
+        }
+
+        const stripePrice = prices.data[0];
+        const metadata = mapping.metadata || {};
+
+        packages.push({
+          id: mapping.id,
+          name: metadata.name || stripeProduct.name,
+          serviceType: metadata.service_type || 'PRIVATE',
+          credits: Number(metadata.credits) || 0,
+          creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
+          expiresInDays: metadata.expires_in_days || null,
+          stripe: {
+            productId: stripeProduct.id,
+            priceId: stripePrice.id,
+            lookupKey: stripePrice.lookup_key || mapping.serviceKey,
+            unitAmount: stripePrice.unit_amount || 0,
+            currency: stripePrice.currency || 'usd',
           },
           active: mapping.active && stripeProduct.active,
         });
@@ -214,6 +277,8 @@ export class PackagesService {
           productId: stripeProduct.id,
           priceId: stripePrice.id,
           lookupKey: stripePrice.lookup_key || mapping.serviceKey,
+          unitAmount: stripePrice.unit_amount || 0,
+          currency: stripePrice.currency || 'usd',
         },
         active: mapping.active && stripeProduct.active,
       };

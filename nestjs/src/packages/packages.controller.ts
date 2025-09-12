@@ -21,8 +21,10 @@ export class PackagesController {
 
   @Post()
   async createPackage(
-    @Body(new ZodValidationPipe(CreatePackageSchema)) createPackageDto: CreatePackageDto,
+    @Body(new ZodValidationPipe(CreatePackageSchema))
+    createPackageDto: CreatePackageDto,
   ): Promise<PackageResponseDto> {
+    console.log('createPackageDto:', createPackageDto);
     return this.packagesService.createPackage(createPackageDto);
   }
 
@@ -44,5 +46,15 @@ export class PackagesController {
   ): Promise<{ message: string }> {
     await this.packagesService.deactivatePackage(id);
     return { message: 'Package deactivated successfully' };
+  }
+}
+
+@Controller('packages')
+export class PublicPackagesController {
+  constructor(private readonly packagesService: PackagesService) {}
+
+  @Get()
+  async getAvailablePackages(): Promise<PackageResponseDto[]> {
+    return this.packagesService.getActivePackages();
   }
 }

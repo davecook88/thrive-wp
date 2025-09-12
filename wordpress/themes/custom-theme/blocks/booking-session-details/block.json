@@ -1,0 +1,42 @@
+{
+    "apiVersion": 3,
+    "name": "custom-theme/booking-session-details",
+    "title": "Booking Session Details",
+    "category": "widgets",
+    "icon": "calendar-alt",
+    "description": "Display session details with merge fields for booking confirmation.",
+    "attributes": {
+        "heading": {
+            "type": "string",
+            "default": "Session Details"
+        },
+        "showTeacherName": {
+            "type": "boolean",
+            "default": true
+        },
+        "showDateTime": {
+            "type": "boolean",
+            "default": true
+        },
+        "dateTimeFormat": {
+            "type": "string",
+            "default": "F j, Y g:i A T"
+        },
+        "errorMessage": {
+            "type": "string",
+            "default": "Please ensure you have valid booking details in your URL."
+        }
+    },
+    "supports": {
+        "anchor": true,
+        "align": [
+            "wide",
+            "full"
+        ],
+        "color": {
+            "background": true,
+            "text": true
+        }
+    },
+    "render": "file:./render.php"
+}
