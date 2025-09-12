@@ -10,8 +10,9 @@ import {
 import { ZodValidationPipe } from 'nestjs-zod';
 import { AdminGuard } from '../auth/admin.guard.js';
 import { PackagesService } from './packages.service.js';
-import { CreatePackageDto, CreatePackageSchema } from './dto/create-package.dto.js';
-import { PackageResponseDto } from './dto/package-response.dto.js';
+import { CreatePackageSchema } from './dto/create-package.dto.js';
+import type { CreatePackageDto } from './dto/create-package.dto.js';
+import type { PackageResponseDto } from './dto/package-response.dto.js';
 
 @Controller('admin/packages')
 @UseGuards(AdminGuard)
