@@ -357,3 +357,10 @@ enum ThriveRole: string
 - Role checks should be performed in PHP, not JavaScript
 - Sensitive content should be gated server-side using `thrive_user_has_role()`
 
+
+### Custom Block Notes
+
+- Custom blocks may be created but should not be used where a standard block suffices - the designer will not be able to edit custom blocks directly.
+- Do not include text which could be used outside of the block: eg headings, paragraphs
+- Prefer react code for blocks as it is easier to maintain and test
+- Always choose to make the designer's life easier with custom blocks. They should be able to be dropped into existing pages and work.

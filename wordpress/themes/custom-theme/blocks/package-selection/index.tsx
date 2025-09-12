@@ -21,122 +21,107 @@ interface PackageSelectionBlockProps {
   isSelected: boolean;
 }
 
-registerBlockType<PackageSelectionAttributes>("custom-theme/package-selection", {
-  title: "Package Selection",
-  icon: "products",
-  category: "widgets",
-  description: "Display available packages for upselling during booking confirmation.",
+registerBlockType<PackageSelectionAttributes>(
+  "custom-theme/package-selection",
+  {
+    title: "Package Selection",
+    icon: "products",
+    category: "widgets",
+    description:
+      "Display available packages for upselling during booking confirmation.",
 
-  attributes: {
-    heading: {
-      type: "string",
-      default: "Choose Your Package",
+    attributes: {
+      showCredits: {
+        type: "boolean",
+        default: true,
+      },
+      showDuration: {
+        type: "boolean",
+        default: true,
+      },
+      showExpiry: {
+        type: "boolean",
+        default: true,
+      },
+      loadingMessage: {
+        type: "string",
+        default: "Loading available packages...",
+      },
+      errorMessage: {
+        type: "string",
+        default:
+          "Unable to load packages at this time. Please refresh and try again.",
+      },
+      noPackagesMessage: {
+        type: "string",
+        default: "No packages are currently available.",
+      },
     },
-    description: {
-      type: "string",
-      default: "Select a package that works for you. Each package includes multiple sessions with your chosen teacher.",
-    },
-    showCredits: {
-      type: "boolean",
-      default: true,
-    },
-    showDuration: {
-      type: "boolean",
-      default: true,
-    },
-    showExpiry: {
-      type: "boolean",
-      default: true,
-    },
-    loadingMessage: {
-      type: "string",
-      default: "Loading available packages...",
-    },
-    errorMessage: {
-      type: "string",
-      default: "Unable to load packages at this time. Please refresh and try again.",
-    },
-    noPackagesMessage: {
-      type: "string",
-      default: "No packages are currently available.",
-    },
-  },
 
-  edit: ({
-    attributes,
-    setAttributes,
-    isSelected,
-  }: PackageSelectionBlockProps) => {
-    const blockProps = useBlockProps();
+    edit: ({
+      attributes,
+      setAttributes,
+      isSelected,
+    }: PackageSelectionBlockProps) => {
+      const blockProps = useBlockProps();
 
-    return (
-      <Fragment>
-        <div {...blockProps}>
-          <ServerSideRender
-            block="custom-theme/package-selection"
-            attributes={attributes}
-          />
-        </div>
+      return (
+        <Fragment>
+          <div {...blockProps}>
+            <ServerSideRender
+              block="custom-theme/package-selection"
+              attributes={attributes}
+            />
+          </div>
 
-        {isSelected && (
-          <InspectorControls>
-            <PanelBody title="Content Settings" initialOpen={true}>
-              <TextControl
-                label="Heading"
-                value={attributes.heading}
-                onChange={(value) => setAttributes({ heading: value })}
-              />
-              <TextControl
-                label="Description"
-                value={attributes.description}
-                onChange={(value) => setAttributes({ description: value })}
-                help="Text displayed above the package options."
-              />
-            </PanelBody>
+          {isSelected && (
+            <InspectorControls>
+              <PanelBody title="Display Options" initialOpen={true}>
+                <ToggleControl
+                  label="Show Credits"
+                  checked={attributes.showCredits}
+                  onChange={(value) => setAttributes({ showCredits: value })}
+                />
+                <ToggleControl
+                  label="Show Session Duration"
+                  checked={attributes.showDuration}
+                  onChange={(value) => setAttributes({ showDuration: value })}
+                />
+                <ToggleControl
+                  label="Show Expiry"
+                  checked={attributes.showExpiry}
+                  onChange={(value) => setAttributes({ showExpiry: value })}
+                />
+              </PanelBody>
 
-            <PanelBody title="Display Options" initialOpen={true}>
-              <ToggleControl
-                label="Show Credits"
-                checked={attributes.showCredits}
-                onChange={(value) => setAttributes({ showCredits: value })}
-              />
-              <ToggleControl
-                label="Show Session Duration"
-                checked={attributes.showDuration}
-                onChange={(value) => setAttributes({ showDuration: value })}
-              />
-              <ToggleControl
-                label="Show Expiry"
-                checked={attributes.showExpiry}
-                onChange={(value) => setAttributes({ showExpiry: value })}
-              />
-            </PanelBody>
+              <PanelBody title="Messages" initialOpen={false}>
+                <TextControl
+                  label="Loading Message"
+                  value={attributes.loadingMessage}
+                  onChange={(value) => setAttributes({ loadingMessage: value })}
+                />
+                <TextControl
+                  label="Error Message"
+                  value={attributes.errorMessage}
+                  onChange={(value) => setAttributes({ errorMessage: value })}
+                />
+                <TextControl
+                  label="No Packages Message"
+                  value={attributes.noPackagesMessage}
+                  onChange={(value) =>
+                    setAttributes({ noPackagesMessage: value })
+                  }
+                />
+              </PanelBody>
+            </InspectorControls>
+          )}
+        </Fragment>
+      );
+    },
 
-            <PanelBody title="Messages" initialOpen={false}>
-              <TextControl
-                label="Loading Message"
-                value={attributes.loadingMessage}
-                onChange={(value) => setAttributes({ loadingMessage: value })}
-              />
-              <TextControl
-                label="Error Message"
-                value={attributes.errorMessage}
-                onChange={(value) => setAttributes({ errorMessage: value })}
-              />
-              <TextControl
-                label="No Packages Message"
-                value={attributes.noPackagesMessage}
-                onChange={(value) => setAttributes({ noPackagesMessage: value })}
-              />
-            </PanelBody>
-          </InspectorControls>
-        )}
-      </Fragment>
-    );
-  },
-
-  save: () => {
-    // This block is rendered server-side, so return null
-    return null;
-  },
-});
+    save: () => {
+      // This block is rendered server-side, so return null
+      return null;
+    },
+  }
+);
