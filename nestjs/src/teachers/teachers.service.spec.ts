@@ -56,6 +56,7 @@ describe('TeachersService', () => {
           provide: DataSource,
           useValue: {
             transaction: jest.fn(),
+            query: jest.fn(),
           },
         },
       ],
@@ -68,6 +69,9 @@ describe('TeachersService', () => {
     );
     sessionRepo = module.get<Repository<Session>>(getRepositoryToken(Session));
     dataSource = module.get<DataSource>(DataSource);
+
+    // Mock dataSource.query to return empty results for scheduled sessions
+    jest.spyOn(dataSource, 'query').mockResolvedValue([]);
   });
 
   it('should be defined', () => {

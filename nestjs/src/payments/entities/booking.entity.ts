@@ -12,6 +12,7 @@ export enum BookingStatus {
   CANCELLED = 'CANCELLED',
   NO_SHOW = 'NO_SHOW',
   FORFEIT = 'FORFEIT',
+  PENDING = 'PENDING',
 }
 
 /**

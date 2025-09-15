@@ -2,15 +2,21 @@ import { jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { SessionsService } from './sessions.service.js';
 import { TeacherAvailabilityService } from '../../teachers/services/teacher-availability.service.js';
+import { StudentAvailabilityService } from '../../students/services/student-availability.service.js';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 
 describe('SessionsService', () => {
   let service: SessionsService;
   let teacherAvailabilityService: jest.Mocked<TeacherAvailabilityService>;
+  let studentAvailabilityService: jest.Mocked<StudentAvailabilityService>;
 
   beforeEach(async () => {
     const mockTeacherAvailabilityService = {
       validateAvailability: jest.fn(),
+    };
+
+    const mockStudentAvailabilityService = {
+      validateStudentAvailability: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -20,11 +26,16 @@ describe('SessionsService', () => {
           provide: TeacherAvailabilityService,
           useValue: mockTeacherAvailabilityService,
         },
+        {
+          provide: StudentAvailabilityService,
+          useValue: mockStudentAvailabilityService,
+        },
       ],
     }).compile();
 
     service = module.get<SessionsService>(SessionsService);
     teacherAvailabilityService = module.get(TeacherAvailabilityService);
+    studentAvailabilityService = module.get(StudentAvailabilityService);
   });
 
   it('should be defined', () => {
@@ -36,20 +47,35 @@ describe('SessionsService', () => {
       teacherId: 1,
       startAt: '2025-09-10T10:00:00Z',
       endAt: '2025-09-10T11:00:00Z',
+      studentId: 2,
     };
 
     it('should return valid result when session is valid', async () => {
-      const mockResult = { valid: true, teacherId: 1 };
-      teacherAvailabilityService.validateAvailability.mockResolvedValue(
-        mockResult,
+      teacherAvailabilityService.validateAvailability.mockResolvedValue({
+        valid: true,
+        teacherId: 1,
+      });
+      studentAvailabilityService.validateStudentAvailability.mockResolvedValue(
+        undefined,
       );
 
       const result = await service.validatePrivateSession(mockParams);
 
-      expect(result).toEqual(mockResult);
+      expect(result).toEqual({ teacherAvailable: true, studentAvailable: true });
       expect(
         teacherAvailabilityService.validateAvailability,
-      ).toHaveBeenCalledWith(mockParams);
+      ).toHaveBeenCalledWith({
+        teacherId: mockParams.teacherId,
+        startAt: mockParams.startAt,
+        endAt: mockParams.endAt,
+      });
+      expect(
+        studentAvailabilityService.validateStudentAvailability,
+      ).toHaveBeenCalledWith({
+        studentId: mockParams.studentId,
+        startAt: mockParams.startAt,
+        endAt: mockParams.endAt,
+      });
     });
 
     it('should throw NotFoundException when teacher is not found', async () => {
@@ -62,7 +88,11 @@ describe('SessionsService', () => {
       );
       expect(
         teacherAvailabilityService.validateAvailability,
-      ).toHaveBeenCalledWith(mockParams);
+      ).toHaveBeenCalledWith({
+        teacherId: mockParams.teacherId,
+        startAt: mockParams.startAt,
+        endAt: mockParams.endAt,
+      });
     });
 
     it('should throw BadRequestException when teacher is inactive', async () => {
@@ -75,7 +105,11 @@ describe('SessionsService', () => {
       );
       expect(
         teacherAvailabilityService.validateAvailability,
-      ).toHaveBeenCalledWith(mockParams);
+      ).toHaveBeenCalledWith({
+        teacherId: mockParams.teacherId,
+        startAt: mockParams.startAt,
+        endAt: mockParams.endAt,
+      });
     });
 
     it('should throw BadRequestException when teacher has no availability', async () => {
@@ -90,7 +124,11 @@ describe('SessionsService', () => {
       );
       expect(
         teacherAvailabilityService.validateAvailability,
-      ).toHaveBeenCalledWith(mockParams);
+      ).toHaveBeenCalledWith({
+        teacherId: mockParams.teacherId,
+        startAt: mockParams.startAt,
+        endAt: mockParams.endAt,
+      });
     });
 
     it('should throw BadRequestException when teacher has a blackout', async () => {
@@ -105,7 +143,11 @@ describe('SessionsService', () => {
       );
       expect(
         teacherAvailabilityService.validateAvailability,
-      ).toHaveBeenCalledWith(mockParams);
+      ).toHaveBeenCalledWith({
+        teacherId: mockParams.teacherId,
+        startAt: mockParams.startAt,
+        endAt: mockParams.endAt,
+      });
     });
 
     it('should throw BadRequestException when there is a conflicting booking', async () => {
@@ -120,7 +162,11 @@ describe('SessionsService', () => {
       );
       expect(
         teacherAvailabilityService.validateAvailability,
-      ).toHaveBeenCalledWith(mockParams);
+      ).toHaveBeenCalledWith({
+        teacherId: mockParams.teacherId,
+        startAt: mockParams.startAt,
+        endAt: mockParams.endAt,
+      });
     });
 
     it('should throw BadRequestException on database error', async () => {
@@ -133,7 +179,11 @@ describe('SessionsService', () => {
       );
       expect(
         teacherAvailabilityService.validateAvailability,
-      ).toHaveBeenCalledWith(mockParams);
+      ).toHaveBeenCalledWith({
+        teacherId: mockParams.teacherId,
+        startAt: mockParams.startAt,
+        endAt: mockParams.endAt,
+      });
     });
   });
 });

@@ -45,7 +45,6 @@ const ConditionalStripePaymentComponent: React.FC<
   const [stripe, setStripe] = useState<any>(null);
   const [elements, setElements] = useState<any>(null);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
-  const [paymentElement, setPaymentElement] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string>("");
 
@@ -113,7 +112,6 @@ const ConditionalStripePaymentComponent: React.FC<
         const paymentElementInstance = elementsInstance.create("payment", {
           layout: "tabs",
         });
-        setPaymentElement(paymentElementInstance);
 
         // Mount payment element after a short delay to ensure DOM is ready
         setTimeout(() => {
@@ -182,11 +180,6 @@ const ConditionalStripePaymentComponent: React.FC<
       setMessage(error.message);
       setIsLoading(false);
     }
-  };
-
-  const showMessage = (messageText: string) => {
-    setMessage(messageText);
-    setTimeout(() => setMessage(""), 5000);
   };
 
   if (!selectedPackage) {

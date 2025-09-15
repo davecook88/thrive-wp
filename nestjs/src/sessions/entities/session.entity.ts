@@ -16,6 +16,7 @@ import { ServiceType } from '../../common/types/class-types.js';
  * Enumeration of session statuses.
  */
 export enum SessionStatus {
+  DRAFT = 'DRAFT',
   SCHEDULED = 'SCHEDULED',
   CANCELLED = 'CANCELLED',
   COMPLETED = 'COMPLETED',

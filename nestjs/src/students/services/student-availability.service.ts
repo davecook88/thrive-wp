@@ -50,7 +50,7 @@ export class StudentAvailabilityService {
       .leftJoinAndSelect('booking.session', 'session')
       .where('booking.studentId = :studentId', { studentId })
       .andWhere('booking.status IN (:...statuses)', {
-        statuses: [BookingStatus.CONFIRMED, BookingStatus.INVITED],
+        statuses: [BookingStatus.CONFIRMED, BookingStatus.INVITED, BookingStatus.PENDING],
       })
       .andWhere('session.status = :sessionStatus', {
         sessionStatus: SessionStatus.SCHEDULED,
@@ -91,7 +91,7 @@ export class StudentAvailabilityService {
       .andWhere('session.startAt >= :startDate', { startDate })
       .andWhere('session.startAt <= :endDate', { endDate })
       .andWhere('booking.status IN (:...statuses)', {
-        statuses: [BookingStatus.CONFIRMED, BookingStatus.INVITED],
+        statuses: [BookingStatus.CONFIRMED, BookingStatus.INVITED, BookingStatus.PENDING],
       })
       .andWhere('session.status = :sessionStatus', {
         sessionStatus: SessionStatus.SCHEDULED,
