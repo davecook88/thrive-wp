@@ -17,8 +17,10 @@ if (!defined('ABSPATH')) {
 $ctx = function_exists('thrive_get_auth_context') ? thrive_get_auth_context() : null;
 $is_logged_in = $ctx !== null;
 
-// Prepare URLs for the auth actions.
-$google_url = esc_url(home_url('/api/auth/google'));
+$current_path = isset($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : '/';
+// Prepare URLs for the auth actions. Use /api/auth/google/start and include the current path
+// so the NestJS service can return the user to the page they started on.
+$google_url = esc_url(home_url('/api/auth/google/start?redirect=' . rawurlencode($current_path)));
 $logout_url = esc_url(home_url('/api/auth/logout'));
 
 // A helper class to manage the block's attributes and classes.

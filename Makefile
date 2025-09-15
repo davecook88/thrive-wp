@@ -23,6 +23,9 @@ run:
 stop:
 	docker compose down
 
+nest-npmci:
+	docker compose exec nestjs npm ci
+
 # --- Database Migrations (executed inside nestjs container) ---
 # Usage examples:
 #   make migrate-show

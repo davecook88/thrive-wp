@@ -1,13 +1,11 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import configuration from './config/configuration.js';
-import { fileURLToPath } from 'url';
 import path from 'path';
 
 // __dirname isn't available in ESM; reconstruct it for glob patterns used below
 // In Jest test environment, __dirname might already be available
-const currentDir =
-  (globalThis as any).__dirname || path.resolve(process.cwd(), 'src');
+const currentDir = globalThis?.__dirname || path.resolve(process.cwd(), 'src');
 
 // Build configuration once (not using ConfigService here since this file is used by CLI)
 const appConfig = configuration();

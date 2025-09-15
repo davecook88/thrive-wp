@@ -61,7 +61,7 @@ if ($teacher === '' || !ctype_digit($teacher)) {
             <section style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:12px;padding:16px 18px;">
                 <p style="margin:0 0 10px 0;">Please sign in to continue with your booking.</p>
                 <a class="button button-primary"
-                    href="<?php echo esc_url('/api/auth/google?redirect=' . rawurlencode($redirect_to)); ?>">Sign in with
+                    href="<?php echo esc_url('/api/auth/google/start?redirect=' . rawurlencode($redirect_to)); ?>">Sign in with
                     Google</a>
                 <a class="button" style="margin-left:8px;" href="<?php echo esc_url(home_url('/booking')); ?>">Back to
                     calendar</a>

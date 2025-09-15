@@ -61,7 +61,10 @@ describe('SessionsService', () => {
 
       const result = await service.validatePrivateSession(mockParams);
 
-      expect(result).toEqual({ teacherAvailable: true, studentAvailable: true });
+      expect(result).toEqual({
+        teacherAvailable: true,
+        studentAvailable: true,
+      });
       expect(
         teacherAvailabilityService.validateAvailability,
       ).toHaveBeenCalledWith({

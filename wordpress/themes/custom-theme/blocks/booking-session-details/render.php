@@ -34,7 +34,7 @@ $wrapper_attributes = get_block_wrapper_attributes([
             $redirect_to = $path . $query;
             ?>
             <a class="button button-primary"
-                href="<?php echo esc_url('/api/auth/google?redirect=' . rawurlencode($redirect_to)); ?>">
+                href="<?php echo esc_url('/api/auth/google/start?redirect=' . rawurlencode($redirect_to)); ?>">
                 Sign in with Google
             </a>
         </div>

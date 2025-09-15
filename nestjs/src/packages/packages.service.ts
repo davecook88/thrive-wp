@@ -9,7 +9,10 @@ import { Repository } from 'typeorm';
 import Stripe from 'stripe';
 import { CreatePackageDto } from './dto/create-package.dto.js';
 import { PackageResponseDto } from './dto/package-response.dto.js';
-import { StripeProductMap, ScopeType } from '../payments/entities/stripe-product-map.entity.js';
+import {
+  StripeProductMap,
+  ScopeType,
+} from '../payments/entities/stripe-product-map.entity.js';
 
 @Injectable()
 export class PackagesService {
@@ -29,11 +32,13 @@ export class PackagesService {
     });
   }
 
-  async createPackage(createPackageDto: CreatePackageDto): Promise<PackageResponseDto> {
+  async createPackage(
+    createPackageDto: CreatePackageDto,
+  ): Promise<PackageResponseDto> {
     try {
       // Generate lookup key if not provided
-      const lookupKey = createPackageDto.lookupKey || 
-        this.generateLookupKey(createPackageDto);
+      const lookupKey =
+        createPackageDto.lookupKey || this.generateLookupKey(createPackageDto);
 
       // Check if lookup key already exists
       const existingMapping = await this.stripeProductMapRepository.findOne({
@@ -41,7 +46,9 @@ export class PackagesService {
       });
 
       if (existingMapping) {
-        throw new BadRequestException(`Lookup key "${lookupKey}" already exists`);
+        throw new BadRequestException(
+          `Lookup key "${lookupKey}" already exists`,
+        );
       }
 
       // Create Stripe Product
@@ -93,7 +100,8 @@ export class PackagesService {
         },
       });
 
-      const savedMapping = await this.stripeProductMapRepository.save(productMapping);
+      const savedMapping =
+        await this.stripeProductMapRepository.save(productMapping);
 
       return {
         id: savedMapping.id,
@@ -115,19 +123,21 @@ export class PackagesService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      
+
       // Handle Stripe errors
       if (error instanceof Stripe.errors.StripeError) {
         throw new BadRequestException(`Stripe error: ${error.message}`);
       }
 
-      throw new BadRequestException(`Failed to create package: ${error.message}`);
+      throw new BadRequestException(
+        `Failed to create package: ${error.message}`,
+      );
     }
   }
 
   async getPackages(): Promise<PackageResponseDto[]> {
     const mappings = await this.stripeProductMapRepository.find({
-      where: { 
+      where: {
         scopeType: ScopeType.PACKAGE,
       },
       order: { createdAt: 'DESC' },
@@ -138,8 +148,10 @@ export class PackagesService {
     for (const mapping of mappings) {
       try {
         // Get fresh data from Stripe
-        const stripeProduct = await this.stripe.products.retrieve(mapping.stripeProductId);
-        
+        const stripeProduct = await this.stripe.products.retrieve(
+          mapping.stripeProductId,
+        );
+
         // Get the first price for this product
         const prices = await this.stripe.prices.list({
           product: mapping.stripeProductId,
@@ -171,7 +183,10 @@ export class PackagesService {
           active: mapping.active && stripeProduct.active,
         });
       } catch (error) {
-        console.warn(`Failed to fetch Stripe data for mapping ${mapping.id}:`, error.message);
+        console.warn(
+          `Failed to fetch Stripe data for mapping ${mapping.id}:`,
+          error.message,
+        );
         // Continue with other packages
       }
     }
@@ -181,7 +196,7 @@ export class PackagesService {
 
   async getActivePackages(): Promise<PackageResponseDto[]> {
     const mappings = await this.stripeProductMapRepository.find({
-      where: { 
+      where: {
         scopeType: ScopeType.PACKAGE,
         active: true,
       },
@@ -193,13 +208,15 @@ export class PackagesService {
     for (const mapping of mappings) {
       try {
         // Get fresh data from Stripe
-        const stripeProduct = await this.stripe.products.retrieve(mapping.stripeProductId);
-        
+        const stripeProduct = await this.stripe.products.retrieve(
+          mapping.stripeProductId,
+        );
+
         // Skip if product is not active in Stripe
         if (!stripeProduct.active) {
           continue;
         }
-        
+
         // Get the first price for this product
         const prices = await this.stripe.prices.list({
           product: mapping.stripeProductId,
@@ -231,7 +248,10 @@ export class PackagesService {
           active: mapping.active && stripeProduct.active,
         });
       } catch (error) {
-        console.warn(`Failed to fetch Stripe data for mapping ${mapping.id}:`, error.message);
+        console.warn(
+          `Failed to fetch Stripe data for mapping ${mapping.id}:`,
+          error.message,
+        );
         // Continue with other packages
       }
     }
@@ -241,7 +261,7 @@ export class PackagesService {
 
   async getPackage(id: number): Promise<PackageResponseDto> {
     const mapping = await this.stripeProductMapRepository.findOne({
-      where: { 
+      where: {
         id,
         scopeType: ScopeType.PACKAGE,
       },
@@ -252,7 +272,9 @@ export class PackagesService {
     }
 
     try {
-      const stripeProduct = await this.stripe.products.retrieve(mapping.stripeProductId);
+      const stripeProduct = await this.stripe.products.retrieve(
+        mapping.stripeProductId,
+      );
       const prices = await this.stripe.prices.list({
         product: mapping.stripeProductId,
         active: true,
@@ -286,13 +308,15 @@ export class PackagesService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new BadRequestException(`Failed to fetch package: ${error.message}`);
+      throw new BadRequestException(
+        `Failed to fetch package: ${error.message}`,
+      );
     }
   }
 
   async deactivatePackage(id: number): Promise<void> {
     const mapping = await this.stripeProductMapRepository.findOne({
-      where: { 
+      where: {
         id,
         scopeType: ScopeType.PACKAGE,
       },
@@ -313,7 +337,7 @@ export class PackagesService {
       .replace(/[^A-Z0-9\s]/g, '')
       .replace(/\s+/g, '_')
       .substring(0, 30);
-    
+
     return `${dto.serviceType}_CREDITS_${dto.credits}_${dto.creditUnitMinutes}MIN_${sanitizedName}_${dto.currency.toUpperCase()}`;
   }
 }

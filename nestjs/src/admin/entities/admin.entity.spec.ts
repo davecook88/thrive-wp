@@ -48,7 +48,7 @@ describe('Admin Entity', () => {
     );
     const userIdIndex = indices.find((i) => {
       const cols = Array.isArray(i.columns)
-        ? (i.columns as string[])
+        ? i.columns
         : typeof i.columns === 'function'
           ? (i.columns({}) as unknown as string[])
           : [];

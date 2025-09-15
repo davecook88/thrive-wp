@@ -239,14 +239,10 @@ export class PaymentsService {
   async handleStripeEvent(event: Stripe.Event): Promise<void> {
     switch (event.type) {
       case 'payment_intent.succeeded':
-        await this.handlePaymentIntentSucceeded(
-          event.data.object as Stripe.PaymentIntent,
-        );
+        await this.handlePaymentIntentSucceeded(event.data.object);
         break;
       case 'payment_intent.payment_failed':
-        await this.handlePaymentIntentFailed(
-          event.data.object as Stripe.PaymentIntent,
-        );
+        await this.handlePaymentIntentFailed(event.data.object);
         break;
       // Add more event types as needed
       default:
@@ -267,19 +263,25 @@ export class PaymentsService {
       const bookingId = parseInt(String(metadata.booking_id), 10);
       try {
         await this.sessionRepository.manager.transaction(async (tx) => {
-          const session = await tx.findOne(Session, { where: { id: sessionId } });
-            if (session && session.status === SessionStatus.DRAFT) {
-              session.status = SessionStatus.SCHEDULED;
-              await tx.save(Session, session);
-            }
-          const booking = await tx.findOne(Booking, { where: { id: bookingId } });
+          const session = await tx.findOne(Session, {
+            where: { id: sessionId },
+          });
+          if (session && session.status === SessionStatus.DRAFT) {
+            session.status = SessionStatus.SCHEDULED;
+            await tx.save(Session, session);
+          }
+          const booking = await tx.findOne(Booking, {
+            where: { id: bookingId },
+          });
           if (booking && booking.status === BookingStatus.PENDING) {
             booking.status = BookingStatus.CONFIRMED;
             booking.acceptedAt = new Date();
             await tx.save(Booking, booking);
           }
         });
-        console.log(`Promoted draft session ${sessionId} & booking ${bookingId} after successful payment`);
+        console.log(
+          `Promoted draft session ${sessionId} & booking ${bookingId} after successful payment`,
+        );
       } catch (e) {
         console.error('Error promoting draft session/booking:', e);
       }
@@ -293,7 +295,9 @@ export class PaymentsService {
     paymentIntent: Stripe.PaymentIntent,
   ): Promise<void> {
     // For now, we only log failures; fulfillment is driven by success events.
-    console.warn(`Payment failed for intent ${paymentIntent.id}: ${paymentIntent.last_payment_error?.message}`);
+    console.warn(
+      `Payment failed for intent ${paymentIntent.id}: ${paymentIntent.last_payment_error?.message}`,
+    );
     const metadata: ParsedStripeMetadata = StripeMetadataUtils.fromStripeFormat(
       paymentIntent.metadata || {},
     );
@@ -302,12 +306,16 @@ export class PaymentsService {
       const bookingId = parseInt(String(metadata.booking_id), 10);
       try {
         await this.sessionRepository.manager.transaction(async (tx) => {
-          const session = await tx.findOne(Session, { where: { id: sessionId } });
+          const session = await tx.findOne(Session, {
+            where: { id: sessionId },
+          });
           if (session && session.status === SessionStatus.DRAFT) {
             session.status = SessionStatus.CANCELLED;
             await tx.save(Session, session);
           }
-          const booking = await tx.findOne(Booking, { where: { id: bookingId } });
+          const booking = await tx.findOne(Booking, {
+            where: { id: bookingId },
+          });
           if (booking && booking.status === BookingStatus.PENDING) {
             booking.status = BookingStatus.CANCELLED;
             booking.cancelledAt = new Date();
@@ -315,7 +323,9 @@ export class PaymentsService {
             await tx.save(Booking, booking);
           }
         });
-        console.log(`Cancelled draft session ${sessionId} & booking ${bookingId} after failed payment`);
+        console.log(
+          `Cancelled draft session ${sessionId} & booking ${bookingId} after failed payment`,
+        );
       } catch (e) {
         console.error('Error cancelling draft session/booking:', e);
       }
@@ -523,48 +533,52 @@ export class PaymentsService {
         studentId: student.id,
       });
     } catch (e) {
-      throw new BadRequestException(`Availability validation failed: ${e.message}`);
+      throw new BadRequestException(
+        `Availability validation failed: ${e.message}`,
+      );
     }
 
     // Create draft session + pending booking inside a transaction
-    const { sessionId, bookingId } = await this.sessionRepository.manager.transaction(async (tx) => {
-      const draftSession = tx.create(Session, {
-        type: ServiceType.PRIVATE,
-        teacherId: parseInt(bookingData.teacher) || 0,
-        startAt: new Date(bookingData.start),
-        endAt: new Date(bookingData.end),
-        capacityMax: 1,
-        status: SessionStatus.DRAFT,
-        visibility: SessionVisibility.PRIVATE,
-        requiresEnrollment: false,
-        sourceTimezone: 'UTC',
-      });
-      const savedSession = await tx.save(Session, draftSession);
+    const { sessionId, bookingId } =
+      await this.sessionRepository.manager.transaction(async (tx) => {
+        const draftSession = tx.create(Session, {
+          type: ServiceType.PRIVATE,
+          teacherId: parseInt(bookingData.teacher) || 0,
+          startAt: new Date(bookingData.start),
+          endAt: new Date(bookingData.end),
+          capacityMax: 1,
+          status: SessionStatus.DRAFT,
+          visibility: SessionVisibility.PRIVATE,
+          requiresEnrollment: false,
+          sourceTimezone: 'UTC',
+        });
+        const savedSession = await tx.save(Session, draftSession);
 
-      const pendingBooking = tx.create(Booking, {
-        sessionId: savedSession.id,
-        studentId: student.id,
-        status: BookingStatus.PENDING,
-        invitedAt: new Date(),
-      });
-      const savedBooking = await tx.save(Booking, pendingBooking);
+        const pendingBooking = tx.create(Booking, {
+          sessionId: savedSession.id,
+          studentId: student.id,
+          status: BookingStatus.PENDING,
+          invitedAt: new Date(),
+        });
+        const savedBooking = await tx.save(Booking, pendingBooking);
 
-      return { sessionId: savedSession.id, bookingId: savedBooking.id };
-    });
+        return { sessionId: savedSession.id, bookingId: savedBooking.id };
+      });
 
     // Create PaymentIntent referencing draft records
-    const paymentIntentMetadata = StripeMetadataUtils.createPaymentIntentMetadata({
-      studentId: student.id,
-      userId,
-      serviceType: ServiceType.PRIVATE, // All treated as packages
-      teacherId: parseInt(bookingData.teacher) || 0,
-      startAt: bookingData.start || '',
-      endAt: bookingData.end || '',
-      productId: stripePrice.product as string,
-      priceId: stripePrice.id,
-      notes: `Package purchase - ${JSON.stringify(bookingData)}`,
-      source: 'booking-confirmation',
-    });
+    const paymentIntentMetadata =
+      StripeMetadataUtils.createPaymentIntentMetadata({
+        studentId: student.id,
+        userId,
+        serviceType: ServiceType.PRIVATE, // All treated as packages
+        teacherId: parseInt(bookingData.teacher) || 0,
+        startAt: bookingData.start || '',
+        endAt: bookingData.end || '',
+        productId: stripePrice.product as string,
+        priceId: stripePrice.id,
+        notes: `Package purchase - ${JSON.stringify(bookingData)}`,
+        source: 'booking-confirmation',
+      });
     // Inject draft IDs
     (paymentIntentMetadata as any).session_id = sessionId.toString();
     (paymentIntentMetadata as any).booking_id = bookingId.toString();

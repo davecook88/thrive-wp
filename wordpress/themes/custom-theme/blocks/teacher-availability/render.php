@@ -25,7 +25,8 @@ $wrapper_attributes = get_block_wrapper_attributes([
         <div style="text-align: center; padding: 2rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
             <h3 style="color: #64748b; margin-bottom: 1rem;">Sign In Required</h3>
             <p style="color: #64748b; margin-bottom: 1.5rem;">Please sign in to manage your availability.</p>
-            <a href="/api/auth/google"
+            <?php $cur = isset($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : '/'; ?>
+            <a href="<?php echo esc_url('/api/auth/google/start?redirect=' . rawurlencode($cur)); ?>"
                 style="background: <?php echo esc_attr($accent_color); ?>; color: white; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 6px; display: inline-block;">Sign
                 In with Google</a>
         </div>

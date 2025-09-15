@@ -117,7 +117,7 @@ export class TeachersService {
 
       // Insert new rules
       for (const rule of dto.rules) {
-        let startMinutes = this.timeStringToMinutes(rule.startTime);
+        const startMinutes = this.timeStringToMinutes(rule.startTime);
         let endMinutes = this.timeStringToMinutes(rule.endTime);
 
         // If end time is before start time, assume it spans to the next day
@@ -138,7 +138,7 @@ export class TeachersService {
       // Insert new exceptions
       if (dto.exceptions) {
         for (const exception of dto.exceptions) {
-          let startAt = exception.startTime
+          const startAt = exception.startTime
             ? new Date(`${exception.date}T${exception.startTime}:00.000Z`)
             : new Date(`${exception.date}T00:00:00.000Z`);
 

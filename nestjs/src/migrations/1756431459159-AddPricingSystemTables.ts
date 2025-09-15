@@ -91,9 +91,13 @@ export class AddPricingSystemTables1756431459159 implements MigrationInterface {
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Remove stripe_customer_id from student table
-    await queryRunner.query('ALTER TABLE student DROP KEY IDX_student_stripe_customer_id_unique;');
-    await queryRunner.query('ALTER TABLE student DROP COLUMN stripe_customer_id;');
-    
+    await queryRunner.query(
+      'ALTER TABLE student DROP KEY IDX_student_stripe_customer_id_unique;',
+    );
+    await queryRunner.query(
+      'ALTER TABLE student DROP COLUMN stripe_customer_id;',
+    );
+
     // Drop tables in reverse order to handle foreign keys
     await queryRunner.query('DROP TABLE IF EXISTS order_item;');
     await queryRunner.query('DROP TABLE IF EXISTS `order`;');

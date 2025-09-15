@@ -11,8 +11,9 @@ if (!function_exists('thrive_is_logged_in')) {
 
 // Only show for logged-in users
 if (!thrive_is_logged_in()) {
+    $cur = isset($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : '/';
     echo '<div class="student-calendar-login-required">' .
-        '<p>Please <a href="/api/auth/google">sign in</a> to view your sessions.</p>' .
+        '<p>Please <a href="' . esc_url('/api/auth/google/start?redirect=' . rawurlencode($cur)) . '">sign in</a> to view your sessions.</p>' .
         '</div>';
     return;
 }

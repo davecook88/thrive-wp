@@ -63,6 +63,26 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   googleAuth() {}
 
+  // Helper endpoint: set a post-auth redirect and then start the Google OAuth flow.
+  // Use this when you want to preserve the page the user was on before auth.
+  @Get('google/start')
+  startGoogleAuth(@Req() req: Request, @Res() res: Response) {
+    const redirectCookieName = 'post_auth_redirect';
+    const redirect = (req as any).query?.redirect;
+    if (redirect && typeof redirect === 'string' && redirect.startsWith('/')) {
+      const isProd = process.env.NODE_ENV === 'production';
+      res.cookie(redirectCookieName, redirect, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: isProd,
+        path: '/',
+        maxAge: 1000 * 60 * 5, // short lived (5m)
+      });
+    }
+    // Redirect to the passport-protected entry which will redirect to Google
+    return res.redirect(302, '/auth/google');
+  }
+
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleCallback(@Req() req: Request, @Res() res: Response) {
@@ -102,6 +122,19 @@ export class AuthController {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     });
     const redirectBase = process.env.WP_BASE_URL || 'http://localhost:8080';
+    // Prefer a previously-set post-auth redirect (set by /auth/google/start)
+    const redirectCookieName = 'post_auth_redirect';
+    const postAuthRedirect =
+      (req as any).cookies?.[redirectCookieName] ||
+      extractCookie(req.headers['cookie'] || '', redirectCookieName) ||
+      '';
+    if (postAuthRedirect && typeof postAuthRedirect === 'string') {
+      // clear cookie and only allow path-style redirects for safety
+      res.clearCookie(redirectCookieName, { path: '/' });
+      if (postAuthRedirect.startsWith('/')) {
+        return res.redirect(302, `${redirectBase}${postAuthRedirect}`);
+      }
+    }
     return res.redirect(302, `${redirectBase}/?auth=success`);
   }
 
@@ -238,7 +271,12 @@ export class AuthController {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     });
     const redirectBase = process.env.WP_BASE_URL || 'http://localhost:8080';
-    return res.status(201).json({ ok: true, redirect: redirectBase + '/' });
+    const redirectRaw = (arguments as any)[0]?.redirect as string | undefined;
+    const redirectPath =
+      redirectRaw && redirectRaw.startsWith('/') ? redirectRaw : '/';
+    return res
+      .status(201)
+      .json({ ok: true, redirect: redirectBase + redirectPath });
   }
 
   @Post('login')
@@ -282,7 +320,11 @@ export class AuthController {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     });
     const redirectBase = process.env.WP_BASE_URL || 'http://localhost:8080';
-    return res.json({ ok: true, redirect: redirectBase + '/' });
+    // Respect optional redirect passed in body (must be a path starting with '/')
+    const redirectRaw = (arguments as any)[0]?.redirect as string | undefined;
+    const redirectPath =
+      redirectRaw && redirectRaw.startsWith('/') ? redirectRaw : '/';
+    return res.json({ ok: true, redirect: redirectBase + redirectPath });
   }
 
   @Get('logout')

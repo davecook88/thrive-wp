@@ -65,8 +65,8 @@ describe('TeacherAvailability Entity', () => {
     const composite = indices.find(
       (i) =>
         Array.isArray(i.columns) &&
-        (i.columns as string[]).includes('teacherId') &&
-        (i.columns as string[]).includes('kind'),
+        i.columns.includes('teacherId') &&
+        i.columns.includes('kind'),
     );
     expect(composite).toBeDefined();
   });

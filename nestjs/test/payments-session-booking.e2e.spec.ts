@@ -96,23 +96,21 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
       'INSERT INTO user (email, first_name, last_name, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())',
       ['test@example.com', 'Test', 'User'],
     );
-    userId = (userResult as any)[0]?.insertId || (userResult as any).insertId;
+    userId = userResult[0]?.insertId || userResult.insertId;
 
     // Create test student
     const studentResult = await dataSource.query(
       'INSERT INTO student (user_id, created_at, updated_at) VALUES (?, NOW(), NOW())',
       [userId],
     );
-    studentId =
-      (studentResult as any)[0]?.insertId || (studentResult as any).insertId;
+    studentId = studentResult[0]?.insertId || studentResult.insertId;
 
     // Create test teacher
     const teacherResult = await dataSource.query(
       'INSERT INTO teacher (user_id, tier, is_active, created_at, updated_at) VALUES (?, 10, 1, NOW(), NOW())',
       [userId],
     );
-    teacherId =
-      (teacherResult as any)[0]?.insertId || (teacherResult as any).insertId;
+    teacherId = teacherResult[0]?.insertId || teacherResult.insertId;
 
     // Create teacher availability for testing
     await dataSource.query(
@@ -126,8 +124,7 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
       [ServiceType.GROUP, teacherId],
     );
     existingGroupSessionId =
-      (groupSessionResult as any)[0]?.insertId ||
-      (groupSessionResult as any).insertId;
+      groupSessionResult[0]?.insertId || groupSessionResult.insertId;
 
     // Create existing COURSE session for testing
     const courseSessionResult = await dataSource.query(
@@ -135,8 +132,7 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
       [ServiceType.COURSE, teacherId],
     );
     existingCourseSessionId =
-      (courseSessionResult as any)[0]?.insertId ||
-      (courseSessionResult as any).insertId;
+      courseSessionResult[0]?.insertId || courseSessionResult.insertId;
 
     // Create Stripe product mappings
     await dataSource.query(
