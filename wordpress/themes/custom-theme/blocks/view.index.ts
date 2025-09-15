@@ -7,6 +7,7 @@ import "./private-session-availability-calendar/view";
 import "./selected-event-modal/view";
 import "./teacher-picker/view";
 import "./booking-session-details/view";
+import "./conditional-stripe-payment/view";
 // Context-specific logic now lives in ./thrive-calendar-context/view.ts
 import "./hooks/get-context";
 import "./hooks/get-teachers";
