@@ -1,0 +1,45 @@
+import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { BaseEntity } from '../../common/entities/base.entity.js';
+import { Student } from '../../students/entities/student.entity.js';
+
+@Entity('student_package')
+@Index(['studentId'])
+export class StudentPackage extends BaseEntity {
+  @Column({ name: 'student_id', type: 'int' })
+  studentId: number;
+
+  @ManyToOne(() => Student, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'student_id' })
+  student: Student;
+
+  @Column({ name: 'package_name', type: 'varchar', length: 255 })
+  packageName: string;
+
+  @Column({ name: 'total_sessions', type: 'int', default: 0 })
+  totalSessions: number;
+
+  @Column({ name: 'remaining_sessions', type: 'int', default: 0 })
+  remainingSessions: number;
+
+  @Column({ name: 'purchased_at', type: 'datetime', precision: 3 })
+  purchasedAt: Date;
+
+  @Column({
+    name: 'expires_at',
+    type: 'datetime',
+    precision: 3,
+    nullable: true,
+  })
+  expiresAt: Date | null;
+
+  @Column({
+    name: 'source_payment_id',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
+  sourcePaymentId: string | null;
+
+  @Column({ name: 'metadata', type: 'json', nullable: true })
+  metadata: any | null;
+}

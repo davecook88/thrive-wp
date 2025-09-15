@@ -13,6 +13,8 @@ import {
   StripeProductMap,
   ScopeType,
 } from '../payments/entities/stripe-product-map.entity.js';
+import { StudentPackage } from './entities/student-package.entity.js';
+import { PackageUse } from './entities/package-use.entity.js';
 
 @Injectable()
 export class PackagesService {
@@ -22,6 +24,10 @@ export class PackagesService {
     @InjectRepository(StripeProductMap)
     private stripeProductMapRepository: Repository<StripeProductMap>,
     private configService: ConfigService,
+    @InjectRepository(StudentPackage)
+    private readonly pkgRepo: Repository<StudentPackage>,
+    @InjectRepository(PackageUse)
+    private readonly useRepo: Repository<PackageUse>,
   ) {
     const secretKey = this.configService.get<string>('stripe.secretKey');
     if (!secretKey) {
@@ -339,5 +345,86 @@ export class PackagesService {
       .substring(0, 30);
 
     return `${dto.serviceType}_CREDITS_${dto.credits}_${dto.creditUnitMinutes}MIN_${sanitizedName}_${dto.currency.toUpperCase()}`;
+  }
+
+  // NEW CREDIT-BASED METHODS (added alongside)
+  async getActivePackagesForStudent(studentId: number) {
+    const pkgs = await this.pkgRepo.find({
+      where: { studentId },
+      order: { createdAt: 'DESC' },
+    });
+
+    // Filter active packages (not expired and has remaining sessions)
+    const now = new Date();
+    const activePackages = pkgs.filter(
+      (pkg) =>
+        pkg.remainingSessions > 0 &&
+        (pkg.expiresAt === null || pkg.expiresAt > now),
+    );
+
+    return {
+      packages: activePackages.map((pkg) => ({
+        id: pkg.id,
+        packageName: pkg.packageName,
+        totalSessions: pkg.totalSessions,
+        remainingSessions: pkg.remainingSessions,
+        purchasedAt: pkg.purchasedAt.toISOString(),
+        expiresAt: pkg.expiresAt?.toISOString() || null,
+      })),
+      totalRemaining: activePackages.reduce(
+        (sum, pkg) => sum + pkg.remainingSessions,
+        0,
+      ),
+    };
+  }
+
+  async usePackageForSession(
+    studentId: number,
+    packageId: number,
+    sessionId: number,
+    usedBy?: number,
+  ) {
+    const pkg = await this.pkgRepo.findOne({
+      where: { id: packageId, studentId },
+    });
+    if (!pkg) throw new NotFoundException('Package not found');
+    if (pkg.remainingSessions <= 0)
+      throw new BadRequestException('No remaining credits');
+
+    // Check if package is expired
+    if (pkg.expiresAt && pkg.expiresAt <= new Date()) {
+      throw new BadRequestException('Package has expired');
+    }
+
+    return await this.pkgRepo.manager.transaction(async (tx) => {
+      // Lock and re-fetch inside transaction with pessimistic lock
+      const locked = await tx.findOne(StudentPackage, {
+        where: { id: packageId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!locked) throw new NotFoundException('Package not found');
+      if (locked.remainingSessions <= 0)
+        throw new BadRequestException('No remaining credits');
+
+      locked.remainingSessions = locked.remainingSessions - 1;
+      await tx.save(StudentPackage, locked);
+
+      const use = tx.create(PackageUse, {
+        studentPackageId: packageId,
+        sessionId,
+        usedAt: new Date(),
+        usedBy: usedBy || studentId,
+      });
+      await tx.save(PackageUse, use);
+
+      return { package: locked, use };
+    });
+  }
+
+  async linkUseToBooking(useId: number, bookingId: number) {
+    const use = await this.useRepo.findOne({ where: { id: useId } });
+    if (!use) return null;
+    use.bookingId = bookingId;
+    return await this.useRepo.save(use);
   }
 }

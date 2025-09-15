@@ -1,16 +1,16 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import {
-  PackagesController,
-  PublicPackagesController,
-} from './packages.controller.js';
-import { PackagesService } from './packages.service.js';
+import { StudentPackage } from './entities/student-package.entity.js';
+import { PackageUse } from './entities/package-use.entity.js';
 import { StripeProductMap } from '../payments/entities/stripe-product-map.entity.js';
-import { AuthModule } from '../auth/auth.module.js';
+import { PackagesService } from './packages.service.js';
+import { PackagesController } from './packages.controller.js';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([StripeProductMap]), AuthModule],
-  controllers: [PackagesController, PublicPackagesController],
+  imports: [
+    TypeOrmModule.forFeature([StudentPackage, PackageUse, StripeProductMap]),
+  ],
+  controllers: [PackagesController],
   providers: [PackagesService],
   exports: [PackagesService],
 })

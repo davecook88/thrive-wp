@@ -8,7 +8,7 @@ import bcrypt from 'bcryptjs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity.js';
-import { Admin } from '../admin/entities/admin.entity.js';
+import { Admin } from '../courses/entities/admin.entity.js';
 import { Teacher } from '../teachers/entities/teacher.entity.js';
 
 interface GoogleProfileLike {

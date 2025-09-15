@@ -25,6 +25,9 @@ import {
   ParsedStripeMetadata,
 } from './dto/stripe-metadata.dto.js';
 import { SessionsService } from '../sessions/services/sessions.service.js';
+import { PackagesService } from '../packages/packages.service.js';
+import { StudentPackage } from '../packages/entities/student-package.entity.js';
+import { PackageUse } from '../packages/entities/package-use.entity.js';
 
 export interface CreatePaymentIntentResponse {
   clientSecret: string;
@@ -46,8 +49,13 @@ export class PaymentsService {
     private sessionRepository: Repository<Session>,
     @InjectRepository(Booking)
     private bookingRepository: Repository<Booking>,
+    @InjectRepository(StudentPackage)
+    private studentPackageRepository: Repository<StudentPackage>,
+    @InjectRepository(PackageUse)
+    private packageUseRepository: Repository<PackageUse>,
     private configService: ConfigService,
     private sessionsService: SessionsService,
+    private packagesService: PackagesService,
   ) {
     const secretKey = this.configService.get<string>('stripe.secretKey');
     if (!secretKey) {
@@ -56,6 +64,53 @@ export class PaymentsService {
     this.stripe = new Stripe(secretKey, {
       apiVersion: '2025-08-27.basil',
     });
+  }
+
+  /**
+   * Create a booking using an existing student package credit (no Stripe/payment)
+   * Returns the created booking record.
+   */
+  async bookWithPackage(
+    studentUserId: number,
+    packageId: number,
+    sessionId: number,
+  ) {
+    // Resolve student.id from userId
+    const student = await this.studentRepository.findOne({
+      where: { userId: studentUserId },
+    });
+    if (!student) throw new NotFoundException('Student not found');
+
+    // Use package (decrement + create package_use)
+    const { package: pkg, use } =
+      await this.packagesService.usePackageForSession(
+        student.id,
+        packageId,
+        sessionId,
+        student.id,
+      );
+
+    // Create booking referencing package
+    const booking = this.bookingRepository.create({
+      sessionId,
+      studentId: student.id,
+      status: BookingStatus.CONFIRMED,
+      acceptedAt: new Date(),
+      studentPackageId: pkg.id,
+      creditsCost: 1,
+    });
+
+    const saved = await this.bookingRepository.save(booking);
+
+    // Link package_use.booking_id to created booking (best effort)
+    try {
+      await this.packagesService.linkUseToBooking(use.id, saved.id);
+    } catch (e) {
+      // log but don't fail booking
+      console.warn('Failed to link package use to booking', e);
+    }
+
+    return saved;
   }
 
   async createPaymentIntent(
@@ -257,8 +312,15 @@ export class PaymentsService {
     const metadata: ParsedStripeMetadata = StripeMetadataUtils.fromStripeFormat(
       paymentIntent.metadata || {},
     );
-    // If draft session/booking already created (session_id + booking_id present), promote them
-    if (metadata.session_id && metadata.booking_id) {
+
+    // Check if this is a package purchase by looking for price_id and product_id
+    const isPackagePurchase = metadata.price_id && metadata.product_id;
+
+    if (isPackagePurchase) {
+      // Handle package purchase workflow
+      await this.handlePackagePurchase(paymentIntent, metadata);
+    } else if (metadata.session_id && metadata.booking_id) {
+      // If draft session/booking already created (session_id + booking_id present), promote them
       const sessionId = parseInt(String(metadata.session_id), 10);
       const bookingId = parseInt(String(metadata.booking_id), 10);
       try {
@@ -288,6 +350,183 @@ export class PaymentsService {
     } else {
       // Legacy path: create session + booking from metadata
       await this.createSessionAndBookingFromMetadata(metadata);
+    }
+  }
+
+  private async handlePackagePurchase(
+    paymentIntent: Stripe.PaymentIntent,
+    metadata: ParsedStripeMetadata,
+  ): Promise<void> {
+    console.log('Handling package purchase from payment_intent.succeeded');
+
+    // Get package details from Stripe price
+    const priceId = String(metadata.price_id);
+    const productId = String(metadata.product_id);
+    const stripePrice = await this.stripe.prices.retrieve(priceId);
+    const stripeProduct = await this.stripe.products.retrieve(productId);
+
+    // Extract package metadata
+    const packageMetadata = stripeProduct.metadata || {};
+    const credits = parseInt(packageMetadata.credits || '0', 10);
+    const expiresInDays = parseInt(packageMetadata.expires_in_days || '0', 10);
+
+    if (credits <= 0) {
+      console.error('Package has no credits defined:', packageMetadata);
+      return;
+    }
+
+    const userId = parseInt(String(metadata.user_id), 10);
+    const sessionId = metadata.session_id
+      ? parseInt(String(metadata.session_id), 10)
+      : null;
+
+    // Find the student record
+    const student = await this.studentRepository.findOne({
+      where: { userId },
+    });
+
+    if (!student) {
+      console.error(`Student not found for user ${userId}`);
+      return;
+    }
+
+    try {
+      // Use a transaction to ensure atomicity and prevent race conditions
+      await this.studentRepository.manager.transaction(async (tx) => {
+        // Check if package already exists for this payment (idempotency protection)
+        const existingPackage = await tx.findOne(StudentPackage, {
+          where: { sourcePaymentId: paymentIntent.id },
+        });
+
+        let savedPackage: StudentPackage;
+        if (existingPackage) {
+          console.log(
+            `Package already exists for payment ${paymentIntent.id}, webhook duplicate/retry detected`,
+          );
+          savedPackage = existingPackage;
+        } else {
+          // 1. Create the student package record
+          const expiresAt =
+            expiresInDays > 0
+              ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
+              : null;
+
+          const studentPackage = tx.create(StudentPackage, {
+            studentId: student.id,
+            packageName: stripeProduct.name,
+            totalSessions: credits,
+            remainingSessions: credits,
+            purchasedAt: new Date(),
+            expiresAt,
+            sourcePaymentId: paymentIntent.id,
+            metadata: {
+              stripeProductId: stripeProduct.id,
+              stripePriceId: stripePrice.id,
+              amountPaid: paymentIntent.amount_received,
+              currency: paymentIntent.currency,
+            },
+          });
+
+          savedPackage = await tx.save(StudentPackage, studentPackage);
+          console.log(
+            `Created student package ${savedPackage.id} with ${credits} credits`,
+          );
+        }
+
+        // 2. If there's a session to book, use the package credit immediately
+        if (sessionId) {
+          // Lock the session to prevent race conditions
+          const session = await tx.findOne(Session, {
+            where: { id: sessionId },
+            lock: { mode: 'pessimistic_write' },
+          });
+
+          if (!session) {
+            console.error(`Session ${sessionId} not found for package booking`);
+            return;
+          }
+
+          if (session.status !== SessionStatus.DRAFT) {
+            console.error(
+              `Session ${sessionId} is not in DRAFT status, cannot book with package`,
+            );
+            return;
+          }
+
+          // Decrement the package credits manually within the same transaction
+          savedPackage.remainingSessions = savedPackage.remainingSessions - 1;
+          await tx.save(StudentPackage, savedPackage);
+
+          // Create package use record
+          const packageUse = tx.create(PackageUse, {
+            studentPackageId: savedPackage.id,
+            sessionId,
+            usedAt: new Date(),
+            usedBy: student.id,
+          });
+          const savedPackageUse = await tx.save(PackageUse, packageUse);
+
+          // Find existing booking (any status) to prevent duplicates
+          const existingBooking = await tx.findOne(Booking, {
+            where: {
+              sessionId,
+              studentId: student.id,
+            },
+          });
+
+          let savedBooking: Booking;
+          if (existingBooking) {
+            if (existingBooking.status === BookingStatus.DRAFT) {
+              // Update existing draft booking to confirmed status with package info
+              existingBooking.status = BookingStatus.CONFIRMED;
+              existingBooking.acceptedAt = new Date();
+              existingBooking.studentPackageId = savedPackage.id;
+              existingBooking.creditsCost = 1;
+              savedBooking = await tx.save(Booking, existingBooking);
+              console.log(
+                `Updated existing draft booking ${savedBooking.id} to confirmed status using package credit`,
+              );
+            } else {
+              // Booking already exists and is confirmed - webhook duplicate/retry
+              console.log(
+                `Booking already exists for session ${sessionId} and student ${student.id} with status ${existingBooking.status}, skipping creation`,
+              );
+              savedBooking = existingBooking;
+            }
+          } else {
+            // Create new confirmed booking using credits
+            const booking = tx.create(Booking, {
+              sessionId,
+              studentId: student.id,
+              status: BookingStatus.CONFIRMED,
+              acceptedAt: new Date(),
+              studentPackageId: savedPackage.id,
+              creditsCost: 1,
+            });
+            savedBooking = await tx.save(Booking, booking);
+            console.log(
+              `Created new confirmed booking ${savedBooking.id} using package credit`,
+            );
+          }
+
+          // Link the package use to the booking
+          savedPackageUse.bookingId = savedBooking.id;
+          await tx.save(PackageUse, savedPackageUse);
+
+          // Update session status
+          session.status = SessionStatus.SCHEDULED;
+          await tx.save(Session, session);
+
+          console.log(
+            `Created booking ${savedBooking.id} using package credit`,
+          );
+        }
+      });
+
+      console.log(`Successfully processed package purchase for user ${userId}`);
+    } catch (error) {
+      console.error('Error processing package purchase:', error);
+      throw error;
     }
   }
 
@@ -472,7 +711,7 @@ export class PaymentsService {
   // Cache for Stripe publishable key (unlikely to change)
   private cachedPublishableKey: string | null = null;
 
-  async getStripePublishableKey(): Promise<{ publishableKey: string }> {
+  getStripePublishableKey(): { publishableKey: string } {
     if (!this.cachedPublishableKey) {
       const key = this.configService.get<string>('stripe.publishableKey');
       if (!key) {

@@ -109,4 +109,5 @@ class Thrive_Admin_Bridge
         // For GET requests, don't pass data parameter to avoid WordPress HTTP issues
         return $this->thrive_admin_call_node_api($endpoint, null, 'GET');
     }
+
 }

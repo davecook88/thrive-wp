@@ -13,6 +13,7 @@ export enum BookingStatus {
   NO_SHOW = 'NO_SHOW',
   FORFEIT = 'FORFEIT',
   PENDING = 'PENDING',
+  DRAFT = 'DRAFT',
 }
 
 /**
@@ -89,4 +90,20 @@ export class Booking extends BaseEntity {
     comment: 'Acceptance timestamp (UTC)',
   })
   acceptedAt: Date | null;
+
+  @Column({
+    name: 'student_package_id',
+    type: 'int',
+    nullable: true,
+    comment: 'FK to student_package.id when booking consumed a package credit',
+  })
+  studentPackageId: number | null;
+
+  @Column({
+    name: 'credits_cost',
+    type: 'int',
+    nullable: true,
+    comment: 'How many credits this booking consumed from the package',
+  })
+  creditsCost: number | null;
 }

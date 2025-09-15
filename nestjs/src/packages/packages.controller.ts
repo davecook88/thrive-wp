@@ -4,57 +4,64 @@ import {
   Post,
   Param,
   Body,
-  UseGuards,
+  Req,
   ParseIntPipe,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ZodValidationPipe } from 'nestjs-zod';
-import { AdminGuard } from '../auth/admin.guard.js';
+import { z } from 'zod';
+import { Request } from 'express';
 import { PackagesService } from './packages.service.js';
-import { CreatePackageSchema } from './dto/create-package.dto.js';
-import type { CreatePackageDto } from './dto/create-package.dto.js';
-import type { PackageResponseDto } from './dto/package-response.dto.js';
 
-@Controller('admin/packages')
-@UseGuards(AdminGuard)
-export class PackagesController {
-  constructor(private readonly packagesService: PackagesService) {}
+const UsePackageSchema = z.object({
+  sessionId: z.number(),
+});
 
-  @Post()
-  async createPackage(
-    @Body(new ZodValidationPipe(CreatePackageSchema))
-    createPackageDto: CreatePackageDto,
-  ): Promise<PackageResponseDto> {
-    console.log('createPackageDto:', createPackageDto);
-    return this.packagesService.createPackage(createPackageDto);
-  }
+type UsePackageDto = z.infer<typeof UsePackageSchema>;
 
-  @Get()
-  async getPackages(): Promise<PackageResponseDto[]> {
-    return this.packagesService.getPackages();
-  }
-
-  @Get(':id')
-  async getPackage(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<PackageResponseDto> {
-    return this.packagesService.getPackage(id);
-  }
-
-  @Post(':id/deactivate')
-  async deactivatePackage(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<{ message: string }> {
-    await this.packagesService.deactivatePackage(id);
-    return { message: 'Package deactivated successfully' };
-  }
+interface AuthenticatedRequest extends Request {
+  headers: Request['headers'] & {
+    'x-auth-user-id'?: string;
+  };
 }
 
 @Controller('packages')
-export class PublicPackagesController {
+export class PackagesController {
   constructor(private readonly packagesService: PackagesService) {}
 
   @Get()
-  async getAvailablePackages(): Promise<PackageResponseDto[]> {
+  async getAvailablePackages() {
+    // Return available packages that can be purchased from the catalog
     return this.packagesService.getActivePackages();
+  }
+
+  @Get('my-credits')
+  async myCredits(@Req() req: AuthenticatedRequest) {
+    const userId = req.headers['x-auth-user-id'];
+    if (!userId) {
+      throw new UnauthorizedException('User ID not found in auth headers');
+    }
+    return this.packagesService.getActivePackagesForStudent(
+      parseInt(userId, 10),
+    );
+  }
+
+  @Post(':id/use')
+  async usePackage(
+    @Param('id', ParseIntPipe) packageId: number,
+    @Body(new ZodValidationPipe(UsePackageSchema)) body: UsePackageDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const userId = req.headers['x-auth-user-id'];
+    if (!userId) {
+      throw new UnauthorizedException('User ID not found in auth headers');
+    }
+    const studentId = parseInt(userId, 10);
+    return this.packagesService.usePackageForSession(
+      studentId,
+      packageId,
+      body.sessionId,
+      studentId,
+    );
   }
 }

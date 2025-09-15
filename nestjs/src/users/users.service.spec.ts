@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UsersService } from './users.service.js';
 import { User } from './entities/user.entity.js';
-import { Admin } from '../admin/entities/admin.entity.js';
+import { Admin } from '../courses/entities/admin.entity.js';
 import { Teacher } from '../teachers/entities/teacher.entity.js';
 
 // Mock entity types for testing

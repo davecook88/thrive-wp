@@ -18,6 +18,7 @@ export abstract class BaseEntity extends TypeOrmBaseEntity {
     name: 'created_at',
     type: 'datetime',
     precision: 3,
+    default: () => 'CURRENT_TIMESTAMP(3)',
     comment: 'Record creation timestamp in UTC',
   })
   createdAt: Date;
@@ -26,6 +27,8 @@ export abstract class BaseEntity extends TypeOrmBaseEntity {
     name: 'updated_at',
     type: 'datetime',
     precision: 3,
+    default: () => 'CURRENT_TIMESTAMP(3)',
+    onUpdate: 'CURRENT_TIMESTAMP(3)',
     comment: 'Record last update timestamp in UTC',
   })
   updatedAt: Date;
