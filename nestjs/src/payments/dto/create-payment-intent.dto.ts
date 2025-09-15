@@ -21,3 +21,16 @@ export const CreatePaymentIntentSchema = z.object({
 });
 
 export type CreatePaymentIntentDto = z.infer<typeof CreatePaymentIntentSchema>;
+
+export const CreateSessionBookingDataSchema = z.object({
+  teacherId: z.number().int().positive(),
+  start: z.iso.datetime(),
+  end: z.iso.datetime(),
+});
+
+export const CreateSessionSchema = z.object({
+  priceId: z.string().min(1, { message: 'Price ID is required' }),
+  bookingData: CreateSessionBookingDataSchema,
+});
+
+export type CreateSessionDto = z.infer<typeof CreateSessionSchema>;

@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DeepPartial } from 'typeorm';
 import Stripe from 'stripe';
 import { CreatePackageDto } from './dto/create-package.dto.js';
 import { PackageResponseDto } from './dto/package-response.dto.js';
@@ -102,9 +102,9 @@ export class PackagesService {
           expires_in_days: createPackageDto.expiresInDays,
           scope: createPackageDto.scope,
           stripe_price_id: stripePrice.id,
-          lookup_key: lookupKey,
+          lookup_key: lookupKey ?? '',
         },
-      });
+      } as DeepPartial<StripeProductMap>);
 
       const savedMapping =
         await this.stripeProductMapRepository.save(productMapping);
@@ -136,7 +136,7 @@ export class PackagesService {
       }
 
       throw new BadRequestException(
-        `Failed to create package: ${error.message}`,
+        `Failed to create package: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }
@@ -174,11 +174,11 @@ export class PackagesService {
 
         packages.push({
           id: mapping.id,
-          name: metadata.name || stripeProduct.name,
-          serviceType: metadata.service_type || 'PRIVATE',
+          name: String(metadata.name) || stripeProduct.name,
+          serviceType: String(metadata.service_type) || 'PRIVATE',
           credits: Number(metadata.credits) || 0,
           creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
-          expiresInDays: metadata.expires_in_days || null,
+          expiresInDays: Number(metadata.expires_in_days) || null,
           stripe: {
             productId: stripeProduct.id,
             priceId: stripePrice.id,
@@ -191,7 +191,7 @@ export class PackagesService {
       } catch (error) {
         console.warn(
           `Failed to fetch Stripe data for mapping ${mapping.id}:`,
-          error.message,
+          error instanceof Error ? error.message : 'Unknown error',
         );
         // Continue with other packages
       }
@@ -239,11 +239,11 @@ export class PackagesService {
 
         packages.push({
           id: mapping.id,
-          name: metadata.name || stripeProduct.name,
-          serviceType: metadata.service_type || 'PRIVATE',
+          name: String(metadata.name) || stripeProduct.name,
+          serviceType: String(metadata.service_type) || 'PRIVATE',
           credits: Number(metadata.credits) || 0,
           creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
-          expiresInDays: metadata.expires_in_days || null,
+          expiresInDays: Number(metadata.expires_in_days) || null,
           stripe: {
             productId: stripeProduct.id,
             priceId: stripePrice.id,
@@ -256,7 +256,7 @@ export class PackagesService {
       } catch (error) {
         console.warn(
           `Failed to fetch Stripe data for mapping ${mapping.id}:`,
-          error.message,
+          error instanceof Error ? error.message : 'Unknown error',
         );
         // Continue with other packages
       }
@@ -296,11 +296,11 @@ export class PackagesService {
 
       return {
         id: mapping.id,
-        name: metadata.name || stripeProduct.name,
-        serviceType: metadata.service_type || 'PRIVATE',
+        name: String(metadata.name) || stripeProduct.name,
+        serviceType: String(metadata.service_type) || 'PRIVATE',
         credits: Number(metadata.credits) || 0,
         creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
-        expiresInDays: metadata.expires_in_days || null,
+        expiresInDays: Number(metadata.expires_in_days) || null,
         stripe: {
           productId: stripeProduct.id,
           priceId: stripePrice.id,
@@ -315,7 +315,9 @@ export class PackagesService {
         throw error;
       }
       throw new BadRequestException(
-        `Failed to fetch package: ${error.message}`,
+        error instanceof Error
+          ? `Failed to fetch package: ${error.message}`
+          : 'Unknown error',
       );
     }
   }

@@ -67,5 +67,5 @@ export class StripeProductMap extends BaseEntity {
     nullable: true,
     comment: 'Additional metadata from Stripe',
   })
-  metadata?: any;
+  metadata?: Record<string, string | number | boolean | undefined> | null;
 }

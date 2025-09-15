@@ -10,6 +10,8 @@ import { BaseEntity } from '../../common/entities/base.entity.js';
 import { Course } from '../../courses/entities/course.entity.js';
 import { Teacher } from '../../teachers/entities/teacher.entity.js';
 import { TeacherAvailability } from '../../teachers/entities/teacher-availability.entity.js';
+import type { Booking } from '../../payments/entities/booking.entity.js';
+import type { Waitlist } from '../../waitlists/entities/waitlist.entity.js';
 import { ServiceType } from '../../common/types/class-types.js';
 
 /**
@@ -156,9 +158,10 @@ export class Session extends BaseEntity {
   })
   sourceTimezone: string | null;
 
+  // use string relation targets to avoid circular runtime imports
   @OneToMany('Booking', 'session')
-  bookings: any[];
+  bookings: Booking[];
 
   @OneToMany('Waitlist', 'session')
-  waitlists: any[];
+  waitlists: Waitlist[];
 }

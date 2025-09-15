@@ -7,9 +7,15 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import Stripe from 'stripe';
-import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto.js';
+import {
+  CreatePaymentIntentDto,
+  CreateSessionDto,
+} from './dto/create-payment-intent.dto.js';
 import { Student } from '../students/entities/student.entity.js';
-import { StripeProductMap } from './entities/stripe-product-map.entity.js';
+import {
+  ScopeType,
+  StripeProductMap,
+} from './entities/stripe-product-map.entity.js';
 import {
   Session,
   SessionStatus,
@@ -254,7 +260,7 @@ export class PaymentsService {
     // Verify the product exists in Stripe
     try {
       await this.stripe.products.retrieve(stripeProductId);
-    } catch (error) {
+    } catch {
       throw new BadRequestException(
         `Stripe product ${stripeProductId} not found`,
       );
@@ -265,19 +271,16 @@ export class PaymentsService {
       serviceKey,
       stripeProductId,
       active: true,
-      scopeType: 'session' as any,
+      scopeType: ScopeType.SESSION,
       metadata: {
         description: `Product mapping for ${serviceKey}`,
       },
     });
 
-    return await this.stripeProductMapRepository.save(mapping);
+    return this.stripeProductMapRepository.save(mapping);
   }
 
-  async constructStripeEvent(
-    rawBody: Buffer,
-    signature: string,
-  ): Promise<Stripe.Event> {
+  constructStripeEvent(rawBody: Buffer, signature: string): Stripe.Event {
     const webhookSecret = this.configService.get<string>(
       'stripe.webhookSecret',
     );
@@ -635,7 +638,7 @@ export class PaymentsService {
           });
         } catch (error) {
           console.error(
-            `Availability validation failed for PRIVATE session: ${error.message}`,
+            `Availability validation failed for PRIVATE session: ${error instanceof Error ? error.message : error}`,
           );
           return;
         }
@@ -724,7 +727,7 @@ export class PaymentsService {
 
   async createPaymentSession(
     priceId: string,
-    bookingData: any,
+    bookingData: CreateSessionDto['bookingData'],
     userId: number,
   ): Promise<{ clientSecret: string }> {
     // Get the student record
@@ -766,14 +769,14 @@ export class PaymentsService {
     // Validate availability before creating draft (private sessions only for now)
     try {
       await this.sessionsService.validatePrivateSession({
-        teacherId: parseInt(bookingData.teacher) || 0,
+        teacherId: bookingData.teacherId || 0,
         startAt: bookingData.start,
         endAt: bookingData.end,
         studentId: student.id,
       });
     } catch (e) {
       throw new BadRequestException(
-        `Availability validation failed: ${e.message}`,
+        `Availability validation failed: ${e instanceof Error ? e.message : e}`,
       );
     }
 
@@ -782,7 +785,7 @@ export class PaymentsService {
       await this.sessionRepository.manager.transaction(async (tx) => {
         const draftSession = tx.create(Session, {
           type: ServiceType.PRIVATE,
-          teacherId: parseInt(bookingData.teacher) || 0,
+          teacherId: bookingData.teacherId || 0,
           startAt: new Date(bookingData.start),
           endAt: new Date(bookingData.end),
           capacityMax: 1,
@@ -810,7 +813,7 @@ export class PaymentsService {
         studentId: student.id,
         userId,
         serviceType: ServiceType.PRIVATE, // All treated as packages
-        teacherId: parseInt(bookingData.teacher) || 0,
+        teacherId: bookingData.teacherId || 0,
         startAt: bookingData.start || '',
         endAt: bookingData.end || '',
         productId: stripePrice.product as string,
@@ -819,8 +822,8 @@ export class PaymentsService {
         source: 'booking-confirmation',
       });
     // Inject draft IDs
-    (paymentIntentMetadata as any).session_id = sessionId.toString();
-    (paymentIntentMetadata as any).booking_id = bookingId.toString();
+    paymentIntentMetadata.session_id = sessionId.toString();
+    paymentIntentMetadata.booking_id = bookingId.toString();
 
     const paymentIntent = await this.stripe.paymentIntents.create({
       amount: stripePrice.unit_amount || 0,

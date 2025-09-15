@@ -41,5 +41,5 @@ export class StudentPackage extends BaseEntity {
   sourcePaymentId: string | null;
 
   @Column({ name: 'metadata', type: 'json', nullable: true })
-  metadata: any | null;
+  metadata: Record<string, string | number | boolean> | null;
 }

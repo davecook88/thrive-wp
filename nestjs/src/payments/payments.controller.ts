@@ -12,7 +12,10 @@ import {
   PaymentsService,
   CreatePaymentIntentResponse,
 } from './payments.service.js';
-import { CreatePaymentIntentSchema } from './dto/create-payment-intent.dto.js';
+import {
+  CreatePaymentIntentSchema,
+  CreateSessionSchema,
+} from './dto/create-payment-intent.dto.js';
 import type { CreatePaymentIntentDto } from './dto/create-payment-intent.dto.js';
 import type { Request as ExpressRequest } from 'express';
 
@@ -34,7 +37,8 @@ export class PaymentsController {
 
   @Post('create-session')
   async createSession(
-    @Body() body: { priceId: string; bookingData: any },
+    @Body(new ZodValidationPipe(CreateSessionSchema))
+    body: z.infer<typeof CreateSessionSchema>,
     @Request() req: ExpressRequest,
   ): Promise<{ clientSecret: string }> {
     // Extract user ID from X-Auth headers injected by Nginx
