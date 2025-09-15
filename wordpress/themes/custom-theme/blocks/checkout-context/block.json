@@ -1,0 +1,46 @@
+{
+    "apiVersion": 3,
+    "name": "custom-theme/checkout-context",
+    "title": "Checkout Context",
+    "category": "widgets",
+    "icon": "cart",
+    "description": "Provides shared checkout context (booking, order, and initial package) for descendent blocks.",
+    "attributes": {
+        "bookingStart": {
+            "type": "string"
+        },
+        "bookingEnd": {
+            "type": "string"
+        },
+        "teacherId": {
+            "type": "string"
+        },
+        "orderId": {
+            "type": "string"
+        },
+        "selectedPackageId": {
+            "type": "string"
+        },
+        "selectedPriceId": {
+            "type": "string"
+        },
+        "selectedPackageName": {
+            "type": "string"
+        }
+    },
+    "providesContext": {
+        "custom-theme/bookingStart": "bookingStart",
+        "custom-theme/bookingEnd": "bookingEnd",
+        "custom-theme/teacherId": "teacherId",
+        "custom-theme/orderId": "orderId",
+        "custom-theme/selectedPackageId": "selectedPackageId",
+        "custom-theme/selectedPriceId": "selectedPriceId",
+        "custom-theme/selectedPackageName": "selectedPackageName"
+    },
+    "supports": {
+        "anchor": true
+    },
+    "editorScript": "custom-theme-blocks",
+    "viewScript": "custom-theme-blocks-view",
+    "render": "file:./render.php"
+}

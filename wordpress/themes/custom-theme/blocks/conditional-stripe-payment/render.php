@@ -17,10 +17,33 @@ $back_link_text = $attributes['backLinkText'] ?? 'Back to Calendar';
 // Check if user is logged in
 $is_logged_in = function_exists('thrive_is_logged_in') && thrive_is_logged_in();
 
-// Get booking params for the payment session
-$start = isset($_GET['start']) ? sanitize_text_field(wp_unslash($_GET['start'])) : '';
-$end = isset($_GET['end']) ? sanitize_text_field(wp_unslash($_GET['end'])) : '';
-$teacher = isset($_GET['teacher']) ? sanitize_text_field(wp_unslash($_GET['teacher'])) : '';
+// Get booking params for the payment session from context (preferred) or GET fallback
+$start = '';
+$end = '';
+$teacher = '';
+$initialPackageId = '';
+$initialPriceId = '';
+$initialPackageName = '';
+if (isset($block) && is_object($block)) {
+    $vars = get_object_vars($block);
+    /** @var array $ctx */
+    $ctx = isset($vars['context']) && is_array($vars['context']) ? $vars['context'] : [];
+    $start = isset($ctx['custom-theme/bookingStart']) ? (string) $ctx['custom-theme/bookingStart'] : '';
+    $end = isset($ctx['custom-theme/bookingEnd']) ? (string) $ctx['custom-theme/bookingEnd'] : '';
+    $teacher = isset($ctx['custom-theme/teacherId']) ? (string) $ctx['custom-theme/teacherId'] : '';
+    $initialPackageId = isset($ctx['custom-theme/selectedPackageId']) ? (string) $ctx['custom-theme/selectedPackageId'] : '';
+    $initialPriceId = isset($ctx['custom-theme/selectedPriceId']) ? (string) $ctx['custom-theme/selectedPriceId'] : '';
+    $initialPackageName = isset($ctx['custom-theme/selectedPackageName']) ? (string) $ctx['custom-theme/selectedPackageName'] : '';
+}
+if ($start === '') {
+    $start = isset($_GET['start']) ? sanitize_text_field(wp_unslash($_GET['start'])) : '';
+}
+if ($end === '') {
+    $end = isset($_GET['end']) ? sanitize_text_field(wp_unslash($_GET['end'])) : '';
+}
+if ($teacher === '') {
+    $teacher = isset($_GET['teacher']) ? sanitize_text_field(wp_unslash($_GET['teacher'])) : '';
+}
 
 // Get wrapper attributes
 $wrapper_attributes = get_block_wrapper_attributes([
@@ -83,7 +106,16 @@ $wrapper_attributes = get_block_wrapper_attributes([
                 const messages = document.getElementById('payment-messages');
 
                 // Listen for package selection events
-                document.addEventListener('packageSelected', async (event) => {
+                // Accept preselected package via context on load
+                const initialPkg = (<?php echo wp_json_encode([
+                    'id' => $initialPackageId,
+                    'priceId' => $initialPriceId,
+                    'name' => $initialPackageName,
+                ]); ?>);
+                // Listen first, then optionally dispatch
+
+                // Listen for package selection events (namespaced)
+                document.addEventListener('custom-theme:packageSelected', async (event) => {
                     selectedPackage = event.detail;
 
                     // Update UI to show payment form
@@ -169,6 +201,10 @@ $wrapper_attributes = get_block_wrapper_attributes([
                         loader.style.display = 'none';
                     }
                 });
+
+                if (initialPkg && (initialPkg.id || initialPkg.priceId)) {
+                    document.dispatchEvent(new CustomEvent('custom-theme:packageSelected', { detail: initialPkg }));
+                }
 
                 function showMessage(messageText) {
                     messages.textContent = messageText;

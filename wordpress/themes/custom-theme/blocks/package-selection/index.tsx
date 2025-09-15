@@ -5,8 +5,6 @@ import { Fragment } from "@wordpress/element";
 import ServerSideRender from "@wordpress/server-side-render";
 
 interface PackageSelectionAttributes {
-  heading: string;
-  description: string;
   showCredits: boolean;
   showDuration: boolean;
   showExpiry: boolean;

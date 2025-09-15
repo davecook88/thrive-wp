@@ -22,8 +22,8 @@
         }
     },
     "providesContext": {
-        "custom-theme/calendarContextId": "attributes.contextId",
-        "custom-theme/selectedTeacherId": "attributes.selectedTeacherId"
+        "custom-theme/calendarContextId": "contextId",
+        "custom-theme/selectedTeacherId": "selectedTeacherId"
     },
     "supports": {
         "anchor": true

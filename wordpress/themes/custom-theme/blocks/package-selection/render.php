@@ -17,6 +17,26 @@ $no_packages_message = $attributes['noPackagesMessage'] ?? 'No packages are curr
 $is_logged_in = function_exists('thrive_is_logged_in') && thrive_is_logged_in();
 
 // Get wrapper attributes
+$bookingStart = '';
+$bookingEnd = '';
+$teacherId = '';
+$initialPackageId = '';
+$initialPriceId = '';
+$initialPackageName = '';
+
+// Consume block context if provided by an ancestor provider
+if (isset($block) && is_object($block)) {
+    $vars = get_object_vars($block);
+    /** @var array $ctx */
+    $ctx = isset($vars['context']) && is_array($vars['context']) ? $vars['context'] : [];
+    $bookingStart = isset($ctx['custom-theme/bookingStart']) ? (string) $ctx['custom-theme/bookingStart'] : '';
+    $bookingEnd = isset($ctx['custom-theme/bookingEnd']) ? (string) $ctx['custom-theme/bookingEnd'] : '';
+    $teacherId = isset($ctx['custom-theme/teacherId']) ? (string) $ctx['custom-theme/teacherId'] : '';
+    $initialPackageId = isset($ctx['custom-theme/selectedPackageId']) ? (string) $ctx['custom-theme/selectedPackageId'] : '';
+    $initialPriceId = isset($ctx['custom-theme/selectedPriceId']) ? (string) $ctx['custom-theme/selectedPriceId'] : '';
+    $initialPackageName = isset($ctx['custom-theme/selectedPackageName']) ? (string) $ctx['custom-theme/selectedPackageName'] : '';
+}
+
 $wrapper_attributes = get_block_wrapper_attributes([
     'class' => 'package-selection-block'
 ]);
@@ -108,6 +128,9 @@ $wrapper_attributes = get_block_wrapper_attributes([
                 const showCredits = container.dataset.showCredits === '1';
                 const showDuration = container.dataset.showDuration === '1';
                 const showExpiry = container.dataset.showExpiry === '1';
+                const initialPackageId = <?php echo wp_json_encode($initialPackageId); ?>;
+                const initialPriceId = <?php echo wp_json_encode($initialPriceId); ?>;
+                const initialPackageName = <?php echo wp_json_encode($initialPackageName); ?>;
 
                 // Selected package storage
                 let selectedPackage = null;
@@ -155,8 +178,9 @@ $wrapper_attributes = get_block_wrapper_attributes([
                                 </div>`;
                             }
 
+                            const isPreselected = (initialPackageId && pkg.id === initialPackageId) || (initialPriceId && pkg?.stripe?.priceId === initialPriceId);
                             return `
-                            <div class="package-card" data-package-id="${pkg.id}" data-price-id="${pkg.stripe.priceId}">
+                            <div class="package-card ${isPreselected ? 'selected' : ''}" data-package-id="${pkg.id}" data-price-id="${pkg.stripe.priceId}">
                                 <div class="package-header">
                                     <div class="package-name">${pkg.name}</div>
                                     <div class="package-price">${price}</div>
@@ -181,12 +205,21 @@ $wrapper_attributes = get_block_wrapper_attributes([
                                     name: card.querySelector('.package-name').textContent
                                 };
 
-                                // Dispatch custom event for payment component
-                                document.dispatchEvent(new CustomEvent('packageSelected', {
-                                    detail: selectedPackage
-                                }));
+                                // Dispatch custom event for payment component and any consumers
+                                document.dispatchEvent(new CustomEvent('custom-theme:packageSelected', { detail: selectedPackage }));
                             });
                         });
+
+                        // If initial selection provided, announce it
+                        const pre = container.querySelector('.package-card.selected');
+                        if (pre) {
+                            selectedPackage = {
+                                id: pre.getAttribute('data-package-id'),
+                                priceId: pre.getAttribute('data-price-id'),
+                                name: pre.querySelector('.package-name')?.textContent || initialPackageName || ''
+                            };
+                            document.dispatchEvent(new CustomEvent('custom-theme:packageSelected', { detail: selectedPackage }));
+                        }
                     })
                     .catch(error => {
                         console.error('Failed to load packages:', error);

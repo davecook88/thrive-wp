@@ -39,6 +39,15 @@
             "default": "Back to Calendar"
         }
     },
+    "usesContext": [
+        "custom-theme/bookingStart",
+        "custom-theme/bookingEnd",
+        "custom-theme/teacherId",
+        "custom-theme/orderId",
+        "custom-theme/selectedPackageId",
+        "custom-theme/selectedPriceId",
+        "custom-theme/selectedPackageName"
+    ],
     "supports": {
         "anchor": true,
         "align": [

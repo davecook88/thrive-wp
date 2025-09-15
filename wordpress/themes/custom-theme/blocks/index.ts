@@ -11,4 +11,5 @@ import "./booking-status/index.tsx";
 import "./booking-session-details/index.tsx";
 import "./package-selection/index.tsx";
 import "./conditional-stripe-payment/index.tsx";
+import "./checkout-context/index.tsx";
 // Add more blocks here as needed
