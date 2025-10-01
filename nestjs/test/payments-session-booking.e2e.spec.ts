@@ -1,15 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
-import { TestDatabaseModule } from '../src/test-database.module.js';
+import { AppModule } from '../src/app.module.js';
+import { resetDatabase } from './utils/reset-db.js';
 import { PaymentsService } from '../src/payments/payments.service.js';
 import { SessionsService } from '../src/sessions/services/sessions.service.js';
 import { StudentAvailabilityService } from '../src/students/services/student-availability.service.js';
 import { TeacherAvailabilityService } from '../src/teachers/services/teacher-availability.service.js';
-import {
-  StripeMetadataUtils,
-  ParsedStripeMetadata,
-} from '../src/payments/dto/stripe-metadata.dto.js';
+import { ParsedStripeMetadata } from '../src/payments/dto/stripe-metadata.dto.js';
 import { ServiceType } from '../src/common/types/class-types.js';
 import {
   SessionStatus,
@@ -24,7 +22,9 @@ import { Teacher } from '../src/teachers/entities/teacher.entity.js';
 import { TeacherAvailability } from '../src/teachers/entities/teacher-availability.entity.js';
 import { StripeProductMap } from '../src/payments/entities/stripe-product-map.entity.js';
 import { User } from '../src/users/entities/user.entity.js';
-import { ConfigModule } from '@nestjs/config';
+import { PackagesModule } from '../src/packages/packages.module.js';
+import { StudentPackage } from '../src/packages/entities/student-package.entity.js';
+import { PackageUse } from '../src/packages/entities/package-use.entity.js';
 
 describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
   let app: INestApplication;
@@ -41,22 +41,36 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
   let existingGroupSessionId: number;
   let existingCourseSessionId: number;
 
-  beforeEach(async () => {
+  // Local DB row shapes for raw queries (snake_case columns)
+  type DbSession = {
+    id: number;
+    capacity_max?: number;
+    visibility?: string;
+    status?: string;
+    type?: string;
+  };
+
+  type DbBooking = {
+    id?: number;
+    status?: string;
+    session_id?: number;
+    student_id?: number;
+  };
+
+  const invokeCreate = async (m: ParsedStripeMetadata): Promise<void> => {
+    await (
+      paymentsService as unknown as {
+        createSessionAndBookingFromMetadata(
+          payload: ParsedStripeMetadata,
+        ): Promise<void>;
+      }
+    ).createSessionAndBookingFromMetadata(m);
+  };
+
+  beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
-        ConfigModule.forRoot({
-          isGlobal: true,
-          load: [
-            () => ({
-              stripe: {
-                secretKey: 'sk_test_dummy',
-                publishableKey: 'pk_test_dummy',
-                webhookSecret: 'whsec_dummy',
-              },
-            }),
-          ],
-        }),
-        TestDatabaseModule,
+        AppModule,
         TypeOrmModule.forFeature([
           Student,
           Session,
@@ -65,7 +79,11 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
           TeacherAvailability,
           StripeProductMap,
           User,
+          // Add package entities so StudentPackageRepository is available
+          StudentPackage,
+          PackageUse,
         ]),
+        PackagesModule,
       ],
       providers: [
         PaymentsService,
@@ -82,35 +100,48 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
     bookingRepository = moduleFixture.get('BookingRepository');
     studentRepository = moduleFixture.get('StudentRepository');
     await app.init();
+    // Prevent unused variable lint errors where not yet asserted
+    void sessionRepository;
+    void bookingRepository;
+    void studentRepository;
   }, 30000);
 
-  afterEach(async () => {
+  afterAll(async () => {
     if (app) {
       await app.close();
     }
   });
 
   beforeEach(async () => {
-    // Create test user
-    const userResult = await dataSource.query(
+    // Reset DB and create test user
+    await resetDatabase(dataSource);
+
+    const userResult = (await dataSource.query(
       'INSERT INTO user (email, first_name, last_name, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())',
       ['test@example.com', 'Test', 'User'],
-    );
-    userId = userResult[0]?.insertId || userResult.insertId;
+    )) as unknown as Array<{ insertId?: number }> | { insertId?: number };
+    userId = (
+      Array.isArray(userResult) ? userResult[0]?.insertId : userResult.insertId
+    ) as number;
 
-    // Create test student
-    const studentResult = await dataSource.query(
-      'INSERT INTO student (user_id, created_at, updated_at) VALUES (?, NOW(), NOW())',
+    // Student record is auto-created by database trigger on user insert
+    // Fetch the auto-created student ID
+    const students = (await dataSource.query(
+      'SELECT id FROM student WHERE user_id = ?',
       [userId],
-    );
-    studentId = studentResult[0]?.insertId || studentResult.insertId;
+    )) as unknown as Array<{ id: number }>;
+    studentId = students[0]?.id;
 
     // Create test teacher
-    const teacherResult = await dataSource.query(
+    const teacherResult = (await dataSource.query(
       'INSERT INTO teacher (user_id, tier, is_active, created_at, updated_at) VALUES (?, 10, 1, NOW(), NOW())',
       [userId],
-    );
-    teacherId = teacherResult[0]?.insertId || teacherResult.insertId;
+    )) as unknown as Array<{ insertId?: number }> | { insertId?: number };
+    teacherId = (
+      Array.isArray(teacherResult)
+        ? teacherResult[0]?.insertId
+        : teacherResult.insertId
+    ) as number;
 
     // Create teacher availability for testing
     await dataSource.query(
@@ -119,20 +150,26 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
     );
 
     // Create existing GROUP session for testing
-    const groupSessionResult = await dataSource.query(
+    const groupSessionResult = (await dataSource.query(
       'INSERT INTO session (type, teacher_id, start_at, end_at, capacity_max, status, visibility, requires_enrollment, created_at, updated_at) VALUES (?, ?, "2025-09-12 14:00:00", "2025-09-12 15:00:00", 5, "SCHEDULED", "PUBLIC", 0, NOW(), NOW())',
       [ServiceType.GROUP, teacherId],
-    );
-    existingGroupSessionId =
-      groupSessionResult[0]?.insertId || groupSessionResult.insertId;
+    )) as unknown as Array<{ insertId?: number }> | { insertId?: number };
+    existingGroupSessionId = (
+      Array.isArray(groupSessionResult)
+        ? groupSessionResult[0]?.insertId
+        : groupSessionResult.insertId
+    ) as number;
 
     // Create existing COURSE session for testing
-    const courseSessionResult = await dataSource.query(
+    const courseSessionResult = (await dataSource.query(
       'INSERT INTO session (type, teacher_id, start_at, end_at, capacity_max, status, visibility, requires_enrollment, created_at, updated_at) VALUES (?, ?, "2025-09-12 16:00:00", "2025-09-12 17:00:00", 5, "SCHEDULED", "PRIVATE", 1, NOW(), NOW())',
       [ServiceType.COURSE, teacherId],
-    );
-    existingCourseSessionId =
-      courseSessionResult[0]?.insertId || courseSessionResult.insertId;
+    )) as unknown as Array<{ insertId?: number }> | { insertId?: number };
+    existingCourseSessionId = (
+      Array.isArray(courseSessionResult)
+        ? courseSessionResult[0]?.insertId
+        : courseSessionResult.insertId
+    ) as number;
 
     // Create Stripe product mappings
     await dataSource.query(
@@ -163,31 +200,25 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
           price_id: 'price_test_private',
         };
 
-        // Call the method using reflection to access private method
-        const method = (
-          paymentsService as any
-        ).createSessionAndBookingFromMetadata.bind(paymentsService);
-        await method(metadata);
+        await paymentsService.createSessionAndBookingFromMetadata(metadata);
 
-        // Verify session was created
-        const sessions = await dataSource.query(
+        // Verify session was created (raw DB rows are snake_case)
+        const sessions = (await dataSource.query(
           'SELECT * FROM session WHERE type = ? AND teacher_id = ?',
           [ServiceType.PRIVATE, teacherId],
-        );
-        expect((sessions as any[]).length).toBe(1);
-        expect((sessions as any[])[0].capacity_max).toBe(1);
-        expect((sessions as any[])[0].visibility).toBe(
-          SessionVisibility.PRIVATE,
-        );
-        expect((sessions as any[])[0].status).toBe(SessionStatus.SCHEDULED);
+        )) as unknown as DbSession[];
+        expect(sessions.length).toBe(1);
+        expect(sessions[0].capacity_max).toBe(1);
+        expect(sessions[0].visibility).toBe(SessionVisibility.PRIVATE);
+        expect(sessions[0].status).toBe(SessionStatus.SCHEDULED);
 
         // Verify booking was created
-        const bookings = await dataSource.query(
+        const bookings = (await dataSource.query(
           'SELECT * FROM booking WHERE session_id = ? AND student_id = ?',
-          [(sessions as any[])[0].id, studentId],
-        );
-        expect((bookings as any[]).length).toBe(1);
-        expect((bookings as any[])[0].status).toBe(BookingStatus.CONFIRMED);
+          [sessions[0].id, studentId],
+        )) as unknown as DbBooking[];
+        expect(bookings.length).toBe(1);
+        expect(bookings[0].status).toBe(BookingStatus.CONFIRMED);
       });
 
       it('should fail if teacher availability validation fails', async () => {
@@ -209,17 +240,14 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
         };
 
         // Call the method - should not create anything due to availability conflict
-        const method = (
-          paymentsService as any
-        ).createSessionAndBookingFromMetadata.bind(paymentsService);
-        await method(metadata);
+        await invokeCreate(metadata);
 
         // Verify no new session was created
-        const sessions = await dataSource.query(
+        const sessions = (await dataSource.query(
           'SELECT * FROM session WHERE type = ? AND teacher_id = ?',
           [ServiceType.PRIVATE, teacherId],
-        );
-        expect((sessions as any[]).length).toBe(1); // Only the conflicting one should exist
+        )) as unknown as DbSession[];
+        expect(sessions.length).toBe(1); // Only the conflicting one should exist
       });
     });
 
@@ -235,26 +263,23 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
         };
 
         // Call the method
-        const method = (
-          paymentsService as any
-        ).createSessionAndBookingFromMetadata.bind(paymentsService);
-        await method(metadata);
+        await invokeCreate(metadata);
 
         // Verify session still exists (unchanged)
-        const session = await dataSource.query(
+        const session = (await dataSource.query(
           'SELECT * FROM session WHERE id = ?',
           [existingGroupSessionId],
-        );
-        expect((session as any[]).length).toBe(1);
-        expect((session as any[])[0].type).toBe(ServiceType.GROUP);
+        )) as unknown as DbSession[];
+        expect(session.length).toBe(1);
+        expect(session[0].type).toBe(ServiceType.GROUP);
 
         // Verify booking was created
-        const bookings = await dataSource.query(
+        const bookings = (await dataSource.query(
           'SELECT * FROM booking WHERE session_id = ? AND student_id = ?',
           [existingGroupSessionId, studentId],
-        );
-        expect((bookings as any[]).length).toBe(1);
-        expect((bookings as any[])[0].status).toBe(BookingStatus.CONFIRMED);
+        )) as unknown as DbBooking[];
+        expect(bookings.length).toBe(1);
+        expect(bookings[0].status).toBe(BookingStatus.CONFIRMED);
       });
 
       it('should fail if student does not exist', async () => {
@@ -268,17 +293,14 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
         };
 
         // Call the method - should not create booking
-        const method = (
-          paymentsService as any
-        ).createSessionAndBookingFromMetadata.bind(paymentsService);
-        await method(metadata);
+        await invokeCreate(metadata);
 
         // Verify no booking was created
-        const bookings = await dataSource.query(
+        const bookings = (await dataSource.query(
           'SELECT * FROM booking WHERE session_id = ?',
           [existingGroupSessionId],
-        );
-        expect((bookings as any[]).length).toBe(0);
+        )) as unknown as DbBooking[];
+        expect(bookings.length).toBe(0);
       });
 
       it('should fail if session type mismatch', async () => {
@@ -292,17 +314,14 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
         };
 
         // Call the method - should not create booking
-        const method = (
-          paymentsService as any
-        ).createSessionAndBookingFromMetadata.bind(paymentsService);
-        await method(metadata);
+        await invokeCreate(metadata);
 
         // Verify no booking was created
-        const bookings = await dataSource.query(
+        const bookings = (await dataSource.query(
           'SELECT * FROM booking WHERE student_id = ?',
           [studentId],
-        );
-        expect((bookings as any[]).length).toBe(0);
+        )) as unknown as DbBooking[];
+        expect(bookings.length).toBe(0);
       });
     });
 
@@ -318,18 +337,15 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
         };
 
         // Call the method
-        const method = (
-          paymentsService as any
-        ).createSessionAndBookingFromMetadata.bind(paymentsService);
-        await method(metadata);
+        await invokeCreate(metadata);
 
         // Verify booking was created
-        const bookings = await dataSource.query(
+        const bookings = (await dataSource.query(
           'SELECT * FROM booking WHERE session_id = ? AND student_id = ?',
           [existingCourseSessionId, studentId],
-        );
-        expect((bookings as any[]).length).toBe(1);
-        expect((bookings as any[])[0].status).toBe(BookingStatus.CONFIRMED);
+        )) as unknown as DbBooking[];
+        expect(bookings.length).toBe(1);
+        expect(bookings[0].status).toBe(BookingStatus.CONFIRMED);
       });
     });
 
@@ -347,17 +363,14 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
         };
 
         // Should not throw, just log error and return
-        const method = (
-          paymentsService as any
-        ).createSessionAndBookingFromMetadata.bind(paymentsService);
-        await expect(method(metadata)).resolves.not.toThrow();
+        await expect(invokeCreate(metadata)).resolves.not.toThrow();
 
         // Verify no session was created
-        const sessions = await dataSource.query(
+        const sessions = (await dataSource.query(
           'SELECT * FROM session WHERE type = ?',
           [ServiceType.PRIVATE],
-        );
-        expect((sessions as any[]).length).toBe(0);
+        )) as unknown as DbSession[];
+        expect(sessions.length).toBe(0);
       });
 
       it('should handle invalid service type for session creation', async () => {
@@ -373,17 +386,14 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
         };
 
         // Should not throw, just log error and return
-        const method = (
-          paymentsService as any
-        ).createSessionAndBookingFromMetadata.bind(paymentsService);
-        await expect(method(metadata)).resolves.not.toThrow();
+        await expect(invokeCreate(metadata)).resolves.not.toThrow();
 
         // Verify no session was created
-        const sessions = await dataSource.query(
+        const sessions = (await dataSource.query(
           'SELECT * FROM session WHERE type = ?',
           [ServiceType.GROUP],
-        );
-        expect((sessions as any[]).length).toBe(1); // Only the existing one
+        )) as unknown as DbSession[];
+        expect(sessions.length).toBe(1); // Only the existing one
       });
     });
   });

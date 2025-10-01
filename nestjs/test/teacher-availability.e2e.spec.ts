@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { TestDatabaseModule } from '../src/test-database.module.js';
+import { AppModule } from '../src/app.module.js';
 import { TeacherAvailabilityService } from '../src/teachers/services/teacher-availability.service.js';
 import { TeachersService } from '../src/teachers/teachers.service.js';
 import { TeacherAvailabilityKind } from '../src/teachers/entities/teacher-availability.entity.js';
@@ -11,6 +11,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Teacher } from '../src/teachers/entities/teacher.entity.js';
 import { TeacherAvailability } from '../src/teachers/entities/teacher-availability.entity.js';
 import { Session } from '../src/sessions/entities/session.entity.js';
+import { resetDatabase } from './utils/reset-db.js';
+import { execInsert } from './utils/query-helpers.js';
 
 describe('TeacherAvailabilityService (e2e)', () => {
   let app: INestApplication;
@@ -21,7 +23,7 @@ describe('TeacherAvailabilityService (e2e)', () => {
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
-        TestDatabaseModule,
+        AppModule,
         TypeOrmModule.forFeature([Teacher, TeacherAvailability, Session]),
       ],
       providers: [TeacherAvailabilityService, TeachersService],
@@ -32,6 +34,7 @@ describe('TeacherAvailabilityService (e2e)', () => {
     service = moduleFixture.get(TeacherAvailabilityService);
     teachersService = moduleFixture.get(TeachersService);
     await app.init();
+    await resetDatabase(dataSource);
   }, 30000);
 
   afterEach(async () => {
@@ -43,32 +46,17 @@ describe('TeacherAvailabilityService (e2e)', () => {
     let userId: number;
 
     beforeEach(async () => {
-      // Create a test user
-      const userResult = await dataSource.query(
+      // Create a test user & teacher for each test (DB is truncated beforehand)
+      userId = await execInsert(
+        dataSource,
         'INSERT INTO user (email, first_name, last_name, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())',
         ['test@example.com', 'Test', 'User'],
       );
-      userId = userResult.insertId;
-
-      // Create a test teacher
-      const teacherResult = await dataSource.query(
+      teacherId = await execInsert(
+        dataSource,
         'INSERT INTO teacher (user_id, tier, bio, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())',
         [userId, 10, 'Test bio', true],
       );
-      teacherId = teacherResult.insertId;
-    });
-
-    afterEach(async () => {
-      // Clean up test data
-      await dataSource.query('DELETE FROM session WHERE teacher_id = ?', [
-        teacherId,
-      ]);
-      await dataSource.query(
-        'DELETE FROM teacher_availability WHERE teacher_id = ?',
-        [teacherId],
-      );
-      await dataSource.query('DELETE FROM teacher WHERE id = ?', [teacherId]);
-      await dataSource.query('DELETE FROM user WHERE id = ?', [userId]);
     });
 
     it('should validate successfully when teacher has ONE_OFF availability', async () => {
@@ -270,32 +258,16 @@ describe('TeacherAvailabilityService (e2e)', () => {
     let userId: number;
 
     beforeEach(async () => {
-      // Create a test user
-      const userResult = await dataSource.query(
+      userId = await execInsert(
+        dataSource,
         'INSERT INTO user (email, first_name, last_name, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())',
         ['preview-test@example.com', 'Preview', 'Test'],
       );
-      userId = userResult.insertId;
-
-      // Create a test teacher
-      const teacherResult = await dataSource.query(
+      teacherId = await execInsert(
+        dataSource,
         'INSERT INTO teacher (user_id, tier, bio, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())',
         [userId, 10, 'Preview test bio', true],
       );
-      teacherId = teacherResult.insertId;
-    });
-
-    afterEach(async () => {
-      // Clean up test data
-      await dataSource.query('DELETE FROM session WHERE teacher_id = ?', [
-        teacherId,
-      ]);
-      await dataSource.query(
-        'DELETE FROM teacher_availability WHERE teacher_id = ?',
-        [teacherId],
-      );
-      await dataSource.query('DELETE FROM teacher WHERE id = ?', [teacherId]);
-      await dataSource.query('DELETE FROM user WHERE id = ?', [userId]);
     });
 
     it('should correctly exclude time slots that overlap with scheduled sessions', async () => {
@@ -306,11 +278,11 @@ describe('TeacherAvailabilityService (e2e)', () => {
       );
 
       // Verify the data was created
-      const availabilityData = await dataSource.query(
+      await dataSource.query(
         'SELECT * FROM teacher_availability WHERE teacher_id = ?',
         [teacherId],
       );
-      console.log('Created availability:', availabilityData);
+      // console.debug('Created availability record(s)');
 
       // Create a scheduled session that overlaps with part of the availability
       // Monday, January 13, 2025 from 10:00 to 11:00
@@ -328,11 +300,10 @@ describe('TeacherAvailabilityService (e2e)', () => {
       );
 
       // Verify the session was created
-      const sessionData = await dataSource.query(
-        'SELECT * FROM session WHERE teacher_id = ?',
-        [teacherId],
-      );
-      console.log('Created sessions:', sessionData);
+      await dataSource.query('SELECT * FROM session WHERE teacher_id = ?', [
+        teacherId,
+      ]);
+      // console.debug('Created session record(s)');
 
       // Create another scheduled session that overlaps with a different part
       // Monday, January 13, 2025 from 14:00 to 15:30
@@ -359,7 +330,7 @@ describe('TeacherAvailabilityService (e2e)', () => {
         },
       );
 
-      console.log('Preview result:', JSON.stringify(result, null, 2));
+      // console.debug('Preview result retrieved');
 
       // Should have availability windows that exclude the booked times
       expect(result.windows).toBeDefined();
@@ -464,17 +435,16 @@ describe('TeacherAvailabilityService (e2e)', () => {
 
     it('should handle multiple teachers with different availabilities and bookings', async () => {
       // Create a second teacher
-      const userResult2 = await dataSource.query(
+      const userId2 = await execInsert(
+        dataSource,
         'INSERT INTO user (email, first_name, last_name, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())',
         ['preview-test2@example.com', 'Preview2', 'Test2'],
       );
-      const userId2 = userResult2.insertId;
-
-      const teacherResult2 = await dataSource.query(
+      const teacherId2 = await execInsert(
+        dataSource,
         'INSERT INTO teacher (user_id, tier, bio, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())',
         [userId2, 10, 'Preview test bio 2', true],
       );
-      const teacherId2 = teacherResult2.insertId;
 
       // Create availability for first teacher (Monday 9:00-17:00)
       await dataSource.query(
@@ -524,16 +494,7 @@ describe('TeacherAvailabilityService (e2e)', () => {
       expect(elevenToTwelveWindow).toBeDefined();
       expect(elevenToTwelveWindow!.teacherIds).toEqual([teacherId2]);
 
-      // Clean up second teacher
-      await dataSource.query('DELETE FROM session WHERE teacher_id = ?', [
-        teacherId2,
-      ]);
-      await dataSource.query(
-        'DELETE FROM teacher_availability WHERE teacher_id = ?',
-        [teacherId2],
-      );
-      await dataSource.query('DELETE FROM teacher WHERE id = ?', [teacherId2]);
-      await dataSource.query('DELETE FROM user WHERE id = ?', [userId2]);
+      // No explicit cleanup needed; root-level beforeEach truncates tables
     });
   });
 });

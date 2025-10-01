@@ -8,7 +8,12 @@ const config = {
   extensionsToTreatAsEsm: ['.ts'],
   collectCoverageFrom: ['src/**/*.(t|j)s'],
   coverageDirectory: 'coverage',
-  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
+  // Run env + safety guard BEFORE any test framework setup or module imports
+  setupFiles: ['<rootDir>/test/env.setup.ts', '<rootDir>/test/guard.setup.ts'],
+  setupFilesAfterEnv: [
+    '<rootDir>/test/db-safety.setup.ts',
+    '<rootDir>/test/setup.ts',
+  ],
   testEnvironmentOptions: {
     NODE_ENV: 'test',
   },

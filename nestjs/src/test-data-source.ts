@@ -16,8 +16,10 @@ const testDbConfig = {
   ...db,
   host: process.env.DB_HOST || 'localhost', // Use localhost for tests
   database: process.env.DB_DATABASE_TEST || 'wordpress_test',
-  synchronize: true, // Enable sync for tests
-  dropSchema: true, // Drop schema before sync for clean tests
+  // Use migrations for tests (setup.ts runs runMigrations()).
+  // Disable auto-sync to avoid schema/order issues and rely on migrations.
+  synchronize: false,
+  dropSchema: true, // Keep dropSchema to ensure a clean database before migrations
 };
 
 export const TestDataSource = new DataSource({
@@ -30,6 +32,7 @@ export const TestDataSource = new DataSource({
   entities: [
     currentDir + '/**/*.entity{.ts,.js}',
     currentDir + '/common/entities/*.entity{.ts,.js}',
+    currentDir + '/packages/entities/*.entity{.ts,.js}',
     currentDir + '/users/entities/*.entity{.ts,.js}',
     currentDir + '/teachers/entities/*.entity{.ts,.js}',
     currentDir + '/admin/entities/*.entity{.ts,.js}',
@@ -43,12 +46,14 @@ export const TestDataSource = new DataSource({
     currentDir + '/waitlists/entities/*.entity{.ts,.js}',
   ],
   migrations: [currentDir + '/migrations/*{.ts,.js}'],
-  // For test runs we rely on TypeORM to build a fresh schema quickly
-  synchronize: true,
+  // We rely exclusively on migrations in test setup (setup.ts runs runMigrations()).
+  // Disable synchronize to avoid race conditions & duplicate DDL that can lead to deadlocks
+  synchronize: false,
   dropSchema: testDbConfig.dropSchema,
   logging: false, // Disable logging for tests
   timezone: 'Z',
   extra: {
-    connectionLimit: 1, // Limit connections for tests
+    // Allow a small pool; a single connection can become a bottleneck and increase lock wait time
+    connectionLimit: 5,
   },
 });

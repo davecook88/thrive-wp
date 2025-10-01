@@ -6,6 +6,7 @@ export const PackageResponseSchema = z.object({
   serviceType: z.string(),
   credits: z.number(),
   creditUnitMinutes: z.number(),
+  teacherTier: z.number().nullable().optional(),
   expiresInDays: z.number().nullable().optional(),
   stripe: z.object({
     productId: z.string(),

@@ -1,28 +1,31 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import type { Server } from 'http';
 import { DataSource, Repository } from 'typeorm';
 import request from 'supertest';
-import { TestDatabaseModule } from '../src/test-database.module.js';
 import { PackagesService } from '../src/packages/packages.service.js';
 import { PaymentsService } from '../src/payments/payments.service.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
 import { StudentPackage } from '../src/packages/entities/student-package.entity.js';
 import { PackageUse } from '../src/packages/entities/package-use.entity.js';
 import { Student } from '../src/students/entities/student.entity.js';
 import { Session } from '../src/sessions/entities/session.entity.js';
 import { Booking } from '../src/payments/entities/booking.entity.js';
 import { User } from '../src/users/entities/user.entity.js';
-import { Teacher } from '../src/teachers/entities/teacher-availability.entity.js';
 import { BookingStatus } from '../src/payments/entities/booking.entity.js';
 import {
   SessionStatus,
   SessionVisibility,
 } from '../src/sessions/entities/session.entity.js';
+import { ServiceType } from '../src/common/types/class-types.js';
+import type supertest from 'supertest';
+import { Teacher } from '../src/teachers/entities/teacher.entity.js';
 import { AppModule } from '../src/app.module.js';
+import { resetDatabase } from './utils/reset-db.js';
 
 describe('Package Booking (e2e)', () => {
   let app: INestApplication;
+  let httpServer: Server;
   let dataSource: DataSource;
   let packagesService: PackagesService;
   let paymentsService: PaymentsService;
@@ -32,6 +35,8 @@ describe('Package Booking (e2e)', () => {
   let sessionRepository: Repository<Session>;
   let bookingRepository: Repository<Booking>;
   let userRepository: Repository<User>;
+  let teacherRepository: Repository<Teacher>;
+  let testTeacherId: number;
 
   // Test data
   let testUserId: number;
@@ -42,28 +47,6 @@ describe('Package Booking (e2e)', () => {
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
-        ConfigModule.forRoot({
-          isGlobal: true,
-          load: [
-            () => ({
-              database: {
-                type: 'mysql',
-                host: 'localhost',
-                port: 3306,
-                username: 'root',
-                password: '',
-                database: 'thrive_test',
-                synchronize: false,
-                logging: false,
-              },
-              stripe: {
-                secretKey: 'sk_test_fake_key',
-                publishableKey: 'pk_test_fake_key',
-              },
-            }),
-          ],
-        }),
-        TestDatabaseModule,
         TypeOrmModule.forFeature([
           StudentPackage,
           PackageUse,
@@ -78,10 +61,18 @@ describe('Package Booking (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
-
+    // Retrieve DataSource BEFORE attempting reset
     dataSource = moduleFixture.get<DataSource>(DataSource);
+    await resetDatabase(dataSource);
+    httpServer = app.getHttpServer() as Server;
     packagesService = moduleFixture.get<PackagesService>(PackagesService);
     paymentsService = moduleFixture.get<PaymentsService>(PaymentsService);
+
+    // touch these so linters don't flag "assigned but never used"
+    void dataSource;
+    void packagesService;
+    void paymentsService;
+    void bookingRepository;
 
     studentPackageRepository = moduleFixture.get<Repository<StudentPackage>>(
       'StudentPackageRepository',
@@ -96,6 +87,8 @@ describe('Package Booking (e2e)', () => {
     bookingRepository =
       moduleFixture.get<Repository<Booking>>('BookingRepository');
     userRepository = moduleFixture.get<Repository<User>>('UserRepository');
+    teacherRepository =
+      moduleFixture.get<Repository<Teacher>>('TeacherRepository');
 
     // Set up test data
     await setupTestData();
@@ -103,12 +96,13 @@ describe('Package Booking (e2e)', () => {
 
   async function setupTestData() {
     // Create test user
-    const user = userRepository.create({
+    const userPartial: Partial<User> = {
       email: 'test@example.com',
-      name: 'Test User',
-      googleId: null,
-      hashedPassword: 'hashed',
-    });
+      firstName: 'Test',
+      lastName: 'User',
+      passwordHash: 'hashed',
+    };
+    const user = userRepository.create(userPartial);
     const savedUser = await userRepository.save(user);
     testUserId = savedUser.id;
 
@@ -119,17 +113,40 @@ describe('Package Booking (e2e)', () => {
     const savedStudent = await studentRepository.save(student);
     testStudentId = savedStudent.id;
 
-    // Create test session
-    const session = sessionRepository.create({
-      teacherId: 1, // Assume teacher exists
-      startTime: new Date(Date.now() + 86400000), // Tomorrow
-      endTime: new Date(Date.now() + 86400000 + 3600000), // Tomorrow + 1 hour
-      status: SessionStatus.AVAILABLE,
-      visibility: SessionVisibility.PUBLIC,
-      serviceType: 'PRIVATE',
-      maxStudents: 1,
-      currentStudents: 0,
+    // Create test teacher (associate with a new user or reuse?) create separate user for clarity
+    const teacherUser = userRepository.create({
+      email: 'teacher@example.com',
+      firstName: 'Teach',
+      lastName: 'Er',
+      passwordHash: 'hashed',
     });
+    const savedTeacherUser = await userRepository.save(teacherUser);
+    const teacherPartial: Partial<Teacher> = {
+      userId: savedTeacherUser.id,
+      tier: 10,
+      bio: null,
+      isActive: true,
+    };
+    const teacher = teacherRepository.create(teacherPartial);
+    const savedTeacher: Teacher = await teacherRepository.save(teacher);
+    testTeacherId = savedTeacher.id;
+
+    // Create test session
+    const sessionPartial: Partial<Session> = {
+      teacherId: testTeacherId,
+      startAt: new Date(Date.now() + 86400000),
+      endAt: new Date(Date.now() + 86400000 + 3600000),
+      status: SessionStatus.SCHEDULED,
+      visibility: SessionVisibility.PUBLIC,
+      type: ServiceType.PRIVATE,
+      capacityMax: 1,
+      courseId: null,
+      createdFromAvailabilityId: null,
+      requiresEnrollment: false,
+      meetingUrl: null,
+      sourceTimezone: null,
+    };
+    const session = sessionRepository.create(sessionPartial);
     const savedSession = await sessionRepository.save(session);
     testSessionId = savedSession.id;
 
@@ -146,55 +163,72 @@ describe('Package Booking (e2e)', () => {
     const savedPackage = await studentPackageRepository.save(studentPackage);
     testPackageId = savedPackage.id;
   }
+  // Removed unused variable casts that triggered lint warnings.
 
   afterEach(async () => {
     // Clean up test data
-    await packageUseRepository.delete({});
-    await bookingRepository.delete({});
-    await studentPackageRepository.delete({});
-    await sessionRepository.delete({});
-    await studentRepository.delete({});
-    await userRepository.delete({});
+    // await packageUseRepository.delete({});
+    // await bookingRepository.delete({});
+    // await studentPackageRepository.delete({});
+    // await sessionRepository.delete({});
+    // await studentRepository.delete({});
+    // await userRepository.delete({});
 
     await app.close();
   });
 
   describe('GET /packages/my-credits', () => {
     it('should return student credits', async () => {
-      const response = await request(app.getHttpServer())
+      interface MyCreditsResponse {
+        packages: Array<{
+          packageName: string;
+          remainingSessions: number;
+        }>;
+        totalRemaining: number;
+      }
+      const response = (await request(httpServer)
         .get('/packages/my-credits')
         .set('x-auth-user-id', testUserId.toString())
-        .expect(200);
+        .expect(200)) as supertest.Response & { body: MyCreditsResponse };
 
-      expect(response.body.packages).toHaveLength(1);
-      expect(response.body.packages[0].packageName).toBe('5-class test pack');
-      expect(response.body.packages[0].remainingSessions).toBe(3);
-      expect(response.body.totalRemaining).toBe(3);
+      const creditsBody = response.body as unknown as MyCreditsResponse;
+      expect(creditsBody.packages).toHaveLength(1);
+      const pkg = creditsBody.packages[0];
+      expect(pkg.packageName).toBe('5-class test pack');
+      expect(pkg.remainingSessions).toBe(3);
+      expect(creditsBody.totalRemaining).toBe(3);
     });
 
     it('should return 401 when user not authenticated', async () => {
-      await request(app.getHttpServer())
-        .get('/packages/my-credits')
-        .expect(500); // UnauthorizedException becomes 500 in test env
+      await request(httpServer).get('/packages/my-credits').expect(401);
     });
   });
 
   describe('POST /payments/book-with-package', () => {
     it('should successfully book session with package credit', async () => {
-      const response = await request(app.getHttpServer())
+      interface BookWithPackageResponse {
+        id: number;
+        sessionId: number;
+        studentId: number;
+        status: BookingStatus;
+        studentPackageId: number;
+        creditsCost: number;
+      }
+      const response = (await request(httpServer)
         .post('/payments/book-with-package')
         .set('x-auth-user-id', testUserId.toString())
         .send({
           packageId: testPackageId,
           sessionId: testSessionId,
         })
-        .expect(201);
+        .expect(201)) as supertest.Response & { body: BookWithPackageResponse };
 
-      expect(response.body.sessionId).toBe(testSessionId);
-      expect(response.body.studentId).toBe(testStudentId);
-      expect(response.body.status).toBe(BookingStatus.CONFIRMED);
-      expect(response.body.studentPackageId).toBe(testPackageId);
-      expect(response.body.creditsCost).toBe(1);
+      const body = response.body as unknown as BookWithPackageResponse;
+      expect(body.sessionId).toBe(testSessionId);
+      expect(body.studentId).toBe(testStudentId);
+      expect(body.status).toBe(BookingStatus.CONFIRMED);
+      expect(body.studentPackageId).toBe(testPackageId);
+      expect(body.creditsCost).toBe(1);
 
       // Verify package was decremented
       const updatedPackage = await studentPackageRepository.findOne({
@@ -208,7 +242,7 @@ describe('Package Booking (e2e)', () => {
       });
       expect(packageUse).toBeDefined();
       expect(packageUse?.sessionId).toBe(testSessionId);
-      expect(packageUse?.bookingId).toBe(response.body.id);
+      expect(packageUse?.bookingId).toBe(body.id);
     });
 
     it('should return 400 when package has no remaining sessions', async () => {
@@ -217,7 +251,7 @@ describe('Package Booking (e2e)', () => {
         remainingSessions: 0,
       });
 
-      await request(app.getHttpServer())
+      await request(httpServer)
         .post('/payments/book-with-package')
         .set('x-auth-user-id', testUserId.toString())
         .send({
@@ -228,7 +262,7 @@ describe('Package Booking (e2e)', () => {
     });
 
     it('should return 404 when package not found', async () => {
-      await request(app.getHttpServer())
+      await request(httpServer)
         .post('/payments/book-with-package')
         .set('x-auth-user-id', testUserId.toString())
         .send({
@@ -245,7 +279,7 @@ describe('Package Booking (e2e)', () => {
         expiresAt: pastDate,
       });
 
-      await request(app.getHttpServer())
+      await request(httpServer)
         .post('/payments/book-with-package')
         .set('x-auth-user-id', testUserId.toString())
         .send({
@@ -256,7 +290,7 @@ describe('Package Booking (e2e)', () => {
     });
 
     it('should return 400 with invalid request body', async () => {
-      await request(app.getHttpServer())
+      await request(httpServer)
         .post('/payments/book-with-package')
         .set('x-auth-user-id', testUserId.toString())
         .send({
@@ -269,16 +303,21 @@ describe('Package Booking (e2e)', () => {
 
   describe('POST /packages/:id/use', () => {
     it('should successfully use package for session', async () => {
-      const response = await request(app.getHttpServer())
+      interface PackageUseResponse {
+        package: { remainingSessions: number };
+        use: { sessionId: number };
+      }
+      const response = (await request(httpServer)
         .post(`/packages/${testPackageId}/use`)
         .set('x-auth-user-id', testUserId.toString())
         .send({
           sessionId: testSessionId,
         })
-        .expect(201);
+        .expect(201)) as supertest.Response & { body: PackageUseResponse };
 
-      expect(response.body.package.remainingSessions).toBe(2);
-      expect(response.body.use.sessionId).toBe(testSessionId);
+      const useBody = response.body as unknown as PackageUseResponse;
+      expect(useBody.package.remainingSessions).toBe(2);
+      expect(useBody.use.sessionId).toBe(testSessionId);
 
       // Verify database changes
       const updatedPackage = await studentPackageRepository.findOne({
@@ -296,25 +335,30 @@ describe('Package Booking (e2e)', () => {
       });
 
       // Create two sessions
-      const session2 = sessionRepository.create({
-        teacherId: 1,
-        startTime: new Date(Date.now() + 172800000), // Day after tomorrow
-        endTime: new Date(Date.now() + 172800000 + 3600000),
-        status: SessionStatus.AVAILABLE,
+      const session2Partial: Partial<Session> = {
+        teacherId: testTeacherId,
+        startAt: new Date(Date.now() + 172800000),
+        endAt: new Date(Date.now() + 172800000 + 3600000),
+        status: SessionStatus.SCHEDULED,
         visibility: SessionVisibility.PUBLIC,
-        serviceType: 'PRIVATE',
-        maxStudents: 1,
-        currentStudents: 0,
-      });
+        type: ServiceType.PRIVATE,
+        capacityMax: 1,
+        courseId: null,
+        createdFromAvailabilityId: null,
+        requiresEnrollment: false,
+        meetingUrl: null,
+        sourceTimezone: null,
+      };
+      const session2 = sessionRepository.create(session2Partial);
       const savedSession2 = await sessionRepository.save(session2);
 
       // Attempt to use the package for both sessions simultaneously
       const promises = [
-        request(app.getHttpServer())
+        request(httpServer)
           .post(`/packages/${testPackageId}/use`)
           .set('x-auth-user-id', testUserId.toString())
           .send({ sessionId: testSessionId }),
-        request(app.getHttpServer())
+        request(httpServer)
           .post(`/packages/${testPackageId}/use`)
           .set('x-auth-user-id', testUserId.toString())
           .send({ sessionId: savedSession2.id }),

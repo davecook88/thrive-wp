@@ -372,6 +372,12 @@ export class PaymentsService {
     const packageMetadata = stripeProduct.metadata || {};
     const credits = parseInt(packageMetadata.credits || '0', 10);
     const expiresInDays = parseInt(packageMetadata.expires_in_days || '0', 10);
+    const creditUnitMinutes = parseInt(
+      packageMetadata.credit_unit_minutes || '0',
+      10,
+    );
+    const teacherTier = parseInt(packageMetadata.teacher_tier || '0', 10);
+    const serviceType = packageMetadata.service_type || 'PRIVATE';
 
     if (credits <= 0) {
       console.error('Package has no credits defined:', packageMetadata);
@@ -427,6 +433,12 @@ export class PaymentsService {
               stripePriceId: stripePrice.id,
               amountPaid: paymentIntent.amount_received,
               currency: paymentIntent.currency,
+              credit_unit_minutes: creditUnitMinutes,
+              teacher_tier:
+                Number.isFinite(teacherTier) && teacherTier > 0
+                  ? teacherTier
+                  : undefined,
+              service_type: serviceType,
             },
           });
 
@@ -574,7 +586,7 @@ export class PaymentsService {
     }
   }
 
-  private async createSessionAndBookingFromMetadata(
+  async createSessionAndBookingFromMetadata(
     metadata: ParsedStripeMetadata,
   ): Promise<void> {
     try {

@@ -11,6 +11,8 @@ export const CreatePackageSchema = z.object({
     z.literal(45),
     z.literal(60),
   ]),
+  /** Optional teacher tier restriction (e.g. 10, 20, 30). If omitted, package applies to any tier. */
+  teacherTier: z.number().int().positive().nullable().optional(),
   expiresInDays: z.number().int().positive().nullable().optional(),
   currency: z.string().length(3).default('USD'),
   amountMinor: z.number().int().positive(),

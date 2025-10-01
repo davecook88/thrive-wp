@@ -1,50 +1,31 @@
 import { config } from 'dotenv';
-import { TestDataSource } from '../src/test-data-source.js';
+import path from 'node:path';
+import { MigrationTestDataSource } from '../src/migration-test-data-source.js';
 
-// Load test environment variables
-config({ path: '../.env.test' });
+// Load .env.test (already loaded in setupFiles but harmless if re-run)
+// Avoid import.meta so this runs reliably as an early Jest setup file.
+const currentDir = process.cwd();
+config({ path: path.resolve(currentDir, '../.env.test') });
 
-export default async () => {
-  try {
-    console.log('Initializing test database...');
-    console.log('DB Config:', {
-      host: process.env.DB_HOST,
-      database: process.env.DB_DATABASE_TEST,
-      user: process.env.DB_USERNAME,
-    });
-
-    // Initialize test database connection
-    await TestDataSource.initialize();
-    console.log('Test database connected successfully');
-
-    // Check if migrations are loaded
-    const migrations = TestDataSource.migrations;
-    console.log(`Found ${migrations.length} migrations`);
-
-    // For tests, use migrations instead of synchronization to ensure proper table order
-    // This prevents foreign key constraint issues
-    console.log('Running migrations...');
-    await TestDataSource.runMigrations();
-    console.log('Test database migrations completed');
-
-    // Verify tables exist
-    const tables = await TestDataSource.query('SHOW TABLES');
-    console.log(
-      'Tables created:',
-      tables.map((t: any) => Object.values(t)[0]),
+let migrated = false;
+console.log('\n[TEST SETUP] Preparing to run database migrations...\n');
+const setup = async () => {
+  console.log('\n[TEST SETUP] Running database migrations...\n');
+  if (migrated) return;
+  // Safety: verify migration DS targeting a test DB
+  const targetDb = (MigrationTestDataSource.options as { database?: string })
+    .database;
+  if (!targetDb || !/test/i.test(String(targetDb))) {
+    throw new Error(
+      `Refusing to run migrations on non-test database: ${targetDb}`,
     );
-
-    // Clean up after all tests
-    global.afterAll(async () => {
-      try {
-        await TestDataSource.destroy();
-        console.log('Test database connection closed');
-      } catch (error) {
-        console.error('Error closing test database connection:', error);
-      }
-    });
-  } catch (error) {
-    console.error('Failed to initialize test database:', error);
-    throw error;
   }
+  await MigrationTestDataSource.initialize();
+  await MigrationTestDataSource.runMigrations();
+  await MigrationTestDataSource.destroy();
+  migrated = true;
 };
+
+beforeEach(async () => {
+  await setup();
+});

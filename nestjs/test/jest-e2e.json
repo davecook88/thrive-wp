@@ -33,11 +33,15 @@
   "transformIgnorePatterns": [
     "node_modules/(?!(bcryptjs|jsonwebtoken|passport|passport-jwt|passport-google-oauth20|passport-local|@nestjs|@jest/globals)/)"
   ],
+  "setupFiles": [
+    "<rootDir>/env.setup.ts"
+  ],
   "setupFilesAfterEnv": [
     "<rootDir>/setup.ts"
   ],
   "testTimeout": 30000,
   "testEnvironmentOptions": {
     "NODE_ENV": "test"
-  }
+  },
+  "maxWorkers": 1
 }

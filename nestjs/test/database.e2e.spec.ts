@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { TestDatabaseModule } from '../src/test-database.module.js';
+import { AppModule } from '../src/app.module.js';
 import { DataSource } from 'typeorm';
+import { resetDatabase } from './utils/reset-db.js';
 
 describe('Database Integration (e2e)', () => {
   let app: INestApplication;
@@ -10,12 +10,13 @@ describe('Database Integration (e2e)', () => {
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [TestDatabaseModule],
+      imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
     dataSource = moduleFixture.get(DataSource);
     await app.init();
+    await resetDatabase(dataSource);
   }, 30000);
 
   afterEach(async () => {

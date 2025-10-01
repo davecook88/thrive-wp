@@ -16,7 +16,7 @@ import {
   AvailabilityRuleDto,
   PreviewMyAvailabilityDto,
 } from './dto/availability.dto.js';
-import { Session, SessionStatus } from '../sessions/entities/session.entity.js';
+import { Session } from '../sessions/entities/session.entity.js';
 
 interface AvailabilityRule {
   id: number;
@@ -229,18 +229,12 @@ export class TeachersService {
     // Process each day in the range
     const currentDate = new Date(startDate);
     while (currentDate <= endDate) {
-      console.log('Processing date:', currentDate.toISOString());
-      const dayWindows = await this.expandDayAvailability(
+      const dayWindows = this.expandDayAvailability(
         currentDate,
         availabilities,
         sessionsByTeacher,
       );
-      console.log(
-        'Day windows for',
-        currentDate.toISOString(),
-        ':',
-        dayWindows,
-      );
+
       windows.push(...dayWindows);
       // advance by one day in UTC to avoid local timezone shifting weekdays
       currentDate.setUTCDate(currentDate.getUTCDate() + 1);
@@ -261,24 +255,21 @@ export class TeachersService {
     return {
       userId: t.userId,
       teacherId: t.id,
-      firstName: (t.user as any)?.firstName ?? '',
-      lastName: (t.user as any)?.lastName ?? '',
+      firstName: t.user?.firstName ?? '',
+      lastName: t.user?.lastName ?? '',
       name:
-        [
-          ((t.user as any)?.firstName ?? '').trim(),
-          ((t.user as any)?.lastName ?? '').trim(),
-        ]
+        [(t.user?.firstName ?? '').trim(), (t.user?.lastName ?? '').trim()]
           .filter(Boolean)
           .join(' ') || 'Teacher',
       bio: t.bio ?? null,
     };
   }
 
-  private async expandDayAvailability(
+  private expandDayAvailability(
     date: Date,
     availabilities: TeacherAvailability[],
     sessionsByTeacher: Map<number, Array<{ startAt: Date; endAt: Date }>>,
-  ): Promise<{ start: string; end: string; teacherIds: number[] }[]> {
+  ): { start: string; end: string; teacherIds: number[] }[] {
     {
       const teacherIds = new Set<number>();
       for (const avail of availabilities) {
@@ -302,13 +293,13 @@ export class TeachersService {
         );
         // Use UTC weekday since availability rules are interpreted with UTC-stored times
         const weekday = date.getUTCDay();
-        console.log('Processing teacher', teacher, 'weekday', weekday);
+
         const rules = teacherAvailabilities.filter(
           (a) =>
             a.kind === TeacherAvailabilityKind.RECURRING &&
             a.weekday === weekday,
         );
-        console.log('Found rules for teacher:', rules);
+
         const blackouts = teacherAvailabilities.filter(
           (a) =>
             a.kind === TeacherAvailabilityKind.BLACKOUT &&
@@ -316,13 +307,11 @@ export class TeachersService {
             a.endAt &&
             this.isSameDay(a.startAt, date),
         );
-        console.log('Found blackouts for teacher:', blackouts);
 
         // Get preloaded sessions for this specific teacher that intersect the day
         const teacherSessions = (sessionsByTeacher.get(teacher) ?? [])
           // Ensure we only consider sessions that overlap the day
           .filter((s) => s.startAt < dayEnd && s.endAt > dayStart);
-        console.log('Teacher sessions:', teacherSessions);
 
         for (const rule of rules) {
           const startTime = this.minutesToTimeString(rule.startTimeMinutes!);
@@ -335,16 +324,6 @@ export class TeachersService {
           );
           const endUTC = new Date(
             Date.UTC(year, month, day, ...this.parseTime(endTime)),
-          );
-          console.log(
-            'Processing rule:',
-            startTime,
-            'to',
-            endTime,
-            '->',
-            startUTC.toISOString(),
-            'to',
-            endUTC.toISOString(),
           );
 
           // Build list of blocked intervals (blackouts + scheduled sessions) intersecting this rule
@@ -364,12 +343,7 @@ export class TeachersService {
           for (const session of teacherSessions) {
             const sStart = session.startAt;
             const sEnd = session.endAt;
-            console.log(
-              'Checking session overlap:',
-              sStart.toISOString(),
-              'to',
-              sEnd.toISOString(),
-            );
+
             if (startUTC < sEnd && endUTC > sStart) {
               blockedIntervals.push({
                 start: new Date(Math.max(startUTC.getTime(), sStart.getTime())),
@@ -479,7 +453,6 @@ export class TeachersService {
           teacherIds: w.teacherIds,
         }))
         .sort((a, b) => a.start.localeCompare(b.start));
-      console.log('Final result for day:', result);
       return result;
     }
   }
@@ -548,16 +521,24 @@ export class TeachersService {
   ): Promise<Array<{ teacherId: number; startAt: Date; endAt: Date }>> {
     if (teacherIds.length === 0) return [];
     // Use raw SQL for efficiency; ensure snake_case and status filter
-    const params: any[] = [];
+    const params: {
+      teacherIds: number[];
+      start: Date;
+      end: Date;
+    } = {
+      teacherIds: [],
+      start,
+      end,
+    };
     const teacherPlaceholders = teacherIds
       .map((id) => {
-        params.push(id);
+        params.teacherIds.push(id);
         return '?';
       })
       .join(',');
     // Overlap condition: session.start_at <= rangeEnd AND session.end_at >= rangeStart
-    params.push(end);
-    params.push(start);
+    params.start = start;
+    params.end = end;
     const sql = `
       SELECT teacher_id AS teacherId, start_at AS startAt, end_at AS endAt
       FROM session
@@ -567,9 +548,15 @@ export class TeachersService {
     AND start_at <= ?
     AND end_at >= ?
     `;
-    const rows = await this.dataSource.query(sql, params);
+    const rows = await this.dataSource.query<
+      {
+        teacherId: number;
+        startAt: Date;
+        endAt: Date;
+      }[]
+    >(sql, [...params.teacherIds, params.end, params.start]);
     // Normalize to Date objects
-    return rows.map((r: any) => ({
+    return rows.map((r) => ({
       teacherId: Number(r.teacherId),
       startAt: new Date(r.startAt),
       endAt: new Date(r.endAt),

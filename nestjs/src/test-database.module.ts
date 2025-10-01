@@ -7,7 +7,9 @@ import { TestDataSource } from './test-data-source.js';
     TypeOrmModule.forRootAsync({
       useFactory: () => ({}),
       dataSourceFactory: async () => {
-        await TestDataSource.initialize();
+        if (!TestDataSource.isInitialized) {
+          await TestDataSource.initialize();
+        }
         return TestDataSource;
       },
     }),

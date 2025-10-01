@@ -29,7 +29,6 @@ import { AppService } from './app.service.js';
         if (!dbConfig) {
           throw new Error('Database configuration not found');
         }
-        // In ESM, __dirname isn't defined; derive it from import.meta.url
         const moduleDir = dirname(fileURLToPath(import.meta.url));
         return {
           type: dbConfig.type,

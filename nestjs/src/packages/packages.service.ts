@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DeepPartial } from 'typeorm';
+import { Repository, DeepPartial, IsNull } from 'typeorm';
 import Stripe from 'stripe';
 import { CreatePackageDto } from './dto/create-package.dto.js';
 import { PackageResponseDto } from './dto/package-response.dto.js';
@@ -69,6 +69,7 @@ export class PackagesService {
           credit_unit_minutes: createPackageDto.creditUnitMinutes.toString(),
           expires_in_days: createPackageDto.expiresInDays?.toString() || '',
           scope: createPackageDto.scope,
+          teacher_tier: createPackageDto.teacherTier?.toString() || '',
         },
       });
 
@@ -85,6 +86,7 @@ export class PackagesService {
           credit_unit_minutes: createPackageDto.creditUnitMinutes.toString(),
           expires_in_days: createPackageDto.expiresInDays?.toString() || '',
           scope: createPackageDto.scope,
+          teacher_tier: createPackageDto.teacherTier?.toString() || '',
         },
       });
 
@@ -103,6 +105,7 @@ export class PackagesService {
           scope: createPackageDto.scope,
           stripe_price_id: stripePrice.id,
           lookup_key: lookupKey ?? '',
+          teacher_tier: createPackageDto.teacherTier ?? null,
         },
       } as DeepPartial<StripeProductMap>);
 
@@ -116,6 +119,7 @@ export class PackagesService {
         credits: createPackageDto.credits,
         creditUnitMinutes: createPackageDto.creditUnitMinutes,
         expiresInDays: createPackageDto.expiresInDays || null,
+        teacherTier: createPackageDto.teacherTier ?? null,
         stripe: {
           productId: stripeProduct.id,
           priceId: stripePrice.id,
@@ -178,6 +182,13 @@ export class PackagesService {
           serviceType: String(metadata.service_type) || 'PRIVATE',
           credits: Number(metadata.credits) || 0,
           creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
+          teacherTier: ((): number | null => {
+            const raw = metadata.teacher_tier;
+            if (raw === undefined || raw === null || raw === '') return null;
+            const n =
+              typeof raw === 'string' ? parseInt(raw, 10) : (raw as number);
+            return Number.isFinite(n) ? n : null;
+          })(),
           expiresInDays: Number(metadata.expires_in_days) || null,
           stripe: {
             productId: stripeProduct.id,
@@ -243,6 +254,13 @@ export class PackagesService {
           serviceType: String(metadata.service_type) || 'PRIVATE',
           credits: Number(metadata.credits) || 0,
           creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
+          teacherTier: ((): number | null => {
+            const raw = metadata.teacher_tier;
+            if (raw === undefined || raw === null || raw === '') return null;
+            const n =
+              typeof raw === 'string' ? parseInt(raw, 10) : (raw as number);
+            return Number.isFinite(n) ? n : null;
+          })(),
           expiresInDays: Number(metadata.expires_in_days) || null,
           stripe: {
             productId: stripeProduct.id,
@@ -300,6 +318,13 @@ export class PackagesService {
         serviceType: String(metadata.service_type) || 'PRIVATE',
         credits: Number(metadata.credits) || 0,
         creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
+        teacherTier: ((): number | null => {
+          const raw = metadata.teacher_tier;
+          if (raw === undefined || raw === null || raw === '') return null;
+          const n =
+            typeof raw === 'string' ? parseInt(raw, 10) : (raw as number);
+          return Number.isFinite(n) ? n : null;
+        })(),
         expiresInDays: Number(metadata.expires_in_days) || null,
         stripe: {
           productId: stripeProduct.id,
@@ -352,7 +377,7 @@ export class PackagesService {
   // NEW CREDIT-BASED METHODS (added alongside)
   async getActivePackagesForStudent(studentId: number) {
     const pkgs = await this.pkgRepo.find({
-      where: { studentId },
+      where: { studentId, deletedAt: IsNull() },
       order: { createdAt: 'DESC' },
     });
 
@@ -372,9 +397,26 @@ export class PackagesService {
         remainingSessions: pkg.remainingSessions,
         purchasedAt: pkg.purchasedAt.toISOString(),
         expiresAt: pkg.expiresAt?.toISOString() || null,
+        creditUnitMinutes: Number(pkg.metadata?.credit_unit_minutes) || null,
+        teacherTier: ((): number | null => {
+          const raw = pkg.metadata?.teacher_tier;
+          const n =
+            typeof raw === 'string'
+              ? parseInt(raw, 10)
+              : (raw as number | undefined);
+          return Number.isFinite(n) ? (n as number) : null;
+        })(),
+        serviceType: (pkg.metadata?.service_type as string) || 'PRIVATE',
       })),
       totalRemaining: activePackages.reduce(
         (sum, pkg) => sum + pkg.remainingSessions,
+        0,
+      ),
+      totalRemainingByTime: activePackages.reduce(
+        (sum, pkg) =>
+          sum +
+          pkg.remainingSessions *
+            (Number(pkg.metadata?.credit_unit_minutes) || 0),
         0,
       ),
     };

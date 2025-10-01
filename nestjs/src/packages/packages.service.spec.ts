@@ -3,7 +3,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, EntityManager } from 'typeorm';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PackagesService } from './packages.service.js';
+import { StripeProductMap } from '../payments/entities/stripe-product-map.entity.js';
 import { StudentPackage } from './entities/student-package.entity.js';
 import { PackageUse } from './entities/package-use.entity.js';
 
@@ -16,6 +18,14 @@ describe('PackagesService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PackagesService,
+        {
+          provide: getRepositoryToken(StripeProductMap),
+          useClass: Repository,
+        },
+        {
+          provide: ConfigService,
+          useValue: { get: () => 'sss_test_dummy' },
+        },
         {
           provide: getRepositoryToken(StudentPackage),
           useClass: Repository,
@@ -45,7 +55,7 @@ describe('PackagesService', () => {
       const now = new Date();
       const futureDate = new Date(now.getTime() + 86400000); // +1 day
 
-      const mockPackages: StudentPackage[] = [
+      const mockPackages: any[] = [
         {
           id: 1,
           studentId: 1,
@@ -59,7 +69,7 @@ describe('PackagesService', () => {
           createdAt: now,
           updatedAt: now,
           deletedAt: null,
-        } as StudentPackage,
+        },
       ];
 
       jest.spyOn(packageRepo, 'find').mockResolvedValue(mockPackages);
@@ -69,13 +79,17 @@ describe('PackagesService', () => {
       expect(result.packages).toHaveLength(1);
       expect(result.packages[0].remainingSessions).toBe(3);
       expect(result.totalRemaining).toBe(3);
+      // New metadata-derived fields should exist (null when absent)
+      expect(result.packages[0]).toHaveProperty('creditUnitMinutes');
+      expect(result.packages[0]).toHaveProperty('teacherTier');
+      expect(result.packages[0]).toHaveProperty('serviceType');
     });
 
     it('should filter out expired packages', async () => {
       const now = new Date();
       const pastDate = new Date(now.getTime() - 86400000); // -1 day
 
-      const mockPackages: StudentPackage[] = [
+      const mockPackages: any[] = [
         {
           id: 1,
           studentId: 1,
@@ -89,7 +103,7 @@ describe('PackagesService', () => {
           createdAt: pastDate,
           updatedAt: pastDate,
           deletedAt: null,
-        } as StudentPackage,
+        },
       ];
 
       jest.spyOn(packageRepo, 'find').mockResolvedValue(mockPackages);
@@ -98,12 +112,13 @@ describe('PackagesService', () => {
 
       expect(result.packages).toHaveLength(0);
       expect(result.totalRemaining).toBe(0);
+      expect(result.totalRemainingByTime).toBe(0);
     });
 
     it('should filter out packages with no remaining sessions', async () => {
       const now = new Date();
 
-      const mockPackages: StudentPackage[] = [
+      const mockPackages: any[] = [
         {
           id: 1,
           studentId: 1,
@@ -117,7 +132,7 @@ describe('PackagesService', () => {
           createdAt: now,
           updatedAt: now,
           deletedAt: null,
-        } as StudentPackage,
+        },
       ];
 
       jest.spyOn(packageRepo, 'find').mockResolvedValue(mockPackages);
@@ -126,6 +141,7 @@ describe('PackagesService', () => {
 
       expect(result.packages).toHaveLength(0);
       expect(result.totalRemaining).toBe(0);
+      expect(result.totalRemainingByTime).toBe(0);
     });
   });
 
@@ -134,7 +150,7 @@ describe('PackagesService', () => {
       const now = new Date();
       const futureDate = new Date(now.getTime() + 86400000);
 
-      const mockPackage: StudentPackage = {
+      const mockPackage: any = {
         id: 1,
         studentId: 1,
         packageName: '5-class pack',
@@ -147,11 +163,11 @@ describe('PackagesService', () => {
         createdAt: now,
         updatedAt: now,
         deletedAt: null,
-      } as StudentPackage;
+      };
 
-      const mockLockedPackage = { ...mockPackage, remainingSessions: 1 };
+      const mockLockedPackage: any = { ...mockPackage, remainingSessions: 1 };
 
-      const mockPackageUse: PackageUse = {
+      const mockPackageUse: any = {
         id: 1,
         studentPackageId: 1,
         bookingId: null,
@@ -162,7 +178,7 @@ describe('PackagesService', () => {
         createdAt: now,
         updatedAt: now,
         deletedAt: null,
-      } as PackageUse;
+      };
 
       // Mock initial findOne
       jest.spyOn(packageRepo, 'findOne').mockResolvedValue(mockPackage);
@@ -175,9 +191,11 @@ describe('PackagesService', () => {
       } as unknown as EntityManager;
 
       const mockManager = {
-        transaction: jest.fn().mockImplementation(async (callback) => {
-          return callback(mockTx);
-        }),
+        transaction: jest
+          .fn()
+          .mockImplementation((callback: (x: unknown) => Promise<void>) => {
+            return callback(mockTx);
+          }),
       };
 
       Object.defineProperty(packageRepo, 'manager', {
@@ -204,7 +222,7 @@ describe('PackagesService', () => {
     });
 
     it('should throw BadRequestException when no remaining sessions', async () => {
-      const mockPackage: StudentPackage = {
+      const mockPackage: any = {
         id: 1,
         studentId: 1,
         packageName: '5-class pack',
@@ -214,7 +232,7 @@ describe('PackagesService', () => {
         expiresAt: null,
         sourcePaymentId: null,
         metadata: null,
-      } as StudentPackage;
+      };
 
       jest.spyOn(packageRepo, 'findOne').mockResolvedValue(mockPackage);
 
@@ -227,7 +245,7 @@ describe('PackagesService', () => {
       const now = new Date();
       const pastDate = new Date(now.getTime() - 86400000); // -1 day
 
-      const mockPackage: StudentPackage = {
+      const mockPackage: any = {
         id: 1,
         studentId: 1,
         packageName: 'Expired pack',
@@ -237,7 +255,7 @@ describe('PackagesService', () => {
         expiresAt: pastDate, // expired
         sourcePaymentId: null,
         metadata: null,
-      } as StudentPackage;
+      };
 
       jest.spyOn(packageRepo, 'findOne').mockResolvedValue(mockPackage);
 
@@ -252,7 +270,7 @@ describe('PackagesService', () => {
 
   describe('linkUseToBooking', () => {
     it('should successfully link use to booking', async () => {
-      const mockUse: PackageUse = {
+      const mockUse: any = {
         id: 1,
         studentPackageId: 1,
         bookingId: null,
@@ -260,9 +278,9 @@ describe('PackagesService', () => {
         usedAt: new Date(),
         usedBy: 1,
         note: null,
-      } as PackageUse;
+      };
 
-      const mockUpdatedUse = { ...mockUse, bookingId: 456 };
+      const mockUpdatedUse: any = { ...mockUse, bookingId: 456 };
 
       jest.spyOn(useRepo, 'findOne').mockResolvedValue(mockUse);
       jest.spyOn(useRepo, 'save').mockResolvedValue(mockUpdatedUse);
