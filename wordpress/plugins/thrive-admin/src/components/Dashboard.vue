@@ -79,7 +79,7 @@ export default defineComponent({
     }
 
   },
-  setup() {
+  setup(props:  { usersPageUrl: string }) {
     const testingApi = ref(false);
     const apiTestResult = ref<ApiTestResult>(null);
 
@@ -90,7 +90,9 @@ export default defineComponent({
     };
 
     const navigateToUsers = () => {
-      window.location.href = usersPageUrl;
+      // access the prop from the setup() props parameter
+      // props is not reactive-destructured here; using directly is fine for navigation
+      window.location.href = (props).usersPageUrl;
     };
 
     const testApiConnection = async () => {

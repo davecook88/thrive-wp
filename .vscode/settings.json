@@ -16,6 +16,18 @@
   // Ensure debug runs also use Node's ESM vm modules
   "jestrunner.debugOptions": {
     "runtimeExecutable": "node",
-    "runtimeArgs": ["--experimental-vm-modules"]
+    "runtimeArgs": ["--experimental-vm-modules"],
+    "projectPath": "./nestjs",
+    // Ensure debug runs mimic `npm run test` (which loads .env.test)
+    // so TypeORM uses localhost instead of Docker hostname 'db'.
+    "env": {
+      "NODE_ENV": "test",
+      "DB_HOST": "localhost",
+      "DB_PORT": "3306",
+      "DB_USERNAME": "wordpress",
+      "DB_PASSWORD": "wordpress",
+      "DB_DATABASE_TEST": "wordpress_test",
+      "DB_SYNCHRONIZE": "false"
+    }
   }
 }

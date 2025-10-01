@@ -1,5 +1,5 @@
 <template>
-  <div class="wp-admin-card">
+  <div class="wp-admin-card min-">
     <div v-if="loading" class="text-center py-8">
       <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       <p class="mt-2 text-gray-600">Loading users...</p>
@@ -16,7 +16,7 @@
         </p>
       </div>
 
-      <div class="overflow-x-auto">
+  <div class="overflow-x-auto overflow-y-visible h-full">
         <table class="wp-admin-table">
           <thead>
             <tr>
@@ -48,7 +48,7 @@
                 </span>
               </td>
               <td>{{ formatDate(user.createdAt) }}</td>
-              <td>
+              <td class=" overflow-visible">
                 <div class="flex space-x-2">
                   <button
                     @click="$emit('view-user', user)"

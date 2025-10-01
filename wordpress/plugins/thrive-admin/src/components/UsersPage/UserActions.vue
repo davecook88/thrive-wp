@@ -1,7 +1,7 @@
 <template>
   <div class="flex space-x-1">
     <!-- Admin Actions -->
-    <div v-if="!isAdmin(user)" class="relative">
+    <div v-if="!isAdmin(user)" >
       <button
         @click="showAdminMenu = !showAdminMenu"
         class="wp-admin-button-secondary text-xs px-2 py-1"
@@ -11,7 +11,7 @@
       </button>
       <div
         v-if="showAdminMenu"
-        class="absolute right-0 mt-1 w-32 bg-white border border-gray-300 rounded-md shadow-lg z-10"
+        class="absolute right-0 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-50"
       >
         <button
           @click="handlePromoteAdmin"
@@ -23,7 +23,7 @@
       </div>
     </div>
 
-    <div v-else class="relative">
+    <div v-else >
       <button
         @click="showAdminMenu = !showAdminMenu"
         class="wp-admin-button-warning text-xs px-2 py-1"
@@ -33,7 +33,7 @@
       </button>
       <div
         v-if="showAdminMenu"
-        class="absolute right-0 mt-1 w-32 bg-white border border-gray-300 rounded-md shadow-lg z-10"
+        class="absolute right-0 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-50"
       >
         <button
           @click="handleDemoteAdmin"
@@ -46,7 +46,7 @@
     </div>
 
     <!-- Teacher Actions -->
-    <div v-if="!isTeacher(user)" class="relative">
+    <div v-if="!isTeacher(user)">
       <button
         @click="showTeacherMenu = !showTeacherMenu"
         class="wp-admin-button-secondary text-xs px-2 py-1"
@@ -56,7 +56,7 @@
       </button>
       <div
         v-if="showTeacherMenu"
-        class="absolute right-0 mt-1 w-40 bg-white border border-gray-300 rounded-md shadow-lg z-10"
+        class="absolute right-0 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-50"
       >
         <div class="px-3 py-2 border-b border-gray-200">
           <label class="block text-xs font-medium text-gray-700 mb-1">Tier</label>
@@ -79,7 +79,7 @@
       </div>
     </div>
 
-    <div v-else class="relative">
+    <div v-else >
       <button
         @click="showTeacherMenu = !showTeacherMenu"
         class="wp-admin-button-info text-xs px-2 py-1"
@@ -89,7 +89,7 @@
       </button>
       <div
         v-if="showTeacherMenu"
-        class="absolute right-0 mt-1 w-40 bg-white border border-gray-300 rounded-md shadow-lg z-10"
+        class="absolute right-0 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-50"
       >
         <div class="px-3 py-2 border-b border-gray-200">
           <label class="block text-xs font-medium text-gray-700 mb-1">Update Tier</label>
@@ -136,6 +136,7 @@ export default defineComponent({
   emits: [
     'promote-admin',
     'demote-admin',
+    'demote-teacher',
     'promote-teacher',
     'update-teacher-tier'
   ],

@@ -153,3 +153,14 @@ Booking flow for packages: when student books a session, consume a credit (atomi
 - Do we need per-region tax handling now (Stripe Tax) or later?
 - Should priceKey be a stable slug (e.g., ONE_ON_ONE) or a typed ref like SERVICE:ONE_ON_ONE vs COURSE:123?
 
+## Package / Credit Metadata (Authoring Reminder)
+
+When creating or updating package-oriented Products & Prices in Stripe you MUST set:
+- credits
+- credit_unit_minutes
+- service_type (e.g. PRIVATE)
+- (optional) teacher_tier
+- (optional) expires_in_days
+
+All of these are mirrored into `stripe_product_map.metadata` and copied into `student_package.metadata` at purchase time. See `docs/package-metadata.md` for full contract and enforcement checklist.
+

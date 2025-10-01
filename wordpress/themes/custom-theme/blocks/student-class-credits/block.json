@@ -1,0 +1,15 @@
+{
+    "apiVersion": 2,
+    "name": "custom-theme/student-class-credits",
+    "title": "Student Class Credits",
+    "category": "widgets",
+    "icon": "awards",
+    "description": "Displays the current student's outstanding class credits.",
+    "supports": {
+        "html": false
+    },
+    "textdomain": "custom-theme",
+    "editorScript": "file:./build/index.js",
+    "render": "file:./render.php",
+    "viewScript": "file:./view.js"
+}

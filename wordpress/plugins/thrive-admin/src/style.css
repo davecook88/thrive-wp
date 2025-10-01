@@ -37,7 +37,7 @@
   }
 
   .wp-admin-table {
-    @apply w-full bg-white border border-gray-300 rounded-lg overflow-hidden;
+    @apply w-full bg-white border border-gray-300 rounded-lg;
   }
 
   .wp-admin-table th {

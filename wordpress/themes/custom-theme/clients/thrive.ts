@@ -1,4 +1,5 @@
 import { AvailabilityEvent, CalendarEvent, Teacher } from "../types/calendar";
+import { StudentPackageMyCreditsResponse } from "../types/packages";
 
 const options: Partial<RequestInit> = {
   headers: { "Content-Type": "application/json" },
@@ -118,4 +119,18 @@ export const thriveClient = {
       return null;
     }
   },
+  fetchStudentCredits:
+    async (): Promise<StudentPackageMyCreditsResponse | null> => {
+      try {
+        const res = await fetch(`/api/packages/my-credits`, {
+          credentials: "same-origin",
+        });
+        if (!res.ok) return null;
+        const data = (await res.json()) as StudentPackageMyCreditsResponse; // {"packages":[{"id":6,"packageName":"5 hour premium package","totalSessions":5,"remainingSessions":4,"purchasedAt":"2025-09-15T18:13:21.250Z","expiresAt":null}],"totalRemaining":4}
+        return data;
+      } catch (err) {
+        console.error("Failed to fetch student credits:", err);
+        return null;
+      }
+    },
 } as const;

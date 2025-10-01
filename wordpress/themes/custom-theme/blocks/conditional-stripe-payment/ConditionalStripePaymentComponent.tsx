@@ -91,7 +91,7 @@ const ConditionalStripePaymentComponent: React.FC<
             bookingData: {
               start,
               end,
-              teacher,
+              teacherId: Number(teacher),
             },
           }),
         });
