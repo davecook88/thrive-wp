@@ -9,25 +9,28 @@ import {
 import { Fragment } from "@wordpress/element";
 import ServerSideRender from "@wordpress/server-side-render";
 
+type LoginAuthBlockAttributes = {
+  signInText: string;
+  signOutText: string;
+  buttonStyle: "outline" | "solid" | "rounded";
+  buttonAlign: "left" | "center" | "right";
+  buttonColor: "primary" | "secondary" | "tertiary";
+  modalTitle: string;
+  modalDescription: string;
+  showGoogle: boolean;
+  showEmail: boolean;
+  emailLabel: string;
+  passwordLabel: string;
+  extraClass: string;
+};
+
 interface LoginAuthBlockProps {
-  attributes: {
-    signInText: string;
-    signOutText: string;
-    buttonStyle: "outline" | "solid" | "rounded";
-    buttonAlign: "left" | "center" | "right";
-    buttonColor: "primary" | "secondary" | "tertiary";
-    modalTitle: string;
-    modalDescription: string;
-    showGoogle: boolean;
-    showEmail: boolean;
-    emailLabel: string;
-    passwordLabel: string;
-    extraClass: string;
-  };
+  attributes: LoginAuthBlockAttributes;
+
   setAttributes: (attrs: any) => void;
   isSelected: boolean;
 }
-registerBlockType("thrive/login-auth", {
+registerBlockType<LoginAuthBlockAttributes>("thrive/login-auth", {
   name: "thrive/login-auth",
   title: "Login/Auth Button",
   category: "widgets",

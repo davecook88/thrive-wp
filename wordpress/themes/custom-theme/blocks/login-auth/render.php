@@ -84,7 +84,7 @@ $block = new Thrive_Login_Auth_Block($attributes);
 <div <?php echo $block->get_wrapper_attributes(); ?>>
     <?php if ($is_logged_in): ?>
         <form action="<?php echo $logout_url; ?>" method="get" class="thrive-auth-form" style="display:inline;">
-            <button class="<?php echo $block->get_button_classes(); ?>" type="submit"
+            <button class="has-primary-background-color <?php echo $block->get_button_classes(); ?>" type="submit"
                 onclick="window.dispatchEvent(new CustomEvent('thrive:auth:logout'));">
                 <?php echo esc_html($block->get_attribute('signOutText')); ?>
                 <?php if ($ctx->name)
@@ -92,8 +92,8 @@ $block = new Thrive_Login_Auth_Block($attributes);
             </button>
         </form>
     <?php else: ?>
-        <button id="thrive-login-button" class="<?php echo $block->get_button_classes(); ?>" type="button"
-            aria-haspopup="dialog" aria-controls="thrive-login-modal">
+        <button id="thrive-login-button" class="has-primary-background-color <?php echo $block->get_button_classes(); ?>"
+            type="button" aria-haspopup="dialog" aria-controls="thrive-login-modal">
             <?php echo esc_html($block->get_attribute('signInText')); ?>
         </button>
 
