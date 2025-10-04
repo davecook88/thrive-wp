@@ -57,10 +57,17 @@ export class PackagesService {
         );
       }
 
+      console.log(
+        'Creating package with lookup key:',
+        lookupKey,
+        createPackageDto,
+      );
+
       // Create Stripe Product
       const stripeProduct = await this.stripe.products.create({
         name: createPackageDto.name,
-        description: createPackageDto.description,
+        description:
+          (createPackageDto.description || createPackageDto.name) ?? 'N/A',
         type: 'service',
         metadata: {
           offering_type: 'PACKAGE',
@@ -72,6 +79,8 @@ export class PackagesService {
           teacher_tier: createPackageDto.teacherTier?.toString() || '',
         },
       });
+
+      console.log('Created Stripe product:', stripeProduct.id);
 
       // Create Stripe Price
       const stripePrice = await this.stripe.prices.create({

@@ -5,12 +5,15 @@ import { PackageUse } from './entities/package-use.entity.js';
 import { StripeProductMap } from '../payments/entities/stripe-product-map.entity.js';
 import { PackagesService } from './packages.service.js';
 import { PackagesController } from './packages.controller.js';
+import { AdminPackagesController } from './admin-packages.controller.js';
+import { AuthModule } from '../auth/auth.module.js';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([StudentPackage, PackageUse, StripeProductMap]),
+    AuthModule,
   ],
-  controllers: [PackagesController],
+  controllers: [PackagesController, AdminPackagesController],
   providers: [PackagesService],
   exports: [PackagesService],
 })

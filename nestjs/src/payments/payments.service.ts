@@ -491,7 +491,7 @@ export class PaymentsService {
 
           let savedBooking: Booking;
           if (existingBooking) {
-            if (existingBooking.status === BookingStatus.DRAFT) {
+            if ([BookingStatus.PENDING].includes(existingBooking.status)) {
               // Update existing draft booking to confirmed status with package info
               existingBooking.status = BookingStatus.CONFIRMED;
               existingBooking.acceptedAt = new Date();

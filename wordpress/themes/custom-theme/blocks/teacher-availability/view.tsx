@@ -1,6 +1,5 @@
 import { createElement } from "@wordpress/element";
 import { createRoot } from "react-dom/client";
-import { getCalendarContextSafe } from "../../types/calendar-utils";
 
 import TeacherAvailability from "./components/TeacherAvailability";
 
@@ -30,9 +29,4 @@ document.addEventListener("DOMContentLoaded", () => {
       showPreviewWeeks,
     })
   );
-  // Provide a helper on the container to access the context API for children
-  const contextApi = getCalendarContextSafe(container);
-  if (contextApi) {
-    (container as any).__thriveCalCtxApi = contextApi;
-  }
 });

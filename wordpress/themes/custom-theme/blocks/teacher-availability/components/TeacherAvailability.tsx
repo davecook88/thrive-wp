@@ -1,10 +1,24 @@
-import { useEffect, useState } from "@wordpress/element";
+import { useEffect, useState, useRef } from "@wordpress/element";
 import { Button } from "@wordpress/components";
-import { getCalendarContextSafe } from "../../../types/calendar-utils";
-import type { AvailabilityEvent, CalendarEvent } from "../../../types/calendar";
+import type {
+  AvailabilityEvent,
+  ThriveCalendarElement,
+} from "../../../types/calendar";
 import RulesSection from "./RulesSection";
 import ExceptionsSection from "./ExceptionsSection";
-import { useGetCalendarContext } from "../../../blocks/hooks/get-context";
+
+// Declare JSX intrinsic element for thrive-calendar web component
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      "thrive-calendar": {
+        view?: "week" | "day" | "month" | "list";
+        date?: string;
+        ref?: React.Ref<ThriveCalendarElement>;
+      };
+    }
+  }
+}
 
 interface Rule {
   id?: string;
@@ -44,69 +58,96 @@ export default function TeacherAvailability({
   const [exceptions, setExceptions] = useState<Exception[]>([]);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState("");
+  const [calendarEvents, setCalendarEvents] = useState<AvailabilityEvent[]>([]);
+  const [calendarElement, setCalendarElement] =
+    useState<ThriveCalendarElement | null>(null);
 
   const API_BASE = "/api";
 
   useEffect(() => {
     loadAvailability();
-    // Also push an initial preview into the calendar context if present
-    // previewAndPushToCalendar(showPreviewWeeks).catch(() => void 0);
   }, []);
 
-  const api = useGetCalendarContext("#teacher-availability-root");
+  // Callback ref to capture the calendar element
+  const calendarRef = (element: ThriveCalendarElement | null) => {
+    setCalendarElement(element);
+  };
 
-  // Register callback for date range changes
+  // Listen for calendar range changes and fetch availability
   useEffect(() => {
-    if (!api) {
-      console.warn("Teacher Availability: API not available");
-      return;
-    }
+    if (!calendarElement) return;
 
-    console.log("Teacher Availability: Registering date range change callback");
+    const handleRangeChange = async (e: Event) => {
+      const detail = (e as CustomEvent).detail as
+        | { fromDate?: string; untilDate?: string }
+        | undefined;
+      if (!detail?.fromDate || !detail?.untilDate) return;
 
-    const handleDateRangeChange = async (start: Date, end: Date) => {
-      console.log(
-        "Teacher Availability: Date range change callback called",
-        start,
-        end
-      );
+      console.log("Range change detected:", detail);
+
+      const start = new Date(detail.fromDate);
+      const end = new Date(detail.untilDate);
+
       try {
-        // Fetch availability preview for the new date range
-        const _events = await api.thriveClient.fetchAvailabilityPreview(
-          start,
-          end
-        );
+        const response = await fetch(`/api/teachers/me/availability/preview`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            start: start.toISOString(),
+            end: end.toISOString(),
+          }),
+        });
 
-        const events: AvailabilityEvent[] = _events.map((w) => ({
-          id: `avail:${w.startUtc}|${w.endUtc}`,
+        if (!response.ok) {
+          console.error("Failed to fetch availability preview:", response.status);
+          return;
+        }
+
+        const data = (await response.json()) as {
+          windows?: Array<{ start: string; end: string; teacherIds: number[] }>;
+        };
+
+        console.log("Received availability windows:", data.windows);
+
+        const events: AvailabilityEvent[] = (data.windows || []).map((w) => ({
+          id: `avail:${w.start}|${w.end}`,
           title: "Available",
-          startUtc: w.startUtc,
-          endUtc: w.endUtc,
+          startUtc: w.start,
+          endUtc: w.end,
           type: "availability" as const,
           teacherIds: w.teacherIds || [],
         }));
 
-        return events;
+        console.log("Setting calendar events:", events);
+        setCalendarEvents(events);
       } catch (error) {
-        console.warn(
-          "Failed to update availability preview on date range change",
-          error
-        );
-        return [];
+        console.error("Error fetching availability preview:", error);
       }
     };
 
-    // Register the callback
-    api.registerDateRangeChangeCallback(handleDateRangeChange);
+    console.log("Attaching range:change listener to calendar");
+    calendarElement.addEventListener(
+      "range:change",
+      handleRangeChange as EventListener
+    );
 
-    // Cleanup: unregister the callback when component unmounts
     return () => {
-      console.log(
-        "Teacher Availability: Unregistering date range change callback"
+      console.log("Removing range:change listener from calendar");
+      calendarElement.removeEventListener(
+        "range:change",
+        handleRangeChange as EventListener
       );
-      api.unregisterDateRangeChangeCallback(handleDateRangeChange);
     };
-  }, [api]); // Depend on api
+  }, [calendarElement]);
+
+  // Update calendar events when they change
+  useEffect(() => {
+    if (calendarElement && calendarEvents.length > 0) {
+      console.log("Updating calendar.events property:", calendarEvents);
+      calendarElement.events = calendarEvents;
+    }
+  }, [calendarElement, calendarEvents]);
 
   const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     const response = await fetch(`${API_BASE}${endpoint}`, {
@@ -372,6 +413,14 @@ export default function TeacherAvailability({
         >
           {saveStatus}
         </span>
+      </div>
+
+      {/* Calendar Preview */}
+      <div style={{ marginTop: "40px" }}>
+        <h3 style={{ color: accentColor, marginBottom: "16px" }}>
+          Availability Preview
+        </h3>
+        <thrive-calendar ref={calendarRef} view="week" />
       </div>
     </div>
   );
