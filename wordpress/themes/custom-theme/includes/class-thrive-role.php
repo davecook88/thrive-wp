@@ -9,6 +9,7 @@ enum ThriveRole: string
 {
     case ADMIN = 'admin';
     case TEACHER = 'teacher';
+    case STUDENT = 'student';
 
     /**
      * Get all available role values as an array of strings.

@@ -28,7 +28,7 @@ function get_page_content_from_file($filename)
 /**
  * Create or update a page with content from file
  */
-function ensure_page_exists($title, $slug, $content_filename, $template = null, $force_update = null)
+function ensure_page_exists($title, $slug, $content_filename, $template = null, $force_update = null, $parent_slug = null)
 {
     // Skip during WordPress installation
     if (defined('WP_INSTALLING') && WP_INSTALLING) {
@@ -40,7 +40,9 @@ function ensure_page_exists($title, $slug, $content_filename, $template = null, 
         $force_update = THRIVE_UPDATE_PAGES;
     }
 
-    $existing = get_page_by_path($slug);
+    // Build full path if parent slug provided
+    $full_path = $parent_slug ? $parent_slug . '/' . $slug : $slug;
+    $existing = get_page_by_path($full_path);
 
     if ($existing) {
         // Update existing page if flag allows
@@ -68,6 +70,15 @@ function ensure_page_exists($title, $slug, $content_filename, $template = null, 
         return;
     }
 
+    // Get parent ID if parent slug provided
+    $parent_id = 0;
+    if ($parent_slug) {
+        $parent_page = get_page_by_path($parent_slug);
+        if ($parent_page) {
+            $parent_id = $parent_page->ID;
+        }
+    }
+
     // Create new page
     $page_data = [
         'post_title' => $title,
@@ -75,6 +86,7 @@ function ensure_page_exists($title, $slug, $content_filename, $template = null, 
         'post_status' => 'publish',
         'post_type' => 'page',
         'post_content' => get_page_content_from_file($content_filename),
+        'post_parent' => $parent_id,
     ];
 
     if ($template) {
@@ -94,5 +106,5 @@ add_action('after_setup_theme', function () {
     // User dashboard pages
     ensure_page_exists('Student Dashboard', 'student', 'student');
     ensure_page_exists('Teacher Dashboard', 'teacher', 'teacher');
-    ensure_page_exists('Set Availability', 'teacher/set-availability', 'teacher-set-availability');
+    ensure_page_exists('Set Availability', 'set-availability', 'teacher-set-availability', null, null, 'teacher');
 });
