@@ -20,7 +20,8 @@ $is_logged_in = $ctx !== null;
 $current_path = isset($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : '/';
 // Prepare URLs for the auth actions. Use /api/auth/google/start and include the current path
 // so the NestJS service can return the user to the page they started on.
-$google_url = esc_url(home_url('/api/auth/google/start?redirect=' . rawurlencode($current_path)));
+$google_base = esc_url(home_url('/api/auth/google/start'));
+$google_url = $google_base; // JS will append redirect using encodeURIComponent(location.pathname + location.search)
 $logout_url = esc_url(home_url('/api/auth/logout'));
 
 // A helper class to manage the block's attributes and classes.
@@ -184,7 +185,7 @@ $block = new Thrive_Login_Auth_Block($attributes);
                 window.__THRIVE_LOGIN_AUTH_INITIALIZED__ = true;
 
                 const attributes = <?php echo wp_json_encode($attributes); ?>;
-                const googleUrl = <?php echo wp_json_encode($google_url); ?>;
+                const googleBase = <?php echo wp_json_encode($google_base); ?>;
 
                 function qs(selector, ctx) { return (ctx || document).querySelector(selector); }
                 function qa(selector, ctx) { return Array.from((ctx || document).querySelectorAll(selector)); }
@@ -242,8 +243,9 @@ $block = new Thrive_Login_Auth_Block($attributes);
                         const googleBtn = qs('#thrive-google-login');
                         if (googleBtn) {
                             googleBtn.addEventListener('click', () => {
-                                if (googleUrl) {
-                                    window.location.href = googleUrl;
+                                if (googleBase) {
+                                    const redirect = encodeURIComponent(location.pathname + location.search);
+                                    window.location.href = `${googleBase}?redirect=${redirect}`;
                                 } else {
                                     console.error('Google auth URL missing');
                                 }
