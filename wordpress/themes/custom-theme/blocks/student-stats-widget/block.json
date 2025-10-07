@@ -1,0 +1,33 @@
+{
+    "apiVersion": 2,
+    "name": "custom-theme/student-stats-widget",
+    "title": "Student Stats Widget",
+    "category": "widgets",
+    "icon": "chart-bar",
+    "description": "Displays student dashboard statistics including next session, classes attended, and active courses.",
+    "attributes": {
+        "showNextSession": {
+            "type": "boolean",
+            "default": true
+        },
+        "showCompletedSessions": {
+            "type": "boolean",
+            "default": true
+        },
+        "showScheduledSessions": {
+            "type": "boolean",
+            "default": true
+        },
+        "showActiveCourses": {
+            "type": "boolean",
+            "default": true
+        }
+    },
+    "supports": {
+        "html": false
+    },
+    "textdomain": "custom-theme",
+    "editorScript": "file:./build/index.js",
+    "render": "file:./render.php",
+    "viewScript": "file:./view.js"
+}

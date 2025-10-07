@@ -1,0 +1,25 @@
+{
+    "apiVersion": 2,
+    "name": "custom-theme/student-upcoming-sessions",
+    "title": "Student Upcoming Sessions",
+    "category": "widgets",
+    "icon": "calendar-alt",
+    "description": "Displays upcoming sessions for the student with teacher info and meeting links.",
+    "attributes": {
+        "limit": {
+            "type": "number",
+            "default": 5
+        },
+        "showMeetingLinks": {
+            "type": "boolean",
+            "default": true
+        }
+    },
+    "supports": {
+        "html": false
+    },
+    "textdomain": "custom-theme",
+    "editorScript": "file:./build/index.js",
+    "render": "file:./render.php",
+    "viewScript": "file:./view.js"
+}

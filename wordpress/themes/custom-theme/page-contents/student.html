@@ -6,26 +6,101 @@
 <p>Welcome to your personal learning dashboard. Here you can view your upcoming sessions, manage your bookings, and track your progress.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:heading {"level":2} -->
-<h2>My Sessions</h2>
-<!-- /wp:heading -->
-<!-- wp:custom-theme/student-class-credits /-->
+<!-- wp:spacer {"height":"20px"} -->
+<div style="height:20px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
 
-<!-- wp:custom-theme/student-calendar /-->
+<!-- wp:custom-theme/student-stats-widget /-->
 
-<!-- wp:heading {"level":2} -->
-<h2>Quick Actions</h2>
-<!-- /wp:heading -->
+<!-- wp:spacer {"height":"30px"} -->
+<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
 
-<!-- wp:buttons -->
-<div class="wp-block-buttons"><!-- wp:button {"className":"is-style-fill"} -->
-<div class="wp-block-button is-style-fill"><a class="wp-block-button__link" href="/teachers">Browse Teachers</a></div>
-<!-- /wp:button -->
+<!-- wp:columns -->
+<div class="wp-block-columns">
+    <!-- wp:column {"width":"33.33%"} -->
+    <div class="wp-block-column" style="flex-basis:33.33%">
+        <!-- wp:heading {"level":2} -->
+        <h2>Upcoming Sessions</h2>
+        <!-- /wp:heading -->
 
-<!-- wp:button {"className":"is-style-outline"} -->
-<div class="wp-block-button is-style-outline"><a class="wp-block-button__link" href="/booking-complete">View Recent Bookings</a></div>
-<!-- /wp:button --></div>
-<!-- /wp:buttons -->
+        <!-- wp:custom-theme/student-upcoming-sessions {"limit":5} /-->
+
+        <!-- wp:spacer {"height":"20px"} -->
+        <div style="height:20px" aria-hidden="true" class="wp-block-spacer"></div>
+        <!-- /wp:spacer -->
+
+        <!-- wp:heading {"level":2} -->
+        <h2>Quick Actions</h2>
+        <!-- /wp:heading -->
+
+        <!-- wp:buttons -->
+        <div class="wp-block-buttons">
+            <!-- wp:button {"className":"is-style-fill","width":100} -->
+            <div class="wp-block-button has-custom-width wp-block-button__width-100 is-style-fill">
+                <a class="wp-block-button__link" href="/booking">Book a Session</a>
+            </div>
+            <!-- /wp:button -->
+
+            <!-- wp:button {"className":"is-style-outline","width":100} -->
+            <div class="wp-block-button has-custom-width wp-block-button__width-100 is-style-outline">
+                <a class="wp-block-button__link" href="/teachers">Browse Teachers</a>
+            </div>
+            <!-- /wp:button -->
+
+            <!-- wp:button {"className":"is-style-outline","width":100} -->
+            <div class="wp-block-button has-custom-width wp-block-button__width-100 is-style-outline">
+                <a class="wp-block-button__link" href="/packages">Buy More Credits</a>
+            </div>
+            <!-- /wp:button -->
+        </div>
+        <!-- /wp:buttons -->
+    </div>
+    <!-- /wp:column -->
+
+    <!-- wp:column {"width":"66.66%"} -->
+    <div class="wp-block-column" style="flex-basis:66.66%">
+        <!-- wp:heading {"level":2} -->
+        <h2>My Schedule</h2>
+        <!-- /wp:heading -->
+
+        <!-- wp:custom-theme/student-calendar /-->
+    </div>
+    <!-- /wp:column -->
+</div>
+<!-- /wp:columns -->
+
+<!-- wp:spacer {"height":"30px"} -->
+<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
+
+<!-- wp:columns -->
+<div class="wp-block-columns">
+    <!-- wp:column {"width":"50%"} -->
+    <div class="wp-block-column" style="flex-basis:50%">
+        <!-- wp:heading {"level":2} -->
+        <h2>My Packages</h2>
+        <!-- /wp:heading -->
+
+        <!-- wp:custom-theme/student-package-details /-->
+    </div>
+    <!-- /wp:column -->
+
+    <!-- wp:column {"width":"50%"} -->
+    <div class="wp-block-column" style="flex-basis:50%">
+        <!-- wp:heading {"level":2} -->
+        <h2>My Courses</h2>
+        <!-- /wp:heading -->
+
+        <!-- wp:custom-theme/student-course-enrollments /-->
+    </div>
+    <!-- /wp:column -->
+</div>
+<!-- /wp:columns -->
+
+<!-- wp:spacer {"height":"20px"} -->
+<div style="height:20px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
 
 <!-- wp:paragraph -->
 <p><em>Note: You must be signed in to view your sessions and manage your bookings.</em></p>

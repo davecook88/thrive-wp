@@ -1,0 +1,26 @@
+{
+    "apiVersion": 2,
+    "name": "custom-theme/student-package-details",
+    "title": "Student Package Details",
+    "category": "widgets",
+    "icon": "tickets-alt",
+    "description": "Displays detailed package information with progress bars and expiry dates.",
+    "attributes": {
+        "viewMode": {
+            "type": "string",
+            "default": "detailed",
+            "enum": ["compact", "detailed"]
+        },
+        "showExpired": {
+            "type": "boolean",
+            "default": false
+        }
+    },
+    "supports": {
+        "html": false
+    },
+    "textdomain": "custom-theme",
+    "editorScript": "file:./build/index.js",
+    "render": "file:./render.php",
+    "viewScript": "file:./view.js"
+}

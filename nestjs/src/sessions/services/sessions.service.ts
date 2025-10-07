@@ -30,6 +30,7 @@ export class SessionsService {
         teacherId,
         startAt,
         endAt,
+        studentId,
       });
 
       // If studentId provided, also validate student availability

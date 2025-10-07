@@ -9,6 +9,10 @@ import "./selected-event-modal/view";
 import "./teacher-picker/view";
 import "./booking-session-details/view";
 import "./conditional-stripe-payment/view";
+import "./student-package-details/view";
+import "./student-upcoming-sessions/view";
+import "./student-course-enrollments/view";
+import "./student-stats-widget/view";
 // Context-specific logic now lives in ./thrive-calendar-context/view.ts
 import "./hooks/get-context";
 import "./hooks/get-teachers";

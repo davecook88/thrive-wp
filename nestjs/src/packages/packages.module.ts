@@ -7,11 +7,13 @@ import { PackagesService } from './packages.service.js';
 import { PackagesController } from './packages.controller.js';
 import { AdminPackagesController } from './admin-packages.controller.js';
 import { AuthModule } from '../auth/auth.module.js';
+import { StudentsModule } from '../students/students.module.js';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([StudentPackage, PackageUse, StripeProductMap]),
     AuthModule,
+    StudentsModule,
   ],
   controllers: [PackagesController, AdminPackagesController],
   providers: [PackagesService],

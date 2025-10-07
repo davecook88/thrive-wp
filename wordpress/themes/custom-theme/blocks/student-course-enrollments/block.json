@@ -1,0 +1,25 @@
+{
+    "apiVersion": 2,
+    "name": "custom-theme/student-course-enrollments",
+    "title": "Student Course Enrollments",
+    "category": "widgets",
+    "icon": "welcome-learn-more",
+    "description": "Displays student's active course enrollments with progress tracking.",
+    "attributes": {
+        "showProgress": {
+            "type": "boolean",
+            "default": true
+        },
+        "showNextSession": {
+            "type": "boolean",
+            "default": true
+        }
+    },
+    "supports": {
+        "html": false
+    },
+    "textdomain": "custom-theme",
+    "editorScript": "file:./build/index.js",
+    "render": "file:./render.php",
+    "viewScript": "file:./view.js"
+}

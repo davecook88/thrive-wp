@@ -44,4 +44,29 @@ export class StudentsController {
     const userId = req.user.id;
     return this.studentsService.getStudentSessions(userId, startDate, endDate);
   }
+
+  @Get('me/stats')
+  @UseGuards(StudentGuard)
+  async getMyStats(@Request() req: AuthenticatedRequest) {
+    const userId = req.user.id;
+    return this.studentsService.getStudentStats(userId);
+  }
+
+  @Get('me/upcoming')
+  @UseGuards(StudentGuard)
+  async getMyUpcoming(
+    @Request() req: AuthenticatedRequest,
+    @Query('limit') limit?: string,
+  ) {
+    const userId = req.user.id;
+    const limitNum = limit ? parseInt(limit, 10) : 5;
+    return this.studentsService.getUpcomingSessions(userId, limitNum);
+  }
+
+  @Get('me/enrollments')
+  @UseGuards(StudentGuard)
+  async getMyEnrollments(@Request() req: AuthenticatedRequest) {
+    const userId = req.user.id;
+    return this.studentsService.getStudentEnrollments(userId);
+  }
 }

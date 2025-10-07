@@ -7,11 +7,13 @@ import {
   Req,
   ParseIntPipe,
   UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { z } from 'zod';
 import { Request } from 'express';
 import { PackagesService } from './packages.service.js';
+import { StudentsService } from '../students/students.service.js';
 
 const UsePackageSchema = z.object({
   sessionId: z.number(),
@@ -27,7 +29,10 @@ interface AuthenticatedRequest extends Request {
 
 @Controller('packages')
 export class PackagesController {
-  constructor(private readonly packagesService: PackagesService) {}
+  constructor(
+    private readonly packagesService: PackagesService,
+    private readonly studentsService: StudentsService,
+  ) {}
 
   @Get()
   async getAvailablePackages() {
@@ -41,9 +46,14 @@ export class PackagesController {
     if (!userId) {
       throw new UnauthorizedException('User ID not found in auth headers');
     }
-    return this.packagesService.getActivePackagesForStudent(
-      parseInt(userId, 10),
-    );
+
+    // Convert user ID to student ID
+    const student = await this.studentsService.findByUserId(parseInt(userId, 10));
+    if (!student) {
+      throw new NotFoundException('Student record not found for this user');
+    }
+
+    return this.packagesService.getActivePackagesForStudent(student.id);
   }
 
   @Post(':id/use')
