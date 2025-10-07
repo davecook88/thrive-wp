@@ -35,3 +35,8 @@ wp_enqueue_script('thrive-calendar-wc');
     data-snap-to="<?php echo esc_attr((string) $snapTo); ?>"
     data-view-height="<?php echo esc_attr((string) $viewHeight); ?>">
 </div>
+<?php
+// Render the Selected Event Modal so clicking events opens the modal
+$modal_block = '<!-- wp:custom-theme/selected-event-modal /-->';
+echo do_blocks($modal_block);
+?>
