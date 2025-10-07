@@ -21,7 +21,8 @@ $current_path = isset($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_UR
 // Prepare URLs for the auth actions. Use /api/auth/google/start and include the current path
 // so the NestJS service can return the user to the page they started on.
 $google_base = esc_url(home_url('/api/auth/google/start'));
-$google_url = $google_base; // JS will append redirect using encodeURIComponent(location.pathname + location.search)
+// JS will append the redirect using encodeURIComponent(location.pathname + location.search)
+error_log("Google base: $google_base");
 $logout_url = esc_url(home_url('/api/auth/logout'));
 
 // A helper class to manage the block's attributes and classes.
