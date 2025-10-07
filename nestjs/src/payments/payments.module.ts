@@ -16,7 +16,14 @@ import { PackagesModule } from '../packages/packages.module.js';
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([StripeProductMap, Student, Session, Booking, StudentPackage, PackageUse]),
+    TypeOrmModule.forFeature([
+      StripeProductMap,
+      Student,
+      Session,
+      Booking,
+      StudentPackage,
+      PackageUse,
+    ]),
     SessionsModule,
     PackagesModule,
   ],

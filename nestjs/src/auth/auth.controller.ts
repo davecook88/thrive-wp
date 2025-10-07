@@ -13,8 +13,10 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service.js';
 import type { Request, Response } from 'express';
+import type { ParsedQs } from 'qs';
 import { randomUUID } from 'node:crypto';
 import jwt from 'jsonwebtoken';
+import type { User } from '../users/entities/user.entity.js';
 
 interface SessionPayload {
   sub: string;
@@ -25,6 +27,65 @@ interface SessionPayload {
   roles: string[];
   sid: string; // session id
   type: 'access' | 'refresh'; // token type
+}
+
+interface RedirectQuery extends ParsedQs {
+  redirect?: string | string[] | ParsedQs | ParsedQs[] | undefined;
+}
+
+type GoogleStartRequest = Request<
+  Record<string, never>,
+  unknown,
+  unknown,
+  RedirectQuery
+>;
+
+type GoogleCallbackRequest = Request & { user?: User | undefined };
+
+function normalizeRedirect(value: unknown, baseUrl: string): string | null {
+  if (typeof value !== 'string') return null;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  let decodedForGuard = trimmed;
+  try {
+    decodedForGuard = decodeURIComponent(trimmed);
+  } catch {
+    // keep original form if decoding fails; we'll still validate structure below
+  }
+  if (/[\r\n]/u.test(decodedForGuard)) return null;
+
+  let base: URL;
+  try {
+    base = new URL(baseUrl);
+  } catch {
+    return null;
+  }
+
+  let target: URL;
+  try {
+    target = new URL(trimmed, base);
+  } catch {
+    return null;
+  }
+
+  if (target.origin !== base.origin) return null;
+
+  const search = target.search ?? '';
+  const hash = target.hash ?? '';
+  const normalized = `${target.pathname}${search}${hash}`;
+
+  if (!normalized.startsWith('/')) return null;
+  if (normalized.startsWith('//')) return null;
+
+  return normalized;
+}
+
+function readCookieValue(req: Request, name: string): string | undefined {
+  const cookies = req.cookies as Record<string, unknown> | undefined;
+  const value = cookies?.[name];
+  return typeof value === 'string' ? value : undefined;
 }
 
 function signAccessToken(payload: Omit<SessionPayload, 'type'>): string {
@@ -61,22 +122,42 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
-  googleAuth() {}
+  googleAuth() {
+    // Passport will handle the redirect to Google
+    // State parameter can be set via session or query param
+  }
 
   // Helper endpoint: set a post-auth redirect and then start the Google OAuth flow.
   // Use this when you want to preserve the page the user was on before auth.
   @Get('google/start')
-  startGoogleAuth(@Req() req: Request, @Res() res: Response) {
-    const redirectCookieName = 'post_auth_redirect';
-    const redirect = (req as any).query?.redirect;
-    if (redirect && typeof redirect === 'string' && redirect.startsWith('/')) {
+  startGoogleAuth(@Req() req: GoogleStartRequest, @Res() res: Response) {
+    const wpBaseUrl = process.env.WP_BASE_URL || 'http://localhost:8080';
+    const redirectRaw = req.query?.redirect;
+    console.log('[Google Start] WP_BASE_URL:', wpBaseUrl);
+    console.log('[Google Start] redirect query param (raw):', redirectRaw);
+    const redirect = normalizeRedirect(redirectRaw, wpBaseUrl);
+    console.log('[Google Start] redirect query param:', redirectRaw);
+
+    // Store redirect in session-like cookie that will survive the OAuth roundtrip
+    if (redirect) {
       const isProd = process.env.NODE_ENV === 'production';
-      res.cookie(redirectCookieName, redirect, {
+      // Parse the base URL to get domain for cookie
+      const baseUrlObj = new URL(wpBaseUrl);
+      const domain = baseUrlObj.hostname;
+
+      console.log(
+        '[Google Start] Setting cookie for domain:',
+        domain,
+        'value:',
+        redirect,
+      );
+      res.cookie('post_auth_redirect', redirect, {
         httpOnly: true,
         sameSite: 'lax',
         secure: isProd,
+        domain: domain === 'localhost' ? undefined : domain, // Don't set domain for localhost
         path: '/',
-        maxAge: 1000 * 60 * 5, // short lived (5m)
+        maxAge: 1000 * 60 * 10, // 10 minutes to survive OAuth flow
       });
     }
     // Redirect to the passport-protected entry which will redirect to Google
@@ -85,8 +166,11 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  async googleCallback(@Req() req: Request, @Res() res: Response) {
-    const user: any = (req as any).user;
+  async googleCallback(
+    @Req() req: GoogleCallbackRequest,
+    @Res() res: Response,
+  ) {
+    const user = req.user;
     if (!user) {
       return res.redirect(302, '/?auth=failed');
     }
@@ -124,17 +208,37 @@ export class AuthController {
     const redirectBase = process.env.WP_BASE_URL || 'http://localhost:8080';
     // Prefer a previously-set post-auth redirect (set by /auth/google/start)
     const redirectCookieName = 'post_auth_redirect';
-    const postAuthRedirect =
-      (req as any).cookies?.[redirectCookieName] ||
-      extractCookie(req.headers['cookie'] || '', redirectCookieName) ||
-      '';
-    if (postAuthRedirect && typeof postAuthRedirect === 'string') {
+    const cookieHeader = req.headers.cookie ?? '';
+    console.log('[Google Callback] All cookies:', cookieHeader);
+    const postAuthRaw =
+      readCookieValue(req, redirectCookieName) ??
+      extractCookie(cookieHeader, redirectCookieName);
+    const postAuthRedirect = normalizeRedirect(postAuthRaw, redirectBase);
+    console.log(
+      '[Google Callback] postAuthRedirect cookie value:',
+      postAuthRedirect,
+    );
+    if (postAuthRedirect) {
       // clear cookie and only allow path-style redirects for safety
-      res.clearCookie(redirectCookieName, { path: '/' });
+      const wpBaseUrl = process.env.WP_BASE_URL || 'http://localhost:8080';
+      const baseUrlObj = new URL(wpBaseUrl);
+      const domain = baseUrlObj.hostname;
+
+      res.clearCookie(redirectCookieName, {
+        path: '/',
+        domain: domain === 'localhost' ? undefined : domain,
+      });
       if (postAuthRedirect.startsWith('/')) {
+        console.log(
+          '[Google Callback] Redirecting to:',
+          `${redirectBase}${postAuthRedirect}`,
+        );
         return res.redirect(302, `${redirectBase}${postAuthRedirect}`);
       }
     }
+    console.log(
+      '[Google Callback] No valid redirect found, redirecting to homepage',
+    );
     return res.redirect(302, `${redirectBase}/?auth=success`);
   }
 
@@ -144,8 +248,9 @@ export class AuthController {
   introspect(@Req() req: Request, @Res() res: Response) {
     const cookieName = process.env.SESSION_COOKIE_NAME || 'thrive_sess';
     const token =
-      (req as any).cookies?.[cookieName] ||
-      extractCookie(req.headers['cookie'] || '', cookieName);
+      readCookieValue(req, cookieName) ??
+      extractCookie(req.headers.cookie ?? '', cookieName) ??
+      null;
     if (!token) return res.sendStatus(401);
     const payload = verifySession(token);
     if (!payload) return res.sendStatus(401);
@@ -173,8 +278,9 @@ export class AuthController {
     const refreshCookieName =
       process.env.REFRESH_COOKIE_NAME || 'thrive_refresh';
     const refreshToken =
-      (req as any).cookies?.[refreshCookieName] ||
-      extractCookie(req.headers['cookie'] || '', refreshCookieName);
+      readCookieValue(req, refreshCookieName) ??
+      extractCookie(req.headers.cookie ?? '', refreshCookieName) ??
+      null;
 
     if (!refreshToken) return res.sendStatus(401);
 
@@ -228,6 +334,7 @@ export class AuthController {
     @Body('password') password: string,
     @Body('firstName') firstName: string,
     @Body('lastName') lastName: string,
+    @Body('redirect') redirect: string | undefined,
     @Res() res: Response,
   ) {
     if (!email || !password)
@@ -271,9 +378,7 @@ export class AuthController {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     });
     const redirectBase = process.env.WP_BASE_URL || 'http://localhost:8080';
-    const redirectRaw = (arguments as any)[0]?.redirect as string | undefined;
-    const redirectPath =
-      redirectRaw && redirectRaw.startsWith('/') ? redirectRaw : '/';
+    const redirectPath = normalizeRedirect(redirect, redirectBase) ?? '/';
     return res
       .status(201)
       .json({ ok: true, redirect: redirectBase + redirectPath });
@@ -283,6 +388,7 @@ export class AuthController {
   async login(
     @Body('email') email: string,
     @Body('password') password: string,
+    @Body('redirect') redirect: string | undefined,
     @Res() res: Response,
   ) {
     if (!email || !password)
@@ -320,10 +426,7 @@ export class AuthController {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     });
     const redirectBase = process.env.WP_BASE_URL || 'http://localhost:8080';
-    // Respect optional redirect passed in body (must be a path starting with '/')
-    const redirectRaw = (arguments as any)[0]?.redirect as string | undefined;
-    const redirectPath =
-      redirectRaw && redirectRaw.startsWith('/') ? redirectRaw : '/';
+    const redirectPath = normalizeRedirect(redirect, redirectBase) ?? '/';
     return res.json({ ok: true, redirect: redirectBase + redirectPath });
   }
 

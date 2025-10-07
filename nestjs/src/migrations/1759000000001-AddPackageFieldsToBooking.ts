@@ -4,7 +4,9 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * Add package-related fields to the booking table.
  * This is a separate migration to ensure booking table gets the required columns.
  */
-export class AddPackageFieldsToBooking1759000000001 implements MigrationInterface {
+export class AddPackageFieldsToBooking1759000000001
+  implements MigrationInterface
+{
   name = 'AddPackageFieldsToBooking1759000000001';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
