@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { GroupClass } from './entities/group-class.entity';
-import { GroupClassTeacher } from './entities/group-class-teacher.entity';
-import { GroupClassesService } from './group-classes.service';
-import { GroupClassesController } from './group-classes.controller';
+import { GroupClass } from './entities/group-class.entity.js';
+import { GroupClassTeacher } from './entities/group-class-teacher.entity.js';
+import { GroupClassesService } from './group-classes.service.js';
+import { GroupClassesController } from './group-classes.controller.js';
 
-import { Session } from '../sessions/entities/session.entity';
+import { Session } from '../sessions/entities/session.entity.js';
 
 @Module({
   imports: [TypeOrmModule.forFeature([GroupClass, GroupClassTeacher, Session])],

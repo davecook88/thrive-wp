@@ -11,7 +11,6 @@ import { Session, SessionStatus } from '../sessions/entities/session.entity.js';
 import { Student } from '../students/entities/student.entity.js';
 import { StudentPackage } from '../packages/entities/student-package.entity.js';
 import { PoliciesService } from '../policies/policies.service.js';
-import { PackagesService } from '../packages/packages.service.js';
 import { ServiceType } from '../common/types/class-types.js';
 import { z } from 'zod';
 
@@ -54,11 +53,16 @@ export class BookingsService {
     @InjectRepository(StudentPackage)
     private readonly studentPackageRepository: Repository<StudentPackage>,
     private readonly policiesService: PoliciesService,
-    private readonly packagesService: PackagesService,
   ) {}
 
-  async createBooking(studentId: number, sessionId: number, studentPackageId?: number): Promise<Booking> {
-    const session = await this.sessionRepository.findOne({ where: { id: sessionId } });
+  async createBooking(
+    studentId: number,
+    sessionId: number,
+    studentPackageId?: number,
+  ): Promise<Booking> {
+    const session = await this.sessionRepository.findOne({
+      where: { id: sessionId },
+    });
     if (!session) {
       throw new NotFoundException('Session not found');
     }
@@ -67,20 +71,26 @@ export class BookingsService {
       throw new BadRequestException('Session is not scheduled');
     }
 
-    const student = await this.studentRepository.findOne({ where: { id: studentId } });
+    const student = await this.studentRepository.findOne({
+      where: { id: studentId },
+    });
     if (!student) {
       throw new NotFoundException('Student not found');
     }
 
     // Check capacity
-    const enrolledCount = await this.bookingRepository.count({ where: { sessionId, status: BookingStatus.CONFIRMED } });
+    const enrolledCount = await this.bookingRepository.count({
+      where: { sessionId, status: BookingStatus.CONFIRMED },
+    });
     if (enrolledCount >= session.capacityMax) {
       throw new BadRequestException('Session is full');
     }
 
     let studentPackage: StudentPackage | null = null;
     if (studentPackageId) {
-      studentPackage = await this.studentPackageRepository.findOne({ where: { id: studentPackageId, studentId } });
+      studentPackage = await this.studentPackageRepository.findOne({
+        where: { id: studentPackageId, studentId },
+      });
       if (!studentPackage) {
         throw new NotFoundException('Student package not found');
       }

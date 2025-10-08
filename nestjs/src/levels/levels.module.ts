@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Level } from './entities/level.entity';
-import { LevelsService } from './levels.service';
-import { LevelsController } from './levels.controller';
+import { Level } from './entities/level.entity.js';
+import { LevelsService } from './levels.service.js';
+import { LevelsController } from './levels.controller.js';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Level])],

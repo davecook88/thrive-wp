@@ -17,6 +17,7 @@ export interface CalendarEvent {
   courseName?: string;
   meetingUrl?: string;
   bookingId?: number; // Add bookingId for booking events
+  description?: string;
 }
 
 interface SessionQueryResult {
@@ -30,6 +31,30 @@ interface SessionQueryResult {
   course_id: number | null;
   session_source: string;
   teacher_name: string;
+  meeting_url?: string;
+  course_name?: string;
+}
+
+interface SessionCountResult {
+  count: string;
+}
+
+interface CourseCountResult {
+  count: string;
+}
+
+interface CourseEnrollmentResult {
+  enrollment_id: number;
+  status: string;
+  enrolled_at: Date;
+  course_id: number;
+  course_name: string;
+  description: string;
+  start_date: Date;
+  end_date: Date;
+  total_sessions: string;
+  completed_sessions: string;
+  next_session_at: Date | null;
 }
 
 @Injectable()
@@ -86,7 +111,7 @@ export class StudentsService {
         s.created_at,
         s.updated_at,
         s.deleted_at,
-        u.name as teacher_name,
+        u.first_name || ' ' || u.last_name as teacher_name,
         CASE
           WHEN s.type = 'PRIVATE' THEN 'private'
           WHEN s.type = 'GROUP' THEN 'group'
@@ -142,7 +167,7 @@ export class StudentsService {
     }
 
     // Get next upcoming session
-    const nextSessionQuery = await this.dataSource.query(
+    const nextSessionQuery = await this.dataSource.query<SessionQueryResult[]>(
       `
       SELECT
         s.id,
@@ -152,7 +177,7 @@ export class StudentsService {
         s.teacher_id,
         s.course_id,
         s.meeting_url,
-        u.name as teacher_name
+        u.first_name || ' ' || u.last_name as teacher_name
       FROM session s
       JOIN booking b ON b.session_id = s.id
       JOIN teacher t ON t.id = s.teacher_id
@@ -172,7 +197,7 @@ export class StudentsService {
       nextSessionQuery.length > 0 ? nextSessionQuery[0] : null;
 
     // Get count of completed sessions
-    const completedQuery = await this.dataSource.query(
+    const completedQuery = await this.dataSource.query<SessionCountResult[]>(
       `
       SELECT COUNT(*) as count
       FROM session s
@@ -185,7 +210,7 @@ export class StudentsService {
     );
 
     // Get count of scheduled sessions
-    const scheduledQuery = await this.dataSource.query(
+    const scheduledQuery = await this.dataSource.query<SessionCountResult[]>(
       `
       SELECT COUNT(*) as count
       FROM session s
@@ -200,7 +225,7 @@ export class StudentsService {
     );
 
     // Get count of active course enrollments
-    const coursesQuery = await this.dataSource.query(
+    const coursesQuery = await this.dataSource.query<CourseCountResult[]>(
       `
       SELECT COUNT(*) as count
       FROM course_enrollment
@@ -235,7 +260,7 @@ export class StudentsService {
       return [];
     }
 
-    const sessions = await this.dataSource.query(
+    const sessions = await this.dataSource.query<SessionQueryResult[]>(
       `
       SELECT
         s.id,
@@ -264,7 +289,7 @@ export class StudentsService {
       [student.id, limit],
     );
 
-    return sessions.map((session: any) => ({
+    return sessions.map((session) => ({
       id: session.id,
       classType: session.class_type,
       startAt: session.start_at,
@@ -284,7 +309,7 @@ export class StudentsService {
       return [];
     }
 
-    const enrollments = await this.dataSource.query(
+    const enrollments = await this.dataSource.query<CourseEnrollmentResult[]>(
       `
       SELECT
         ce.id as enrollment_id,
@@ -324,7 +349,7 @@ export class StudentsService {
       [student.id, student.id, student.id],
     );
 
-    return enrollments.map((enrollment: any) => ({
+    return enrollments.map((enrollment) => ({
       enrollmentId: enrollment.enrollment_id,
       courseId: enrollment.course_id,
       courseName: enrollment.course_name,

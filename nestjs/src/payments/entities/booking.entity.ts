@@ -1,5 +1,7 @@
 import { Entity, Column, Index, ManyToOne, JoinColumn, Unique } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity.js';
+import type { Session } from '@/sessions/entities/session.entity.js';
+import type { Student } from '@/students/entities/student.entity.js';
 
 /**
  * Enumeration of booking statuses.
@@ -44,9 +46,11 @@ export class Booking extends BaseEntity {
   })
   sessionId: number;
 
-  @ManyToOne(() => 'Session', session => session.bookings, { onDelete: 'CASCADE' })
+  @ManyToOne('Session', (session: Session) => session.bookings, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'session_id' })
-  session: any;
+  session: Session;
 
   @Column({
     name: 'student_id',
@@ -55,9 +59,11 @@ export class Booking extends BaseEntity {
   })
   studentId: number;
 
-  @ManyToOne(() => 'Student', student => student.bookings, { onDelete: 'CASCADE' })
+  @ManyToOne('Student', (student: Student) => student.bookings, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'student_id' })
-  student: any;
+  student: Student;
 
   @Column({
     name: 'status',
