@@ -6,10 +6,8 @@ import type {
   AvailabilityEvent,
 } from "../../../types/calendar";
 import { thriveClient } from "../../../clients/thrive";
-import {
-  fetchStudentBookings,
-  fetchAvailabilitySlots,
-} from "../utils/calendarData";
+import { fetchStudentBookings } from "../utils/calendarData";
+import { useAvailabilitySlots } from "../../hooks/use-availability-slots";
 
 interface StudentCalendarProps {
   view: "week" | "day" | "month" | "list";
@@ -37,6 +35,15 @@ export default function StudentCalendar({
     until: Date;
   } | null>(null);
 
+  // Use availability slots hook for booking mode
+  const { availabilitySlots } = useAvailabilitySlots({
+    start: currentRange?.from || null,
+    end: currentRange?.until || null,
+    selectedTeacherIds,
+    sessionDuration,
+    slotDuration,
+  });
+
   // Load teachers list once
   useEffect(() => {
     let mounted = true;
@@ -58,23 +65,24 @@ export default function StudentCalendar({
       const bookings = await fetchStudentBookings(start, end);
       setEvents(bookings);
     } else {
-      const slots = await fetchAvailabilitySlots(
-        start,
-        end,
-        selectedTeacherIds,
-        sessionDuration,
-        slotDuration
-      );
-      setEvents(slots);
+      // Availability slots are handled by the useAvailabilitySlots hook
+      setEvents(availabilitySlots);
     }
   };
 
   // Refetch when mode, teachers, or duration changes
   useEffect(() => {
-    if (currentRange) {
+    if (currentRange && mode === "view") {
       fetchData(currentRange.from, currentRange.until);
     }
   }, [mode, selectedTeacherIds, sessionDuration]);
+
+  // Update events when availability slots change (for booking mode)
+  useEffect(() => {
+    if (mode === "book") {
+      setEvents(availabilitySlots);
+    }
+  }, [availabilitySlots, mode]);
 
   // Push events to calendar element
   useEffect(() => {

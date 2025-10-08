@@ -6,6 +6,7 @@ import type {
   AvailabilityEvent,
 } from "../../../types/calendar";
 import { thriveClient } from "../../../clients/thrive";
+import { useAvailabilitySlots } from "../../hooks/use-availability-slots";
 
 interface Props {
   view: "week" | "day" | "month" | "list";
@@ -31,6 +32,19 @@ export default function PrivateSessionAvailabilityCalendar({
     teachers?.length ? teachers.map((t) => t.teacherId) : []
   );
   const [sessionDuration, setSessionDuration] = useState<number>(60); // Default to 1 hour
+  const [currentRange, setCurrentRange] = useState<{
+    from: Date;
+    until: Date;
+  } | null>(null);
+
+  // Use availability slots hook
+  const { availabilitySlots } = useAvailabilitySlots({
+    start: currentRange?.from || null,
+    end: currentRange?.until || null,
+    selectedTeacherIds,
+    sessionDuration,
+    slotDuration,
+  });
 
   useEffect(() => {
     if (!teachers?.length || selectedTeacherIds.length) return;
@@ -49,53 +63,7 @@ export default function PrivateSessionAvailabilityCalendar({
     };
   }, []);
 
-  // Helper to fetch availability for a given range
-  const fetchAvailability = async (start: Date, end: Date) => {
-    if (selectedTeacherIds.length === 0) return;
-    if (end < new Date()) return;
-    const avail = await thriveClient.fetchAvailabilityPublic({
-      start,
-      end,
-      teacherIds: selectedTeacherIds.length ? selectedTeacherIds : undefined,
-    });
-    // Chunk windows into session-sized availability events
-    // Only include teachers available for the complete session duration
-    const sessionMinutes = sessionDuration;
-    const chunks: AvailabilityEvent[] = avail.flatMap((w) => {
-      const winStart = new Date(w.startUtc);
-      const winEnd = new Date(w.endUtc);
-      const out: AvailabilityEvent[] = [];
-      let current = new Date(winStart);
-      while (current < winEnd) {
-        const sessionEnd = new Date(
-          current.getTime() + sessionMinutes * 60 * 1000
-        );
-        // Only create a chunk if the entire session fits within the availability window
-        if (sessionEnd <= winEnd) {
-          out.push({
-            id: `avail:${current.toISOString()}|${sessionEnd.toISOString()}`,
-            title: "Available",
-            startUtc: current.toISOString(),
-            endUtc: sessionEnd.toISOString(),
-            type: "availability",
-            teacherIds: w.teacherIds,
-          });
-        }
-        // Move to next potential session start (using slotDuration for navigation)
-        current = new Date(
-          current.getTime() +
-            Math.max(5, Number(slotDuration) || 30) * 60 * 1000
-        );
-      }
-      return out;
-    });
-    // filter any chunks in the past
-    const now = new Date();
-    const futureChunks = chunks.filter((e) => new Date(e.endUtc) >= now);
-    setEvents(futureChunks);
-  };
-
-  // When range changes, fetch availability
+  // When range changes, update current range
   useEffect(() => {
     const calendar = calendarRef.current;
     if (!calendar) return;
@@ -103,10 +71,10 @@ export default function PrivateSessionAvailabilityCalendar({
     const handleRangeChange = (e: any) => {
       const detail = e?.detail as { fromDate?: string; untilDate?: string };
       if (detail?.fromDate && detail?.untilDate) {
-        fetchAvailability(
-          new Date(detail.fromDate),
-          new Date(detail.untilDate)
-        );
+        setCurrentRange({
+          from: new Date(detail.fromDate),
+          until: new Date(detail.untilDate),
+        });
       }
     };
     calendar.addEventListener("range:change", handleRangeChange);
@@ -117,6 +85,11 @@ export default function PrivateSessionAvailabilityCalendar({
       calendar.removeEventListener("range:change", handleRangeChange);
     };
   }, [selectedTeacherIds, sessionDuration]);
+
+  // Update events when availability slots change
+  useEffect(() => {
+    setEvents(availabilitySlots);
+  }, [availabilitySlots]);
 
   // Push events to calendar element
   useEffect(() => {
