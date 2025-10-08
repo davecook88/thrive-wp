@@ -7,6 +7,7 @@ import type {
 } from "../../../types/calendar";
 import { thriveClient } from "../../../clients/thrive";
 import { useAvailabilitySlots } from "../../hooks/use-availability-slots";
+import { fetchStudentBookings } from "../../student-calendar/utils/calendarData";
 
 interface Props {
   view: "week" | "day" | "month" | "list";
@@ -36,6 +37,9 @@ export default function PrivateSessionAvailabilityCalendar({
     from: Date;
     until: Date;
   } | null>(null);
+  const [studentBookings, setStudentBookings] = useState<BaseCalendarEvent[]>(
+    []
+  );
 
   // Use availability slots hook
   const { availabilitySlots } = useAvailabilitySlots({
@@ -71,10 +75,12 @@ export default function PrivateSessionAvailabilityCalendar({
     const handleRangeChange = (e: any) => {
       const detail = e?.detail as { fromDate?: string; untilDate?: string };
       if (detail?.fromDate && detail?.untilDate) {
-        setCurrentRange({
-          from: new Date(detail.fromDate),
-          until: new Date(detail.untilDate),
-        });
+        const from = new Date(detail.fromDate);
+        const until = new Date(detail.untilDate);
+        setCurrentRange({ from, until });
+
+        // Fetch student bookings for this range
+        fetchStudentBookings(from, until).then(setStudentBookings);
       }
     };
     calendar.addEventListener("range:change", handleRangeChange);
@@ -86,10 +92,26 @@ export default function PrivateSessionAvailabilityCalendar({
     };
   }, [selectedTeacherIds, sessionDuration]);
 
-  // Update events when availability slots change
+  // Update events when availability slots or bookings change
   useEffect(() => {
-    setEvents(availabilitySlots);
-  }, [availabilitySlots]);
+    // Style student bookings as "booked" events
+    const styledBookings = studentBookings.map((booking) => {
+      // Find teacher name from teacherId
+      const teacher = teachers.find(t => t.teacherId === (booking as any).teacherId);
+      const teacherName = teacher ? teacher.name || `${teacher.firstName} ${teacher.lastName}`.trim() : 'Unknown Teacher';
+
+      return {
+        ...booking,
+        title: `Class with ${teacherName}`,
+        type: "booking" as const,
+        // Add styling properties for greyed out appearance
+        isBooked: true,
+      };
+    });
+
+    // Combine availability slots and styled bookings
+    setEvents([...availabilitySlots, ...styledBookings]);
+  }, [availabilitySlots, studentBookings]);
 
   // Push events to calendar element
   useEffect(() => {
@@ -254,8 +276,10 @@ export default function PrivateSessionAvailabilityCalendar({
         snap-to={snapTo.toString()}
         show-classes="false"
         show-availability="true"
-        show-bookings="false"
+        show-bookings="true"
         view-height={viewHeight.toString()}
+        event-booking-bg="#9ca3af"
+        event-booking-fg="#6b7280"
       />
     </div>
   );

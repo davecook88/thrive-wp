@@ -34,6 +34,9 @@ export default function StudentCalendar({
     from: Date;
     until: Date;
   } | null>(null);
+  const [studentBookings, setStudentBookings] = useState<BaseCalendarEvent[]>(
+    []
+  );
 
   // Use availability slots hook for booking mode
   const { availabilitySlots } = useAvailabilitySlots({
@@ -65,14 +68,16 @@ export default function StudentCalendar({
       const bookings = await fetchStudentBookings(start, end);
       setEvents(bookings);
     } else {
-      // Availability slots are handled by the useAvailabilitySlots hook
-      setEvents(availabilitySlots);
+      // In booking mode, fetch both availability slots and student bookings
+      const [bookings] = await Promise.all([fetchStudentBookings(start, end)]);
+      setStudentBookings(bookings);
+      // Events will be combined in the useEffect below
     }
   };
 
   // Refetch when mode, teachers, or duration changes
   useEffect(() => {
-    if (currentRange && mode === "view") {
+    if (currentRange) {
       fetchData(currentRange.from, currentRange.until);
     }
   }, [mode, selectedTeacherIds, sessionDuration]);
@@ -80,9 +85,25 @@ export default function StudentCalendar({
   // Update events when availability slots change (for booking mode)
   useEffect(() => {
     if (mode === "book") {
-      setEvents(availabilitySlots);
+      // Style student bookings as "booked" events
+      const styledBookings = studentBookings.map((booking) => {
+        // Find teacher name from teacherId
+        const teacher = teachers.find(t => t.teacherId === (booking as any).teacherId);
+        const teacherName = teacher ? teacher.name || `${teacher.firstName} ${teacher.lastName}`.trim() : 'Unknown Teacher';
+
+        return {
+          ...booking,
+          title: `Class with ${teacherName}`,
+          type: "booking" as const,
+          // Add styling properties for greyed out appearance
+          isBooked: true,
+        };
+      });
+
+      // Combine availability slots and styled bookings
+      setEvents([...availabilitySlots, ...styledBookings]);
     }
-  }, [availabilitySlots, mode]);
+  }, [availabilitySlots, studentBookings, mode]);
 
   // Push events to calendar element
   useEffect(() => {
@@ -383,8 +404,10 @@ export default function StudentCalendar({
         snap-to={snapTo.toString()}
         show-classes="true"
         show-availability={mode === "book" ? "true" : "false"}
-        show-bookings={mode === "view" ? "true" : "true"}
+        show-bookings="true"
         view-height={viewHeight.toString()}
+        event-booking-bg="#9ca3af"
+        event-booking-fg="#6b7280"
       />
     </div>
   );
