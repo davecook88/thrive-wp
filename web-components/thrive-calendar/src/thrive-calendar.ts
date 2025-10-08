@@ -10,27 +10,32 @@ export class ThriveCalendar extends LitElement {
   static styles = css`
     :host {
       display: block;
-      font: normal 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu,
-        Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      color: var(--thrive-cal-fg, #0f172a);
+      font: normal 16px/1.6 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, sans-serif;
+      color: var(--thrive-cal-fg, #1f2937);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
       /* Customizable rhythm and palette */
-      --thrive-cal-header-height: var(--thrive-header-height, 40px);
-      --thrive-cal-hour-height: var(--thrive-hour-height, 40px);
-      --thrive-cal-radius: var(--thrive-radius, 10px);
-      --thrive-grid-line-major: var(--thrive-grid-line-major, #e6eef6);
-      --thrive-grid-line-minor: var(--thrive-grid-line-minor, #f1f5f9);
+      --thrive-cal-header-height: var(--thrive-header-height, 48px);
+      --thrive-cal-hour-height: var(--thrive-hour-height, 60px);
+      --thrive-cal-radius: var(--thrive-radius, 12px);
+      --thrive-grid-line-major: var(--thrive-grid-line-major, #e5e7eb);
+      --thrive-grid-line-minor: var(--thrive-grid-line-minor, #f3f4f6);
       --thrive-toolbar-bg: var(--thrive-toolbar-bg, transparent);
       --thrive-cal-header-bg: var(--thrive-header-bg, transparent);
-      --thrive-heading-fg: var(--thrive-heading-fg, #0f172a);
-      --thrive-muted-fg: var(--thrive-muted-fg, #64748b);
-      --thrive-today-bg: var(--thrive-today-bg, #f8fafc);
-      --thrive-today-fg: var(--thrive-today-fg, #4338ca);
-      --thrive-slot-hover: var(--thrive-slot-hover, #f8fafc);
-      --thrive-availability-bg: var(--thrive-availability-bg, #f0fdf4);
+      --thrive-cal-bg: var(--thrive-cal-bg, #ffffff);
+      --thrive-heading-fg: var(--thrive-heading-fg, #111827);
+      --thrive-muted-fg: var(--thrive-muted-fg, #6b7280);
+      --thrive-today-bg: var(--thrive-today-bg, #fff7ed);
+      --thrive-today-fg: var(--thrive-today-fg, #ff5722);
+      --thrive-hover-bg: var(--thrive-hover-bg, #f9fafb);
+      --thrive-slot-hover: var(--thrive-slot-hover, #f9fafb);
+      --thrive-availability-bg: var(--thrive-availability-bg, #ecfdf5);
       --thrive-availability-fg: var(--thrive-availability-fg, #065f46);
-      --thrive-blackout-bg: var(--thrive-blackout-bg, #efefef);
-      --thrive-blackout-stripe: var(--thrive-blackout-stripe, #f7f7f7);
-      --thrive-accent: var(--thrive-accent, #9aa8ff);
+      --thrive-blackout-bg: var(--thrive-blackout-bg, #f3f4f6);
+      --thrive-blackout-stripe: var(--thrive-blackout-stripe, #f9fafb);
+      --thrive-accent: var(--thrive-accent, #ff5722);
+      --thrive-row-hour-bg: var(--thrive-row-hour-bg, transparent);
     }
   `;
 
@@ -55,9 +60,9 @@ export class ThriveCalendar extends LitElement {
   timeFormat: "12h" | "24h" = "12h";
   // Heights to customize grid rhythm
   @property({ type: Number, reflect: true, attribute: "hour-height" })
-  hourHeight: number = 40;
+  hourHeight: number = 60;
   @property({ type: Number, reflect: true, attribute: "header-height" })
-  headerHeight: number = 40;
+  headerHeight: number = 48;
   @property({ type: Boolean, reflect: true, attribute: "show-classes" })
   showClasses: boolean = true;
   @property({ type: Boolean, reflect: true, attribute: "show-bookings" })

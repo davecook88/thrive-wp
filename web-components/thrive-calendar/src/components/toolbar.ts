@@ -9,11 +9,12 @@ export class ThriveToolbar extends LitElement {
       grid-template-columns: 1fr auto 1fr;
       gap: 16px;
       align-items: center;
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--thrive-grid-line-major);
-      border-radius: var(--thrive-cal-radius) var(--thrive-cal-radius) 0 0;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--thrive-grid-line-major, #e5e7eb);
+      border-radius: var(--thrive-cal-radius, 12px)
+        var(--thrive-cal-radius, 12px) 0 0;
       background: var(--thrive-toolbar-bg, transparent);
-      color: var(--thrive-muted-fg, #334155);
+      color: var(--thrive-muted-fg, #6b7280);
     }
     .toolbar .nav-buttons {
       display: flex;
@@ -25,45 +26,47 @@ export class ThriveToolbar extends LitElement {
       text-align: center;
     }
     .toolbar button {
-      padding: 6px 10px;
+      padding: 8px 14px;
       border: 1px solid transparent;
-      border-radius: 10px;
+      border-radius: 12px;
       background: transparent;
-      color: var(--thrive-muted-fg, #374151);
+      color: var(--thrive-muted-fg, #6b7280);
       cursor: pointer;
-      font-size: 13px;
-      transition: background 0.12s ease, color 0.12s ease,
-        border-color 0.12s ease;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s ease;
     }
     .toolbar button:hover {
-      background: var(--thrive-hover-bg, #f5f7fa);
-      border-color: var(--thrive-grid-line-major);
+      background: var(--thrive-hover-bg, #f9fafb);
+      border-color: var(--thrive-grid-line-major, #e5e7eb);
+      transform: translateY(-1px);
     }
     .toolbar .view-buttons {
       display: flex;
       gap: 8px;
     }
     .toolbar .view-buttons button.active {
-      background: var(--thrive-accent, #6b7280);
+      background: var(--thrive-accent, #ff5722);
       color: white;
+      border-color: var(--thrive-accent, #ff5722);
     }
     .toolbar .nav-buttons span {
       font-weight: 700;
-      color: var(--thrive-heading-fg, #0f172a);
+      font-size: 15px;
+      color: var(--thrive-heading-fg, #111827);
       text-align: center;
-      letter-spacing: 0.01em;
+      letter-spacing: 0;
     }
     .toolbar button.today {
-      background: var(--thrive-today-bg, #eef2ff);
-      color: var(--thrive-today-fg, #4338ca);
+      background: var(--thrive-today-bg, #fff7ed);
+      color: var(--thrive-today-fg, #ff5722);
       border-color: transparent;
+      font-weight: 600;
+      width: max-content;
     }
     .toolbar button.today:hover {
-      background: color-mix(
-        in srgb,
-        var(--thrive-today-bg, #eef2ff) 85%,
-        transparent
-      );
+      background: #ffedd5;
+      box-shadow: 0 2px 4px rgba(255, 87, 34, 0.1);
     }
   `;
 
