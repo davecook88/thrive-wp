@@ -1,0 +1,72 @@
+/**
+ * Thrive Calendar Theme Integration
+ *
+ * This stylesheet maps the WordPress theme's design system to the thrive-calendar
+ * web component's CSS variables, ensuring visual consistency across the platform.
+ *
+ * The calendar component is designed to be themeable via CSS custom properties.
+ * Override any of these variables to customize the calendar's appearance.
+ */
+
+thrive-calendar {
+  /* Typography - Use Inter font family from theme */
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Core Colors - Aligned with theme.json palette */
+  --thrive-cal-fg: #1f2937; /* gray-900 - main text */
+  --thrive-heading-fg: #111827; /* gray-900 - headings */
+  --thrive-muted-fg: #6b7280; /* gray-500 - muted text */
+  --thrive-cal-bg: #ffffff; /* base background */
+
+  /* Grid & Borders - Using theme gray scale */
+  --thrive-grid-line-major: #e5e7eb; /* gray-200 - hour lines */
+  --thrive-grid-line-minor: #f3f4f6; /* gray-100 - half-hour lines */
+
+  /* Border Radius - Match theme card radius */
+  --thrive-radius: 12px;
+
+  /* Accent & Primary - Theme orange */
+  --thrive-accent: #ff5722;
+  --thrive-today-fg: #ff5722;
+  --thrive-today-bg: #fff7ed; /* orange-50 */
+
+  /* Interactive States */
+  --thrive-hover-bg: #f9fafb; /* gray-50 */
+
+  /* Event Colors - Class events use green (secondary) */
+  --thrive-cal-event-class-bg: #ecfdf5; /* green-50 */
+  --thrive-cal-event-class-fg: #065f46; /* green-900 */
+
+  /* Event Colors - Booking events use orange (primary) */
+  --thrive-cal-event-booking-bg: #fff7ed; /* orange-50 */
+  --thrive-cal-event-booking-fg: #c2410c; /* orange-700 */
+
+  /* Availability - Green tones */
+  --thrive-availability-bg: #ecfdf5; /* green-50 */
+  --thrive-availability-fg: #065f46; /* green-900 */
+
+  /* Blackout periods - Gray tones */
+  --thrive-blackout-bg: #f3f4f6; /* gray-100 */
+  --thrive-blackout-stripe: #f9fafb; /* gray-50 */
+
+  /* Event styling */
+  --thrive-cal-event-radius: 12px;
+}
+
+/**
+ * Optional: Additional customization for specific contexts
+ *
+ * Example - Dark background context:
+ * .dark-section thrive-calendar {
+ *   --thrive-cal-bg: #111827;
+ *   --thrive-cal-fg: #f9fafb;
+ *   --thrive-grid-line-major: #374151;
+ *   --thrive-grid-line-minor: #1f2937;
+ * }
+ *
+ * Example - Compact view:
+ * .compact thrive-calendar {
+ *   --thrive-hour-height: 30px;
+ *   --thrive-header-height: 32px;
+ * }
+ */

@@ -8,6 +8,7 @@ import type {
 import { thriveClient } from "../../../clients/thrive";
 import { fetchStudentBookings } from "../utils/calendarData";
 import { useAvailabilitySlots } from "../../hooks/use-availability-slots";
+import { showBookingActionsModal } from "../../../components/BookingActionsModal";
 
 interface StudentCalendarProps {
   view: "week" | "day" | "month" | "list";
@@ -87,9 +88,8 @@ export default function StudentCalendar({
     if (mode === "book") {
       // Style student bookings as "booked" events
       const styledBookings = studentBookings.map((booking) => {
-        // Find teacher name from teacherId
-        const teacher = teachers.find(t => t.teacherId === (booking as any).teacherId);
-        const teacherName = teacher ? teacher.name || `${teacher.firstName} ${teacher.lastName}`.trim() : 'Unknown Teacher';
+        // Use teacher name from the event (now included from backend)
+        const teacherName = (booking as any).teacherName || "Unknown Teacher";
 
         return {
           ...booking,
@@ -121,7 +121,36 @@ export default function StudentCalendar({
     const handleEventClick = (e: any) => {
       const event = e?.detail?.event;
       if (event) {
-        // Broadcast to the selected-event-modal runtime
+        // Handle booking events specially
+        if (event.type === "booking") {
+          // Show booking actions modal
+          showBookingActionsModal({
+            bookingId: event.bookingId,
+            sessionTitle: event.title || "Session",
+            sessionDate: event.start
+              ? new Date(event.start).toLocaleDateString()
+              : "",
+            sessionTime: event.start
+              ? new Date(event.start).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "",
+            teacherName: event.teacherName || "Teacher",
+            onClose: () => {
+              // Close the modal - handled inside the modal component
+            },
+            onRefresh: () => {
+              // Refresh the calendar data
+              if (currentRange) {
+                fetchData(currentRange.from, currentRange.until);
+              }
+            },
+          });
+          return;
+        }
+
+        // For other events, broadcast to the selected-event-modal runtime
         document.dispatchEvent(
           new CustomEvent("thrive-calendar:selectedEvent", {
             detail: { event },

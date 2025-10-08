@@ -129,8 +129,16 @@ Before merging changes that affect runtime contracts or DB schema, ensure:
 ---
 ## 9. Roadmap (short)
 
-1. Refresh token rotation & silent renew.
-2. Fine-grained permissions service.
-3. Payments integration (Stripe).
 
 Maintainers: Keep this file the canonical truth; when adding features or changing runtime contracts, update `docs/` and the appropriate files in `.github/instructions/` to keep contributors aligned.
+
+
+## General
+
+Imports must look like this
+import { AuthService } from '../auth/auth.service.js';
+import { User } from '../users/entities/user.entity.js';
+import { Admin } from '../courses/entities/admin.entity.js';
+import { Teacher } from '../teachers/entities/teacher.entity.js'
+
+NEVER use "any" types

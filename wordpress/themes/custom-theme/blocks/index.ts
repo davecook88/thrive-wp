@@ -12,4 +12,4 @@ import "./booking-session-details/index.tsx";
 import "./package-selection/index.tsx";
 import "./conditional-stripe-payment/index.tsx";
 import "./checkout-context/index.tsx";
-// Add more blocks here as needed
+import "./booking-policy-notice/index.tsx";

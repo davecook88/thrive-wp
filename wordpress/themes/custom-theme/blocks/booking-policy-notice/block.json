@@ -1,0 +1,23 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "custom-theme/booking-policy-notice",
+    "version": "1.0.0",
+    "title": "Booking Policy Notice",
+    "category": "widgets",
+    "description": "Displays current booking cancellation and rescheduling policies to students",
+    "supports": {
+        "html": false,
+        "align": [
+            "left",
+            "center",
+            "right",
+            "wide",
+            "full"
+        ]
+    },
+    "textdomain": "custom-theme",
+    "editorScript": "file:./index.tsx",
+    "viewScript": "file:./view.tsx",
+    "render": "file:./render.php"
+}

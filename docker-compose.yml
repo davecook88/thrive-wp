@@ -51,7 +51,17 @@ services:
       context: ./nestjs
       dockerfile: Dockerfile
     volumes:
+      # Mount source code for hot reload during development
       - ./nestjs:/usr/src/app
+      # Use named volume for node_modules to avoid platform-specific binary issues
+      # and prevent host's node_modules from overriding container's dependencies.
+  # If you see "Cannot find module" errors, rebuild safely without dropping DB:
+  #  - Rebuild just the nestjs service (no DB impact):
+  #      docker-compose up --build --no-deps --force-recreate nestjs
+  #  - If the node_modules volume is corrupted, remove only that named volume first:
+  #      docker-compose down && docker volume rm ${PWD##*/}_nestjs_node_modules || true
+  #    then start services:
+  #      docker-compose up --build
       - nestjs_node_modules:/usr/src/app/node_modules
     env_file:
       - ./nestjs/.env

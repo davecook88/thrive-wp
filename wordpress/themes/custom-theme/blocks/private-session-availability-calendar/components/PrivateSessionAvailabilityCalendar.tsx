@@ -97,8 +97,12 @@ export default function PrivateSessionAvailabilityCalendar({
     // Style student bookings as "booked" events
     const styledBookings = studentBookings.map((booking) => {
       // Find teacher name from teacherId
-      const teacher = teachers.find(t => t.teacherId === (booking as any).teacherId);
-      const teacherName = teacher ? teacher.name || `${teacher.firstName} ${teacher.lastName}`.trim() : 'Unknown Teacher';
+      const teacher = teachers.find(
+        (t) => t.teacherId === (booking as any).teacherId
+      );
+      const teacherName = teacher
+        ? teacher.name || `${teacher.firstName} ${teacher.lastName}`.trim()
+        : "Unknown Teacher";
 
       return {
         ...booking,
