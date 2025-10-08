@@ -20,7 +20,8 @@ export class ThriveWeekView extends LitElement {
       grid-template-columns: 72px repeat(7, minmax(180px, 1fr));
       position: relative;
       gap: 0;
-      min-width: 100%;
+      width: 100%;
+      min-width: fit-content;
     }
 
     /* Make grid scrollable while keeping time labels fixed */
@@ -106,13 +107,17 @@ export class ThriveWeekView extends LitElement {
     }
     .events-layer {
       position: absolute;
-      inset: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       display: grid;
       grid-template-columns: 72px repeat(7, minmax(180px, 1fr));
       grid-template-rows: 1fr;
       pointer-events: none;
       z-index: 1;
-      min-width: 100%;
+      width: 100%;
+      min-width: fit-content;
     }
 
     @media (max-width: 768px) {
@@ -200,10 +205,6 @@ export class ThriveWeekView extends LitElement {
     }
     .event.overlapping {
       right: auto;
-      width: calc(50% - 9px);
-    }
-    .event.overlapping.offset {
-      left: calc(50% + 3px);
     }
     .event.class {
       background: var(--thrive-cal-event-class-bg, #ecfdf5);
@@ -263,7 +264,8 @@ export class ThriveWeekView extends LitElement {
       top: 0;
       z-index: 30;
       background: var(--thrive-cal-bg, #ffffff);
-      min-width: 100%;
+      width: 100%;
+      min-width: fit-content;
     }
 
     @media (max-width: 768px) {
@@ -664,31 +666,13 @@ export class ThriveWeekView extends LitElement {
               );
               const isMultiline = durationMinutes > 45 && height > 50;
 
-              // Check for overlaps with other events in same day/time
-              const overlaps = this.events.filter(other => {
-                if (other === event) return false;
-                const otherPos = this.getEventPosition(other);
-                if (otherPos.dayIndex !== dayIndex) return false;
-                // Check if time ranges overlap
-                const thisStart = new Date(event.startUtc).getTime();
-                const thisEnd = new Date(event.endUtc).getTime();
-                const otherStart = new Date(other.startUtc).getTime();
-                const otherEnd = new Date(other.endUtc).getTime();
-                return (thisStart < otherEnd && thisEnd > otherStart);
-              });
-
-              const hasOverlap = overlaps.length > 0;
-              const isOffset = hasOverlap && overlaps.some(other =>
-                new Date(other.startUtc).getTime() < new Date(event.startUtc).getTime()
-              );
-
               return html`
                 <div
                   class="event-wrapper"
-                  style="grid-column: ${dayIndex + 2}; position: relative;"
+                  style="grid-column: ${dayIndex + 2};"
                 >
                   <div
-                    class="event ${event.type} ${isMultiline ? 'multiline' : 'single-line'} ${hasOverlap ? 'overlapping' : ''} ${isOffset ? 'offset' : ''}"
+                    class="event ${event.type} ${isMultiline ? 'multiline' : 'single-line'}"
                     part="event event-${event.type}"
                     style="top: ${top}px; height: ${height}px;"
                     data-title="${event.title}"
