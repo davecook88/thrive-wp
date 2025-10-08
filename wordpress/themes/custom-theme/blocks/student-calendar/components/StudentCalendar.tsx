@@ -6,6 +6,10 @@ import type {
   AvailabilityEvent,
 } from "../../../types/calendar";
 import { thriveClient } from "../../../clients/thrive";
+import {
+  fetchStudentBookings,
+  fetchAvailabilitySlots,
+} from "../utils/calendarData";
 
 interface StudentCalendarProps {
   view: "week" | "day" | "month" | "list";
@@ -51,60 +55,17 @@ export default function StudentCalendar({
   // Fetch data based on current mode and range
   const fetchData = async (start: Date, end: Date) => {
     if (mode === "view") {
-      // Fetch student's bookings
-      const bookings = await thriveClient.fetchStudentCalendarEvents(
-        start,
-        end
-      );
+      const bookings = await fetchStudentBookings(start, end);
       setEvents(bookings);
     } else {
-      // Fetch availability slots
-      if (selectedTeacherIds.length === 0 || end < new Date()) {
-        setEvents([]);
-        return;
-      }
-
-      const avail = await thriveClient.fetchAvailabilityPublic({
+      const slots = await fetchAvailabilitySlots(
         start,
         end,
-        teacherIds: selectedTeacherIds.length ? selectedTeacherIds : undefined,
-      });
-
-      // Chunk windows into session-sized availability events
-      const sessionMinutes = sessionDuration;
-      const chunks: AvailabilityEvent[] = avail.flatMap((w) => {
-        const winStart = new Date(w.startUtc);
-        const winEnd = new Date(w.endUtc);
-        const out: AvailabilityEvent[] = [];
-        let current = new Date(winStart);
-
-        while (current < winEnd) {
-          const sessionEnd = new Date(
-            current.getTime() + sessionMinutes * 60 * 1000
-          );
-
-          if (sessionEnd <= winEnd) {
-            out.push({
-              id: `avail:${current.toISOString()}|${sessionEnd.toISOString()}`,
-              title: "Available",
-              startUtc: current.toISOString(),
-              endUtc: sessionEnd.toISOString(),
-              type: "availability",
-              teacherIds: w.teacherIds,
-            });
-          }
-
-          current = new Date(
-            current.getTime() + Math.max(5, slotDuration || 30) * 60 * 1000
-          );
-        }
-        return out;
-      });
-
-      // Filter chunks in the past
-      const now = new Date();
-      const futureChunks = chunks.filter((e) => new Date(e.endUtc) >= now);
-      setEvents(futureChunks);
+        selectedTeacherIds,
+        sessionDuration,
+        slotDuration
+      );
+      setEvents(slots);
     }
   };
 
