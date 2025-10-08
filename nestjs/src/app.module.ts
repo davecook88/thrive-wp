@@ -14,6 +14,10 @@ import { TeachersModule } from './teachers/teachers.module.js';
 import { PaymentsModule } from './payments/payments.module.js';
 import { SessionsModule } from './sessions/sessions.module.js';
 import { PackagesModule } from './packages/packages.module.js';
+import { PoliciesModule } from './policies/policies.module.js';
+import { BookingsModule } from './bookings/bookings.module.js';
+import { LevelsModule } from './levels/levels.module.js';
+import { GroupClassesModule } from './group-classes/group-classes.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 @Module({
@@ -56,6 +60,10 @@ import { AppService } from './app.service.js';
     PaymentsModule,
     SessionsModule,
     PackagesModule,
+    PoliciesModule,
+    BookingsModule,
+    LevelsModule,
+    GroupClassesModule,
   ],
   controllers: [AppController],
   providers: [

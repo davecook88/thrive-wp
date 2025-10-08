@@ -4,14 +4,10 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuthService } from './auth.service.js';
 import { User } from '../users/entities/user.entity.js';
-import { Admin } from '../courses/entities/admin.entity.js';
-import { Teacher } from '../teachers/entities/teacher.entity.js';
 
 describe('AuthService', () => {
   let service: AuthService;
   let userRepo: Repository<User>;
-  let adminRepo: Repository<Admin>;
-  let teacherRepo: Repository<Teacher>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -21,21 +17,11 @@ describe('AuthService', () => {
           provide: getRepositoryToken(User),
           useClass: Repository,
         },
-        {
-          provide: getRepositoryToken(Admin),
-          useClass: Repository,
-        },
-        {
-          provide: getRepositoryToken(Teacher),
-          useClass: Repository,
-        },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
     userRepo = module.get<Repository<User>>(getRepositoryToken(User));
-    adminRepo = module.get<Repository<Admin>>(getRepositoryToken(Admin));
-    teacherRepo = module.get<Repository<Teacher>>(getRepositoryToken(Teacher));
   });
 
   it('should be defined', () => {

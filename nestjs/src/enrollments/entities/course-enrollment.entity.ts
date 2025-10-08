@@ -1,7 +1,7 @@
 import { Entity, Column, Index, ManyToOne, JoinColumn, Unique } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity.js';
 import { Course } from '../../courses/entities/course.entity.js';
-import { Student } from '../../students/entities/student.entity.js';
+import type { Student } from '../../students/entities/student.entity.js';
 
 /**
  * Enumeration of course enrollment statuses.
@@ -38,7 +38,7 @@ export class CourseEnrollment extends BaseEntity {
   })
   studentId: number;
 
-  @ManyToOne(() => Student, { onDelete: 'CASCADE' })
+  @ManyToOne('Student', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'student_id' })
   student: Student;
 

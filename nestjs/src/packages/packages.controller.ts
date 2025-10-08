@@ -48,7 +48,9 @@ export class PackagesController {
     }
 
     // Convert user ID to student ID
-    const student = await this.studentsService.findByUserId(parseInt(userId, 10));
+    const student = await this.studentsService.findByUserId(
+      parseInt(userId, 10),
+    );
     if (!student) {
       throw new NotFoundException('Student record not found for this user');
     }

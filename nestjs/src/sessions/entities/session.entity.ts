@@ -8,11 +8,12 @@ import {
 } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity.js';
 import { Course } from '../../courses/entities/course.entity.js';
-import { Teacher } from '../../teachers/entities/teacher.entity.js';
-import { TeacherAvailability } from '../../teachers/entities/teacher-availability.entity.js';
-import type { Booking } from '../../payments/entities/booking.entity.js';
-import type { Waitlist } from '../../waitlists/entities/waitlist.entity.js';
+import type { Teacher } from '../../teachers/entities/teacher.entity.js';
+import type { TeacherAvailability } from '../../teachers/entities/teacher-availability.entity.js';
+import { Booking } from '../../payments/entities/booking.entity.js';
+import { Waitlist } from '../../waitlists/entities/waitlist.entity.js';
 import { ServiceType } from '../../common/types/class-types.js';
+import { GroupClass } from '../../group-classes/entities/group-class.entity.js';
 
 /**
  * Enumeration of session statuses.
@@ -69,7 +70,7 @@ export class Session extends BaseEntity {
   })
   teacherId: number;
 
-  @ManyToOne(() => Teacher, { onDelete: 'RESTRICT' })
+  @ManyToOne('Teacher', { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'teacher_id' })
   teacher: Teacher;
 
@@ -81,7 +82,7 @@ export class Session extends BaseEntity {
   })
   createdFromAvailabilityId: number | null;
 
-  @ManyToOne(() => TeacherAvailability, {
+  @ManyToOne('TeacherAvailability', {
     nullable: true,
     onDelete: 'SET NULL',
   })
@@ -158,10 +159,21 @@ export class Session extends BaseEntity {
   })
   sourceTimezone: string | null;
 
-  // use string relation targets to avoid circular runtime imports
-  @OneToMany('Booking', 'session')
+  @OneToMany(() => Booking, (booking) => booking.session)
   bookings: Booking[];
 
-  @OneToMany('Waitlist', 'session')
+  @OneToMany(() => Waitlist, (waitlist) => waitlist.session)
   waitlists: Waitlist[];
+
+  @Column({
+    name: 'group_class_id',
+    type: 'int',
+    nullable: true,
+    comment: 'FK to group_class.id (for GROUP sessions)',
+  })
+  groupClassId: number | null;
+
+  @ManyToOne(() => GroupClass, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'group_class_id' })
+  groupClass: GroupClass | null;
 }

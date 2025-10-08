@@ -1,7 +1,5 @@
 import { Entity, Column, Index, ManyToOne, JoinColumn, Unique } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity.js';
-import { Session } from '../../sessions/entities/session.entity.js';
-import { Student } from '../../students/entities/student.entity.js';
 
 /**
  * Enumeration of booking statuses.
@@ -46,9 +44,9 @@ export class Booking extends BaseEntity {
   })
   sessionId: number;
 
-  @ManyToOne(() => Session, { onDelete: 'CASCADE' })
+  @ManyToOne(() => 'Session', session => session.bookings, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'session_id' })
-  session: Session;
+  session: any;
 
   @Column({
     name: 'student_id',
@@ -57,9 +55,9 @@ export class Booking extends BaseEntity {
   })
   studentId: number;
 
-  @ManyToOne(() => Student, { onDelete: 'CASCADE' })
+  @ManyToOne(() => 'Student', student => student.bookings, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'student_id' })
-  student: Student;
+  student: any;
 
   @Column({
     name: 'status',
@@ -121,4 +119,29 @@ export class Booking extends BaseEntity {
     comment: 'How many credits this booking consumed from the package',
   })
   creditsCost: number | null;
+
+  @Column({
+    name: 'rescheduled_count',
+    type: 'int',
+    default: 0,
+    comment: 'Number of times this booking has been rescheduled',
+  })
+  rescheduledCount: number;
+
+  @Column({
+    name: 'original_session_id',
+    type: 'int',
+    nullable: true,
+    comment:
+      'Original session ID if this booking was rescheduled from another session',
+  })
+  originalSessionId: number | null;
+
+  @Column({
+    name: 'cancelled_by_student',
+    type: 'boolean',
+    default: false,
+    comment: 'Whether the booking was cancelled by the student (vs admin)',
+  })
+  cancelledByStudent: boolean;
 }

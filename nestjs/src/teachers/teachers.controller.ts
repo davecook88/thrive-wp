@@ -11,7 +11,6 @@ import { TeachersService } from './teachers.service.js';
 import { TeacherGuard } from '../auth/teacher.guard.js';
 import {
   UpdateAvailabilityDto,
-  PreviewAvailabilityDto,
   PreviewMyAvailabilityDto,
 } from './dto/availability.dto.js';
 import type { Request as ExpressRequest } from 'express';

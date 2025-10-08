@@ -2,28 +2,34 @@ import { Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Student } from './entities/student.entity.js';
-import {
-  CourseEnrollment,
-  CourseEnrollmentStatus,
-} from '../enrollments/entities/course-enrollment.entity.js';
-import { Course } from '../courses/entities/course.entity.js';
-import { Session } from '../sessions/entities/session.entity.js';
-import { Booking, BookingStatus } from '../payments/entities/booking.entity.js';
-import { User } from '../users/entities/user.entity.js';
-import { Teacher } from '../teachers/entities/teacher.entity.js';
 
 export interface CalendarEvent {
   id: string;
   title: string;
-  startUtc: string;
-  endUtc: string;
+  startUtc: Date;
+  endUtc: Date;
   type: 'class' | 'booking';
   teacherId?: number;
-  studentId?: number;
-  description?: string;
+  teacherName?: string;
   classType?: 'PRIVATE' | 'GROUP' | 'COURSE';
   status?: 'SCHEDULED' | 'CANCELLED' | 'COMPLETED';
   courseId?: number;
+  courseName?: string;
+  meetingUrl?: string;
+  bookingId?: number; // Add bookingId for booking events
+}
+
+interface SessionQueryResult {
+  id: number;
+  booking_id: number;
+  class_type: string;
+  start_at: Date;
+  end_at: Date;
+  status: string;
+  teacher_id: number;
+  course_id: number | null;
+  session_source: string;
+  teacher_name: string;
 }
 
 @Injectable()
@@ -61,11 +67,12 @@ export class StudentsService {
     endDate?: string,
   ): Promise<CalendarEvent[]> {
     // Get all sessions for the student through bookings
-    const result = await this.dataSource.query(
+    const result: SessionQueryResult[] = await this.dataSource.query(
       `
       WITH student AS (SELECT id FROM student WHERE user_id = ?)
       -- All sessions through confirmed bookings (covers private, group, and course sessions)
       SELECT
+        b.id as booking_id,
         s.id,
         s.type as class_type,
         s.start_at,
@@ -79,6 +86,7 @@ export class StudentsService {
         s.created_at,
         s.updated_at,
         s.deleted_at,
+        u.name as teacher_name,
         CASE
           WHEN s.type = 'PRIVATE' THEN 'private'
           WHEN s.type = 'GROUP' THEN 'group'
@@ -87,6 +95,8 @@ export class StudentsService {
         END as session_source
       FROM session s
       JOIN booking b ON b.session_id = s.id
+      JOIN teacher t ON t.id = s.teacher_id
+      JOIN user u ON u.id = t.user_id
       WHERE b.student_id = (SELECT id FROM student)
       AND s.deleted_at IS NULL
       AND b.status = 'CONFIRMED'
@@ -100,20 +110,22 @@ export class StudentsService {
       ],
     );
 
-    // Transform results into CalendarEvent format
-    const calendarEvents: CalendarEvent[] = result.map((row: any) => ({
-      id: row.id.toString(),
-      title: `${row.class_type} Session`,
-      startUtc: row.start_at,
-      endUtc: row.end_at,
-      type: 'class' as const,
-      teacherId: row.teacher_id,
-      studentId: userId, // The student user ID
-      classType: row.class_type as 'PRIVATE' | 'GROUP' | 'COURSE',
-      status: row.status as 'SCHEDULED' | 'CANCELLED' | 'COMPLETED',
-      courseId: row.course_id,
-      description: `${row.session_source} session`,
-    }));
+    const calendarEvents: CalendarEvent[] = result.map(
+      (row: SessionQueryResult) => ({
+        id: `booking-${row.booking_id}`,
+        title: `${row.class_type} Session with ${row.teacher_name}`,
+        startUtc: row.start_at,
+        endUtc: row.end_at,
+        type: 'booking' as const,
+        teacherId: row.teacher_id,
+        teacherName: row.teacher_name,
+        classType: row.class_type as 'PRIVATE' | 'GROUP' | 'COURSE',
+        status: row.status as 'SCHEDULED' | 'CANCELLED' | 'COMPLETED',
+        courseId: row.course_id || undefined,
+        bookingId: row.booking_id,
+        description: `${row.session_source} session`,
+      }),
+    );
 
     return calendarEvents;
   }
@@ -156,7 +168,8 @@ export class StudentsService {
       [student.id],
     );
 
-    const nextSession = nextSessionQuery.length > 0 ? nextSessionQuery[0] : null;
+    const nextSession =
+      nextSessionQuery.length > 0 ? nextSessionQuery[0] : null;
 
     // Get count of completed sessions
     const completedQuery = await this.dataSource.query(

@@ -8,6 +8,8 @@ import {
 } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity.js';
 import type { User } from '../../users/entities/user.entity.js';
+import { Session } from '../../sessions/entities/session.entity.js';
+import type { CourseTeacher } from '../../course-teachers/entities/course-teacher.entity.js';
 import { TeacherAvailability } from './teacher-availability.entity.js';
 
 /**
@@ -61,9 +63,9 @@ export class Teacher extends BaseEntity {
   )
   availability: TeacherAvailability[];
 
-  @OneToMany('Session', 'teacher')
-  sessions: any[];
+  @OneToMany(() => Session, 'teacher')
+  sessions: Session[];
 
   @OneToMany('CourseTeacher', 'teacher')
-  courseTeachers: any[];
+  courseTeachers: CourseTeacher[];
 }

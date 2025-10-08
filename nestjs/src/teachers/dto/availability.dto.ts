@@ -1,5 +1,4 @@
 import {
-  IsEnum,
   IsInt,
   IsOptional,
   IsString,
@@ -9,7 +8,6 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { TeacherAvailabilityKind } from '../entities/teacher-availability.entity.js';
 
 export class AvailabilityRuleDto {
   @IsInt()

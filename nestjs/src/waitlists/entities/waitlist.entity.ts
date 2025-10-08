@@ -1,7 +1,5 @@
 import { Entity, Column, Index, ManyToOne, JoinColumn, Unique } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity.js';
-import { Session } from '../../sessions/entities/session.entity.js';
-import { Student } from '../../students/entities/student.entity.js';
 
 /**
  * Waitlist entity represents queued students for a full session.
@@ -17,9 +15,9 @@ export class Waitlist extends BaseEntity {
   })
   sessionId: number;
 
-  @ManyToOne(() => Session, { onDelete: 'CASCADE' })
+  @ManyToOne(() => 'Session', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'session_id' })
-  session: Session;
+  session: any;
 
   @Column({
     name: 'student_id',
@@ -28,9 +26,9 @@ export class Waitlist extends BaseEntity {
   })
   studentId: number;
 
-  @ManyToOne(() => Student, { onDelete: 'CASCADE' })
+  @ManyToOne(() => 'Student', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'student_id' })
-  student: Student;
+  student: any;
 
   @Column({
     name: 'position',

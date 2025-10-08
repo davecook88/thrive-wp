@@ -11,7 +11,10 @@ export class AppController {
   }
 
   @Post('test-bridge')
-  testBridge(@Body() body: any, @Headers() headers: any): { message: string } {
+  testBridge(
+    @Body() body: Record<string, unknown>,
+    @Headers() headers: Record<string, string>,
+  ): { message: string } {
     console.log('Received request on /test-bridge');
     console.log('Headers:', headers);
     console.log('Body:', body);

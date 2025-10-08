@@ -71,6 +71,7 @@ describe('SessionsService', () => {
         teacherId: mockParams.teacherId,
         startAt: mockParams.startAt,
         endAt: mockParams.endAt,
+        studentId: mockParams.studentId,
       });
       expect(
         studentAvailabilityService.validateStudentAvailability,
@@ -95,6 +96,7 @@ describe('SessionsService', () => {
         teacherId: mockParams.teacherId,
         startAt: mockParams.startAt,
         endAt: mockParams.endAt,
+        studentId: mockParams.studentId,
       });
     });
 
@@ -112,6 +114,7 @@ describe('SessionsService', () => {
         teacherId: mockParams.teacherId,
         startAt: mockParams.startAt,
         endAt: mockParams.endAt,
+        studentId: mockParams.studentId,
       });
     });
 
@@ -131,6 +134,7 @@ describe('SessionsService', () => {
         teacherId: mockParams.teacherId,
         startAt: mockParams.startAt,
         endAt: mockParams.endAt,
+        studentId: mockParams.studentId,
       });
     });
 
@@ -150,6 +154,7 @@ describe('SessionsService', () => {
         teacherId: mockParams.teacherId,
         startAt: mockParams.startAt,
         endAt: mockParams.endAt,
+        studentId: mockParams.studentId,
       });
     });
 
@@ -169,6 +174,7 @@ describe('SessionsService', () => {
         teacherId: mockParams.teacherId,
         startAt: mockParams.startAt,
         endAt: mockParams.endAt,
+        studentId: mockParams.studentId,
       });
     });
 
@@ -186,6 +192,7 @@ describe('SessionsService', () => {
         teacherId: mockParams.teacherId,
         startAt: mockParams.startAt,
         endAt: mockParams.endAt,
+        studentId: mockParams.studentId,
       });
     });
   });

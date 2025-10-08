@@ -43,6 +43,6 @@ export function serviceTypeToServiceKey(serviceType: ServiceType): ServiceKey {
     case ServiceType.COURSE:
       return ServiceKey.COURSE_CLASS;
     default:
-      throw new Error(`Unsupported service type: ${serviceType}`);
+      throw new Error(`Unsupported service type: ${serviceType as string}`);
   }
 }

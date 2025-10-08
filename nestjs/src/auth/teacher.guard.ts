@@ -4,6 +4,7 @@ import {
   ExecutionContext,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { AuthService } from './auth.service.js';
 import jwt from 'jsonwebtoken';
 
@@ -13,18 +14,26 @@ interface SessionPayload {
   roles: string[];
 }
 
+interface RequestWithUser extends Request {
+  user?: {
+    id: number;
+    email: string;
+    roles: string[];
+  };
+}
+
 @Injectable()
 export class TeacherGuard implements CanActivate {
   constructor(private readonly authService: AuthService) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
+  canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
     const cookieName = process.env.SESSION_COOKIE_NAME || 'thrive_sess';
 
     // Extract token from cookie
-    const token =
-      request.cookies?.[cookieName] ||
-      this.extractCookie(request.headers['cookie'] || '', cookieName);
+    const token: string | null =
+      (request.cookies as Record<string, string> | undefined)?.[cookieName] ||
+      this.extractCookie(request.headers.cookie || '', cookieName);
 
     if (!token) {
       throw new UnauthorizedException('No authentication token provided');

@@ -1,5 +1,8 @@
 import { Entity, Column, Index, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity.js';
+import type { Session } from '../../sessions/entities/session.entity.js';
+import type { CourseEnrollment } from '../../enrollments/entities/course-enrollment.entity.js';
+import type { CourseTeacher } from '../../course-teachers/entities/course-teacher.entity.js';
 
 /**
  * Course entity represents a program/container that may have zero or many scheduled sessions.
@@ -61,11 +64,11 @@ export class Course extends BaseEntity {
   enrollmentClosesAt: Date | null;
 
   @OneToMany('Session', 'course')
-  sessions: any[];
+  sessions: Session[];
 
   @OneToMany('CourseEnrollment', 'course')
-  enrollments: any[];
+  enrollments: CourseEnrollment[];
 
   @OneToMany('CourseTeacher', 'course')
-  courseTeachers: any[];
+  courseTeachers: CourseTeacher[];
 }
