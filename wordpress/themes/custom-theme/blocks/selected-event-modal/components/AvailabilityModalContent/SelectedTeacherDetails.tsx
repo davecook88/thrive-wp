@@ -12,44 +12,30 @@ export default function SelectedTeacherDetails({
   return (
     <section
       style={{
-        flex: 1,
         padding: "1.5rem 2rem 2rem",
-        overflowY: "auto",
         background: "var(--wp--preset--color--gray-50)",
       }}
     >
-      <div
+      <h3
         style={{
-          background: "var(--wp--preset--color--background)",
-          borderRadius: 16,
-          boxShadow: "0 6px 18px rgba(0,0,0,0.06)",
-          padding: "1.25rem 1.25rem 1rem",
+          margin: 0,
+          fontSize: "1rem",
+          fontWeight: 700,
+          marginBottom: "1rem",
+          color: "var(--wp--preset--color--foreground)",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "0.75rem",
-          }}
-        >
-          <h3 style={{ margin: 0 }}>About {selectedTeacher.name}</h3>
-          <button
-            type="button"
-            onClick={() => setSelectedTeacher(null)}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "var(--wp--preset--color--accent)",
-              cursor: "pointer",
-              fontWeight: 700,
-            }}
-          >
-            Change teacher
-          </button>
-        </div>
+        About {selectedTeacher.name}
+      </h3>
 
+      <div
+        style={{
+          background: "white",
+          borderRadius: 12,
+          padding: "1.25rem",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+        }}
+      >
         <TeacherDetails teacher={selectedTeacher} />
       </div>
     </section>

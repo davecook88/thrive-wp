@@ -15,6 +15,15 @@ import {
 } from '../payments/entities/stripe-product-map.entity.js';
 import { StudentPackage } from './entities/student-package.entity.js';
 import { PackageUse } from './entities/package-use.entity.js';
+import { Student } from '../students/entities/student.entity.js';
+import {
+  Session,
+  SessionStatus,
+  SessionVisibility,
+} from '../sessions/entities/session.entity.js';
+import { Booking, BookingStatus } from '../payments/entities/booking.entity.js';
+import { ServiceType } from '../common/types/class-types.js';
+import { SessionsService } from '../sessions/services/sessions.service.js';
 
 @Injectable()
 export class PackagesService {
@@ -28,6 +37,13 @@ export class PackagesService {
     private readonly pkgRepo: Repository<StudentPackage>,
     @InjectRepository(PackageUse)
     private readonly useRepo: Repository<PackageUse>,
+    @InjectRepository(Student)
+    private readonly studentRepo: Repository<Student>,
+    @InjectRepository(Session)
+    private readonly sessionRepo: Repository<Session>,
+    @InjectRepository(Booking)
+    private readonly bookingRepo: Repository<Booking>,
+    private readonly sessionsService: SessionsService,
   ) {
     const secretKey = this.configService.get<string>('stripe.secretKey');
     if (!secretKey) {
@@ -479,5 +495,100 @@ export class PackagesService {
     if (!use) return null;
     use.bookingId = bookingId;
     return await this.useRepo.save(use);
+  }
+
+  /**
+   * Create a session from booking data and immediately book it with a package credit.
+   * This is used when booking an availability slot (which has no existing session).
+   */
+  async createAndBookSession(
+    userId: number,
+    packageId: number,
+    bookingData: { teacherId: number; startAt: string; endAt: string },
+  ) {
+    // Resolve student.id from userId
+    const student = await this.studentRepo.findOne({
+      where: { userId },
+    });
+    if (!student) throw new NotFoundException('Student not found');
+
+    // Validate the package exists and has credits
+    const pkg = await this.pkgRepo.findOne({
+      where: { id: packageId, studentId: student.id },
+    });
+    if (!pkg) throw new NotFoundException('Package not found');
+    if (pkg.remainingSessions <= 0)
+      throw new BadRequestException('No remaining credits');
+    if (pkg.expiresAt && pkg.expiresAt <= new Date()) {
+      throw new BadRequestException('Package has expired');
+    }
+
+    // Validate availability
+    await this.sessionsService.validatePrivateSession({
+      teacherId: bookingData.teacherId,
+      startAt: bookingData.startAt,
+      endAt: bookingData.endAt,
+      studentId: student.id,
+    });
+
+    // Create session and booking in a transaction
+    return await this.sessionRepo.manager.transaction(async (tx) => {
+      // Create the session
+      const session = tx.create(Session, {
+        type: ServiceType.PRIVATE,
+        teacherId: bookingData.teacherId,
+        startAt: new Date(bookingData.startAt),
+        endAt: new Date(bookingData.endAt),
+        capacityMax: 1,
+        status: SessionStatus.SCHEDULED,
+        visibility: SessionVisibility.PRIVATE,
+        requiresEnrollment: false,
+        sourceTimezone: 'UTC',
+      });
+      const savedSession = await tx.save(Session, session);
+
+      // Lock and decrement the package
+      const lockedPkg = await tx.findOne(StudentPackage, {
+        where: { id: packageId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!lockedPkg) throw new NotFoundException('Package not found');
+      if (lockedPkg.remainingSessions <= 0)
+        throw new BadRequestException('No remaining credits');
+
+      lockedPkg.remainingSessions = lockedPkg.remainingSessions - 1;
+      await tx.save(StudentPackage, lockedPkg);
+
+      // Create package use record
+      const packageUse = tx.create(PackageUse, {
+        studentPackageId: packageId,
+        sessionId: savedSession.id,
+        usedAt: new Date(),
+        usedBy: student.id,
+      });
+      const savedPackageUse = await tx.save(PackageUse, packageUse);
+
+      // Create confirmed booking
+      const booking = tx.create(Booking, {
+        sessionId: savedSession.id,
+        studentId: student.id,
+        status: BookingStatus.CONFIRMED,
+        acceptedAt: new Date(),
+        studentPackageId: packageId,
+        creditsCost: 1,
+      });
+      const savedBooking = await tx.save(Booking, booking);
+
+      // Link package use to booking
+      savedPackageUse.bookingId = savedBooking.id;
+      await tx.save(PackageUse, savedPackageUse);
+
+      return {
+        session: savedSession,
+        booking: savedBooking,
+        package: lockedPkg,
+        packageUse: savedPackageUse,
+      };
+    });
   }
 }

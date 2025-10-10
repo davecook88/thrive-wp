@@ -7,7 +7,7 @@ type UsePackageBookingState = {
 };
 
 /**
- * Hook to call POST /api/packages/:id/use with { sessionId }
+ * Hook to call POST /api/packages/:id/use with { sessionId } or { bookingData }
  * Returns an action and status properties.
  */
 export function usePackageBooking() {
@@ -18,8 +18,21 @@ export function usePackageBooking() {
   });
 
   const bookWithPackage = useCallback(
-    async (packageId: number | string, sessionId: number | string) => {
+    async (
+      packageId: number | string,
+      bookingInfo:
+        | number
+        | string
+        | { teacherId: number; startAt: string; endAt: string }
+    ) => {
       setState({ loading: true, success: null, error: null });
+
+      // Determine if we have a sessionId or bookingData
+      const body =
+        typeof bookingInfo === "object"
+          ? { bookingData: bookingInfo }
+          : { sessionId: Number(bookingInfo) };
+
       try {
         const res = await fetch(
           `/api/packages/${encodeURIComponent(String(packageId))}/use`,
@@ -27,7 +40,7 @@ export function usePackageBooking() {
             method: "POST",
             credentials: "same-origin",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sessionId: Number(sessionId) }),
+            body: JSON.stringify(body),
           }
         );
 

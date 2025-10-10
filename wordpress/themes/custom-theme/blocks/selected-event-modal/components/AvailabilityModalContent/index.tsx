@@ -51,36 +51,41 @@ export default function AvailabilityModalContent({
       className="selected-event-modal__availability"
       style={{
         width: "95vw",
-        maxWidth: 1200,
-        maxHeight: "90vh",
+        height: "90vh",
         display: "flex",
         flexDirection: "column",
-        position: "relative",
         fontFamily: "var(--wp--preset--font-family--inter)",
         background: "var(--wp--preset--color--background)",
-        borderRadius: "20px",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+        borderRadius: "12px",
+        boxShadow: "0 10px 40px rgba(0,0,0,0.12)",
+        overflow: "hidden",
       }}
     >
-      <Header
-        event={event}
-        selectedTeacher={selectedTeacher}
-        setSelectedTeacher={setSelectedTeacher}
-        teachers={teachers}
-        loadingTeachers={loadingTeachers}
-      />
-
       <div
         style={{
           flex: 1,
           display: "flex",
           flexDirection: "column",
-          maxHeight: "calc(90vh - 150px)",
-          position: "sticky",
+          overflow: "hidden",
         }}
       >
+        <Header
+          event={event}
+          selectedTeacher={selectedTeacher}
+          setSelectedTeacher={setSelectedTeacher}
+          teachers={teachers}
+          loadingTeachers={loadingTeachers}
+        />
+
         {selectedTeacher && (
-          <div ref={detailsRef}>
+          <div
+            ref={detailsRef}
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              borderTop: "1px solid var(--wp--preset--color--gray-200)",
+            }}
+          >
             <SelectedTeacherDetails
               selectedTeacher={selectedTeacher}
               setSelectedTeacher={setSelectedTeacher}

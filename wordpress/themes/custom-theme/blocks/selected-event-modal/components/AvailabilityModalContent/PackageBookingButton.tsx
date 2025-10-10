@@ -1,21 +1,22 @@
 import { usePackageBooking } from "../../../hooks/use-package-booking";
-import type { Teacher } from "../../../../types/calendar";
+import type { Teacher, AvailabilityEvent } from "../../../../types/calendar";
 
 export default function PackageBookingButton({
   pkg,
   selectedTeacher,
   event,
   bookingUrl,
+  onBookingSuccess,
 }: {
   pkg: any;
   selectedTeacher: Teacher | null;
-  event: any;
+  event: AvailabilityEvent;
   bookingUrl: string | null;
+  onBookingSuccess?: () => void;
 }) {
   const { bookWithPackage, loading, success, error } = usePackageBooking();
 
-  // Determine session identifier
-  const sessionId = Number((event as any).sessionId || event.id);
+  console.log({ pkg, selectedTeacher, event, bookingUrl });
 
   if (success) {
     return (
@@ -32,7 +33,24 @@ export default function PackageBookingButton({
         type="button"
         onClick={async () => {
           if (!selectedTeacher) return;
-          await bookWithPackage(pkg.id, sessionId);
+          // For availability events, we need to create the session first
+          // Send booking details instead of sessionId
+          const result = await bookWithPackage(pkg.id, {
+            teacherId: selectedTeacher.teacherId,
+            startAt: event.startUtc,
+            endAt: event.endUtc,
+          });
+
+          // If successful, trigger refetch callbacks
+          if (result.ok) {
+            // Refetch package credits
+            onBookingSuccess?.();
+
+            // Dispatch event to refresh calendar data
+            document.dispatchEvent(
+              new CustomEvent("thrive:refresh-calendar-data")
+            );
+          }
         }}
         style={{
           border: "none",

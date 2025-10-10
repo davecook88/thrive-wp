@@ -8,6 +8,7 @@ import {
   ParseIntPipe,
   UnauthorizedException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { z } from 'zod';
@@ -15,9 +16,19 @@ import { Request } from 'express';
 import { PackagesService } from './packages.service.js';
 import { StudentsService } from '../students/students.service.js';
 
-const UsePackageSchema = z.object({
-  sessionId: z.number(),
+const BookingDataSchema = z.object({
+  teacherId: z.number(),
+  startAt: z.string(),
+  endAt: z.string(),
 });
+
+const UsePackageSchema = z.object({
+  sessionId: z.number().optional(),
+  bookingData: BookingDataSchema.optional(),
+}).refine(
+  (data) => data.sessionId !== undefined || data.bookingData !== undefined,
+  { message: 'Either sessionId or bookingData must be provided' }
+);
 
 type UsePackageDto = z.infer<typeof UsePackageSchema>;
 
@@ -68,12 +79,27 @@ export class PackagesController {
     if (!userId) {
       throw new UnauthorizedException('User ID not found in auth headers');
     }
-    const studentId = parseInt(userId, 10);
-    return this.packagesService.usePackageForSession(
-      studentId,
-      packageId,
-      body.sessionId,
-      studentId,
-    );
+    const userIdNum = parseInt(userId, 10);
+
+    // If sessionId provided, use existing session flow
+    if (body.sessionId !== undefined) {
+      return this.packagesService.usePackageForSession(
+        userIdNum,
+        packageId,
+        body.sessionId,
+        userIdNum,
+      );
+    }
+
+    // Otherwise, create session from booking data and book it
+    if (body.bookingData) {
+      return this.packagesService.createAndBookSession(
+        userIdNum,
+        packageId,
+        body.bookingData,
+      );
+    }
+
+    throw new BadRequestException('Either sessionId or bookingData must be provided');
   }
 }

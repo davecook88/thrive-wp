@@ -169,14 +169,23 @@ export default function StudentCalendar({
       }
     };
 
+    const handleRefreshCalendar = () => {
+      // Refetch current range when refresh event is triggered
+      if (currentRange) {
+        fetchData(currentRange.from, currentRange.until);
+      }
+    };
+
     calendar.addEventListener("event:click", handleEventClick);
     calendar.addEventListener("range:change", handleRangeChange);
+    document.addEventListener("thrive:refresh-calendar-data", handleRefreshCalendar);
 
     return () => {
       calendar.removeEventListener("event:click", handleEventClick);
       calendar.removeEventListener("range:change", handleRangeChange);
+      document.removeEventListener("thrive:refresh-calendar-data", handleRefreshCalendar);
     };
-  }, []);
+  }, [currentRange]);
 
   const toggleTeacher = (id: number) => {
     setSelectedTeacherIds((prev) =>
