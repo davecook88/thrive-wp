@@ -102,6 +102,7 @@ function ModalPortal({
           shouldCloseOnEsc
           __experimentalHideHeader={true}
           bodyOpenClassName="selected-event-modal--open"
+          size="fill"
         >
           <Button
             onClick={close}

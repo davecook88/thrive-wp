@@ -2,7 +2,7 @@
 
 /* Scope to WordPress Modal injected content */
 .thrive-modal.components-modal__frame {
-  max-width: 720px;
+  /* max-width: 720px; */
   width: calc(100% - 32px);
   border-radius: 12px;
   overflow: hidden;
