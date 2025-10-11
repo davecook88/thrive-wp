@@ -1,7 +1,7 @@
-import { Teacher, ThriveCalendarContextApi } from "../../types/calendar";
+import { Teacher, ThriveCalendarContextApi } from "../../../../shared/types/calendar";
 import { useEffect, useMemo, useState } from "@wordpress/element";
 import CacheStore from "../utils/CacheStore";
-import { thriveClient } from "../../clients/thrive";
+import { thriveClient } from "../../../../shared/clients/thrive";
 
 const teachersCache = new CacheStore("thrive-teachers", 1000 * 60 * 15);
 

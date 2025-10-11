@@ -1,6 +1,6 @@
 import { useEffect, useState } from "@wordpress/element";
-import { ThriveCalendarContextApi } from "../../types/calendar";
-import { getCalendarContextSafe } from "../../types/calendar-utils";
+import { ThriveCalendarContextApi } from "../../../../shared/types/calendar";
+import { getCalendarContextSafe } from "../../../../shared/types/calendar-utils";
 
 export const useGetCalendarContext = (querySelector: string) => {
   const [cxt, setCxt] = useState<ThriveCalendarContextApi | null>(null);

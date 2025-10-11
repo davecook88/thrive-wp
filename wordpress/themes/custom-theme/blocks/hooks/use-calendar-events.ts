@@ -1,5 +1,5 @@
 import { useRef, useState } from "@wordpress/element";
-import { CalendarEvent } from "../../types/calendar";
+import { CalendarEvent } from "../../../../shared/types/calendar";
 
 export type fetchEventsFunc = (
   start: Date,

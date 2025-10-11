@@ -1,6 +1,6 @@
 import { createElement } from "@wordpress/element";
 import { createRoot } from "react-dom/client";
-import { getCalendarContextSafe } from "../../types/calendar-utils";
+import { getCalendarContextSafe } from "../../../../shared/types/calendar-utils";
 
 import TeacherPicker from "./components/TeacherPicker";
 

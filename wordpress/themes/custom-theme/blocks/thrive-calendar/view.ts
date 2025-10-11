@@ -1,9 +1,9 @@
 // Frontend view bindings for <thrive-calendar> elements to the Calendar Context API
-import { getCalendarContextSafe } from "../../types/calendar-utils";
-import type {
+import {
   BaseCalendarEvent,
   ThriveCalendarElement,
-} from "../../types/calendar";
+} from "../../../../shared/types/calendar";
+import { getCalendarContextSafe } from "../../../../shared/types/calendar-utils";
 
 type ThriveCalendarEl = ThriveCalendarElement;
 

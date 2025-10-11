@@ -3,9 +3,8 @@ import type {
   BaseCalendarEvent,
   ThriveCalendarElement,
   Teacher,
-  AvailabilityEvent,
-} from "../../../types/calendar";
-import { thriveClient } from "../../../clients/thrive";
+} from "../../../../../shared/types/calendar";
+import { thriveClient } from "../../../../../shared/clients/thrive";
 import { useAvailabilitySlots } from "../../hooks/use-availability-slots";
 import { fetchStudentBookings } from "../../student-calendar/utils/calendarData";
 

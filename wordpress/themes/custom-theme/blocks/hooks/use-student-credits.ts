@@ -1,6 +1,6 @@
 import { useEffect, useState } from "@wordpress/element";
-import { thriveClient } from "../../clients/thrive";
-import { StudentPackageMyCreditsResponse } from "../../types/packages";
+import { thriveClient } from "../../../../shared/clients/thrive";
+import { StudentPackageMyCreditsResponse } from "../../../../shared/types/packages";
 
 export const useStudentCredits = () => {
   const [packagesResponse, setPackagesResponse] =

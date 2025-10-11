@@ -5,7 +5,7 @@ import type {
   AvailabilityEvent,
   CalendarEvent,
   Teacher,
-} from "../../../types/calendar";
+} from "../../../../../shared/types/calendar";
 import { useGetCalendarContext } from "../../hooks/get-context";
 import { useGetTeachers } from "../../hooks/get-teachers";
 
@@ -23,7 +23,7 @@ export default function TeacherPicker({
   const context = useGetCalendarContext(querySelector);
 
   const { teachers, loading, selectTeacherId, selectedTeachers } =
-    useGetTeachers(context);
+    useGetTeachers();
   const handleTeacherSelect = (teacher: Teacher) => {
     selectTeacherId(teacher.teacherId);
   };
@@ -34,7 +34,9 @@ export default function TeacherPicker({
 
   const getAvatarUrl = (teacher: Teacher) => {
     if (teacher.avatarUrl) return teacher.avatarUrl;
-    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(teacher.name)}`;
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
+      teacher.name
+    )}`;
   };
 
   // Register callback for date range changes

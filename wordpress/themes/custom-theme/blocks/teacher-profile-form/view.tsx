@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { useState, useEffect } from "@wordpress/element";
-import { ProfilePictureUpload } from "../../components/ProfilePictureUpload";
+import { ProfilePictureUpload, EditableProfileField } from "../../components";
 import "./teacher-profile-form.css";
 import "../../components/upload-components.css";
 
@@ -56,7 +56,7 @@ function TeacherProfileForm() {
   const [currentLocationCountry, setCurrentLocationCountry] = useState("");
   const [specialtiesText, setSpecialtiesText] = useState("");
   const [yearsExperience, setYearsExperience] = useState<number | "">("");
-  const [languagesText, setLanguagesText] = useState("");
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
 
   useEffect(() => {
     fetchProfile();
@@ -84,7 +84,7 @@ function TeacherProfileForm() {
       setCurrentLocationCountry(data.currentLocation?.country || "");
       setSpecialtiesText((data.specialties || []).join(", "));
       setYearsExperience(data.yearsExperience ?? "");
-      setLanguagesText((data.languagesSpoken || []).join(", "));
+      setSelectedLanguages(data.languagesSpoken || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -138,14 +138,8 @@ function TeacherProfileForm() {
             yearsExperience !== "" ? Number(yearsExperience) : null;
           break;
         case "languages":
-          if (languagesText.trim()) {
-            updateData.languagesSpoken = languagesText
-              .split(",")
-              .map((s) => s.trim())
-              .filter(Boolean);
-          } else {
-            updateData.languagesSpoken = [];
-          }
+          updateData.languagesSpoken =
+            selectedLanguages.length > 0 ? selectedLanguages : [];
           break;
       }
 
@@ -186,34 +180,9 @@ function TeacherProfileForm() {
       setCurrentLocationCountry(profile.currentLocation?.country || "");
       setSpecialtiesText((profile.specialties || []).join(", "));
       setYearsExperience(profile.yearsExperience ?? "");
-      setLanguagesText((profile.languagesSpoken || []).join(", "));
+      setSelectedLanguages(profile.languagesSpoken || []);
     }
     setEditingField(null);
-  };
-
-  const renderFieldDisplay = (
-    field: EditableField,
-    label: string,
-    value: string | null
-  ) => {
-    return (
-      <div className="profile-field">
-        <div className="profile-field-header">
-          <span className="profile-field-label">{label}</span>
-          <button
-            type="button"
-            className="profile-field-edit-btn"
-            onClick={() => setEditingField(field)}
-            disabled={saving}
-          >
-            Edit
-          </button>
-        </div>
-        <div className="profile-field-value">
-          {value || <span className="profile-field-empty">Not set</span>}
-        </div>
-      </div>
-    );
   };
 
   if (loading) {
@@ -226,7 +195,6 @@ function TeacherProfileForm() {
 
   return (
     <div className="teacher-profile-form-container">
-      <h2>Your Profile</h2>
       {success && <div className="teacher-profile-success">Saved!</div>}
       {error && <div className="teacher-profile-error">Error: {error}</div>}
 
@@ -243,266 +211,134 @@ function TeacherProfileForm() {
               }
             }}
             onError={(err: string) => setError(err)}
-            userName={profile ? `${profile.firstName} ${profile.lastName}` : undefined}
+            userName={
+              profile ? `${profile.firstName} ${profile.lastName}` : undefined
+            }
             disabled={saving}
           />
         </div>
 
         {/* Bio */}
-        {editingField === "bio" ? (
-          <div className="profile-field profile-field-editing">
-            <label className="profile-field-label">Bio</label>
-            <textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              rows={4}
-              placeholder="Tell us about yourself..."
-              className="profile-field-textarea"
-            />
-            <div className="profile-field-actions">
-              <button
-                type="button"
-                onClick={() => handleSaveField("bio")}
-                disabled={saving}
-                className="profile-field-btn profile-field-btn-save"
-              >
-                {saving ? "Saving..." : "Save"}
-              </button>
-              <button
-                type="button"
-                onClick={handleCancelEdit}
-                disabled={saving}
-                className="profile-field-btn profile-field-btn-cancel"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          renderFieldDisplay("bio", "Bio", profile?.bio || null)
-        )}
+        <EditableProfileField
+          label="Bio"
+          value={profile?.bio || null}
+          isEditing={editingField === "bio"}
+          onEdit={() => setEditingField("bio")}
+          onSave={() => handleSaveField("bio")}
+          onCancel={handleCancelEdit}
+          saving={saving}
+          type="textarea"
+          fieldId="bio-textarea"
+          fieldValue={bio}
+          onFieldChange={setBio}
+          placeholder="Tell us about yourself..."
+          rows={4}
+        />
 
         {/* Birthplace */}
-        {editingField === "birthplace" ? (
-          <div className="profile-field profile-field-editing">
-            <label className="profile-field-label">Birthplace</label>
-            <div className="profile-field-row">
-              <input
-                type="text"
-                value={birthplaceCity}
-                onChange={(e) => setBirthplaceCity(e.target.value)}
-                placeholder="City"
-                className="profile-field-input"
-              />
-              <input
-                type="text"
-                value={birthplaceCountry}
-                onChange={(e) => setBirthplaceCountry(e.target.value)}
-                placeholder="Country"
-                className="profile-field-input"
-              />
-            </div>
-            <div className="profile-field-actions">
-              <button
-                type="button"
-                onClick={() => handleSaveField("birthplace")}
-                disabled={saving}
-                className="profile-field-btn profile-field-btn-save"
-              >
-                {saving ? "Saving..." : "Save"}
-              </button>
-              <button
-                type="button"
-                onClick={handleCancelEdit}
-                disabled={saving}
-                className="profile-field-btn profile-field-btn-cancel"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          renderFieldDisplay(
-            "birthplace",
-            "Birthplace",
+        <EditableProfileField
+          label="Birthplace"
+          value={
             profile?.birthplace
               ? [profile.birthplace.city, profile.birthplace.country]
                   .filter(Boolean)
                   .join(", ")
               : null
-          )
-        )}
+          }
+          isEditing={editingField === "birthplace"}
+          onEdit={() => setEditingField("birthplace")}
+          onSave={() => handleSaveField("birthplace")}
+          onCancel={handleCancelEdit}
+          saving={saving}
+          type="location"
+          cityId="birthplace-city"
+          countryId="birthplace-country"
+          cityValue={birthplaceCity}
+          countryValue={birthplaceCountry}
+          onCityChange={setBirthplaceCity}
+          onCountryChange={setBirthplaceCountry}
+        />
 
         {/* Current Location */}
-        {editingField === "location" ? (
-          <div className="profile-field profile-field-editing">
-            <label className="profile-field-label">Current Location</label>
-            <div className="profile-field-row">
-              <input
-                type="text"
-                value={currentLocationCity}
-                onChange={(e) => setCurrentLocationCity(e.target.value)}
-                placeholder="City"
-                className="profile-field-input"
-              />
-              <input
-                type="text"
-                value={currentLocationCountry}
-                onChange={(e) => setCurrentLocationCountry(e.target.value)}
-                placeholder="Country"
-                className="profile-field-input"
-              />
-            </div>
-            <div className="profile-field-actions">
-              <button
-                type="button"
-                onClick={() => handleSaveField("location")}
-                disabled={saving}
-                className="profile-field-btn profile-field-btn-save"
-              >
-                {saving ? "Saving..." : "Save"}
-              </button>
-              <button
-                type="button"
-                onClick={handleCancelEdit}
-                disabled={saving}
-                className="profile-field-btn profile-field-btn-cancel"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          renderFieldDisplay(
-            "location",
-            "Current Location",
+        <EditableProfileField
+          label="Current Location"
+          value={
             profile?.currentLocation
               ? [profile.currentLocation.city, profile.currentLocation.country]
                   .filter(Boolean)
                   .join(", ")
               : null
-          )
-        )}
+          }
+          isEditing={editingField === "location"}
+          onEdit={() => setEditingField("location")}
+          onSave={() => handleSaveField("location")}
+          onCancel={handleCancelEdit}
+          saving={saving}
+          type="location"
+          cityId="current-location-city"
+          countryId="current-location-country"
+          cityValue={currentLocationCity}
+          countryValue={currentLocationCountry}
+          onCityChange={setCurrentLocationCity}
+          onCountryChange={setCurrentLocationCountry}
+        />
 
         {/* Specialties */}
-        {editingField === "specialties" ? (
-          <div className="profile-field profile-field-editing">
-            <label className="profile-field-label">Specialties</label>
-            <input
-              type="text"
-              value={specialtiesText}
-              onChange={(e) => setSpecialtiesText(e.target.value)}
-              placeholder="e.g., Conversation, Grammar"
-              className="profile-field-input"
-            />
-            <div className="profile-field-actions">
-              <button
-                type="button"
-                onClick={() => handleSaveField("specialties")}
-                disabled={saving}
-                className="profile-field-btn profile-field-btn-save"
-              >
-                {saving ? "Saving..." : "Save"}
-              </button>
-              <button
-                type="button"
-                onClick={handleCancelEdit}
-                disabled={saving}
-                className="profile-field-btn profile-field-btn-cancel"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          renderFieldDisplay(
-            "specialties",
-            "Specialties",
-            profile?.specialties ? profile.specialties.join(", ") : null
-          )
-        )}
+        <EditableProfileField
+          label="Specialties"
+          value={profile?.specialties ? profile.specialties.join(", ") : null}
+          isEditing={editingField === "specialties"}
+          onEdit={() => setEditingField("specialties")}
+          onSave={() => handleSaveField("specialties")}
+          onCancel={handleCancelEdit}
+          saving={saving}
+          type="text"
+          fieldId="specialties-input"
+          fieldValue={specialtiesText}
+          onFieldChange={setSpecialtiesText}
+          placeholder="e.g., Conversation, Grammar"
+        />
 
         {/* Years of Experience */}
-        {editingField === "experience" ? (
-          <div className="profile-field profile-field-editing">
-            <label className="profile-field-label">Years of Experience</label>
-            <input
-              type="number"
-              value={yearsExperience}
-              onChange={(e) =>
-                setYearsExperience(e.target.value === "" ? "" : Number(e.target.value))
-              }
-              min={0}
-              max={100}
-              placeholder="0"
-              className="profile-field-input"
-            />
-            <div className="profile-field-actions">
-              <button
-                type="button"
-                onClick={() => handleSaveField("experience")}
-                disabled={saving}
-                className="profile-field-btn profile-field-btn-save"
-              >
-                {saving ? "Saving..." : "Save"}
-              </button>
-              <button
-                type="button"
-                onClick={handleCancelEdit}
-                disabled={saving}
-                className="profile-field-btn profile-field-btn-cancel"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          renderFieldDisplay(
-            "experience",
-            "Years of Experience",
-            profile?.yearsExperience !== null && profile?.yearsExperience !== undefined
+        <EditableProfileField
+          label="Years of Experience"
+          value={
+            profile?.yearsExperience !== null &&
+            profile?.yearsExperience !== undefined
               ? String(profile.yearsExperience)
               : null
-          )
-        )}
+          }
+          isEditing={editingField === "experience"}
+          onEdit={() => setEditingField("experience")}
+          onSave={() => handleSaveField("experience")}
+          onCancel={handleCancelEdit}
+          saving={saving}
+          type="number"
+          fieldId="experience-input"
+          fieldValue={yearsExperience}
+          onFieldChange={(value) =>
+            setYearsExperience(value === "" ? "" : Number(value))
+          }
+          placeholder="0"
+          min={0}
+          max={100}
+        />
 
         {/* Languages Spoken */}
-        {editingField === "languages" ? (
-          <div className="profile-field profile-field-editing">
-            <label className="profile-field-label">Languages Spoken</label>
-            <input
-              type="text"
-              value={languagesText}
-              onChange={(e) => setLanguagesText(e.target.value)}
-              placeholder="e.g., English, Spanish, French"
-              className="profile-field-input"
-            />
-            <div className="profile-field-actions">
-              <button
-                type="button"
-                onClick={() => handleSaveField("languages")}
-                disabled={saving}
-                className="profile-field-btn profile-field-btn-save"
-              >
-                {saving ? "Saving..." : "Save"}
-              </button>
-              <button
-                type="button"
-                onClick={handleCancelEdit}
-                disabled={saving}
-                className="profile-field-btn profile-field-btn-cancel"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          renderFieldDisplay(
-            "languages",
-            "Languages Spoken",
+        <EditableProfileField
+          label="Languages Spoken"
+          value={
             profile?.languagesSpoken ? profile.languagesSpoken.join(", ") : null
-          )
-        )}
+          }
+          isEditing={editingField === "languages"}
+          onEdit={() => setEditingField("languages")}
+          onSave={() => handleSaveField("languages")}
+          onCancel={handleCancelEdit}
+          saving={saving}
+          type="languages"
+          selectedLanguages={selectedLanguages}
+          onLanguagesChange={setSelectedLanguages}
+        />
       </div>
     </div>
   );

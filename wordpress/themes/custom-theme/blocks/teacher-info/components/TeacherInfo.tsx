@@ -1,5 +1,8 @@
 import { useState, useEffect } from "@wordpress/element";
-import type { Teacher, TeacherLocation } from "../../../types/calendar";
+import type {
+  Teacher,
+  TeacherLocation,
+} from "../../../../../shared/types/calendar";
 
 interface TeacherInfoProps {
   teacher: Teacher | null;
@@ -32,12 +35,13 @@ export default function TeacherInfo({
     return null;
   }
 
-  const avatarSize =
-    size === "small" ? 60 : size === "large" ? 120 : 80;
+  const avatarSize = size === "small" ? 60 : size === "large" ? 120 : 80;
 
   const getAvatarUrl = () => {
     if (teacher.avatarUrl) return teacher.avatarUrl;
-    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(teacher.name)}`;
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
+      teacher.name
+    )}`;
   };
 
   const formatLocation = (location: TeacherLocation | null) => {
@@ -92,7 +96,9 @@ export default function TeacherInfo({
               )}
               {teacher.currentLocation && (
                 <div className="teacher-info__location">
-                  <span className="teacher-info__location-label">Currently:</span>
+                  <span className="teacher-info__location-label">
+                    Currently:
+                  </span>
                   <span className="teacher-info__location-value">
                     {formatLocation(teacher.currentLocation)}
                   </span>
@@ -105,18 +111,20 @@ export default function TeacherInfo({
             <p className="teacher-info__bio">{teacher.bio}</p>
           )}
 
-          {showSpecialties && teacher.specialties && teacher.specialties.length > 0 && (
-            <div className="teacher-info__specialties">
-              <h4 className="teacher-info__specialties-title">Specialties</h4>
-              <div className="teacher-info__specialties-list">
-                {teacher.specialties.map((specialty, index) => (
-                  <span key={index} className="teacher-info__specialty-tag">
-                    {specialty}
-                  </span>
-                ))}
+          {showSpecialties &&
+            teacher.specialties &&
+            teacher.specialties.length > 0 && (
+              <div className="teacher-info__specialties">
+                <h4 className="teacher-info__specialties-title">Specialties</h4>
+                <div className="teacher-info__specialties-list">
+                  {teacher.specialties.map((specialty, index) => (
+                    <span key={index} className="teacher-info__specialty-tag">
+                      {specialty}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {showStats && (
             <div className="teacher-info__stats">
@@ -125,28 +133,32 @@ export default function TeacherInfo({
                   <strong>{teacher.yearsExperience}+</strong> years teaching
                 </div>
               )}
-              {teacher.languagesSpoken && teacher.languagesSpoken.length > 0 && (
-                <div className="teacher-info__stat">
-                  <strong>Languages:</strong> {teacher.languagesSpoken.join(", ")}
-                </div>
-              )}
+              {teacher.languagesSpoken &&
+                teacher.languagesSpoken.length > 0 && (
+                  <div className="teacher-info__stat">
+                    <strong>Languages:</strong>{" "}
+                    {teacher.languagesSpoken.join(", ")}
+                  </div>
+                )}
             </div>
           )}
 
-          {showMap && teacher.currentLocation && getMapUrl(teacher.currentLocation) && (
-            <div className="teacher-info__map">
-              <img
-                src={getMapUrl(teacher.currentLocation)!}
-                alt={`Map of ${formatLocation(teacher.currentLocation)}`}
-                style={{
-                  width: "100%",
-                  height: "auto",
-                  borderRadius: "4px",
-                  marginTop: "1rem",
-                }}
-              />
-            </div>
-          )}
+          {showMap &&
+            teacher.currentLocation &&
+            getMapUrl(teacher.currentLocation) && (
+              <div className="teacher-info__map">
+                <img
+                  src={getMapUrl(teacher.currentLocation)!}
+                  alt={`Map of ${formatLocation(teacher.currentLocation)}`}
+                  style={{
+                    width: "100%",
+                    height: "auto",
+                    borderRadius: "4px",
+                    marginTop: "1rem",
+                  }}
+                />
+              </div>
+            )}
         </div>
       </div>
     </div>

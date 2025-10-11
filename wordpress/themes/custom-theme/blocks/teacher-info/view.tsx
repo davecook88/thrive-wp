@@ -1,8 +1,8 @@
 import { createElement } from "@wordpress/element";
 import { createRoot } from "react-dom/client";
 import { useState, useEffect } from "@wordpress/element";
-import { getCalendarContextSafe } from "../../types/calendar-utils";
-import type { Teacher } from "../../types/calendar";
+import { getCalendarContextSafe } from "../../../../shared/types/calendar-utils";
+import type { Teacher } from "../../../../shared/types/calendar";
 import TeacherInfo from "./components/TeacherInfo";
 import TeacherInfoSkeleton from "./components/TeacherInfoSkeleton";
 import "./teacher-info.css";

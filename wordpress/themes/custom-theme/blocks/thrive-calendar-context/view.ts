@@ -5,8 +5,8 @@ import type {
   BaseCalendarEvent,
   CalendarView,
   ThriveCalendarElement,
-} from "../../types/calendar";
-import { thriveClient } from "../../clients/thrive";
+} from "../../../../shared/types/calendar";
+import { thriveClient } from "../../../../shared/clients/thrive";
 
 // Typed Web Component interface for thrive-calendar
 type ThriveCalendarEl = ThriveCalendarElement;
