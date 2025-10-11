@@ -29,8 +29,7 @@ define('THRIVE_UPDATE_PAGES', true);  // Allow automatic updates (default)
 - `/booking-confirmation` - Booking confirmation with payment
 - `/booking-complete` - Post-booking success page
 - `/student` - Student dashboard
-- `/teacher` - Teacher dashboard
-- `/teacher/set-availability` - Teacher availability management
+- `/teacher` - Teacher dashboard (includes inline availability management)
 
 **Adding New Pages:**
 Use the `ensure_page_exists()` function:

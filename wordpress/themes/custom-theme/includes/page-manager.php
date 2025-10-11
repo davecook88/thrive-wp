@@ -106,5 +106,7 @@ add_action('after_setup_theme', function () {
     // User dashboard pages
     ensure_page_exists('Student Dashboard', 'student', 'student');
     ensure_page_exists('Teacher Dashboard', 'teacher', 'teacher');
-    ensure_page_exists('Set Availability', 'set-availability', 'teacher-set-availability', null, null, 'teacher');
+
+    // DEPRECATED: Set Availability page - functionality now integrated into Teacher Calendar
+    // ensure_page_exists('Set Availability', 'set-availability', 'teacher-set-availability', null, null, 'teacher');
 });

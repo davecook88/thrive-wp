@@ -266,6 +266,41 @@ body {
   color: #991b1b;
 }
 
+/* Teacher Dashboard Layout - Force side-by-side columns */
+.wp-block-columns {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.wp-block-column {
+  flex-shrink: 0;
+}
+
+/* Override WordPress core responsive breakpoints for teacher dashboard */
+@media (min-width: 782px) {
+  .wp-block-columns:not(.is-not-stacked-on-mobile) > .wp-block-column {
+    flex-basis: 0;
+    flex-grow: 1;
+  }
+
+  .wp-block-columns:not(.is-not-stacked-on-mobile) > .wp-block-column[style*="flex-basis"] {
+    flex-grow: 0;
+  }
+}
+
+/* Stack on smaller screens only */
+@media (max-width: 781px) {
+  .wp-block-columns {
+    flex-direction: column !important;
+  }
+
+  .wp-block-column {
+    flex-basis: 100% !important;
+  }
+}
+
 /* Teacher Calendar */
 .teacher-calendar-wrapper {
   min-height: 600px;

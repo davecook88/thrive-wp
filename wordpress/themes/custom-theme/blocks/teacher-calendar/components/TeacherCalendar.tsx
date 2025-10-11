@@ -3,6 +3,8 @@ import type {
   BaseCalendarEvent,
   ThriveCalendarElement,
 } from "../../../types/calendar";
+import RulesSection from "../../teacher-availability/components/RulesSection";
+import ExceptionsSection from "../../teacher-availability/components/ExceptionsSection";
 
 interface TeacherCalendarProps {
   view: "week" | "day" | "month" | "list";
@@ -12,6 +14,22 @@ interface TeacherCalendarProps {
 }
 
 type CalendarMode = "availability" | "classes";
+
+interface Rule {
+  id?: string;
+  weekday: string;
+  startTimeMinutes: number;
+  endTimeMinutes: number;
+  kind: string;
+}
+
+interface Exception {
+  id?: string;
+  date: string;
+  kind: string;
+  startTimeMinutes?: number;
+  endTimeMinutes?: number;
+}
 
 export default function TeacherCalendar({
   view,
@@ -26,6 +44,11 @@ export default function TeacherCalendar({
     from: Date;
     until: Date;
   } | null>(null);
+
+  // Availability management state
+  const [rules, setRules] = useState<Rule[]>([]);
+  const [exceptions, setExceptions] = useState<Exception[]>([]);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
 
   // Fetch data based on current mode and range
   const fetchData = async (start: Date, end: Date) => {
@@ -87,8 +110,170 @@ export default function TeacherCalendar({
     }
   };
 
+  // Load availability rules and exceptions
+  const loadAvailability = async () => {
+    try {
+      setAvailabilityLoading(true);
+      const response = await fetch("/api/teachers/me/availability", {
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const toMinutes = (t: string) => {
+          const [h, m] = t.split(":").map(Number);
+          return h * 60 + m;
+        };
+
+        const mappedRules: Rule[] = (data.rules || []).map((r: any) => ({
+          id: String(r.id),
+          weekday: String(r.weekday),
+          startTimeMinutes: toMinutes(r.startTime),
+          endTimeMinutes: toMinutes(r.endTime),
+          kind: "available",
+        }));
+
+        const mappedExceptions: Exception[] = (data.exceptions || []).map(
+          (e: any) => ({
+            id: String(e.id),
+            date: e.date,
+            kind: e.isBlackout ? "unavailable" : "available",
+            startTimeMinutes: e.startTime ? toMinutes(e.startTime) : undefined,
+            endTimeMinutes: e.endTime ? toMinutes(e.endTime) : undefined,
+          })
+        );
+
+        setRules(mappedRules);
+        setExceptions(mappedExceptions);
+      }
+    } catch (error) {
+      console.error("Failed to load availability:", error);
+      setRules([]);
+      setExceptions([]);
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  };
+
+  // Persist availability changes
+  const persistAvailability = async (
+    nextRules: Rule[],
+    nextExceptions: Exception[]
+  ) => {
+    const toTime = (mins: number) => {
+      const normalizedMins = ((mins % (24 * 60)) + 24 * 60) % (24 * 60);
+      const utcHours = Math.floor(normalizedMins / 60);
+      const utcMinutes = ((normalizedMins % 60) + 60) % 60;
+      return `${utcHours.toString().padStart(2, "0")}:${utcMinutes
+        .toString()
+        .padStart(2, "0")}`;
+    };
+
+    const payload = {
+      rules: nextRules.map((r) => ({
+        weekday: Number(r.weekday),
+        startTime: toTime(r.startTimeMinutes),
+        endTime: toTime(r.endTimeMinutes),
+      })),
+      exceptions: nextExceptions
+        .filter((e) => e.kind === "unavailable")
+        .map((e) => ({
+          date: e.date,
+          startTime:
+            typeof e.startTimeMinutes === "number"
+              ? toTime(e.startTimeMinutes)
+              : undefined,
+          endTime:
+            typeof e.endTimeMinutes === "number"
+              ? toTime(e.endTimeMinutes)
+              : undefined,
+          isBlackout: true,
+        })),
+    };
+
+    await fetch("/api/teachers/me/availability", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(payload),
+    });
+
+    await loadAvailability();
+
+    // Refresh calendar preview
+    if (currentRange) {
+      fetchData(currentRange.from, currentRange.until);
+    }
+  };
+
+  // Availability handlers
+  const handleAddRule = async (rule: Omit<Rule, "id">) => {
+    try {
+      const next = [...rules, rule];
+      setRules(next);
+      await persistAvailability(next, exceptions);
+    } catch (error) {
+      console.error("Error adding rule:", error);
+      alert("Failed to add rule: " + (error as Error).message);
+    }
+  };
+
+  const handleRemoveRule = async (index: number) => {
+    const rule = rules[index];
+    if (!rule || !rule.id) {
+      setRules(rules.filter((_, i) => i !== index));
+      return;
+    }
+
+    try {
+      const next = rules.filter((_, i) => i !== index);
+      setRules(next);
+      await persistAvailability(next, exceptions);
+    } catch (error) {
+      console.error("Error removing rule:", error);
+      alert("Failed to remove rule: " + (error as Error).message);
+    }
+  };
+
+  const handleAddException = async (exception: Omit<Exception, "id">) => {
+    if (exception.kind !== "unavailable") {
+      alert("Custom availability exceptions are not supported yet.");
+      return;
+    }
+    try {
+      const next = [...exceptions, exception];
+      setExceptions(next);
+      await persistAvailability(rules, next);
+    } catch (error) {
+      console.error("Error adding exception:", error);
+      alert("Failed to add exception: " + (error as Error).message);
+    }
+  };
+
+  const handleRemoveException = async (index: number) => {
+    const exception = exceptions[index];
+    if (!exception || !exception.id) {
+      setExceptions(exceptions.filter((_, i) => i !== index));
+      return;
+    }
+
+    try {
+      const next = exceptions.filter((_, i) => i !== index);
+      setExceptions(next);
+      await persistAvailability(rules, next);
+    } catch (error) {
+      console.error("Error removing exception:", error);
+      alert("Failed to remove exception: " + (error as Error).message);
+    }
+  };
+
   // Refetch when mode changes
   useEffect(() => {
+    if (mode === "availability") {
+      loadAvailability();
+    }
     if (currentRange) {
       fetchData(currentRange.from, currentRange.until);
     }
@@ -276,16 +461,53 @@ export default function TeacherCalendar({
             }}
           >
             <p style={{ margin: 0 }}>
-              <strong>Note:</strong> To edit your availability rules and
-              exceptions,{" "}
-              <a href="/teacher/set-availability" style={{ color: "#10b981" }}>
-                visit the availability settings page
-              </a>
-              . This calendar shows your current availability windows.
+              <strong>Set your availability:</strong> Configure your weekly
+              rules and date-specific exceptions below. The calendar will update
+              automatically to show your availability windows.
             </p>
           </div>
         )}
       </div>
+
+      {/* Availability Controls - shown inline when in availability mode */}
+      {mode === "availability" && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "20px",
+            marginBottom: "20px",
+          }}
+        >
+          {availabilityLoading ? (
+            <div
+              style={{
+                gridColumn: "1 / -1",
+                textAlign: "center",
+                padding: "2rem",
+                color: "#6b7280",
+              }}
+            >
+              Loading availability settings...
+            </div>
+          ) : (
+            <>
+              <RulesSection
+                rules={rules}
+                onAddRule={handleAddRule}
+                onRemoveRule={handleRemoveRule}
+                accentColor="#10b981"
+              />
+              <ExceptionsSection
+                exceptions={exceptions}
+                onAddException={handleAddException}
+                onRemoveException={handleRemoveException}
+                accentColor="#10b981"
+              />
+            </>
+          )}
+        </div>
+      )}
 
       {/* Calendar Component */}
       <thrive-calendar
