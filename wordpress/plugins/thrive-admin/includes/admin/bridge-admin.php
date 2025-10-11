@@ -63,6 +63,16 @@ class Thrive_Admin_Bridge_Admin
             [$this, 'thrive_admin_products_page']
         );
 
+        // Submenu: Group Classes
+        add_submenu_page(
+            'thrive-admin-dashboard',
+            'Group Classes',
+            'Group Classes',
+            'manage_options',
+            'thrive-admin-group-classes',
+            [$this, 'thrive_admin_group_classes_page']
+        );
+
         // Submenu: Settings
         add_submenu_page(
             'thrive-admin-dashboard',
@@ -80,6 +90,7 @@ class Thrive_Admin_Bridge_Admin
             'toplevel_page_thrive-admin-dashboard',
             'thrive-admin_page_thrive-admin-users',
             'thrive-admin_page_thrive-admin-products',
+            'thrive-admin_page_thrive-admin-group-classes',
             'thrive-admin_page_thrive-admin-settings'
         ];
 
@@ -237,6 +248,16 @@ class Thrive_Admin_Bridge_Admin
 
         // Load the Vue template
         include plugin_dir_path(__FILE__) . '../../templates/packages.php';
+    }
+
+    public function thrive_admin_group_classes_page()
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.'));
+        }
+
+        // Load the Vue template
+        include plugin_dir_path(__FILE__) . '../../templates/group-classes.php';
     }
 
     public function thrive_admin_settings_page()

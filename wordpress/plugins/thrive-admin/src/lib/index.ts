@@ -13,3 +13,4 @@ export * from "./api/client";
 export * from "./api/users";
 export * from "./utils/user-utils";
 export * from "./composables/use-users";
+export { thriveClient } from "./thrive";

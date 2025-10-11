@@ -12,6 +12,11 @@ export default defineConfig({
     ]),
   ],
   root: ".",
+  resolve: {
+    alias: {
+      "@shared/*": "../shared/*",
+    },
+  },
   build: {
     outDir: "./dist",
     emptyOutDir: true,
