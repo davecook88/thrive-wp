@@ -1,0 +1,33 @@
+{
+    "apiVersion": 2,
+    "name": "custom-theme/teacher-calendar",
+    "title": "Teacher Calendar",
+    "category": "widgets",
+    "icon": "calendar-alt",
+    "description": "Display teacher calendar with classes and availability modes.",
+    "attributes": {
+        "view": {
+            "type": "string",
+            "default": "week"
+        },
+        "slotDuration": {
+            "type": "number",
+            "default": 30
+        },
+        "snapTo": {
+            "type": "number",
+            "default": 15
+        },
+        "viewHeight": {
+            "type": "number",
+            "default": 600
+        }
+    },
+    "supports": {
+        "html": false
+    },
+    "textdomain": "custom-theme",
+    "editorScript": "file:./build/index.js",
+    "render": "file:./render.php",
+    "viewScript": "file:./view.js"
+}

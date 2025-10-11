@@ -6,6 +6,8 @@ import {
   Body,
   UseGuards,
   Request,
+  Patch,
+  Query,
 } from '@nestjs/common';
 import { TeachersService } from './teachers.service.js';
 import { TeacherGuard } from '../auth/teacher.guard.js';
@@ -13,6 +15,7 @@ import {
   UpdateAvailabilityDto,
   PreviewMyAvailabilityDto,
 } from './dto/availability.dto.js';
+import { UpdateTeacherProfileDto } from './dto/update-teacher-profile.dto.js';
 import type { Request as ExpressRequest } from 'express';
 
 type AuthenticatedRequest = ExpressRequest & {
@@ -69,5 +72,27 @@ export class TeachersController {
     const userId = req.user.id;
     const teacherId = await this.teachersService.getTeacherIdByUserId(userId);
     return this.teachersService.previewTeacherAvailability([teacherId], dto);
+  }
+}
+
+@Controller('teachers/me')
+@UseGuards(TeacherGuard)
+export class TeachersStatsController {
+  constructor(private readonly teachersService: TeachersService) {}
+
+  @Get('stats')
+  async getMyStats(@Request() req: AuthenticatedRequest) {
+    const userId = req.user.id;
+    return this.teachersService.getTeacherStats(userId);
+  }
+
+  @Get('sessions')
+  async getMySessions(
+    @Request() req: AuthenticatedRequest,
+    @Query('start') startDate?: string,
+    @Query('end') endDate?: string,
+  ) {
+    const userId = req.user.id;
+    return this.teachersService.getTeacherSessions(userId, startDate, endDate);
   }
 }

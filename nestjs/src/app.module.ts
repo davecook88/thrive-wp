@@ -18,8 +18,10 @@ import { PoliciesModule } from './policies/policies.module.js';
 import { BookingsModule } from './bookings/bookings.module.js';
 import { LevelsModule } from './levels/levels.module.js';
 import { GroupClassesModule } from './group-classes/group-classes.module.js';
+import { WaitlistsModule } from './waitlists/waitlists.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -64,6 +66,7 @@ import { AppService } from './app.service.js';
     BookingsModule,
     LevelsModule,
     GroupClassesModule,
+    WaitlistsModule,
   ],
   controllers: [AppController],
   providers: [

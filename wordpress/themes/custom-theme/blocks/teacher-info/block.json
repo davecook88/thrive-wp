@@ -1,0 +1,62 @@
+{
+  "apiVersion": 3,
+  "name": "custom-theme/teacher-info",
+  "title": "Teacher Info",
+  "category": "widgets",
+  "icon": "id-alt",
+  "description": "Display teacher profile information in a customizable, responsive card.",
+  "attributes": {
+    "teacherId": {
+      "type": "number",
+      "default": null
+    },
+    "layout": {
+      "type": "string",
+      "default": "horizontal",
+      "enum": ["horizontal", "vertical", "card"]
+    },
+    "size": {
+      "type": "string",
+      "default": "medium",
+      "enum": ["small", "medium", "large"]
+    },
+    "showAvatar": {
+      "type": "boolean",
+      "default": true
+    },
+    "showLocation": {
+      "type": "boolean",
+      "default": true
+    },
+    "showBio": {
+      "type": "boolean",
+      "default": true
+    },
+    "showSpecialties": {
+      "type": "boolean",
+      "default": true
+    },
+    "showStats": {
+      "type": "boolean",
+      "default": false
+    },
+    "showMap": {
+      "type": "boolean",
+      "default": false
+    },
+    "backgroundColor": {
+      "type": "string",
+      "default": ""
+    },
+    "borderRadius": {
+      "type": "string",
+      "default": "8px"
+    }
+  },
+  "usesContext": [
+    "custom-theme/calendarContextId"
+  ],
+  "editorScript": "custom-theme-blocks",
+  "viewScript": "custom-theme-blocks-view",
+  "style": "custom-theme-blocks"
+}

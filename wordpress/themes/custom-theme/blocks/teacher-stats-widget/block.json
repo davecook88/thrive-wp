@@ -1,0 +1,33 @@
+{
+    "apiVersion": 2,
+    "name": "custom-theme/teacher-stats-widget",
+    "title": "Teacher Stats Widget",
+    "category": "widgets",
+    "icon": "chart-bar",
+    "description": "Displays teacher dashboard statistics including next session, classes taught, and active students.",
+    "attributes": {
+        "showNextSession": {
+            "type": "boolean",
+            "default": true
+        },
+        "showCompletedSessions": {
+            "type": "boolean",
+            "default": true
+        },
+        "showScheduledSessions": {
+            "type": "boolean",
+            "default": true
+        },
+        "showActiveStudents": {
+            "type": "boolean",
+            "default": true
+        }
+    },
+    "supports": {
+        "html": false
+    },
+    "textdomain": "custom-theme",
+    "editorScript": "file:./build/index.js",
+    "render": "file:./render.php",
+    "viewScript": "file:./view.js"
+}

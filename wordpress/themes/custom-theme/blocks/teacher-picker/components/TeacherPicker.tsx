@@ -32,6 +32,11 @@ export default function TeacherPicker({
     return (teacher.firstName || teacher.name || "T").slice(0, 1).toUpperCase();
   };
 
+  const getAvatarUrl = (teacher: Teacher) => {
+    if (teacher.avatarUrl) return teacher.avatarUrl;
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(teacher.name)}`;
+  };
+
   // Register callback for date range changes
   useEffect(() => {
     if (!context) {
@@ -170,23 +175,18 @@ export default function TeacherPicker({
                   : "white";
               }}
             >
-              <div
+              <img
+                src={getAvatarUrl(teacher)}
+                alt={teacher.name}
                 style={{
                   width: "36px",
                   height: "36px",
                   borderRadius: "50%",
-                  background: "#e5e7eb",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#374151",
-                  fontWeight: "700",
-                  fontSize: "14px",
+                  objectFit: "cover",
                   flexShrink: 0,
+                  border: "2px solid #e5e7eb",
                 }}
-              >
-                {getInitials(teacher)}
-              </div>
+              />
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div
                   style={{

@@ -9,11 +9,24 @@ export interface AdminResponse {
   updatedAt: string;
 }
 
+export interface TeacherLocation {
+  city: string;
+  country: string;
+  lat?: number;
+  lng?: number;
+}
+
 export interface TeacherResponse {
   id: number;
   tier: number;
   bio: string | null;
   isActive: boolean | number; // API returns number (0/1), but we transform to boolean
+  avatarUrl: string | null;
+  birthplace: TeacherLocation | null;
+  currentLocation: TeacherLocation | null;
+  specialties: string[] | null;
+  yearsExperience: number | null;
+  languagesSpoken: string[] | null;
   createdAt: string;
   updatedAt: string;
 }

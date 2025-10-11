@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -45,6 +46,7 @@ export interface CreatePaymentIntentResponse {
 @Injectable()
 export class PaymentsService {
   private stripe: Stripe;
+  private readonly logger = new Logger(PaymentsService.name);
 
   constructor(
     @InjectRepository(Student)
@@ -113,7 +115,7 @@ export class PaymentsService {
       await this.packagesService.linkUseToBooking(use.id, saved.id);
     } catch (e) {
       // log but don't fail booking
-      console.warn('Failed to link package use to booking', e);
+      this.logger.warn('Failed to link package use to booking', e as Error);
     }
 
     return saved;
@@ -304,14 +306,14 @@ export class PaymentsService {
         break;
       // Add more event types as needed
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        this.logger.debug(`Unhandled event type: ${event.type}`);
     }
   }
 
   private async handlePaymentIntentSucceeded(
     paymentIntent: Stripe.PaymentIntent,
   ): Promise<void> {
-    console.log('Handling payment_intent.succeeded event');
+    this.logger.debug('Handling payment_intent.succeeded event');
     const metadata: ParsedStripeMetadata = StripeMetadataUtils.fromStripeFormat(
       paymentIntent.metadata || {},
     );
@@ -344,11 +346,11 @@ export class PaymentsService {
             await tx.save(Booking, booking);
           }
         });
-        console.log(
+        this.logger.log(
           `Promoted draft session ${sessionId} & booking ${bookingId} after successful payment`,
         );
       } catch (e) {
-        console.error('Error promoting draft session/booking:', e);
+        this.logger.error('Error promoting draft session/booking:', e as Error);
       }
     } else {
       // Legacy path: create session + booking from metadata
@@ -360,7 +362,9 @@ export class PaymentsService {
     paymentIntent: Stripe.PaymentIntent,
     metadata: ParsedStripeMetadata,
   ): Promise<void> {
-    console.log('Handling package purchase from payment_intent.succeeded');
+    this.logger.debug(
+      'Handling package purchase from payment_intent.succeeded',
+    );
 
     // Get package details from Stripe price
     const priceId = String(metadata.price_id);
@@ -380,7 +384,10 @@ export class PaymentsService {
     const serviceType = packageMetadata.service_type || 'PRIVATE';
 
     if (credits <= 0) {
-      console.error('Package has no credits defined:', packageMetadata);
+      this.logger.error(
+        'Package has no credits defined:',
+        JSON.stringify(packageMetadata),
+      );
       return;
     }
 
@@ -395,7 +402,7 @@ export class PaymentsService {
     });
 
     if (!student) {
-      console.error(`Student not found for user ${userId}`);
+      this.logger.warn(`Student not found for user ${userId}`);
       return;
     }
 
@@ -409,7 +416,7 @@ export class PaymentsService {
 
         let savedPackage: StudentPackage;
         if (existingPackage) {
-          console.log(
+          this.logger.log(
             `Package already exists for payment ${paymentIntent.id}, webhook duplicate/retry detected`,
           );
           savedPackage = existingPackage;
@@ -443,7 +450,7 @@ export class PaymentsService {
           });
 
           savedPackage = await tx.save(StudentPackage, studentPackage);
-          console.log(
+          this.logger.log(
             `Created student package ${savedPackage.id} with ${credits} credits`,
           );
         }
@@ -457,12 +464,14 @@ export class PaymentsService {
           });
 
           if (!session) {
-            console.error(`Session ${sessionId} not found for package booking`);
+            this.logger.warn(
+              `Session ${sessionId} not found for package booking`,
+            );
             return;
           }
 
           if (session.status !== SessionStatus.DRAFT) {
-            console.error(
+            this.logger.warn(
               `Session ${sessionId} is not in DRAFT status, cannot book with package`,
             );
             return;
@@ -498,12 +507,12 @@ export class PaymentsService {
               existingBooking.studentPackageId = savedPackage.id;
               existingBooking.creditsCost = 1;
               savedBooking = await tx.save(Booking, existingBooking);
-              console.log(
+              this.logger.log(
                 `Updated existing draft booking ${savedBooking.id} to confirmed status using package credit`,
               );
             } else {
               // Booking already exists and is confirmed - webhook duplicate/retry
-              console.log(
+              this.logger.log(
                 `Booking already exists for session ${sessionId} and student ${student.id} with status ${existingBooking.status}, skipping creation`,
               );
               savedBooking = existingBooking;
@@ -519,7 +528,7 @@ export class PaymentsService {
               creditsCost: 1,
             });
             savedBooking = await tx.save(Booking, booking);
-            console.log(
+            this.logger.log(
               `Created new confirmed booking ${savedBooking.id} using package credit`,
             );
           }
@@ -532,15 +541,16 @@ export class PaymentsService {
           session.status = SessionStatus.SCHEDULED;
           await tx.save(Session, session);
 
-          console.log(
+          this.logger.log(
             `Created booking ${savedBooking.id} using package credit`,
           );
         }
       });
-
-      console.log(`Successfully processed package purchase for user ${userId}`);
+      this.logger.log(
+        `Successfully processed package purchase for user ${userId}`,
+      );
     } catch (error) {
-      console.error('Error processing package purchase:', error);
+      this.logger.error('Error processing package purchase:', error as Error);
       throw error;
     }
   }
@@ -549,7 +559,7 @@ export class PaymentsService {
     paymentIntent: Stripe.PaymentIntent,
   ): Promise<void> {
     // For now, we only log failures; fulfillment is driven by success events.
-    console.warn(
+    this.logger.warn(
       `Payment failed for intent ${paymentIntent.id}: ${paymentIntent.last_payment_error?.message}`,
     );
     const metadata: ParsedStripeMetadata = StripeMetadataUtils.fromStripeFormat(
@@ -577,11 +587,14 @@ export class PaymentsService {
             await tx.save(Booking, booking);
           }
         });
-        console.log(
+        this.logger.log(
           `Cancelled draft session ${sessionId} & booking ${bookingId} after failed payment`,
         );
       } catch (e) {
-        console.error('Error cancelling draft session/booking:', e);
+        this.logger.error(
+          'Error cancelling draft session/booking:',
+          e as Error,
+        );
       }
     }
   }
@@ -593,7 +606,7 @@ export class PaymentsService {
       // Determine student from metadata
       const studentIdRaw = metadata.student_id;
       if (!studentIdRaw) {
-        console.error('Stripe metadata missing student_id; cannot fulfill');
+        this.logger.warn('Stripe metadata missing student_id; cannot fulfill');
         return;
       }
 
@@ -617,24 +630,26 @@ export class PaymentsService {
         });
 
         if (!existingSession) {
-          console.error(`Session ${sessionId} not found or has been deleted`);
+          this.logger.warn(
+            `Session ${sessionId} not found or has been deleted`,
+          );
           return;
         }
 
         if (existingSession.type !== serviceType) {
-          console.error(
+          this.logger.warn(
             `Session type mismatch: expected ${serviceType}, got ${existingSession.type}`,
           );
           return;
         }
 
-        console.log(
+        this.logger.log(
           `Using existing ${serviceType} session ${sessionId} for student ${studentId}`,
         );
       } else {
         // For PRIVATE sessions: create new session (existing behavior)
         if (serviceType !== ServiceType.PRIVATE) {
-          console.error(
+          this.logger.warn(
             `Cannot create ${serviceType} session without existing session_id`,
           );
           return;
@@ -649,7 +664,7 @@ export class PaymentsService {
             studentId,
           });
         } catch (error) {
-          console.error(
+          this.logger.warn(
             `Availability validation failed for PRIVATE session: ${error instanceof Error ? error.message : error}`,
           );
           return;
@@ -692,7 +707,7 @@ export class PaymentsService {
 
         sessionId = result.session.id;
 
-        console.log(
+        this.logger.log(
           `Created new PRIVATE session ${sessionId} and booking for student ${studentId} in single transaction`,
         );
       }
@@ -713,12 +728,15 @@ export class PaymentsService {
           },
         );
 
-        console.log(
+        this.logger.log(
           `Created booking for existing ${serviceType} session ${sessionId} and student ${studentId}`,
         );
       }
     } catch (error) {
-      console.error('Error creating session and booking from intent:', error);
+      this.logger.error(
+        'Error creating session and booking from intent:',
+        error as Error,
+      );
       // Don't throw - we don't want webhook processing to fail
     }
   }

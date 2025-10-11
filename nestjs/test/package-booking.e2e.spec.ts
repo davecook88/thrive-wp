@@ -95,40 +95,61 @@ describe('Package Booking (e2e)', () => {
   });
 
   async function setupTestData() {
-    // Create test user
-    const userPartial: Partial<User> = {
-      email: 'test@example.com',
-      firstName: 'Test',
-      lastName: 'User',
-      passwordHash: 'hashed',
-    };
-    const user = userRepository.create(userPartial);
-    const savedUser = await userRepository.save(user);
+    // Create or reuse test user
+    const testEmail = 'test@example.com';
+    let savedUser = await userRepository.findOne({
+      where: { email: testEmail },
+    });
+    if (!savedUser) {
+      const userPartial: Partial<User> = {
+        email: testEmail,
+        firstName: 'Test',
+        lastName: 'User',
+        passwordHash: 'hashed',
+      };
+      const user = userRepository.create(userPartial);
+      savedUser = await userRepository.save(user);
+    }
     testUserId = savedUser.id;
 
-    // Create test student
-    const student = studentRepository.create({
-      userId: testUserId,
+    // Create or reuse test student (one-to-one with user)
+    let savedStudent = await studentRepository.findOne({
+      where: { userId: testUserId },
     });
-    const savedStudent = await studentRepository.save(student);
+    if (!savedStudent) {
+      const student = studentRepository.create({ userId: testUserId });
+      savedStudent = await studentRepository.save(student);
+    }
     testStudentId = savedStudent.id;
 
-    // Create test teacher (associate with a new user or reuse?) create separate user for clarity
-    const teacherUser = userRepository.create({
-      email: 'teacher@example.com',
-      firstName: 'Teach',
-      lastName: 'Er',
-      passwordHash: 'hashed',
+    // Create or reuse test teacher (use separate user for clarity)
+    const teacherEmail = 'teacher@example.com';
+    let savedTeacherUser = await userRepository.findOne({
+      where: { email: teacherEmail },
     });
-    const savedTeacherUser = await userRepository.save(teacherUser);
-    const teacherPartial: Partial<Teacher> = {
-      userId: savedTeacherUser.id,
-      tier: 10,
-      bio: null,
-      isActive: true,
-    };
-    const teacher = teacherRepository.create(teacherPartial);
-    const savedTeacher: Teacher = await teacherRepository.save(teacher);
+    if (!savedTeacherUser) {
+      const teacherUser = userRepository.create({
+        email: teacherEmail,
+        firstName: 'Teach',
+        lastName: 'Er',
+        passwordHash: 'hashed',
+      });
+      savedTeacherUser = await userRepository.save(teacherUser);
+    }
+
+    let savedTeacher = await teacherRepository.findOne({
+      where: { userId: savedTeacherUser.id },
+    });
+    if (!savedTeacher) {
+      const teacherPartial: Partial<Teacher> = {
+        userId: savedTeacherUser.id,
+        tier: 10,
+        bio: null,
+        isActive: true,
+      };
+      const teacher = teacherRepository.create(teacherPartial);
+      savedTeacher = await teacherRepository.save(teacher);
+    }
     testTeacherId = savedTeacher.id;
 
     // Create test session

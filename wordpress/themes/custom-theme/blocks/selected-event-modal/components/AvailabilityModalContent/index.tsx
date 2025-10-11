@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "@wordpress/element";
+import { useState } from "@wordpress/element";
 import type { AvailabilityEvent, Teacher } from "../../../../types/calendar";
 import { useGetTeachers } from "../../../hooks/get-teachers";
 import { useStudentCredits } from "../../../hooks/use-student-credits";
+import { buildBookingUrl } from "../../../../utils/booking";
 
 import Header from "./Header";
-import SelectedTeacherDetails from "./SelectedTeacherDetails";
+import TeacherSelectionPanel from "./TeacherSelectionPanel";
+import TeacherInfoPanel from "./TeacherInfoPanel";
+import PackagesFooter from "./PackagesFooter";
 
 type ModalAvailabilityEvent = AvailabilityEvent & {
   startLocal?: string;
@@ -19,39 +22,38 @@ export default function AvailabilityModalContent({
   event: ModalAvailabilityEvent;
 }) {
   const { loading: loadingTeachers, teachers } = useGetTeachers();
+  const {
+    packagesResponse,
+    totalRemaining,
+    refetch: refetchCredits,
+  } = useStudentCredits();
 
-  const hasCredits = useMemo(() => {
-    const user = (event as any)?.user || (event as any)?.currentUser || {};
-    return (
-      (typeof user?.credits === "number" && user.credits > 0) ||
-      Boolean(user?.hasPackage) ||
-      Boolean((event as any)?.userHasPackage)
-    );
-  }, [event]);
-
-  const [bookingState, setBookingState] = useState<null | string>(null);
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
-  const detailsRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    if (selectedTeacher && detailsRef.current) {
-      try {
-        detailsRef.current.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      } catch {
-        /* no-op */
-      }
-    }
-  }, [selectedTeacher]);
+  const packages = packagesResponse?.packages ?? [];
+  const hasPackages = packages.length > 0;
+
+  const bookingConfirmationUrl = selectedTeacher
+    ? (() => {
+        try {
+          return buildBookingUrl({
+            startUtc: event.startUtc,
+            endUtc: event.endUtc,
+            teacherId: selectedTeacher.teacherId,
+            serviceType: event.type === "availability" ? "PRIVATE" : event.type,
+          });
+        } catch {
+          return null;
+        }
+      })()
+    : null;
 
   return (
     <div
       className="selected-event-modal__availability"
       style={{
-        width: "95vw",
-        height: "90vh",
+        width: "100%",
+        height: "100%",
         display: "flex",
         flexDirection: "column",
         fontFamily: "var(--wp--preset--font-family--inter)",
@@ -61,38 +63,41 @@ export default function AvailabilityModalContent({
         overflow: "hidden",
       }}
     >
+      {/* Fixed Header with Booking Information */}
+      <Header event={event} selectedTeacher={selectedTeacher} />
+
+      {/* Main Content Area with Side-by-Side Layout */}
       <div
         style={{
-          flex: 1,
           display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
+          flex: 1,
+          minHeight: 0, // Important for flex children to respect overflow
         }}
       >
-        <Header
-          event={event}
-          selectedTeacher={selectedTeacher}
-          setSelectedTeacher={setSelectedTeacher}
+        {/* Left Side - Teacher Selection */}
+        <TeacherSelectionPanel
           teachers={teachers}
-          loadingTeachers={loadingTeachers}
+          selectedTeacher={selectedTeacher}
+          onTeacherSelect={setSelectedTeacher}
+          loading={loadingTeachers}
+          availableTeacherCount={event?.teacherIds?.length ?? 0}
         />
 
-        {selectedTeacher && (
-          <div
-            ref={detailsRef}
-            style={{
-              flex: 1,
-              overflowY: "auto",
-              borderTop: "1px solid var(--wp--preset--color--gray-200)",
-            }}
-          >
-            <SelectedTeacherDetails
-              selectedTeacher={selectedTeacher}
-              setSelectedTeacher={setSelectedTeacher}
-            />
-          </div>
-        )}
+        {/* Right Side - Teacher Information */}
+        <TeacherInfoPanel selectedTeacher={selectedTeacher} />
       </div>
+
+      {/* Fixed Footer - Your Packages */}
+      {hasPackages && (
+        <PackagesFooter
+          packages={packages}
+          selectedTeacher={selectedTeacher}
+          event={event}
+          bookingConfirmationUrl={bookingConfirmationUrl}
+          totalRemaining={totalRemaining}
+          onBookingSuccess={refetchCredits}
+        />
+      )}
     </div>
   );
 }

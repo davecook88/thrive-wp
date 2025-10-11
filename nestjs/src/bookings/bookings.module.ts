@@ -7,6 +7,7 @@ import { StudentPackage } from '../packages/entities/student-package.entity.js';
 
 import { PoliciesModule } from '../policies/policies.module.js';
 import { PackagesModule } from '../packages/packages.module.js';
+import { WaitlistsModule } from '../waitlists/waitlists.module.js';
 import { BookingsService } from './bookings.service.js';
 import { BookingsController } from './bookings.controller.js';
 
@@ -15,6 +16,7 @@ import { BookingsController } from './bookings.controller.js';
     TypeOrmModule.forFeature([Booking, Session, Student, StudentPackage]),
     PoliciesModule,
     PackagesModule,
+    WaitlistsModule,
   ],
   providers: [BookingsService],
   controllers: [BookingsController],

@@ -1,5 +1,10 @@
 /* Selected Event Modal - frontend styles */
 
+/* Prevent body scrolling when modal is open */
+.selected-event-modal--open {
+  overflow: hidden !important;
+}
+
 /* Scope to WordPress Modal injected content */
 .thrive-modal.components-modal__frame {
   /* max-width: 720px;
@@ -11,11 +16,18 @@
 /* Modal content area */
 .thrive-modal .components-modal__content {
   padding: 24px 28px;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 /* Title bar */
 .thrive-modal .components-modal__header {
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+.components-modal__content > div {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 /* Body content default typography spacing */
@@ -44,5 +56,11 @@
 
 /* Ensure overlay uses full viewport height without causing horizontal scroll */
 .components-modal__screen-overlay {
+  overflow-y: auto;
+}
+
+/* Make modal content scrollable when it exceeds viewport height */
+.thrive-modal .components-modal__content {
+  max-height: 100vh;
   overflow-y: auto;
 }

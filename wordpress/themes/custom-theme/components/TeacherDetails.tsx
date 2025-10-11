@@ -5,6 +5,11 @@ interface TeacherDetailsProps {
 }
 
 export default function TeacherDetails({ teacher }: TeacherDetailsProps) {
+  const getAvatarUrl = () => {
+    if (teacher.avatarUrl) return teacher.avatarUrl;
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(teacher.name)}`;
+  };
+
   return (
     <div
       style={{
@@ -24,10 +29,7 @@ export default function TeacherDetails({ teacher }: TeacherDetailsProps) {
         }}
       >
         <img
-          src={
-            (teacher as any)?.avatar ||
-            `https://api.dicebear.com/7.x/avataaars/svg?seed=${teacher.name}`
-          }
+          src={getAvatarUrl()}
           alt={teacher.name}
           style={{
             width: 120,
@@ -193,54 +195,50 @@ export default function TeacherDetails({ teacher }: TeacherDetailsProps) {
       </div>
 
       {/* Specialties */}
-      <div
-        style={{
-          background: "white",
-          padding: "2rem",
-          borderRadius: "var(--wp--custom--border-radius)",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-        }}
-      >
-        <h3
-          style={{
-            margin: "0 0 1rem 0",
-            fontSize: "1.3rem",
-            fontWeight: "600",
-            color: "var(--wp--preset--color--foreground)",
-          }}
-        >
-          Specialties
-        </h3>
+      {teacher.specialties && teacher.specialties.length > 0 && (
         <div
           style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "0.75rem",
+            background: "white",
+            padding: "2rem",
+            borderRadius: "var(--wp--custom--border-radius)",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
           }}
         >
-          {[
-            "Conversational Spanish",
-            "Business Spanish",
-            "Cultural Immersion",
-            "Grammar Focus",
-            "Pronunciation",
-          ].map((specialty) => (
-            <span
-              key={specialty}
-              style={{
-                background: "var(--wp--preset--color--gray-100)",
-                color: "var(--wp--preset--color--gray-700)",
-                padding: "0.5rem 1rem",
-                borderRadius: "var(--wp--custom--border-radius)",
-                fontSize: "0.9rem",
-                fontWeight: "500",
-              }}
-            >
-              {specialty}
-            </span>
-          ))}
+          <h3
+            style={{
+              margin: "0 0 1rem 0",
+              fontSize: "1.3rem",
+              fontWeight: "600",
+              color: "var(--wp--preset--color--foreground)",
+            }}
+          >
+            Specialties
+          </h3>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "0.75rem",
+            }}
+          >
+            {teacher.specialties.map((specialty, index) => (
+              <span
+                key={index}
+                style={{
+                  background: "var(--wp--preset--color--gray-100)",
+                  color: "var(--wp--preset--color--gray-700)",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "var(--wp--custom--border-radius)",
+                  fontSize: "0.9rem",
+                  fontWeight: "500",
+                }}
+              >
+                {specialty}
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -66,6 +66,7 @@ export class BookingsController {
     @Body(new ZodValidationPipe(CancelBookingSchema)) dto: CancelBookingDto,
     @Request() req: ExpressRequest,
   ) {
+    console.debug(`[DEBUG] cancelBooking called for bookingId=${bookingId}`);
     // Extract user ID from X-Auth headers injected by Nginx
     const userId = req.headers['x-auth-user-id'] as string;
 
@@ -73,10 +74,19 @@ export class BookingsController {
       throw new UnauthorizedException('Authentication required');
     }
 
-    return this.bookingsService.cancelBooking(
-      bookingId,
-      parseInt(userId, 10),
-      dto,
-    );
+    try {
+      return await this.bookingsService.cancelBooking(
+        bookingId,
+        parseInt(userId, 10),
+        dto,
+      );
+    } catch (err) {
+      console.error(
+        '[DEBUG] cancelBooking error:',
+        err?.message ?? err,
+        err?.stack ?? 'no-stack',
+      );
+      throw err;
+    }
   }
 }

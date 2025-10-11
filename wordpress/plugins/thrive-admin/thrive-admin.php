@@ -20,6 +20,7 @@ if (!defined('ABSPATH')) {
 
 require_once plugin_dir_path(__FILE__) . 'includes/class-thrive-admin-bridge.php';
 require_once plugin_dir_path(__FILE__) . 'includes/admin/bridge-admin.php';
+require_once plugin_dir_path(__FILE__) . 'includes/api/class-profile-picture-upload.php';
 
 function thrive_admin_run_bridge()
 {
@@ -28,3 +29,12 @@ function thrive_admin_run_bridge()
 }
 
 thrive_admin_run_bridge();
+
+/**
+ * Initialize REST API endpoints.
+ */
+function thrive_admin_init_rest_api()
+{
+    new Thrive_Profile_Picture_API();
+}
+add_action('rest_api_init', 'thrive_admin_init_rest_api');

@@ -1574,10 +1574,10 @@ This plan implements Group Classes as a comprehensive feature that:
 - [x] Implement getAvailableSessions() with enrollment counting
 - [x] Create endpoint GET /group-classes/available (student view)
 - [x] Extend booking flow to support GROUP sessions
-- [ ] Write integration tests for booking group sessions
+- [ ] Write additional integration tests for booking group sessions
 
 ### Phase 3: Waitlist
-- [ ] Extend Waitlist entity with notification fields
+- [x] Extend Waitlist entity with notification fields
 - [ ] Implement WaitlistsService methods
 - [ ] Create waitlist endpoints (join, leave, list)
 - [ ] Integrate waitlist notification on booking cancellation

@@ -29,6 +29,17 @@ add_action('wp_enqueue_scripts', function () {
             wp_enqueue_style('wp-components');
         }
     }
+
+    // Enqueue compiled CSS for blocks
+    $view_css = get_template_directory() . '/build/view.index.ts.css';
+    if (file_exists($view_css)) {
+        wp_enqueue_style(
+            'custom-theme-blocks-view',
+            get_template_directory_uri() . '/build/view.index.ts.css',
+            array(),
+            filemtime($view_css)
+        );
+    }
 });
 
 // Register all block.json in blocks/* directories

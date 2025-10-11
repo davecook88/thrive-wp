@@ -1,0 +1,225 @@
+/**
+ * Teacher Info Block Styles
+ * Uses container queries for true component-level responsiveness
+ */
+
+.teacher-info {
+  container-type: inline-size;
+  container-name: teacher-info;
+}
+
+.teacher-info__content {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.teacher-info__avatar {
+  flex-shrink: 0;
+}
+
+.teacher-info__details {
+  flex: 1;
+  min-width: 0; /* Prevent overflow */
+}
+
+.teacher-info__name {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--wp--preset--color--foreground, #1a1a1a);
+}
+
+.teacher-info__locations {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.teacher-info__location {
+  font-size: 0.9rem;
+  color: var(--wp--preset--color--gray-600, #6b7280);
+}
+
+.teacher-info__location-label {
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.teacher-info__location-value {
+  color: var(--wp--preset--color--gray-700, #374151);
+}
+
+.teacher-info__bio {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--wp--preset--color--gray-700, #374151);
+}
+
+.teacher-info__specialties {
+  margin-bottom: 1rem;
+}
+
+.teacher-info__specialties-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--wp--preset--color--foreground, #1a1a1a);
+}
+
+.teacher-info__specialties-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.teacher-info__specialty-tag {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: var(--wp--preset--color--gray-100, #f3f4f6);
+  color: var(--wp--preset--color--gray-700, #374151);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.teacher-info__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.teacher-info__stat {
+  font-size: 0.9rem;
+  color: var(--wp--preset--color--gray-600, #6b7280);
+}
+
+.teacher-info__stat strong {
+  color: var(--wp--preset--color--primary, #2563eb);
+  font-weight: 600;
+}
+
+.teacher-info__map {
+  margin-top: 1rem;
+}
+
+.teacher-info__map img {
+  border: 1px solid var(--wp--preset--color--gray-200, #e5e7eb);
+}
+
+/* Layout variations */
+.teacher-info--vertical .teacher-info__content {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.teacher-info--vertical .teacher-info__details {
+  width: 100%;
+}
+
+.teacher-info--vertical .teacher-info__locations,
+.teacher-info--vertical .teacher-info__specialties-list {
+  justify-content: center;
+}
+
+.teacher-info--card .teacher-info__content {
+  flex-direction: column;
+  align-items: center;
+}
+
+.teacher-info--card .teacher-info__avatar {
+  margin-bottom: 0.5rem;
+}
+
+.teacher-info--card .teacher-info__name {
+  text-align: center;
+}
+
+.teacher-info--card .teacher-info__bio {
+  text-align: center;
+}
+
+/* Size variations */
+.teacher-info--small .teacher-info__name {
+  font-size: 1.25rem;
+}
+
+.teacher-info--small .teacher-info__bio {
+  font-size: 0.875rem;
+}
+
+.teacher-info--large .teacher-info__name {
+  font-size: 2rem;
+}
+
+.teacher-info--large .teacher-info__bio {
+  font-size: 1.125rem;
+}
+
+.teacher-info--large .teacher-info__content {
+  gap: 2rem;
+}
+
+/* Skeleton loading animation */
+.teacher-info--skeleton .skeleton-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Container queries for responsiveness */
+@container teacher-info (max-width: 400px) {
+  .teacher-info--horizontal .teacher-info__content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .teacher-info__name {
+    font-size: 1.25rem;
+  }
+
+  .teacher-info__bio {
+    font-size: 0.875rem;
+  }
+
+  .teacher-info__specialties-list {
+    justify-content: center;
+  }
+}
+
+@container teacher-info (min-width: 401px) and (max-width: 768px) {
+  .teacher-info--horizontal .teacher-info__content {
+    gap: 1rem;
+  }
+
+  .teacher-info__name {
+    font-size: 1.35rem;
+  }
+}
+
+@container teacher-info (min-width: 769px) {
+  .teacher-info--horizontal .teacher-info__content {
+    gap: 2rem;
+  }
+
+  .teacher-info__name {
+    font-size: 1.75rem;
+  }
+
+  .teacher-info__bio {
+    font-size: 1.05rem;
+  }
+}

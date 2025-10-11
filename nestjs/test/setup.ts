@@ -26,6 +26,8 @@ const setup = async () => {
   migrated = true;
 };
 
-beforeEach(async () => {
+// Run migrations once before all tests in a single test file to avoid repeated
+// initialize/destroy cycles which can race with Jest's environment teardown.
+beforeAll(async () => {
   await setup();
 });

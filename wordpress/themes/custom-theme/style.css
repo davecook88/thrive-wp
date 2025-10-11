@@ -190,6 +190,93 @@ body {
   opacity: 0.9;
 }
 
+/* Teacher Stats Widget */
+.teacher-stats-widget {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.teacher-stats-widget .stat-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.teacher-stats-widget .stat-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #d1d5db;
+}
+
+.teacher-stats-widget .stat-card.next-session {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+}
+
+.teacher-stats-widget .stat-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 0 0 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.teacher-stats-widget .next-session .stat-label {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.teacher-stats-widget .stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.teacher-stats-widget .session-time {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.teacher-stats-widget .session-student,
+.teacher-stats-widget .session-type {
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.teacher-stats-widget.loading,
+.teacher-stats-widget.error {
+  padding: 2rem;
+  text-align: center;
+}
+
+.teacher-stats-widget.loading {
+  color: #6b7280;
+}
+
+.teacher-stats-widget.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+}
+
+/* Teacher Calendar */
+.teacher-calendar-wrapper {
+  min-height: 600px;
+}
+
+.teacher-calendar-wrapper thrive-calendar {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 /* Package Details */
 .student-package-details {
   padding: 0;

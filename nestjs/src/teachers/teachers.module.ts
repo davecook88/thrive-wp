@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { TeachersController } from './teachers.controller.js';
+import {
+  TeachersController,
+  TeachersStatsController,
+} from './teachers.controller.js';
+import { TeachersProfileController } from './teachers-profile.controller.js';
 import { TeachersService } from './teachers.service.js';
 import { TeacherAvailabilityService } from './services/teacher-availability.service.js';
 import { Teacher } from './entities/teacher.entity.js';
@@ -14,7 +18,12 @@ import { TeachersPublicController } from './teachers.public.controller.js';
     TypeOrmModule.forFeature([Teacher, TeacherAvailability, Session]),
     AuthModule, // Import AuthModule to make AuthService available
   ],
-  controllers: [TeachersController, TeachersPublicController],
+  controllers: [
+    TeachersController,
+    TeachersStatsController,
+    TeachersProfileController,
+    TeachersPublicController,
+  ],
   providers: [TeachersService, TeacherAvailabilityService],
   exports: [TeachersService, TeacherAvailabilityService],
 })

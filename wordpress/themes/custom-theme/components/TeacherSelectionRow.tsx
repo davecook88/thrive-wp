@@ -14,6 +14,11 @@ export default function TeacherSelectionRow({
   onTeacherSelect,
   loading = false,
 }: TeacherSelectionRowProps) {
+  const getAvatarUrl = (teacher: Teacher) => {
+    if (teacher.avatarUrl) return teacher.avatarUrl;
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(teacher.name)}`;
+  };
+
   if (loading) {
     return (
       <div
@@ -83,10 +88,7 @@ export default function TeacherSelectionRow({
           }}
         >
           <img
-            src={
-              (t as any)?.avatar ||
-              `https://api.dicebear.com/7.x/avataaars/svg?seed=${t.name}`
-            }
+            src={getAvatarUrl(t)}
             alt={t.name}
             style={{
               width: 60,

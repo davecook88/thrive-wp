@@ -1,0 +1,17 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "custom-theme/teacher-profile-form",
+  "title": "Teacher Profile Form",
+  "category": "thrive",
+  "description": "Form for teachers to edit their profile information",
+  "keywords": ["teacher", "profile", "form", "edit"],
+  "textdomain": "custom-theme",
+  "supports": {
+    "html": false,
+    "align": ["wide", "full"]
+  },
+  "editorScript": "custom-theme-blocks",
+  "viewScript": "custom-theme-blocks-view",
+  "render": "file:./render.php"
+}

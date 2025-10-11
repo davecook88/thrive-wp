@@ -10,7 +10,7 @@ import { TeachersService } from './teachers.service.js';
 import { PreviewAvailabilityDto } from './dto/availability.dto.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Teacher } from './entities/teacher.entity.js';
+import { Teacher, TeacherLocation } from './entities/teacher.entity.js';
 
 interface PublicTeacherDto {
   userId: number;
@@ -19,6 +19,12 @@ interface PublicTeacherDto {
   lastName: string;
   name: string;
   bio: string | null;
+  avatarUrl: string | null;
+  birthplace: TeacherLocation | null;
+  currentLocation: TeacherLocation | null;
+  specialties: string[] | null;
+  yearsExperience: number | null;
+  languagesSpoken: string[] | null;
 }
 
 @Controller('teachers')
@@ -43,16 +49,22 @@ export class TeachersPublicController {
     return teachers.map((t) => ({
       userId: t.userId,
       teacherId: t.id,
-      firstName: (t.user as any)?.firstName ?? '',
-      lastName: (t.user as any)?.lastName ?? '',
+      firstName: t.user?.firstName ?? '',
+      lastName: t.user?.lastName ?? '',
       name:
         [
-          ((t.user as any)?.firstName ?? '').trim(),
-          ((t.user as any)?.lastName ?? '').trim(),
+          (t.user?.firstName ?? '').trim(),
+          (t.user?.lastName ?? '').trim(),
         ]
           .filter(Boolean)
           .join(' ') || 'Teacher',
       bio: t.bio ?? null,
+      avatarUrl: t.avatarUrl ?? null,
+      birthplace: t.birthplace ?? null,
+      currentLocation: t.currentLocation ?? null,
+      specialties: t.specialties ?? null,
+      yearsExperience: t.yearsExperience ?? null,
+      languagesSpoken: t.languagesSpoken ?? null,
     }));
   }
 

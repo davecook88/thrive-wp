@@ -125,6 +125,13 @@ export class InvalidCalendarContextError extends Error {
   }
 }
 
+export interface TeacherLocation {
+  city: string;
+  country: string;
+  lat?: number;
+  lng?: number;
+}
+
 export interface Teacher {
   userId: number;
   teacherId: number;
@@ -132,4 +139,10 @@ export interface Teacher {
   lastName: string;
   name: string;
   bio: string | null;
+  avatarUrl: string | null;
+  birthplace: TeacherLocation | null;
+  currentLocation: TeacherLocation | null;
+  specialties: string[] | null;
+  yearsExperience: number | null;
+  languagesSpoken: string[] | null;
 }

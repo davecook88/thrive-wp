@@ -13,6 +13,16 @@ import type { CourseTeacher } from '../../course-teachers/entities/course-teache
 import { TeacherAvailability } from './teacher-availability.entity.js';
 
 /**
+ * Location information for teacher (birthplace or current location)
+ */
+export interface TeacherLocation {
+  city: string;
+  country: string;
+  lat?: number;
+  lng?: number;
+}
+
+/**
  * Teacher entity represents extended profile & configuration for a user who can teach.
  * A user may have at most one teacher record (one-to-one). Soft deletes supported.
  */
@@ -56,6 +66,102 @@ export class Teacher extends BaseEntity {
     comment: 'Whether the teacher is active & selectable for scheduling',
   })
   isActive: boolean;
+
+  @Column({
+    name: 'avatar_url',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+    comment: 'URL to teacher profile picture',
+  })
+  avatarUrl: string | null;
+
+  @Column({
+    name: 'birthplace',
+    type: 'text',
+    nullable: true,
+    comment: 'JSON object with city, country, lat, lng for birthplace',
+    transformer: {
+      to: (value: TeacherLocation | null) =>
+        value ? JSON.stringify(value) : null,
+      from: (value: string | null) => {
+        if (!value) return null;
+        try {
+          return JSON.parse(value);
+        } catch {
+          return null;
+        }
+      },
+    },
+  })
+  birthplace: TeacherLocation | null;
+
+  @Column({
+    name: 'current_location',
+    type: 'text',
+    nullable: true,
+    comment: 'JSON object with city, country, lat, lng for current location',
+    transformer: {
+      to: (value: TeacherLocation | null) =>
+        value ? JSON.stringify(value) : null,
+      from: (value: string | null) => {
+        if (!value) return null;
+        try {
+          return JSON.parse(value);
+        } catch {
+          return null;
+        }
+      },
+    },
+  })
+  currentLocation: TeacherLocation | null;
+
+  @Column({
+    name: 'specialties',
+    type: 'text',
+    nullable: true,
+    comment: 'JSON array of teaching specialties',
+    transformer: {
+      to: (value: string[] | null) => (value ? JSON.stringify(value) : null),
+      from: (value: string | null) => {
+        if (!value) return null;
+        try {
+          return JSON.parse(value);
+        } catch {
+          return null;
+        }
+      },
+    },
+  })
+  specialties: string[] | null;
+
+  @Column({
+    name: 'years_experience',
+    type: 'smallint',
+    unsigned: true,
+    nullable: true,
+    comment: 'Years of teaching experience',
+  })
+  yearsExperience: number | null;
+
+  @Column({
+    name: 'languages_spoken',
+    type: 'text',
+    nullable: true,
+    comment: 'JSON array of languages spoken',
+    transformer: {
+      to: (value: string[] | null) => (value ? JSON.stringify(value) : null),
+      from: (value: string | null) => {
+        if (!value) return null;
+        try {
+          return JSON.parse(value);
+        } catch {
+          return null;
+        }
+      },
+    },
+  })
+  languagesSpoken: string[] | null;
 
   @OneToMany(
     () => TeacherAvailability,

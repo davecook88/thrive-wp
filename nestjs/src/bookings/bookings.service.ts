@@ -12,6 +12,7 @@ import { Student } from '../students/entities/student.entity.js';
 import { StudentPackage } from '../packages/entities/student-package.entity.js';
 import { PoliciesService } from '../policies/policies.service.js';
 import { ServiceType } from '../common/types/class-types.js';
+import { WaitlistsService } from '../waitlists/waitlists.service.js';
 import { z } from 'zod';
 
 export const CancelBookingSchema = z.object({
@@ -53,6 +54,7 @@ export class BookingsService {
     @InjectRepository(StudentPackage)
     private readonly studentPackageRepository: Repository<StudentPackage>,
     private readonly policiesService: PoliciesService,
+    private readonly waitlistsService: WaitlistsService,
   ) {}
 
   async createBooking(
@@ -285,9 +287,10 @@ export class BookingsService {
         await manager.update(Session, booking.sessionId, {
           status: SessionStatus.CANCELLED,
         });
-      } else {
+      } else if (booking.session.type === ServiceType.GROUP) {
         // For group sessions, we just remove the booking, but the session remains active
         // and we might want to notify the waitlist
+        await this.waitlistsService.handleBookingCancellation(booking.sessionId);
       }
     });
 

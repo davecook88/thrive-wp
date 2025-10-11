@@ -262,7 +262,85 @@ export class TeachersService {
           .filter(Boolean)
           .join(' ') || 'Teacher',
       bio: t.bio ?? null,
+      avatarUrl: t.avatarUrl ?? null,
+      birthplace: t.birthplace ?? null,
+      currentLocation: t.currentLocation ?? null,
+      specialties: t.specialties ?? null,
+      yearsExperience: t.yearsExperience ?? null,
+      languagesSpoken: t.languagesSpoken ?? null,
     };
+  }
+
+  async getMyProfile(userId: number) {
+    const t = await this.teacherRepository
+      .createQueryBuilder('t')
+      .leftJoinAndSelect('t.user', 'u')
+      .where('t.user_id = :userId', { userId })
+      .getOne();
+    if (!t) {
+      throw new NotFoundException('Teacher profile not found');
+    }
+    return {
+      userId: t.userId,
+      teacherId: t.id,
+      firstName: t.user?.firstName ?? '',
+      lastName: t.user?.lastName ?? '',
+      email: t.user?.email ?? '',
+      bio: t.bio ?? null,
+      avatarUrl: t.avatarUrl ?? null,
+      birthplace: t.birthplace ?? null,
+      currentLocation: t.currentLocation ?? null,
+      specialties: t.specialties ?? null,
+      yearsExperience: t.yearsExperience ?? null,
+      languagesSpoken: t.languagesSpoken ?? null,
+      tier: t.tier,
+      isActive: t.isActive,
+    };
+  }
+
+  async updateMyProfile(
+    userId: number,
+    updateData: {
+      bio?: string | null;
+      avatarUrl?: string | null;
+      birthplace?: { city: string; country: string; lat?: number; lng?: number };
+      currentLocation?: {
+        city: string;
+        country: string;
+        lat?: number;
+        lng?: number;
+      };
+      specialties?: string[];
+      yearsExperience?: number;
+      languagesSpoken?: string[];
+    },
+  ) {
+    const teacher = await this.teacherRepository.findOne({
+      where: { userId },
+    });
+
+    if (!teacher) {
+      throw new NotFoundException('Teacher profile not found');
+    }
+
+    // Update only provided fields (explicitly allow null to clear fields)
+    if (updateData.bio !== undefined) teacher.bio = updateData.bio;
+    if (updateData.avatarUrl !== undefined)
+      teacher.avatarUrl = updateData.avatarUrl;
+    if (updateData.birthplace !== undefined)
+      teacher.birthplace = updateData.birthplace;
+    if (updateData.currentLocation !== undefined)
+      teacher.currentLocation = updateData.currentLocation;
+    if (updateData.specialties !== undefined)
+      teacher.specialties = updateData.specialties;
+    if (updateData.yearsExperience !== undefined)
+      teacher.yearsExperience = updateData.yearsExperience;
+    if (updateData.languagesSpoken !== undefined)
+      teacher.languagesSpoken = updateData.languagesSpoken;
+
+    await this.teacherRepository.save(teacher);
+
+    return this.getMyProfile(userId);
   }
 
   private expandDayAvailability(
@@ -560,6 +638,201 @@ export class TeachersService {
       teacherId: Number(r.teacherId),
       startAt: new Date(r.startAt),
       endAt: new Date(r.endAt),
+    }));
+  }
+
+  async getTeacherStats(userId: number) {
+    const teacher = await this.teacherRepository.findOne({
+      where: { userId },
+    });
+
+    if (!teacher) {
+      return {
+        nextSession: null,
+        totalCompleted: 0,
+        totalScheduled: 0,
+        activeStudents: 0,
+      };
+    }
+
+    // Get next upcoming session
+    const nextSessionQuery = await this.dataSource.query<
+      {
+        id: number;
+        class_type: string;
+        start_at: Date;
+        end_at: Date;
+        student_id: number;
+        course_id: number | null;
+        meeting_url: string | null;
+        student_name: string;
+      }[]
+    >(
+      `
+      SELECT
+        s.id,
+        s.type as class_type,
+        s.start_at,
+        s.end_at,
+        b.student_id,
+        s.course_id,
+        s.meeting_url,
+        u.first_name || ' ' || u.last_name as student_name
+      FROM session s
+      JOIN booking b ON b.session_id = s.id
+      JOIN student st ON st.id = b.student_id
+      JOIN user u ON u.id = st.user_id
+      WHERE s.teacher_id = ?
+      AND s.deleted_at IS NULL
+      AND b.status = 'CONFIRMED'
+      AND s.status = 'SCHEDULED'
+      AND s.start_at > NOW()
+      ORDER BY s.start_at ASC
+      LIMIT 1
+    `,
+      [teacher.id],
+    );
+
+    const nextSession = nextSessionQuery[0]
+      ? {
+          id: nextSessionQuery[0].id,
+          classType: nextSessionQuery[0].class_type,
+          startAt: new Date(nextSessionQuery[0].start_at).toISOString(),
+          endAt: new Date(nextSessionQuery[0].end_at).toISOString(),
+          studentId: nextSessionQuery[0].student_id,
+          studentName: nextSessionQuery[0].student_name,
+          courseId: nextSessionQuery[0].course_id,
+          meetingUrl: nextSessionQuery[0].meeting_url,
+        }
+      : null;
+
+    // Get total completed sessions
+    const completedResult = await this.dataSource.query<{ count: number }[]>(
+      `
+      SELECT COUNT(*) as count
+      FROM session s
+      JOIN booking b ON b.session_id = s.id
+      WHERE s.teacher_id = ?
+      AND s.deleted_at IS NULL
+      AND b.status = 'CONFIRMED'
+      AND s.status = 'COMPLETED'
+    `,
+      [teacher.id],
+    );
+    const totalCompleted = Number(completedResult[0]?.count || 0);
+
+    // Get total scheduled sessions
+    const scheduledResult = await this.dataSource.query<{ count: number }[]>(
+      `
+      SELECT COUNT(*) as count
+      FROM session s
+      JOIN booking b ON b.session_id = s.id
+      WHERE s.teacher_id = ?
+      AND s.deleted_at IS NULL
+      AND b.status = 'CONFIRMED'
+      AND s.status = 'SCHEDULED'
+      AND s.start_at > NOW()
+    `,
+      [teacher.id],
+    );
+    const totalScheduled = Number(scheduledResult[0]?.count || 0);
+
+    // Get active students count (students with at least one confirmed booking)
+    const activeStudentsResult = await this.dataSource.query<
+      { count: number }[]
+    >(
+      `
+      SELECT COUNT(DISTINCT b.student_id) as count
+      FROM booking b
+      JOIN session s ON s.id = b.session_id
+      WHERE s.teacher_id = ?
+      AND s.deleted_at IS NULL
+      AND b.status = 'CONFIRMED'
+    `,
+      [teacher.id],
+    );
+    const activeStudents = Number(activeStudentsResult[0]?.count || 0);
+
+    return {
+      nextSession,
+      totalCompleted,
+      totalScheduled,
+      activeStudents,
+    };
+  }
+
+  async getTeacherSessions(
+    userId: number,
+    startDate?: string,
+    endDate?: string,
+  ) {
+    const teacher = await this.teacherRepository.findOne({
+      where: { userId },
+    });
+
+    if (!teacher) {
+      return [];
+    }
+
+    let query = `
+      SELECT
+        s.id,
+        s.type as class_type,
+        s.start_at,
+        s.end_at,
+        s.status,
+        b.student_id,
+        s.course_id,
+        s.meeting_url,
+        u.first_name || ' ' || u.last_name as student_name
+      FROM session s
+      JOIN booking b ON b.session_id = s.id
+      JOIN student st ON st.id = b.student_id
+      JOIN user u ON u.id = st.user_id
+      WHERE s.teacher_id = ?
+      AND s.deleted_at IS NULL
+      AND b.status = 'CONFIRMED'
+      AND s.status = 'SCHEDULED'
+    `;
+
+    const params: any[] = [teacher.id];
+
+    if (startDate) {
+      query += ' AND s.start_at >= ?';
+      params.push(startDate);
+    }
+
+    if (endDate) {
+      query += ' AND s.end_at <= ?';
+      params.push(endDate);
+    }
+
+    query += ' ORDER BY s.start_at ASC';
+
+    const sessions = await this.dataSource.query<
+      {
+        id: number;
+        class_type: string;
+        start_at: Date;
+        end_at: Date;
+        status: string;
+        student_id: number;
+        course_id: number | null;
+        meeting_url: string | null;
+        student_name: string;
+      }[]
+    >(query, params);
+
+    return sessions.map((session) => ({
+      id: session.id,
+      classType: session.class_type,
+      startAt: new Date(session.start_at).toISOString(),
+      endAt: new Date(session.end_at).toISOString(),
+      status: session.status,
+      studentId: session.student_id,
+      studentName: session.student_name,
+      courseId: session.course_id,
+      meetingUrl: session.meeting_url,
     }));
   }
 }
