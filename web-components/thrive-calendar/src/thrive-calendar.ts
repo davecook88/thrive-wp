@@ -1,6 +1,6 @@
 import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import type { ViewMode, UIMode, CalendarEvent } from "./types.js";
+import type { ViewMode, CalendarEvent } from "./types.js";
 
 import "./components/toolbar.ts";
 import "./components/week-view.ts";
@@ -40,8 +40,7 @@ export class ThriveCalendar extends LitElement {
   `;
 
   @property({ type: String, reflect: true }) view: ViewMode = "week";
-  @property({ type: String, reflect: true, attribute: "mode" }) uiMode: UIMode =
-    "public";
+  // Removed `mode`/`uiMode` prop — UI should always render in student mode.
   @property({ type: String, reflect: true, attribute: "teacher-id" })
   teacherId?: string;
   @property({ type: String, reflect: true }) timezone: string =
@@ -362,7 +361,7 @@ export class ThriveCalendar extends LitElement {
     return html`
       <thrive-toolbar
         .view=${this.view}
-        .uiMode=${this.uiMode}
+        .uiMode=${"student"}
         .timezone=${this.timezone}
         .currentDate=${this.currentDate}
         @today=${this.handleToday}

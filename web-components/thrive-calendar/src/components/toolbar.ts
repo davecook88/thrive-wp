@@ -71,7 +71,7 @@ export class ThriveToolbar extends LitElement {
   `;
 
   @property({ type: String }) view: string = "week";
-  @property({ type: String }) uiMode: string = "public";
+  // uiMode removed — toolbar always displays student-mode UI
   @property({ type: String }) timezone: string = "UTC";
   @property({ type: Object }) currentDate: Date = new Date();
 
