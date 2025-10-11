@@ -213,6 +213,8 @@
       v-if="showSessionsModal && selectedGroupClass"
       :groupClass="selectedGroupClass"
       @close="showSessionsModal = false"
+      :levels="levels"
+      :teachers="teachers"
     />
   </div>
 </template>
@@ -271,6 +273,7 @@ export default defineComponent({
     const loadLevels = async () => {
       try {
         const data = await thriveClient.fetchLevels();
+        console.log('Fetched levels:', data);
         levels.value = data;
       } catch (err: any) {
         console.error('Failed to load levels:', err);

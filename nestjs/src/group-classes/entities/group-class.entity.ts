@@ -1,11 +1,10 @@
-import { Entity, Column, Index, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import { Entity, Column, Index, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity.js';
-import { Level } from '../../levels/entities/level.entity.js';
 import type { GroupClassTeacher } from './group-class-teacher.entity.js';
+import type { GroupClassLevel } from './group-class-level.entity.js';
 import type { Session } from '../../sessions/entities/session.entity.js';
 
 @Entity('group_class')
-@Index(['levelId'])
 @Index(['isActive'])
 export class GroupClass extends BaseEntity {
   @Column({
@@ -23,17 +22,6 @@ export class GroupClass extends BaseEntity {
     comment: 'Class description',
   })
   description: string | null;
-
-  @Column({
-    name: 'level_id',
-    type: 'int',
-    comment: 'FK to level.id',
-  })
-  levelId: number;
-
-  @ManyToOne(() => Level, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'level_id' })
-  level: Level;
 
   @Column({
     name: 'capacity_max',
@@ -79,6 +67,9 @@ export class GroupClass extends BaseEntity {
 
   @OneToMany('GroupClassTeacher', 'groupClass')
   groupClassTeachers: GroupClassTeacher[];
+
+  @OneToMany('GroupClassLevel', 'groupClass')
+  groupClassLevels: GroupClassLevel[];
 
   @OneToMany('Session', 'groupClass')
   sessions: Session[];

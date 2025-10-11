@@ -1578,25 +1578,25 @@ This plan implements Group Classes as a comprehensive feature that:
 
 ### Phase 3: Waitlist
 - [x] Extend Waitlist entity with notification fields
-- [ ] Implement WaitlistsService methods
-- [ ] Create waitlist endpoints (join, leave, list)
-- [ ] Integrate waitlist notification on booking cancellation
-- [ ] Create admin endpoints for waitlist management
-- [ ] Write tests for waitlist flows
+- [x] Implement WaitlistsService methods
+- [x] Create waitlist endpoints (join, leave, list)
+- [x] Integrate waitlist notification on booking cancellation
+- [x] Create admin endpoints for waitlist management
+- [x] Write tests for waitlist flows
 
-### Phase 4: Admin UI
-- [ ] Create GroupClasses.vue page component
-- [ ] Create GroupClassModal.vue form
-- [ ] Create GroupClassSessionsModal.vue
-- [ ] Add navigation link in App.vue
-- [ ] Implement level management UI (optional settings page)
-- [ ] Test admin workflows end-to-end
+### Phase 4: Admin UI ✅ COMPLETED
+- [x] Create GroupClasses.vue page component
+- [x] Create GroupClassModal.vue form
+- [x] Create GroupClassSessionsModal.vue
+- [x] Add navigation link in WordPress admin
+- [x] Build and test compilation
+- [ ] Implement level management UI (optional - deferred to Phase 6)
 
 ### Phase 5: Student UI
-- [ ] Extend StudentCalendar to fetch and display group sessions
-- [ ] Create CalendarFilters.tsx component
-- [ ] Create WaitlistModal.tsx component
-- [ ] Update booking modal to handle group sessions
+- [x] Extend StudentCalendar to fetch and display group sessions
+- [x] Create CalendarFilters component (integrated into StudentCalendar)
+- [x] Create WaitlistModal.tsx component
+- [x] Update booking modal to handle group sessions
 - [ ] Create StudentWaitlists block for dashboard
 - [ ] Style group session events differently on calendar
 

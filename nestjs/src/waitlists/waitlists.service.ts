@@ -91,6 +91,19 @@ export class WaitlistsService {
     });
   }
 
+  async getMyWaitlists(studentId: number): Promise<Waitlist[]> {
+    return this.waitlistRepository.find({
+      where: { studentId },
+      order: { createdAt: 'DESC' },
+      relations: [
+        'session',
+        'session.groupClass',
+        'session.groupClass.groupClassLevels',
+        'session.groupClass.groupClassLevels.level',
+      ],
+    });
+  }
+
   async handleBookingCancellation(sessionId: number): Promise<void> {
     const waitlist = await this.getWaitlistForSession(sessionId);
     if (waitlist.length > 0) {

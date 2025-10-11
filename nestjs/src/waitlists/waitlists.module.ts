@@ -5,10 +5,14 @@ import { WaitlistsService } from './waitlists.service.js';
 import { WaitlistsController } from './waitlists.controller.js';
 import { Session } from '../sessions/entities/session.entity.js';
 import { Booking } from '../payments/entities/booking.entity.js';
+import { Student } from '../students/entities/student.entity.js';
 import { AuthModule } from '../auth/auth.module.js';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Waitlist, Session, Booking]), AuthModule],
+  imports: [
+    TypeOrmModule.forFeature([Waitlist, Session, Booking, Student]),
+    AuthModule,
+  ],
   providers: [WaitlistsService],
   controllers: [WaitlistsController],
   exports: [WaitlistsService],

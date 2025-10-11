@@ -90,7 +90,7 @@
                   v-model="form.teacherIds"
                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
                 />
-                <span class="ml-2 text-sm text-gray-700">{{ JSON.stringify(teacher) }}</span>
+                <span class="ml-2 text-sm text-gray-700">{{ teacher.name }}</span>
               </label>
               <label v-if="form.teacherIds.includes(teacher.teacherId)" class="flex items-center text-xs cursor-pointer">
                 <input
@@ -304,6 +304,7 @@ export default defineComponent({
   },
   emits: ['close', 'save'],
   setup(props, { emit }) {
+    console.log('GroupClassModal props:', JSON.stringify(props));
     const isEdit = computed(() => props.groupClass !== null);
     const saving = ref(false);
     const error = ref<string | null>(null);

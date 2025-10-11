@@ -14,7 +14,7 @@ export default defineConfig({
   root: ".",
   resolve: {
     alias: {
-      "@shared/*": "../shared/*",
+      "@shared/*": "../../shared/*",
     },
   },
   build: {

@@ -3,8 +3,8 @@ import {
   CalendarEvent,
   Teacher,
   Level,
-} from "./types/calendar";
-import { StudentPackageMyCreditsResponse } from "./types/packages";
+} from "../types/calendar";
+import { StudentPackageMyCreditsResponse } from "../types/packages";
 
 const options: Partial<RequestInit> = {
   headers: { "Content-Type": "application/json" },
@@ -163,29 +163,47 @@ export const thriveClient = {
         }
       );
       if (!res.ok) return [];
-      const data = (await res.json()) as { sessions?: any[] };
-      const sessions = Array.isArray(data?.sessions) ? data.sessions : [];
+      const sessions = (await res.json()) as any[];
+      if (!Array.isArray(sessions)) return [];
 
       // Map to CalendarEvent format
-      return sessions.map((s) => ({
-        id: `group-session-${s.sessionId}`,
-        type: "class" as const,
-        serviceType: "GROUP" as const,
-        title: s.groupClass.title,
-        startUtc: s.startAt,
-        endUtc: s.endAt,
-        sessionId: s.sessionId,
-        groupClassId: s.groupClass.id,
-        level: s.groupClass.level,
-        teacher: s.teacher,
-        capacityMax: s.capacityMax,
-        enrolledCount: s.enrolledCount,
-        availableSpots: s.availableSpots,
-        isFull: s.isFull,
-        canJoinWaitlist: s.canJoinWaitlist,
-        meetingUrl: s.meetingUrl || undefined,
-        status: "SCHEDULED" as const,
-      }));
+      return sessions.map((s) => {
+        // Transform teacher object to include name from user relation
+        const teacher = s.teacher
+          ? {
+              ...s.teacher,
+              name:
+                s.teacher.user?.firstName && s.teacher.user?.lastName
+                  ? `${s.teacher.user.firstName} ${s.teacher.user.lastName}`.trim()
+                  : s.teacher.user?.firstName ||
+                    s.teacher.user?.lastName ||
+                    `Teacher #${s.teacher.userId}`,
+              firstName: s.teacher.user?.firstName,
+              lastName: s.teacher.user?.lastName,
+              teacherId: s.teacher.id,
+            }
+          : undefined;
+
+        return {
+          id: `group-session-${s.id}`,
+          type: "class" as const,
+          serviceType: "GROUP" as const,
+          title: s.groupClass.title,
+          startUtc: s.startAt,
+          endUtc: s.endAt,
+          sessionId: s.id,
+          groupClassId: s.groupClass.id,
+          level: s.groupClass.level,
+          teacher,
+          capacityMax: s.capacityMax,
+          enrolledCount: s.enrolledCount,
+          availableSpots: s.availableSpots,
+          isFull: s.isFull,
+          canJoinWaitlist: s.canJoinWaitlist,
+          meetingUrl: s.meetingUrl || undefined,
+          status: "SCHEDULED" as const,
+        };
+      });
     } catch (err) {
       console.error("Failed to fetch available group sessions:", err);
       return [];
@@ -197,8 +215,8 @@ export const thriveClient = {
         credentials: "same-origin",
       });
       if (!res.ok) return [];
-      const data = await res.json();
-      const levels: Level[] = Array.isArray(data) ? data : [];
+      const data = (await res.json()) as { levels?: any[] };
+      const levels = Array.isArray(data?.levels) ? data.levels : [];
       return levels;
     } catch (err) {
       console.error("Failed to fetch levels:", err);

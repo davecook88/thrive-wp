@@ -136,7 +136,9 @@ export default function ClassModalContent({ event }: { event: any }) {
               <div>
                 <div style={{ fontSize: "12px", color: "#6b7280" }}>Teacher</div>
                 <div style={{ fontSize: "14px", fontWeight: 600 }}>
-                  {teacher?.name || teacher}
+                  {typeof teacher === 'string'
+                    ? teacher
+                    : teacher?.name || `Teacher #${teacher?.userId || teacher?.id || ''}`}
                 </div>
               </div>
             </div>

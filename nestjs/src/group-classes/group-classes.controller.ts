@@ -1,16 +1,30 @@
-import { Controller, Get, Post, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { GroupClassesService } from './group-classes.service.js';
 import { GroupClass } from './entities/group-class.entity.js';
 import { Session } from '../sessions/entities/session.entity.js';
+import { AdminGuard } from '../auth/admin.guard.js';
+import {
+  CreateGroupClassSchema,
+  type CreateGroupClassDto,
+} from './dto/create-group-class.dto.js';
+import { GroupClassListDto } from './dto/group-class-list.dto.js';
 
 @Controller('group-classes')
 export class GroupClassesController {
   constructor(private readonly groupClassesService: GroupClassesService) {}
 
   @Get()
-  async findAll(): Promise<GroupClass[]> {
-    const classes = await this.groupClassesService.findAll();
-    return classes;
+  async findAll(): Promise<GroupClassListDto[]> {
+    return this.groupClassesService.findAll();
   }
 
   @Get('available')
@@ -26,8 +40,25 @@ export class GroupClassesController {
     return this.groupClassesService.getAvailableSessions(filters);
   }
 
+  @Get(':id')
+  async findOne(@Param('id') id: string): Promise<GroupClassListDto | null> {
+    return await this.groupClassesService.findOne(+id);
+  }
+
   @Post(':id/generate-sessions')
   generateSessions(@Param('id') id: string): Promise<Session[]> {
     return this.groupClassesService.generateSessions(+id);
+  }
+
+  /**
+   * Create a new Group Class (Admin)
+   */
+  @Post()
+  @UseGuards(AdminGuard)
+  async createGroupClass(
+    @Body(new ZodValidationPipe(CreateGroupClassSchema))
+    dto: CreateGroupClassDto,
+  ): Promise<GroupClass> {
+    return this.groupClassesService.createGroupClass(dto);
   }
 }
