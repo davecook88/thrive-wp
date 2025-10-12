@@ -1557,9 +1557,73 @@ This plan implements Group Classes as a comprehensive feature that:
 - ✅ All existing private session functionality remains intact
 
 ---
+## Credit Compatibility for Group Classes
+
+Group classes use a **tier-based credit system** to determine which package credits can be used for booking. See [`docs/credit-tiers-system.md`](credit-tiers-system.md) for complete details.
+
+### Key Rules
+
+1. **Private credits CAN be used for group classes** (cross-tier booking with confirmation)
+2. **Group credits CANNOT be used for private classes** (tier validation prevents this)
+3. **Credits are fractional** - a 60-minute credit can be used for two 30-minute group classes
+4. **Refunds go to original package** - canceling a group class booked with a private credit refunds the private credit
+
+### Tier System (Internal)
+
+- **Private sessions**: Base tier 100 + teacher tier
+- **Group sessions**: Base tier 50 + teacher tier
+- **Validation**: Package tier must be >= session tier
+
+### User Experience
+
+When booking a group class:
+
+1. **Exact match available** (group credit): Shows as primary option
+2. **Only higher-tier available** (private credit): Shows with confirmation modal
+   - Message: "Use a private credit for this group class?"
+   - Explains that a private credit will be consumed
+3. **Duration mismatch**: Shows warning if credit duration != session duration
+   - Example: "This will use 1 of your 60-minute credits for a 30-minute class"
+
+### Booking Flow
+
+```
+Student clicks group session
+  ↓
+Fetch compatible packages: GET /api/packages/compatible-for-session/:sessionId
+  ↓
+Response includes:
+  - exactMatch: [group credits]
+  - higherTier: [private credits with warnings]
+  - recommended: packageId to use (expiry-first)
+  ↓
+UI shows options:
+  - Exact matches first (auto-selected)
+  - Higher tier in "Advanced" section (requires confirmation)
+  ↓
+Student selects package
+  ↓
+If cross-tier: Show confirmation modal
+  ↓
+Create booking with:
+  - studentPackageId (for refund tracking)
+  - creditsCost (calculated from duration)
+```
+
+### Implementation Status
+
+- [ ] Backend tier calculation utilities
+- [ ] `GET /api/packages/compatible-for-session/:sessionId` endpoint
+- [ ] Booking validation with tier checks
+- [ ] Refund logic to original package
+- [ ] Frontend credit selection UI
+- [ ] Cross-tier confirmation modal
+- [ ] Duration mismatch warnings
+- [ ] Integration tests for cross-tier bookings
+
 ## TODO
 
-### Phase 1: Backend Foundation
+### Phase 1: Backend Foundation ✅ COMPLETED
 - [x] Create migration for levels, group_class, group_class_teacher tables
 - [x] Create Level entity, module, service, controller
 - [x] Create GroupClass and GroupClassTeacher entities
@@ -1568,7 +1632,7 @@ This plan implements Group Classes as a comprehensive feature that:
 - [x] Write unit tests for RRULE session generation
 - [x] Seed default levels
 
-### Phase 2: Session Generation & Booking
+### Phase 2: Session Generation & Booking ✅ COMPLETED
 - [x] Implement generateSessions() with RRULE parsing
 - [x] Create endpoint POST /group-classes/:id/generate-sessions
 - [x] Implement getAvailableSessions() with enrollment counting
@@ -1576,7 +1640,7 @@ This plan implements Group Classes as a comprehensive feature that:
 - [x] Extend booking flow to support GROUP sessions
 - [ ] Write additional integration tests for booking group sessions
 
-### Phase 3: Waitlist
+### Phase 3: Waitlist ✅ COMPLETED
 - [x] Extend Waitlist entity with notification fields
 - [x] Implement WaitlistsService methods
 - [x] Create waitlist endpoints (join, leave, list)
@@ -1592,13 +1656,27 @@ This plan implements Group Classes as a comprehensive feature that:
 - [x] Build and test compilation
 - [ ] Implement level management UI (optional - deferred to Phase 6)
 
-### Phase 5: Student UI
+### Phase 5: Student UI - IN PROGRESS
 - [x] Extend StudentCalendar to fetch and display group sessions
 - [x] Create CalendarFilters component (integrated into StudentCalendar)
 - [x] Create WaitlistModal.tsx component
 - [x] Update booking modal to handle group sessions
+- [ ] Implement tier-based credit selection (see Phase 5b)
 - [ ] Create StudentWaitlists block for dashboard
 - [ ] Style group session events differently on calendar
+
+### Phase 5b: Credit Tier System (NEW)
+- [ ] Create `nestjs/src/common/types/credit-tiers.ts` utility module
+- [ ] Add `PackagesService.getCompatiblePackagesForSession()`
+- [ ] Add `GET /api/packages/compatible-for-session/:sessionId` endpoint
+- [ ] Update booking validation to check tier compatibility
+- [ ] Update cancellation refund to use `booking.studentPackageId`
+- [ ] Create `useCompatibleCredits()` hook
+- [ ] Create `CreditSelectionModal.tsx` component
+- [ ] Add cross-tier confirmation flow
+- [ ] Add duration mismatch warnings
+- [ ] Unit tests for tier calculations
+- [ ] Integration tests for cross-tier bookings and refunds
 
 ### Phase 6: Polish & Testing
 - [ ] Write E2E tests (Playwright)

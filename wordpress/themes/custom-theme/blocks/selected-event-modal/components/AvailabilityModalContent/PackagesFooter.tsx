@@ -1,5 +1,7 @@
-import type { Teacher } from "../../../../types/calendar";
-import type { AvailabilityEvent } from "../../../../types/calendar";
+import type {
+  AvailabilityEvent,
+  Teacher,
+} from "../../../../../../shared/types/calendar";
 import PackageBookingButton from "./PackageBookingButton";
 
 interface PackagesFooterProps {
@@ -11,7 +13,7 @@ interface PackagesFooterProps {
     user?: any;
     currentUser?: any;
   };
-  bookingConfirmationUrl: string | null;
+  bookingConfirmationUrl: string;
   totalRemaining: number;
   onBookingSuccess: () => void;
 }
@@ -135,7 +137,7 @@ export default function PackagesFooter({
             session{totalRemaining !== 1 ? "s" : ""} remaining
           </div>
           <a
-            href="/packages"
+            href={bookingConfirmationUrl}
             style={{
               display: "inline-block",
               marginTop: "0.5rem",

@@ -1,5 +1,8 @@
 import { usePackageBooking } from "../../../hooks/use-package-booking";
-import type { Teacher, AvailabilityEvent } from "../../../../types/calendar";
+import type {
+  Teacher,
+  AvailabilityEvent,
+} from "../../../../../../shared/types/calendar";
 
 export default function PackageBookingButton({
   pkg,

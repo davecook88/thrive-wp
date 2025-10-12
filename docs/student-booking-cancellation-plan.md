@@ -200,11 +200,65 @@ ALTER TABLE booking
 - Transaction:
   1. Update booking: status = CANCELLED, cancelledAt = now, cancelledByStudent = true, cancellationReason = reason
   2. If booking.studentPackageId && policy.refundCreditsOnCancel:
-     - Increment studentPackage.remainingSessions
+     - **Refund to original package**: Increment `studentPackage.remainingSessions` by `booking.creditsCost`
+     - This ensures that if a PRIVATE credit was used for a GROUP class, the PRIVATE credit is refunded (not a GROUP credit)
      - Update packageUse.refundedAt (if exists)
   3. **If session.type === 'PRIVATE'**: Also cancel the session (status = CANCELLED) since it was a 1:1 session with only this booking
   4. Session capacity management handled by existing logic (cancelled bookings don't count toward capacity)
 - Return success + credit refund details + sessionCancelled flag
+
+**Credit Refund Logic (Critical)**:
+```typescript
+async refundCreditFromCancellation(bookingId: number): Promise<RefundResult> {
+  const booking = await this.bookingRepo.findOne({
+    where: { id: bookingId },
+    relations: ['studentPackage', 'session']
+  });
+
+  if (!booking.studentPackageId || !booking.creditsCost) {
+    return { refunded: false, reason: 'No package credit used' };
+  }
+
+  // Atomically refund to the ORIGINAL package
+  await this.pkgRepo.manager.transaction(async (tx) => {
+    const pkg = await tx.findOne(StudentPackage, {
+      where: { id: booking.studentPackageId },
+      lock: { mode: 'pessimistic_write' }
+    });
+
+    if (!pkg) {
+      throw new NotFoundException('Original package not found');
+    }
+
+    // Refund the exact amount consumed (may be > 1 for long sessions)
+    pkg.remainingSessions += booking.creditsCost;
+    await tx.save(StudentPackage, pkg);
+
+    // Mark package use as refunded
+    await tx.update(PackageUse,
+      { bookingId: booking.id },
+      { refundedAt: new Date() }
+    );
+  });
+
+  return {
+    refunded: true,
+    packageId: booking.studentPackageId,
+    creditsRefunded: booking.creditsCost,
+    packageLabel: getPackageDisplayLabel(booking.studentPackage)
+  };
+}
+```
+
+**Examples**:
+- Student books GROUP class with PRIVATE credit (60 min) → consumes 1 credit
+  - Cancel → refund 1 PRIVATE credit (NOT a GROUP credit)
+- Student books PRIVATE class with PRIVATE credit (30 min) → consumes 1 credit
+  - Cancel → refund 1 PRIVATE credit
+- Student books long GROUP class (90 min) with 30-min GROUP credits → consumes 3 credits
+  - Cancel → refund 3 GROUP credits
+
+See [`docs/credit-tiers-system.md`](credit-tiers-system.md) for complete tier system documentation.
 
 **Rescheduling Flow (simple)**
 1. Student clicks "Reschedule" on a booking

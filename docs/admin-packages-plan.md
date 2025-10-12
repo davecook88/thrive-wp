@@ -215,12 +215,41 @@ Security:
 
 ## Extensibility to GROUP/COURSE
 
-- Add serviceType variants and offering_type metadata (PACKAGE_GROUP, COURSE_BUNDLE, etc.)
-- catalog_package can remain as a generic table; add optional fields later:
-  - max_class_size (GROUP), sessions_count (COURSE), syllabus_ref, etc.
-- For GROUP: credits may represent “class passes” independent from minutes
-- For COURSE: price maps to course enrollment; no credits, but we can still reuse product mapping and admin UI skeleton
-- NestJS DTO can evolve via discriminated unions by offeringType
+### GROUP Packages (Future)
+
+Currently, **GROUP packages are not needed** because the tier system allows PRIVATE credits to be used for GROUP classes. This provides flexibility for students while maximizing their purchasing options.
+
+**Future consideration**: If there's demand for lower-priced "group-only" packages, we can introduce them:
+- `service_type: GROUP` with base tier 50
+- Cannot be used for PRIVATE classes (tier validation)
+- Could be priced lower than PRIVATE packages to incentivize group class attendance
+- Same metadata structure: credits, credit_unit_minutes, teacher_tier (optional)
+
+### COURSE Credits (Special Case)
+
+COURSE sessions **do not use package credits**. Course enrollment is managed separately via `StudentCourseEnrollment`:
+- Course purchase creates enrollment record
+- Course step booking validates enrollment, not credits
+- Courses may include **bundled private/group credits** as separate packages (tracked in `CourseBundleComponent`)
+
+### Credit Tier System
+
+See [`docs/credit-tiers-system.md`](credit-tiers-system.md) for complete details.
+
+**Key rules**:
+- PRIVATE credits (tier 100) can be used for GROUP classes (tier 50) with confirmation
+- GROUP credits (tier 50) cannot be used for PRIVATE classes (tier 100)
+- Refunds always go to the original package (tracked in `booking.studentPackageId`)
+- Credits are fractional - a 60-minute credit can be split across multiple shorter sessions
+
+**Package metadata fields**:
+- `service_type`: PRIVATE, GROUP, or COURSE
+- `credits`: Total number of credits
+- `credit_unit_minutes`: Duration per credit (15/30/45/60)
+- `teacher_tier` (optional): Minimum teacher tier requirement
+- `expires_in_days` (optional): Expiration period
+
+All metadata is stored in Stripe Product/Price metadata, `stripe_product_map.metadata`, and `student_package.metadata` for consistency. See [`docs/package-metadata.md`](package-metadata.md) for enforcement checklist.
 
 ---
 

@@ -35,6 +35,12 @@ import { SessionsService } from '../sessions/services/sessions.service.js';
 import { PackagesService } from '../packages/packages.service.js';
 import { StudentPackage } from '../packages/entities/student-package.entity.js';
 import { PackageUse } from '../packages/entities/package-use.entity.js';
+import {
+  canUsePackageForSession,
+  isCrossTierBooking,
+  calculateCreditsRequired,
+  getCrossTierWarningMessage,
+} from '../common/types/credit-tiers.js';
 
 export interface CreatePaymentIntentResponse {
   clientSecret: string;
@@ -82,6 +88,7 @@ export class PaymentsService {
     studentUserId: number,
     packageId: number,
     sessionId: number,
+    confirmed?: boolean,
   ) {
     // Resolve student.id from userId
     const student = await this.studentRepository.findOne({
@@ -89,13 +96,55 @@ export class PaymentsService {
     });
     if (!student) throw new NotFoundException('Student not found');
 
-    // Use package (decrement + create package_use)
-    const { package: pkg, use } =
+    // Fetch session with teacher relation for tier validation
+    const session = await this.sessionRepository.findOne({
+      where: { id: sessionId },
+      relations: ['teacher'],
+    });
+    if (!session) throw new NotFoundException('Session not found');
+
+    // Fetch package for tier validation
+    const pkg = await this.studentPackageRepository.findOne({
+      where: { id: packageId, studentId: student.id },
+    });
+    if (!pkg) throw new NotFoundException('Package not found');
+
+    // Tier validation: Check if package can be used for this session
+    if (!canUsePackageForSession(pkg, session)) {
+      throw new BadRequestException(
+        'This package cannot be used for this session type',
+      );
+    }
+
+    // Cross-tier validation: Require confirmation for higher-tier credits
+    if (isCrossTierBooking(pkg, session)) {
+      if (!confirmed) {
+        const warningMessage = getCrossTierWarningMessage(pkg, session);
+        throw new BadRequestException(
+          `Cross-tier booking requires confirmation. ${warningMessage}`,
+        );
+      }
+    }
+
+    // Calculate credits required based on session duration
+    const sessionDurationMinutes = Math.round(
+      (session.endAt.getTime() - session.startAt.getTime()) / 60000,
+    );
+    const creditUnitMinutes =
+      parseInt(String(pkg.metadata?.duration_minutes), 10) || 60;
+    const creditsCost = calculateCreditsRequired(
+      sessionDurationMinutes,
+      creditUnitMinutes,
+    );
+
+    // Use package (decrement + create package_use) with calculated credits
+    const { package: updatedPkg, use } =
       await this.packagesService.usePackageForSession(
         student.id,
         packageId,
         sessionId,
         student.id,
+        creditsCost,
       );
 
     // Create booking referencing package
@@ -104,8 +153,8 @@ export class PaymentsService {
       studentId: student.id,
       status: BookingStatus.CONFIRMED,
       acceptedAt: new Date(),
-      studentPackageId: pkg.id,
-      creditsCost: 1,
+      studentPackageId: updatedPkg.id,
+      creditsCost,
     });
 
     const saved = await this.bookingRepository.save(booking);

@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "Node16",
+    "moduleResolution": "node16",
+    "lib": ["ES2020"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "noEmit": true
+  },
+  "include": ["eslint.config.mjs"],
+  "files": ["eslint.config.mjs"],
+  "exclude": ["node_modules", "vendor", "wordpress/vendor", "_logs_wp"]
+}

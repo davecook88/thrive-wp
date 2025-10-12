@@ -14,6 +14,12 @@ import { PoliciesService } from '../policies/policies.service.js';
 import { ServiceType } from '../common/types/class-types.js';
 import { WaitlistsService } from '../waitlists/waitlists.service.js';
 import { z } from 'zod';
+import {
+  canUsePackageForSession,
+  isCrossTierBooking,
+  calculateCreditsRequired,
+  getCrossTierWarningMessage,
+} from '../common/types/credit-tiers.js';
 
 export const CancelBookingSchema = z.object({
   reason: z.string().optional(),
@@ -61,9 +67,11 @@ export class BookingsService {
     studentId: number,
     sessionId: number,
     studentPackageId?: number,
+    confirmed?: boolean,
   ): Promise<Booking> {
     const session = await this.sessionRepository.findOne({
       where: { id: sessionId },
+      relations: ['teacher'],
     });
     if (!session) {
       throw new NotFoundException('Session not found');
@@ -89,6 +97,8 @@ export class BookingsService {
     }
 
     let studentPackage: StudentPackage | null = null;
+    let creditsCost = 1; // Default to 1 credit
+
     if (studentPackageId) {
       studentPackage = await this.studentPackageRepository.findOne({
         where: { id: studentPackageId, studentId },
@@ -96,8 +106,48 @@ export class BookingsService {
       if (!studentPackage) {
         throw new NotFoundException('Student package not found');
       }
-      if (studentPackage.remainingSessions <= 0) {
-        throw new BadRequestException('No remaining sessions in the package');
+
+      // Tier validation: Check if package can be used for this session
+      if (!canUsePackageForSession(studentPackage, session)) {
+        throw new BadRequestException(
+          'This package cannot be used for this session type',
+        );
+      }
+
+      // Cross-tier validation: Require confirmation for higher-tier credits
+      if (isCrossTierBooking(studentPackage, session)) {
+        if (!confirmed) {
+          const warningMessage = getCrossTierWarningMessage(
+            studentPackage,
+            session,
+          );
+          throw new BadRequestException(
+            `Cross-tier booking requires confirmation. ${warningMessage}`,
+          );
+        }
+      }
+
+      // Calculate credits required based on session duration
+      const sessionDurationMinutes = Math.round(
+        (session.endAt.getTime() - session.startAt.getTime()) / 60000,
+      );
+      const creditUnitMinutes =
+        parseInt(String(studentPackage.metadata?.duration_minutes), 10) || 60;
+      creditsCost = calculateCreditsRequired(
+        sessionDurationMinutes,
+        creditUnitMinutes,
+      );
+
+      // Check if package has enough credits
+      if (studentPackage.remainingSessions < creditsCost) {
+        throw new BadRequestException(
+          `Insufficient credits. Required: ${creditsCost}, Available: ${studentPackage.remainingSessions}`,
+        );
+      }
+
+      // Check if package is still valid (not expired)
+      if (studentPackage.expiresAt && studentPackage.expiresAt < new Date()) {
+        throw new BadRequestException('Package has expired');
       }
     }
 
@@ -108,8 +158,8 @@ export class BookingsService {
 
     if (studentPackage) {
       booking.studentPackageId = studentPackage.id;
-      booking.creditsCost = 1; // Assuming 1 credit per session
-      studentPackage.remainingSessions -= 1;
+      booking.creditsCost = creditsCost;
+      studentPackage.remainingSessions -= creditsCost;
       await this.studentPackageRepository.save(studentPackage);
     }
 

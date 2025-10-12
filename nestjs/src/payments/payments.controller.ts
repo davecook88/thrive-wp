@@ -22,6 +22,7 @@ import type { Request as ExpressRequest } from 'express';
 const BookWithPackageSchema = z.object({
   packageId: z.number().positive('Package ID must be positive'),
   sessionId: z.number().positive('Session ID must be positive'),
+  confirmed: z.boolean().optional(),
 });
 
 type BookWithPackageDto = z.infer<typeof BookWithPackageSchema>;
@@ -67,6 +68,7 @@ export class PaymentsController {
       parseInt(userId, 10),
       body.packageId,
       body.sessionId,
+      body.confirmed,
     );
   }
 

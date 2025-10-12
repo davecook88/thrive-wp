@@ -97,6 +97,41 @@
 - Ensure `GroupClass` endpoints surface whether a class is part of a course step and the associated step label/index.
 - Adjust booking conflict checks: prevent multiple active bookings for the same course step per student, while allowing booking different steps simultaneously.
 
+### Course Sessions and Credit Tiers
+
+**Important**: Course-attached group class sessions **DO NOT consume package credits**. They use enrollment-based access control:
+
+```typescript
+if (session.type === ServiceType.COURSE || session.groupClass?.courseStepOptions?.length > 0) {
+  // This is a course session - check enrollment instead of package credits
+  const enrollment = await this.enrollmentRepo.findOne({
+    where: {
+      studentId: student.id,
+      courseProgramId: session.groupClass.courseStep.courseProgramId,
+      status: 'ACTIVE'
+    }
+  });
+
+  if (!enrollment) {
+    throw new ForbiddenException('You must be enrolled in this course to book this session');
+  }
+
+  // Proceed without consuming package credits
+  return this.createCourseBooking(session, student);
+}
+```
+
+**Bundled Credits**: Courses may include bonus private/group credits as part of the purchase. These are tracked separately:
+- Stored in `CourseBundleComponent` with `component_type: 'PRIVATE_CREDITS'` or `'GROUP_CREDITS'`
+- Fulfilled as regular `StudentPackage` records on purchase
+- Can be used independently for non-course sessions
+- Follow standard tier rules (see [`docs/credit-tiers-system.md`](credit-tiers-system.md))
+
+This separation ensures:
+- Course sessions are always available to enrolled students (no credit gatekeeping)
+- Bundled credits provide flexibility for additional private/group classes outside the course structure
+- No confusion between course access and general package credits
+
 ## Waitlists
 - Reuse existing group-class waitlist logic without change; ensure UI copy references course context where relevant, but behavior stays identical.
 

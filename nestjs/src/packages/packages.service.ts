@@ -452,13 +452,16 @@ export class PackagesService {
     packageId: number,
     sessionId: number,
     usedBy?: number,
+    creditsCost: number = 1,
   ) {
     const pkg = await this.pkgRepo.findOne({
       where: { id: packageId, studentId },
     });
     if (!pkg) throw new NotFoundException('Package not found');
-    if (pkg.remainingSessions <= 0)
-      throw new BadRequestException('No remaining credits');
+    if (pkg.remainingSessions < creditsCost)
+      throw new BadRequestException(
+        `Insufficient credits. Required: ${creditsCost}, Available: ${pkg.remainingSessions}`,
+      );
 
     // Check if package is expired
     if (pkg.expiresAt && pkg.expiresAt <= new Date()) {
@@ -472,10 +475,12 @@ export class PackagesService {
         lock: { mode: 'pessimistic_write' },
       });
       if (!locked) throw new NotFoundException('Package not found');
-      if (locked.remainingSessions <= 0)
-        throw new BadRequestException('No remaining credits');
+      if (locked.remainingSessions < creditsCost)
+        throw new BadRequestException(
+          `Insufficient credits. Required: ${creditsCost}, Available: ${locked.remainingSessions}`,
+        );
 
-      locked.remainingSessions = locked.remainingSessions - 1;
+      locked.remainingSessions = locked.remainingSessions - creditsCost;
       await tx.save(StudentPackage, locked);
 
       const use = tx.create(PackageUse, {
@@ -590,5 +595,179 @@ export class PackagesService {
         packageUse: savedPackageUse,
       };
     });
+  }
+
+  /**
+   * Get packages compatible with a specific session, separated by tier match.
+   * Returns exact matches (same tier) and higher-tier packages that can be used.
+   *
+   * @param studentId - Student's ID
+   * @param sessionId - Session to check compatibility for
+   * @returns Compatible packages grouped by tier match with recommendation
+   */
+  async getCompatiblePackagesForSession(
+    studentId: number,
+    sessionId: number,
+  ): Promise<{
+    exactMatch: Array<{
+      id: number;
+      label: string;
+      remainingSessions: number;
+      expiresAt: string | null;
+      creditUnitMinutes: number;
+      tier: number;
+    }>;
+    higherTier: Array<{
+      id: number;
+      label: string;
+      remainingSessions: number;
+      expiresAt: string | null;
+      creditUnitMinutes: number;
+      tier: number;
+      warningMessage: string;
+    }>;
+    recommended: number | null;
+    requiresCourseEnrollment: boolean;
+    isEnrolledInCourse: boolean;
+  }> {
+    const {
+      canUsePackageForSession,
+      getPackageTier,
+      getSessionTier,
+      getPackageDisplayLabel,
+      getCrossTierWarningMessage,
+    } = await import('../common/types/credit-tiers.js');
+
+    // Load session with teacher relation
+    const session = await this.sessionRepo.findOne({
+      where: { id: sessionId },
+      relations: ['teacher', 'groupClass'],
+    });
+
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+
+    // Check if this is a course session
+    // Note: courseStepOptions relation will be added when course system is implemented
+    const requiresCourseEnrollment = session.type === ServiceType.COURSE;
+
+    // TODO: Check actual enrollment when course system is fully implemented
+    const isEnrolledInCourse = false;
+
+    // Get student's active packages
+    const activePackages = await this.pkgRepo.find({
+      where: {
+        studentId,
+        deletedAt: IsNull(),
+      },
+      order: { createdAt: 'DESC' },
+    });
+
+    // Filter to packages with remaining sessions and not expired
+    const now = new Date();
+    const validPackages = activePackages.filter(
+      (pkg) =>
+        pkg.remainingSessions > 0 &&
+        (pkg.expiresAt === null || pkg.expiresAt > now),
+    );
+
+    const sessionTier = getSessionTier(session);
+    const exactMatch: Array<{
+      id: number;
+      label: string;
+      remainingSessions: number;
+      expiresAt: string | null;
+      creditUnitMinutes: number;
+      tier: number;
+    }> = [];
+    const higherTier: Array<{
+      id: number;
+      label: string;
+      remainingSessions: number;
+      expiresAt: string | null;
+      creditUnitMinutes: number;
+      tier: number;
+      warningMessage: string;
+    }> = [];
+
+    for (const pkg of validPackages) {
+      if (!canUsePackageForSession(pkg, session)) {
+        continue; // Skip incompatible packages
+      }
+
+      const packageTier = getPackageTier(pkg);
+      const label = getPackageDisplayLabel(pkg);
+      const creditUnitMinutes = Number(pkg.metadata?.credit_unit_minutes) || 30;
+
+      const baseInfo = {
+        id: pkg.id,
+        label,
+        remainingSessions: pkg.remainingSessions,
+        expiresAt: pkg.expiresAt?.toISOString() || null,
+        creditUnitMinutes,
+        tier: packageTier,
+      };
+
+      if (packageTier === sessionTier) {
+        exactMatch.push(baseInfo);
+      } else if (packageTier > sessionTier) {
+        const warningMessage = getCrossTierWarningMessage(pkg, session) || '';
+        higherTier.push({
+          ...baseInfo,
+          warningMessage,
+        });
+      }
+    }
+
+    // Select recommended package: prefer exact matches, then closest to expiration
+    const recommended = this.selectRecommendedPackage(exactMatch, higherTier);
+
+    return {
+      exactMatch,
+      higherTier,
+      recommended,
+      requiresCourseEnrollment,
+      isEnrolledInCourse,
+    };
+  }
+
+  /**
+   * Select the recommended package from available options.
+   * Prefers exact matches, then sorts by expiration (soonest first), then FIFO.
+   *
+   * @param exactMatch - Packages with exact tier match
+   * @param higherTier - Packages with higher tier
+   * @returns Recommended package ID or null
+   */
+  private selectRecommendedPackage(
+    exactMatch: Array<{
+      id: number;
+      expiresAt: string | null;
+    }>,
+    higherTier: Array<{
+      id: number;
+      expiresAt: string | null;
+    }>,
+  ): number | null {
+    // Prefer exact matches
+    const candidates = exactMatch.length > 0 ? exactMatch : higherTier;
+
+    if (candidates.length === 0) return null;
+
+    // Sort by expiration (soonest first, non-expiring last)
+    const sorted = [...candidates].sort((a, b) => {
+      // Non-expiring packages go last
+      if (!a.expiresAt && !b.expiresAt) return 0;
+      if (!a.expiresAt) return 1;
+      if (!b.expiresAt) return -1;
+
+      // Compare expiration dates
+      return (
+        new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime()
+      );
+    });
+
+    return sorted[0].id;
   }
 }

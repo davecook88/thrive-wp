@@ -1,5 +1,8 @@
 import { useState } from "@wordpress/element";
-import type { AvailabilityEvent, Teacher } from "../../../../types/calendar";
+import type {
+  Teacher,
+  AvailabilityEvent,
+} from "../../../../../../shared/types/calendar";
 import { useGetTeachers } from "../../../hooks/get-teachers";
 import { useStudentCredits } from "../../../hooks/use-student-credits";
 import { buildBookingUrl } from "../../../../utils/booking";

@@ -1,6 +1,11 @@
-import { createElement } from "@wordpress/element";
+import { createElement, useState } from "@wordpress/element";
 import { useStudentCredits } from "../../hooks/use-student-credits";
+import {
+  useCompatibleCredits,
+  hasAnyCredits,
+} from "../../hooks/use-compatible-credits";
 import { buildBookingUrl } from "../../../utils/booking";
+import CreditSelectionModal from "./CreditSelectionModal";
 
 export default function ClassModalContent({ event }: { event: any }) {
   const teacher = event?.teacher ?? event?.instructor ?? null;
@@ -10,28 +15,72 @@ export default function ClassModalContent({ event }: { event: any }) {
   const enrolledCount = event?.enrolledCount ?? 0;
   const availableSpots = event?.availableSpots ?? capacityMax;
   const isFull = event?.isFull ?? false;
+  const sessionId = event?.sessionId;
 
+  console.log("ClassModalContent: isGroupClass", isGroupClass);
+
+  // State for credit selection modal
+  const [showCreditModal, setShowCreditModal] = useState(false);
+
+  // Legacy credit hook (for general info)
   const {
     packagesResponse,
     totalRemaining,
     refetch: refetchCredits,
   } = useStudentCredits();
 
-  const packages = packagesResponse?.packages ?? [];
-  const hasCredits = totalRemaining > 0;
+  // New tier-aware credit hook
+  const {
+    compatible,
+    loading: loadingCompatible,
+    error: compatibleError,
+  } = useCompatibleCredits(sessionId);
 
-  // Build booking URL for group sessions
-  const bookingConfirmationUrl = isGroupClass
-    ? buildBookingUrl({
-        sessionId: event.sessionId,
-        serviceType: "GROUP",
-      })
-    : null;
+  const hasCompatibleCredits = hasAnyCredits(compatible);
+
+  // Calculate session duration in minutes
+  const sessionDuration =
+    event?.startUtc && event?.endUtc
+      ? Math.round(
+          (new Date(event.endUtc).getTime() -
+            new Date(event.startUtc).getTime()) /
+            60000
+        )
+      : 60; // default to 60 minutes if not available
 
   const handleBookClick = () => {
-    if (bookingConfirmationUrl && hasCredits) {
-      window.location.href = bookingConfirmationUrl;
+    // Show credit selection modal
+    setShowCreditModal(true);
+  };
+
+  const handleSelectPackage = (
+    packageId: number,
+    requiresConfirmation: boolean
+  ) => {
+    // If requires confirmation (cross-tier), show confirmation
+    if (requiresConfirmation && compatible) {
+      const pkg = compatible.higherTier.find((p) => p.id === packageId);
+      if (pkg) {
+        const confirmed = window.confirm(
+          `${pkg.warningMessage}\n\nAre you sure you want to continue?`
+        );
+        if (!confirmed) {
+          return;
+        }
+      }
     }
+
+    // Close modal and proceed to booking
+    setShowCreditModal(false);
+
+    // Build booking URL with package ID
+    const bookingUrl = buildBookingUrl({
+      sessionId: event.sessionId,
+      serviceType: "GROUP",
+      packageId,
+    });
+
+    window.location.href = bookingUrl;
   };
 
   return (
@@ -134,11 +183,14 @@ export default function ClassModalContent({ event }: { event: any }) {
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <span style={{ fontSize: "20px" }}>👨‍🏫</span>
               <div>
-                <div style={{ fontSize: "12px", color: "#6b7280" }}>Teacher</div>
+                <div style={{ fontSize: "12px", color: "#6b7280" }}>
+                  Teacher
+                </div>
                 <div style={{ fontSize: "14px", fontWeight: 600 }}>
-                  {typeof teacher === 'string'
+                  {typeof teacher === "string"
                     ? teacher
-                    : teacher?.name || `Teacher #${teacher?.userId || teacher?.id || ''}`}
+                    : teacher?.name ||
+                      `Teacher #${teacher?.userId || teacher?.id || ""}`}
                 </div>
               </div>
             </div>
@@ -198,25 +250,31 @@ export default function ClassModalContent({ event }: { event: any }) {
           // Booking button for group sessions
           <button
             onClick={handleBookClick}
-            disabled={!hasCredits}
+            disabled={!hasCompatibleCredits || loadingCompatible}
             style={{
               width: "100%",
               padding: "14px 24px",
-              backgroundColor: hasCredits
-                ? "var(--wp--preset--color--accent, #10b981)"
-                : "#d1d5db",
+              backgroundColor:
+                hasCompatibleCredits && !loadingCompatible
+                  ? "var(--wp--preset--color--accent, #10b981)"
+                  : "#d1d5db",
               color: "white",
               border: "none",
               borderRadius: "8px",
               fontSize: "16px",
               fontWeight: 600,
-              cursor: hasCredits ? "pointer" : "not-allowed",
+              cursor:
+                hasCompatibleCredits && !loadingCompatible
+                  ? "pointer"
+                  : "not-allowed",
               transition: "all 150ms ease",
             }}
           >
-            {hasCredits
-              ? `Book with Package (${totalRemaining} credit${totalRemaining !== 1 ? "s" : ""} remaining)`
-              : "No credits available - Purchase a package"}
+            {loadingCompatible
+              ? "Loading credits..."
+              : hasCompatibleCredits
+              ? `Book with Credits (${totalRemaining} remaining)`
+              : "No compatible credits - Purchase a package"}
           </button>
         ) : (
           // Join link for already booked classes
@@ -244,20 +302,39 @@ export default function ClassModalContent({ event }: { event: any }) {
       </div>
 
       {/* Credits info */}
-      {isGroupClass && !isFull && !hasCredits && (
-        <div
-          style={{
-            marginTop: "16px",
-            padding: "12px",
-            backgroundColor: "#fef3c7",
-            borderRadius: "8px",
-            fontSize: "13px",
-            color: "#92400e",
-          }}
-        >
-          💡 You need at least one credit to book this class. Purchase a package
-          to get started!
-        </div>
+      {isGroupClass &&
+        !isFull &&
+        !hasCompatibleCredits &&
+        !loadingCompatible && (
+          <div
+            style={{
+              marginTop: "16px",
+              padding: "12px",
+              backgroundColor: "#fef3c7",
+              borderRadius: "8px",
+              fontSize: "13px",
+              color: "#92400e",
+            }}
+          >
+            {compatibleError ? (
+              <>⚠️ {compatibleError.message}</>
+            ) : (
+              <>
+                💡 You need compatible credits to book this class. Purchase a
+                package to get started!
+              </>
+            )}
+          </div>
+        )}
+
+      {/* Credit Selection Modal */}
+      {showCreditModal && compatible && (
+        <CreditSelectionModal
+          compatible={compatible}
+          sessionDuration={sessionDuration}
+          onSelectPackage={handleSelectPackage}
+          onCancel={() => setShowCreditModal(false)}
+        />
       )}
     </div>
   );

@@ -69,6 +69,30 @@ export class PackagesController {
     return this.packagesService.getActivePackagesForStudent(student.id);
   }
 
+  @Get('compatible-for-session/:sessionId')
+  async getCompatiblePackagesForSession(
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const userId = req.headers['x-auth-user-id'];
+    if (!userId) {
+      throw new UnauthorizedException('User ID not found in auth headers');
+    }
+
+    // Convert user ID to student ID
+    const student = await this.studentsService.findByUserId(
+      parseInt(userId, 10),
+    );
+    if (!student) {
+      throw new NotFoundException('Student record not found for this user');
+    }
+
+    return this.packagesService.getCompatiblePackagesForSession(
+      student.id,
+      sessionId,
+    );
+  }
+
   @Post(':id/use')
   async usePackage(
     @Param('id', ParseIntPipe) packageId: number,

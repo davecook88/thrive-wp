@@ -29,5 +29,20 @@
       "DB_DATABASE_TEST": "wordpress_test",
       "DB_SYNCHRONIZE": "false"
     }
-  }
+  },
+
+  // Ensure ESLint lints TypeScript and TSX files in the editor
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+
+  // Prefer workspace TypeScript to get consistent diagnostics
+  "typescript.tsdk": "./node_modules/typescript/lib",
+
+  // Force ESLint extension to run from the repository root so it uses the root
+  // node_modules and config (avoids loading nested eslint installations).
+  "eslint.workingDirectories": [{ "directory": ".", "changeProcessCWD": true }]
 }

@@ -1,0 +1,8 @@
+**/node_modules/**
+
+# Ignore build outputs
+dist
+build
+wordpress/build
+wordpress/vendor
+vendor

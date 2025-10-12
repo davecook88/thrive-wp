@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState, useMemo } from "@wordpress/element";
+import { useEffect, useRef, useState } from "@wordpress/element";
 import type {
   BaseCalendarEvent,
   ThriveCalendarElement,
   Teacher,
-  AvailabilityEvent,
   Level,
 } from "../../../../../shared/types/calendar";
 import { thriveClient } from "../../../../../shared/clients/thrive";
@@ -14,6 +13,10 @@ import {
 import { useAvailabilitySlots } from "../../hooks/use-availability-slots";
 import { showBookingActionsModal } from "../../../components/BookingActionsModal";
 import { showWaitlistModal } from "../../../components/WaitlistModal";
+import Header from "./Header";
+import BookingFilters from "./BookingFilters";
+import TeacherGrid from "./TeacherGrid";
+import { useEventClick } from "./useEventClick";
 
 interface StudentCalendarProps {
   view: "week" | "day" | "month" | "list";
@@ -40,12 +43,12 @@ export default function StudentCalendar({
   const [showPrivateSessions, setShowPrivateSessions] = useState<boolean>(true);
   const [showGroupClasses, setShowGroupClasses] = useState<boolean>(true);
   const [sessionDuration, setSessionDuration] = useState<number>(60);
-  const [currentRange, setCurrentRange] = useState<{
+  const [currentRange] = useState<{
     from: Date;
     until: Date;
   } | null>(null);
   const [studentBookings, setStudentBookings] = useState<BaseCalendarEvent[]>(
-    []
+    [],
   );
   const [groupSessions, setGroupSessions] = useState<BaseCalendarEvent[]>([]);
 
@@ -61,7 +64,7 @@ export default function StudentCalendar({
   // Load teachers and levels lists once
   useEffect(() => {
     let mounted = true;
-    (async () => {
+    void (async () => {
       const [t, l] = await Promise.all([
         thriveClient.fetchTeachers(),
         thriveClient.fetchLevels(),
@@ -103,7 +106,7 @@ export default function StudentCalendar({
   // Refetch when mode, teachers, levels, or duration changes
   useEffect(() => {
     if (currentRange) {
-      fetchData(currentRange.from, currentRange.until);
+      void fetchData(currentRange.from, currentRange.until);
     }
   }, [
     mode,
@@ -118,9 +121,12 @@ export default function StudentCalendar({
   useEffect(() => {
     if (mode === "book") {
       // Style student bookings as "booked" events
+      type BookingWithTeacher = BaseCalendarEvent & { teacherName?: string };
+
       const styledBookings = studentBookings.map((booking) => {
         // Use teacher name from the event (now included from backend)
-        const teacherName = (booking as any).teacherName || "Unknown Teacher";
+        const teacherName =
+          (booking as BookingWithTeacher).teacherName ?? "Unknown Teacher";
 
         return {
           ...booking,
@@ -161,455 +167,146 @@ export default function StudentCalendar({
   useEffect(() => {
     const calendar = calendarRef.current;
     if (calendar) {
-      calendar.events = events as BaseCalendarEvent[];
+      calendar.events = events;
     }
   }, [events]);
 
   // Handle calendar events
   useEffect(() => {
-    const calendar = calendarRef.current;
-    if (!calendar) return;
+    // Wire calendar and document-level event listeners via hook
+    useEventClick({
+      calendarRef,
+      mode,
+      currentRange,
+      fetchData,
+    });
 
-    const handleEventClick = (e: any) => {
-      const event = e?.detail?.event;
-      if (event) {
-        // Handle booking events specially
-        if (event.type === "booking") {
-          // Show booking actions modal
-          showBookingActionsModal({
-            bookingId: event.bookingId,
-            sessionTitle: event.title || "Session",
-            sessionDate: event.start
-              ? new Date(event.start).toLocaleDateString()
-              : "",
-            sessionTime: event.start
-              ? new Date(event.start).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-              : "",
-            teacherName: event.teacherName || "Teacher",
-            onClose: () => {
-              // Close the modal - handled inside the modal component
-            },
-            onRefresh: () => {
-              // Refresh the calendar data
-              if (currentRange) {
-                fetchData(currentRange.from, currentRange.until);
-              }
-            },
-          });
-          return;
-        }
+    // Keep backward-compatible DOM listeners for booking and waitlist actions
+    // which call the modal helpers imported above.
+    type BookingEventDetail = {
+      event: {
+        bookingId?: number;
+        title?: string;
+        start?: string | number | Date;
+        teacherName?: string;
+      };
+    };
 
-        // Handle group class events
-        if (
-          event.type === "class" &&
-          event.serviceType === "GROUP" &&
-          mode === "book"
-        ) {
-          // Check if the class is full
-          if (event.isFull && event.canJoinWaitlist) {
-            // Show waitlist modal
-            showWaitlistModal({
-              sessionId: event.sessionId,
-              title: event.title,
-              startAt: event.startUtc,
-              level: event.level,
-              teacher: event.teacher,
-              onJoin: () => {
-                // Refresh calendar after joining waitlist
-                if (currentRange) {
-                  fetchData(currentRange.from, currentRange.until);
-                }
-              },
-            });
-            return;
+    const onBookingAction = (e: Event) => {
+      const detail = (e as CustomEvent<BookingEventDetail>)?.detail;
+      const evt = detail?.event;
+      if (!evt) return;
+      showBookingActionsModal({
+        bookingId: evt.bookingId ?? -1,
+        sessionTitle: evt.title || "Session",
+        sessionDate: evt.start ? new Date(evt.start).toLocaleDateString() : "",
+        sessionTime: evt.start
+          ? new Date(evt.start).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "",
+        teacherName: evt.teacherName || "Teacher",
+        onClose: () => {},
+        onRefresh: () => {
+          if (currentRange) {
+            void fetchData(currentRange.from, currentRange.until);
           }
-          // If not full, fall through to the regular booking modal
-        }
-
-        // For other events, broadcast to the selected-event-modal runtime
-        document.dispatchEvent(
-          new CustomEvent("thrive-calendar:selectedEvent", {
-            detail: { event },
-          })
-        );
-      }
+        },
+      });
     };
 
-    const handleRangeChange = (e: any) => {
-      const detail = e?.detail as { fromDate?: string; untilDate?: string };
-      if (detail?.fromDate && detail?.untilDate) {
-        const from = new Date(detail.fromDate);
-        const until = new Date(detail.untilDate);
-        setCurrentRange({ from, until });
-        fetchData(from, until);
-      }
+    type WaitlistEventDetail = {
+      event: {
+        sessionId: number;
+        title: string;
+        startUtc: string;
+        level?: unknown;
+        teacher?: unknown;
+      };
     };
 
-    const handleRefreshCalendar = () => {
-      // Refetch current range when refresh event is triggered
-      if (currentRange) {
-        fetchData(currentRange.from, currentRange.until);
-      }
+    const onShowWaitlist = (e: Event) => {
+      const detail = (e as CustomEvent<WaitlistEventDetail>)?.detail;
+      const evt = detail?.event;
+      if (!evt) return;
+      showWaitlistModal({
+        sessionId: evt.sessionId,
+        title: evt.title,
+        startAt: evt.startUtc,
+        level: evt.level as { code: string; name: string } | undefined,
+        teacher: evt.teacher as { name: string } | undefined,
+        onJoin: () => {
+          if (currentRange) {
+            void fetchData(currentRange.from, currentRange.until);
+          }
+        },
+      });
     };
 
-    calendar.addEventListener("event:click", handleEventClick);
-    calendar.addEventListener("range:change", handleRangeChange);
     document.addEventListener(
-      "thrive:refresh-calendar-data",
-      handleRefreshCalendar
+      "thrive:booking-action",
+      onBookingAction as EventListener,
+    );
+    document.addEventListener(
+      "thrive:show-waitlist",
+      onShowWaitlist as EventListener,
     );
 
     return () => {
-      calendar.removeEventListener("event:click", handleEventClick);
-      calendar.removeEventListener("range:change", handleRangeChange);
       document.removeEventListener(
-        "thrive:refresh-calendar-data",
-        handleRefreshCalendar
+        "thrive:booking-action",
+        onBookingAction as EventListener,
+      );
+      document.removeEventListener(
+        "thrive:show-waitlist",
+        onShowWaitlist as EventListener,
       );
     };
   }, [currentRange]);
 
   const toggleTeacher = (id: number) => {
     setSelectedTeacherIds((prev) =>
-      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
     );
   };
 
   const toggleLevel = (id: number) => {
     setSelectedLevelIds((prev) =>
-      prev.includes(id) ? prev.filter((l) => l !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((l) => l !== id) : [...prev, id],
     );
   };
-
-  const getInitials = (t: Teacher) =>
-    (t.firstName || t.name || "T").slice(0, 1).toUpperCase();
 
   return (
     <div
       className="student-calendar-wrapper"
       style={{ height: "100%", width: "100%" }}
     >
-      {/* Mode Toggle Header */}
-      <div
-        style={{
-          marginBottom: 16,
-          padding: 16,
-          background:
-            mode === "view"
-              ? "var(--wp--preset--color--gray-50)"
-              : "var(--wp--preset--color--accent-light, #f0fdf4)",
-          borderRadius: 12,
-          border: "2px solid",
-          borderColor:
-            mode === "view"
-              ? "var(--wp--preset--color--gray-200)"
-              : "var(--wp--preset--color--accent, #10b981)",
-          transition: "all 200ms ease",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: mode === "book" ? 16 : 0,
-            flexWrap: "wrap",
-            gap: 12,
-          }}
-        >
-          <div
-            style={{
-              display: "inline-flex",
-              background: "white",
-              borderRadius: 8,
-              padding: 4,
-              gap: 4,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setMode("view")}
-              style={{
-                padding: "8px 16px",
-                border: "none",
-                borderRadius: 6,
-                fontWeight: 600,
-                fontSize: 14,
-                cursor: "pointer",
-                background:
-                  mode === "view"
-                    ? "var(--wp--preset--color--accent, #3b82f6)"
-                    : "transparent",
-                color:
-                  mode === "view"
-                    ? "white"
-                    : "var(--wp--preset--color--gray-700)",
-                transition: "all 150ms ease",
-              }}
-            >
-              📅 My Sessions
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("book")}
-              style={{
-                padding: "8px 16px",
-                border: "none",
-                borderRadius: 6,
-                fontWeight: 600,
-                fontSize: 14,
-                cursor: "pointer",
-                background:
-                  mode === "book"
-                    ? "var(--wp--preset--color--accent, #10b981)"
-                    : "transparent",
-                color:
-                  mode === "book"
-                    ? "white"
-                    : "var(--wp--preset--color--gray-700)",
-                transition: "all 150ms ease",
-              }}
-            >
-              ➕ Book More
-            </button>
-          </div>
+      <Header mode={mode} setMode={setMode} />
 
-          {/* Mode indicator badge */}
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "6px 12px",
-              borderRadius: 6,
-              background:
-                mode === "view"
-                  ? "var(--wp--preset--color--gray-100)"
-                  : "var(--wp--preset--color--accent, #10b981)",
-              color: mode === "view" ? "#374151" : "white",
-              fontWeight: 600,
-              fontSize: 13,
-            }}
-          >
-            {mode === "view" ? (
-              <>👁️ Viewing your scheduled sessions</>
-            ) : (
-              <>✨ Browsing available time slots</>
-            )}
+      {mode === "book" && (
+        <div style={{ marginTop: 0, padding: "0 16px 16px 16px" }}>
+          <BookingFilters
+            showPrivateSessions={showPrivateSessions}
+            showGroupClasses={showGroupClasses}
+            setShowPrivateSessions={setShowPrivateSessions}
+            setShowGroupClasses={setShowGroupClasses}
+            sessionDuration={sessionDuration}
+            setSessionDuration={setSessionDuration}
+            levels={levels}
+            selectedLevelIds={selectedLevelIds}
+            toggleLevel={toggleLevel}
+          />
+
+          <div style={{ marginTop: 12 }}>
+            <TeacherGrid
+              teachers={teachers}
+              selectedTeacherIds={selectedTeacherIds}
+              toggleTeacher={toggleTeacher}
+            />
           </div>
         </div>
-
-        {/* Booking mode filters */}
-        {mode === "book" && (
-          <div style={{ marginTop: 16 }}>
-            {/* Class Type Filter */}
-            <div style={{ marginBottom: 16 }}>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  marginBottom: 8,
-                  color: "#374151",
-                }}
-              >
-                Class Type
-              </label>
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <label
-                  style={{ display: "flex", alignItems: "center", gap: 6 }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={showPrivateSessions}
-                    onChange={(e) => setShowPrivateSessions(e.target.checked)}
-                  />
-                  <span style={{ fontSize: 14 }}>Private Sessions</span>
-                </label>
-                <label
-                  style={{ display: "flex", alignItems: "center", gap: 6 }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={showGroupClasses}
-                    onChange={(e) => setShowGroupClasses(e.target.checked)}
-                  />
-                  <span style={{ fontSize: 14 }}>Group Classes</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Level Filter - Only show when group classes are enabled */}
-            {showGroupClasses && levels.length > 0 && (
-              <div style={{ marginBottom: 16 }}>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    marginBottom: 8,
-                    color: "#374151",
-                  }}
-                >
-                  Filter by Level
-                </label>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  {levels.map((level) => (
-                    <button
-                      key={level.id}
-                      type="button"
-                      onClick={() => toggleLevel(level.id)}
-                      style={{
-                        padding: "6px 12px",
-                        border: "2px solid",
-                        borderColor: selectedLevelIds.includes(level.id)
-                          ? "var(--wp--preset--color--accent, #10b981)"
-                          : "#e5e7eb",
-                        borderRadius: 6,
-                        background: selectedLevelIds.includes(level.id)
-                          ? "var(--wp--preset--color--accent-light, #f0fdf4)"
-                          : "white",
-                        cursor: "pointer",
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: selectedLevelIds.includes(level.id)
-                          ? "var(--wp--preset--color--accent, #10b981)"
-                          : "#6b7280",
-                        transition: "all 150ms ease",
-                      }}
-                    >
-                      {level.code}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div style={{ marginBottom: 16 }}>
-              <label
-                htmlFor="session-duration"
-                style={{
-                  display: "block",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  marginBottom: 8,
-                  color: "#374151",
-                }}
-              >
-                Session Duration
-              </label>
-              <select
-                id="session-duration"
-                value={sessionDuration}
-                onChange={(e) => setSessionDuration(Number(e.target.value))}
-                style={{
-                  padding: "8px 12px",
-                  border: "1px solid #d1d5db",
-                  borderRadius: 6,
-                  fontSize: 14,
-                  backgroundColor: "white",
-                  minWidth: 120,
-                }}
-              >
-                <option value={30}>30 minutes</option>
-                <option value={60}>1 hour</option>
-              </select>
-            </div>
-
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  marginBottom: 8,
-                  color: "#374151",
-                }}
-              >
-                Filter by Teacher
-              </label>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-                  gap: "8px",
-                }}
-              >
-                {teachers.map((t) => (
-                  <button
-                    key={t.teacherId}
-                    type="button"
-                    onClick={() => toggleTeacher(t.teacherId)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      padding: 10,
-                      border: "1px solid #e5e7eb",
-                      borderRadius: 8,
-                      background: selectedTeacherIds.includes(t.teacherId)
-                        ? "white"
-                        : "#f9fafb",
-                      cursor: "pointer",
-                      textAlign: "left",
-                      opacity: selectedTeacherIds.includes(t.teacherId)
-                        ? 1
-                        : 0.5,
-                      transition: "all 150ms ease",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: "50%",
-                        background: selectedTeacherIds.includes(t.teacherId)
-                          ? "var(--wp--preset--color--accent, #10b981)"
-                          : "#e5e7eb",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: selectedTeacherIds.includes(t.teacherId)
-                          ? "white"
-                          : "#374151",
-                        fontWeight: 700,
-                        fontSize: 14,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {getInitials(t)}
-                    </div>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div
-                        style={{
-                          fontWeight: 600,
-                          fontSize: 14,
-                          marginBottom: 2,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {t.name || `${t.firstName} ${t.lastName}`.trim()}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Calendar Component */}
       <thrive-calendar

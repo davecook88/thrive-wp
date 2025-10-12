@@ -12,6 +12,7 @@ export interface BuildBookingUrlParams {
   endUtc?: string; // ISO 8601 UTC (optional for group classes with sessionId)
   teacherId?: number | string; // Optional for group classes with sessionId
   sessionId?: number | string; // For group classes - references an existing session
+  packageId?: number | string; // Optional package ID to use for booking
   /**
    * Optional base path for booking page. Defaults to "/book-lesson".
    * You can override via a global (window.thriveBookingBasePath) or by passing here.
@@ -23,6 +24,7 @@ export interface BuildBookingUrlParams {
 /**
  * Builds a booking URL like: /book-lesson?start=...&end=...&teacher=...
  * For group classes with sessionId: /book-lesson?sessionId=...&serviceType=GROUP
+ * Optional packageId can be passed to pre-select a package
  */
 export function buildBookingUrl(params: BuildBookingUrlParams): string {
   const {
@@ -30,6 +32,7 @@ export function buildBookingUrl(params: BuildBookingUrlParams): string {
     endUtc,
     teacherId,
     sessionId,
+    packageId,
     serviceType,
     basePath = (globalThis as any)?.thriveBookingBasePath ||
       DEFAULT_BOOKING_PATH,
@@ -50,6 +53,11 @@ export function buildBookingUrl(params: BuildBookingUrlParams): string {
     qp.set("end", String(endUtc));
     qp.set("teacher", String(teacherId));
     qp.set("serviceType", serviceType);
+  }
+
+  // Add packageId if provided
+  if (packageId !== undefined) {
+    qp.set("packageId", String(packageId));
   }
 
   // Ensure basePath starts with a slash
