@@ -83,6 +83,19 @@ export default function ClassModalContent({ event }: { event: any }) {
     window.location.href = bookingUrl;
   };
 
+  const handlePayWithoutCredits = () => {
+    // Close modal
+    setShowCreditModal(false);
+
+    // Build booking URL without package ID (payment flow)
+    const bookingUrl = buildBookingUrl({
+      sessionId: event.sessionId,
+      serviceType: "GROUP",
+    });
+
+    window.location.href = bookingUrl;
+  };
+
   return (
     <div
       className="selected-event-modal__class"
@@ -250,23 +263,19 @@ export default function ClassModalContent({ event }: { event: any }) {
           // Booking button for group sessions
           <button
             onClick={handleBookClick}
-            disabled={!hasCompatibleCredits || loadingCompatible}
+            disabled={loadingCompatible}
             style={{
               width: "100%",
               padding: "14px 24px",
-              backgroundColor:
-                hasCompatibleCredits && !loadingCompatible
-                  ? "var(--wp--preset--color--accent, #10b981)"
-                  : "#d1d5db",
+              backgroundColor: loadingCompatible
+                ? "#d1d5db"
+                : "var(--wp--preset--color--accent, #10b981)",
               color: "white",
               border: "none",
               borderRadius: "8px",
               fontSize: "16px",
               fontWeight: 600,
-              cursor:
-                hasCompatibleCredits && !loadingCompatible
-                  ? "pointer"
-                  : "not-allowed",
+              cursor: loadingCompatible ? "not-allowed" : "pointer",
               transition: "all 150ms ease",
             }}
           >
@@ -274,7 +283,7 @@ export default function ClassModalContent({ event }: { event: any }) {
               ? "Loading credits..."
               : hasCompatibleCredits
               ? `Book with Credits (${totalRemaining} remaining)`
-              : "No compatible credits - Purchase a package"}
+              : "Book This Class"}
           </button>
         ) : (
           // Join link for already booked classes
@@ -301,31 +310,21 @@ export default function ClassModalContent({ event }: { event: any }) {
         )}
       </div>
 
-      {/* Credits info */}
-      {isGroupClass &&
-        !isFull &&
-        !hasCompatibleCredits &&
-        !loadingCompatible && (
-          <div
-            style={{
-              marginTop: "16px",
-              padding: "12px",
-              backgroundColor: "#fef3c7",
-              borderRadius: "8px",
-              fontSize: "13px",
-              color: "#92400e",
-            }}
-          >
-            {compatibleError ? (
-              <>⚠️ {compatibleError.message}</>
-            ) : (
-              <>
-                💡 You need compatible credits to book this class. Purchase a
-                package to get started!
-              </>
-            )}
-          </div>
-        )}
+      {/* Credits info - only show warning if error occurred */}
+      {isGroupClass && !isFull && compatibleError && !loadingCompatible && (
+        <div
+          style={{
+            marginTop: "16px",
+            padding: "12px",
+            backgroundColor: "#fef3c7",
+            borderRadius: "8px",
+            fontSize: "13px",
+            color: "#92400e",
+          }}
+        >
+          ⚠️ {compatibleError.message}
+        </div>
+      )}
 
       {/* Credit Selection Modal */}
       {showCreditModal && compatible && (
@@ -333,6 +332,7 @@ export default function ClassModalContent({ event }: { event: any }) {
           compatible={compatible}
           sessionDuration={sessionDuration}
           onSelectPackage={handleSelectPackage}
+          onPayWithoutCredits={handlePayWithoutCredits}
           onCancel={() => setShowCreditModal(false)}
         />
       )}

@@ -1,5 +1,13 @@
 import { useEffect, useCallback } from "@wordpress/element";
-import type { ThriveCalendarElement } from "../../../../../shared/types/calendar";
+import type {
+  ThriveCalendarElement,
+  CalendarEventClickEvent,
+  CalendarRangeChangeEvent,
+} from "../../../../../shared/types/calendar";
+import {
+  isBookingEvent,
+  isGroupClassEvent,
+} from "../../../../../shared/types/calendar";
 
 interface UseEventClickArgs {
   calendarRef: { current: ThriveCalendarElement | null };
@@ -20,12 +28,12 @@ export function useEventClick({
   fetchData,
 }: UseEventClickArgs) {
   const handleEventClick = useCallback(
-    (e: any) => {
-      const event = e?.detail?.event;
+    (e: CalendarEventClickEvent) => {
+      const event = e.detail.event;
       if (!event) return;
 
       // Booking events: open booking actions modal via DOM event
-      if (event.type === "booking") {
+      if (isBookingEvent(event)) {
         const bookingEvent = new CustomEvent("thrive:booking-action", {
           detail: { event },
         });
@@ -36,15 +44,10 @@ export function useEventClick({
       // For group classes in booking mode we fire a waitlist event so the
       // caller can show a modal if needed; otherwise the selected-event modal
       // is opened.
-      if (
-        event.type === "class" &&
-        event.serviceType === "GROUP" &&
-        mode === "book"
-      ) {
-        const classEvent = event;
-        if (classEvent.isFull && classEvent.canJoinWaitlist) {
+      if (isGroupClassEvent(event) && mode === "book") {
+        if (event.isFull && event.canJoinWaitlist) {
           const waitlistEvent = new CustomEvent("thrive:show-waitlist", {
-            detail: { event: classEvent },
+            detail: { event },
           });
           document.dispatchEvent(waitlistEvent);
           return;
@@ -53,23 +56,23 @@ export function useEventClick({
 
       // Default: notify selected-event-modal runtime
       document.dispatchEvent(
-        new CustomEvent("thrive-calendar:selectedEvent", { detail: { event } })
+        new CustomEvent("thrive-calendar:selectedEvent", { detail: { event } }),
       );
     },
-    [mode]
+    [mode],
   );
 
   const handleRangeChange = useCallback(
-    (e: any) => {
-      const detail = e?.detail as { fromDate?: string; untilDate?: string };
+    (e: CalendarRangeChangeEvent) => {
+      const detail = e.detail;
       if (detail?.fromDate && detail?.untilDate) {
         const from = new Date(detail.fromDate);
         const until = new Date(detail.untilDate);
         // update data for the new range
-        fetchData(from, until).catch(() => {});
+        void fetchData(from, until);
       }
     },
-    [fetchData]
+    [fetchData],
   );
 
   const handleRefreshCalendar = useCallback(() => {
@@ -86,7 +89,7 @@ export function useEventClick({
     calendar.addEventListener("range:change", handleRangeChange);
     document.addEventListener(
       "thrive:refresh-calendar-data",
-      handleRefreshCalendar
+      handleRefreshCalendar,
     );
 
     return () => {
@@ -94,7 +97,7 @@ export function useEventClick({
       calendar.removeEventListener("range:change", handleRangeChange);
       document.removeEventListener(
         "thrive:refresh-calendar-data",
-        handleRefreshCalendar
+        handleRefreshCalendar,
       );
     };
   }, [calendarRef, handleEventClick, handleRangeChange, handleRefreshCalendar]);

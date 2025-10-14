@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
 import {
   AvailabilityEvent,
-  CalendarEvent,
+  ClassEvent,
+  BookingEvent,
   Teacher,
   Level,
 } from "../types/calendar";
@@ -14,7 +16,7 @@ const options: Partial<RequestInit> = {
 export const thriveClient = {
   fetchAvailabilityPreview: async (
     start: Date,
-    end: Date
+    end: Date,
   ): Promise<AvailabilityEvent[]> => {
     console.trace("Fetching availability preview:", { start, end });
     const res = await fetch(`/api/teachers/me/availability/preview`, {
@@ -76,20 +78,20 @@ export const thriveClient = {
 
   fetchStudentCalendarEvents: async (
     start: Date,
-    end: Date
-  ): Promise<CalendarEvent[]> => {
+    end: Date,
+  ): Promise<BookingEvent[]> => {
     console.trace("Fetching student calendar events:", { start, end });
     const res = await fetch(
       `/api/students/me/sessions?start=${encodeURIComponent(
-        start.toISOString()
+        start.toISOString(),
       )}&end=${encodeURIComponent(end.toISOString())}`,
       {
         ...options,
         method: "GET",
-      }
+      },
     );
     if (!res.ok) return [];
-    const data = (await res.json()) as CalendarEvent[];
+    const data = (await res.json()) as BookingEvent[];
     return Array.isArray(data) ? data : [];
   },
 
@@ -114,7 +116,7 @@ export const thriveClient = {
         `/api/teachers/${encodeURIComponent(String(id))}`,
         {
           credentials: "same-origin",
-        }
+        },
       );
       if (!res.ok) return null;
       const data = (await res.json()) as Teacher;
@@ -148,7 +150,7 @@ export const thriveClient = {
     startDate?: Date;
     endDate?: Date;
     teacherId?: number;
-  } = {}): Promise<CalendarEvent[]> => {
+  } = {}): Promise<ClassEvent[]> => {
     try {
       const params = new URLSearchParams();
       if (levelId) params.append("levelId", String(levelId));
@@ -160,14 +162,15 @@ export const thriveClient = {
         `/api/group-classes/available?${params.toString()}`,
         {
           credentials: "same-origin",
-        }
+        },
       );
       if (!res.ok) return [];
-      const sessions = (await res.json()) as any[];
+      const sessions = (await res.json()) as unknown[];
       if (!Array.isArray(sessions)) return [];
 
       // Map to CalendarEvent format
-      return sessions.map((s) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return sessions.map((s: any) => {
         // Transform teacher object to include name from user relation
         const teacher = s.teacher
           ? {
@@ -215,7 +218,7 @@ export const thriveClient = {
         credentials: "same-origin",
       });
       if (!res.ok) return [];
-      const data = (await res.json()) as { levels?: any[] };
+      const data = (await res.json()) as { levels?: Level[] };
       const levels = Array.isArray(data?.levels) ? data.levels : [];
       return levels;
     } catch (err) {

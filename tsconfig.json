@@ -1,18 +1,23 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "Node16",
-    "moduleResolution": "node16",
-    "lib": ["ES2020"],
+    "module": "ES2020",
+    "moduleResolution": "node",
+    "lib": ["ES2022", "DOM"],
     "strict": true,
+    "noImplicitAny": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "allowJs": true,
-    "noEmit": true
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@wordpress/*": ["wordpress/node_modules/@wordpress/*"]
+    }
   },
-  "include": ["eslint.config.mjs"],
+  "include": ["eslint.config.mjs", "wordpress/**/*.ts"],
   "files": ["eslint.config.mjs"],
   "exclude": ["node_modules", "vendor", "wordpress/vendor", "_logs_wp"]
 }

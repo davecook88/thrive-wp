@@ -3,6 +3,9 @@ import type {
   BaseCalendarEvent,
   ThriveCalendarElement,
   Teacher,
+  CalendarEventClickEvent,
+  CalendarRangeChangeEvent,
+  BookingEvent,
 } from "../../../../../shared/types/calendar";
 import { thriveClient } from "../../../../../shared/clients/thrive";
 import { useAvailabilitySlots } from "../../hooks/use-availability-slots";
@@ -29,16 +32,14 @@ export default function PrivateSessionAvailabilityCalendar({
   const [events, setEvents] = useState<BaseCalendarEvent[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<number[]>(
-    teachers?.length ? teachers.map((t) => t.teacherId) : []
+    teachers?.length ? teachers.map((t) => t.teacherId) : [],
   );
   const [sessionDuration, setSessionDuration] = useState<number>(60); // Default to 1 hour
   const [currentRange, setCurrentRange] = useState<{
     from: Date;
     until: Date;
   } | null>(null);
-  const [studentBookings, setStudentBookings] = useState<BaseCalendarEvent[]>(
-    []
-  );
+  const [studentBookings, setStudentBookings] = useState<BookingEvent[]>([]);
 
   // Use availability slots hook
   const { availabilitySlots } = useAvailabilitySlots({
@@ -60,7 +61,7 @@ export default function PrivateSessionAvailabilityCalendar({
     (async () => {
       const t = await thriveClient.fetchTeachers();
       if (mounted) setTeachers(t);
-    })();
+    })().catch(console.error);
     return () => {
       mounted = false;
     };
@@ -71,21 +72,21 @@ export default function PrivateSessionAvailabilityCalendar({
     const calendar = calendarRef.current;
     if (!calendar) return;
 
-    const handleRangeChange = (e: any) => {
-      const detail = e?.detail as { fromDate?: string; untilDate?: string };
+    const handleRangeChange = (e: CalendarRangeChangeEvent) => {
+      const detail = e.detail;
       if (detail?.fromDate && detail?.untilDate) {
         const from = new Date(detail.fromDate);
         const until = new Date(detail.untilDate);
         setCurrentRange({ from, until });
 
         // Fetch student bookings for this range
-        fetchStudentBookings(from, until).then(setStudentBookings);
+        void fetchStudentBookings(from, until).then(setStudentBookings);
       }
     };
     calendar.addEventListener("range:change", handleRangeChange);
     handleRangeChange({
       detail: { fromDate: calendar.fromDate, untilDate: calendar.untilDate },
-    });
+    } as CalendarRangeChangeEvent);
     return () => {
       calendar.removeEventListener("range:change", handleRangeChange);
     };
@@ -96,9 +97,7 @@ export default function PrivateSessionAvailabilityCalendar({
     // Style student bookings as "booked" events
     const styledBookings = studentBookings.map((booking) => {
       // Find teacher name from teacherId
-      const teacher = teachers.find(
-        (t) => t.teacherId === (booking as any).teacherId
-      );
+      const teacher = teachers.find((t) => t.teacherId === booking.teacherId);
       const teacherName = teacher
         ? teacher.name || `${teacher.firstName} ${teacher.lastName}`.trim()
         : "Unknown Teacher";
@@ -120,7 +119,7 @@ export default function PrivateSessionAvailabilityCalendar({
   useEffect(() => {
     const calendar = calendarRef.current;
     if (calendar) {
-      calendar.events = events as BaseCalendarEvent[];
+      calendar.events = events;
     }
   }, [events]);
 
@@ -129,14 +128,14 @@ export default function PrivateSessionAvailabilityCalendar({
     const calendar = calendarRef.current;
     if (!calendar) return;
 
-    const handleEventClick = (e: any) => {
-      const event = e?.detail?.event;
+    const handleEventClick = (e: CalendarEventClickEvent) => {
+      const event = e.detail.event;
       if (event) {
         // Broadcast to the selected-event-modal runtime
         document.dispatchEvent(
           new CustomEvent("thrive-calendar:selectedEvent", {
             detail: { event },
-          })
+          }),
         );
       }
     };
@@ -148,7 +147,7 @@ export default function PrivateSessionAvailabilityCalendar({
 
   const toggleTeacher = (id: number) => {
     setSelectedTeacherIds((prev) =>
-      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
     );
   };
 
@@ -272,7 +271,7 @@ export default function PrivateSessionAvailabilityCalendar({
       )}
 
       <thrive-calendar
-        ref={calendarRef as any}
+        ref={calendarRef}
         view={view}
         mode="public"
         slot-duration={sessionDuration.toString()}

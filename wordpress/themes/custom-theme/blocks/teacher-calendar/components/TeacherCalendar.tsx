@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from "@wordpress/element";
 import type {
   BaseCalendarEvent,
   ThriveCalendarElement,
-} from "../../../types/calendar";
+  CalendarEventClickEvent,
+  CalendarRangeChangeEvent,
+} from "../../../../../shared/types/calendar";
+import { isBookingEvent } from "../../../../../shared/types/calendar";
 import RulesSection from "../../teacher-availability/components/RulesSection";
 import ExceptionsSection from "../../teacher-availability/components/ExceptionsSection";
 
@@ -58,7 +61,7 @@ export default function TeacherCalendar({
         `/api/teachers/me/sessions?start=${start.toISOString()}&end=${end.toISOString()}`,
         {
           credentials: "include",
-        }
+        },
       );
 
       if (response.ok) {
@@ -73,7 +76,7 @@ export default function TeacherCalendar({
             bookingId: session.id,
             studentName: session.studentName,
             classType: session.classType,
-          })
+          }),
         );
         setEvents(calendarEvents);
       }
@@ -91,7 +94,7 @@ export default function TeacherCalendar({
             start: start.toISOString(),
             end: end.toISOString(),
           }),
-        }
+        },
       );
 
       if (response.ok) {
@@ -103,7 +106,7 @@ export default function TeacherCalendar({
             start: window.start,
             end: window.end,
             type: "availability" as const,
-          })
+          }),
         );
         setEvents(availabilityEvents);
       }
@@ -140,7 +143,7 @@ export default function TeacherCalendar({
             kind: e.isBlackout ? "unavailable" : "available",
             startTimeMinutes: e.startTime ? toMinutes(e.startTime) : undefined,
             endTimeMinutes: e.endTime ? toMinutes(e.endTime) : undefined,
-          })
+          }),
         );
 
         setRules(mappedRules);
@@ -158,7 +161,7 @@ export default function TeacherCalendar({
   // Persist availability changes
   const persistAvailability = async (
     nextRules: Rule[],
-    nextExceptions: Exception[]
+    nextExceptions: Exception[],
   ) => {
     const toTime = (mins: number) => {
       const normalizedMins = ((mins % (24 * 60)) + 24 * 60) % (24 * 60);
@@ -292,16 +295,16 @@ export default function TeacherCalendar({
     const calendar = calendarRef.current;
     if (!calendar) return;
 
-    const handleEventClick = (e: any) => {
-      const event = e?.detail?.event;
-      if (event && event.type === "booking") {
+    const handleEventClick = (e: CalendarEventClickEvent) => {
+      const event = e.detail.event;
+      if (event && isBookingEvent(event)) {
         // Show booking details modal or navigate to booking details
         console.log("Booking clicked:", event);
       }
     };
 
-    const handleRangeChange = (e: any) => {
-      const detail = e?.detail as { fromDate?: string; untilDate?: string };
+    const handleRangeChange = (e: CalendarRangeChangeEvent) => {
+      const detail = e.detail;
       if (detail?.fromDate && detail?.untilDate) {
         const from = new Date(detail.fromDate);
         const until = new Date(detail.untilDate);
@@ -320,7 +323,7 @@ export default function TeacherCalendar({
     calendar.addEventListener("range:change", handleRangeChange);
     document.addEventListener(
       "thrive:refresh-calendar-data",
-      handleRefreshCalendar
+      handleRefreshCalendar,
     );
 
     return () => {
@@ -328,7 +331,7 @@ export default function TeacherCalendar({
       calendar.removeEventListener("range:change", handleRangeChange);
       document.removeEventListener(
         "thrive:refresh-calendar-data",
-        handleRefreshCalendar
+        handleRefreshCalendar,
       );
     };
   }, [currentRange]);

@@ -1,6 +1,5 @@
-import { Session } from '../../sessions/entities/session.entity.js';
-import { GroupClass } from '../entities/group-class.entity.js';
-import { Level } from '../../levels/entities/level.entity.js';
+import { Session } from "../../sessions/entities/session.entity.js";
+import { GroupClass } from "../entities/group-class.entity.js";
 
 /**
  * DTO representing a Session with dynamically loaded enrollment count.

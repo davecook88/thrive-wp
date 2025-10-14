@@ -2,20 +2,20 @@
 import {
   BaseCalendarEvent,
   ThriveCalendarElement,
+  CalendarEventClickEvent,
 } from "../../../../shared/types/calendar";
-import { getCalendarContextSafe } from "../../../../shared/types/calendar-utils";
 
 type ThriveCalendarEl = ThriveCalendarElement;
 
 function attachCalendar(cal: ThriveCalendarEl) {
   console.log("Thrive Calendar: Attaching to calendar element", cal);
   const ctxEl = cal.closest(
-    ".wp-block-custom-theme-thrive-calendar-context"
+    ".wp-block-custom-theme-thrive-calendar-context",
   ) as HTMLElement | null;
   if (!ctxEl) {
     console.warn(
       "Thrive Calendar: No context wrapper found for calendar element",
-      cal
+      cal,
     );
     return;
   }
@@ -47,7 +47,7 @@ function attachCalendar(cal: ThriveCalendarEl) {
   };
   ctxEl.addEventListener(
     "thrive-calendar:events",
-    onCtxEvents as EventListener
+    onCtxEvents as EventListener,
   );
 
   // When the calendar’s visible range changes, consumers will fetch using UTC dates
@@ -61,8 +61,8 @@ function attachCalendar(cal: ThriveCalendarEl) {
   cal.addEventListener("range:change", onRange as EventListener);
 
   // Wire UI -> context
-  cal.addEventListener("event:click", (e: any) => {
-    api.setSelectedEvent(e?.detail?.event || null);
+  cal.addEventListener("event:click", (e: CalendarEventClickEvent) => {
+    api.setSelectedEvent(e.detail.event || null);
   });
   cal.addEventListener("today", () => {
     console.log("Thrive Calendar: Today button clicked");
@@ -90,7 +90,7 @@ function onReady() {
   // that manage their own lifecycle and do not use the shared context runtime.
   document
     .querySelectorAll<HTMLElement>(
-      ".wp-block-custom-theme-thrive-calendar-context thrive-calendar"
+      ".wp-block-custom-theme-thrive-calendar-context thrive-calendar",
     )
     .forEach((el) => attachCalendar(el as unknown as ThriveCalendarEl));
 }

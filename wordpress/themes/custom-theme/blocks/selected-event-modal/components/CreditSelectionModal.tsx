@@ -9,6 +9,7 @@ interface CreditSelectionModalProps {
   compatible: CompatibleCreditsResponse;
   sessionDuration: number; // in minutes
   onSelectPackage: (packageId: number, requiresConfirmation: boolean) => void;
+  onPayWithoutCredits: () => void;
   onCancel: () => void;
 }
 
@@ -16,6 +17,7 @@ export default function CreditSelectionModal({
   compatible,
   sessionDuration,
   onSelectPackage,
+  onPayWithoutCredits,
   onCancel,
 }: CreditSelectionModalProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -214,6 +216,68 @@ export default function CreditSelectionModal({
                 <br />
                 Please purchase a package to continue.
               </p>
+            </div>
+          )}
+
+          {/* Pay without credits option (only show if credits exist) */}
+          {(hasExactMatch || hasHigherTier) && (
+            <div style={{ marginTop: "20px" }}>
+              <div
+                style={{
+                  borderTop: "1px solid #e5e7eb",
+                  paddingTop: "20px",
+                }}
+              >
+                <h4
+                  style={{
+                    margin: "0 0 12px 0",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    color: "#374151",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  Other Options
+                </h4>
+                <button
+                  onClick={onPayWithoutCredits}
+                  style={{
+                    width: "100%",
+                    padding: "16px",
+                    backgroundColor: "#f9fafb",
+                    border: "2px solid #e5e7eb",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#374151",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    transition: "all 150ms ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#f3f4f6";
+                    e.currentTarget.style.borderColor = "#d1d5db";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#f9fafb";
+                    e.currentTarget.style.borderColor = "#e5e7eb";
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 600, marginBottom: "4px" }}>
+                      💳 Pay with a new package
+                    </div>
+                    <div style={{ fontSize: "12px", color: "#6b7280" }}>
+                      Purchase and use a new package for this booking
+                    </div>
+                  </div>
+                  <span style={{ fontSize: "18px", color: "#9ca3af" }}>→</span>
+                </button>
+              </div>
             </div>
           )}
         </div>

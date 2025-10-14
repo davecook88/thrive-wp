@@ -27,6 +27,14 @@ export interface ClassEvent extends BaseCalendarEvent {
   courseId?: string;
   meetingUrl?: string;
   requiresEnrollment?: boolean;
+  // Group class specific properties
+  isFull?: boolean;
+  canJoinWaitlist?: boolean;
+  availableSpots?: number;
+  groupClassId?: number;
+  level?: Level;
+  sessionId?: string; // For group classes, this is the session ID
+  teacher?: Teacher;
 }
 
 export interface BookingEvent extends BaseCalendarEvent {
@@ -34,6 +42,11 @@ export interface BookingEvent extends BaseCalendarEvent {
   sessionId: string;
   status: "INVITED" | "CONFIRMED" | "CANCELLED" | "NO_SHOW" | "FORFEIT";
   cancellationReason?: string;
+  // Additional properties from API
+  teacherId?: number;
+  teacherName?: string;
+  classType?: "PRIVATE" | "GROUP" | "COURSE";
+  bookingId?: number;
 }
 
 export interface AvailabilityEvent extends BaseCalendarEvent {
@@ -52,6 +65,57 @@ export type CalendarEvent =
   | BookingEvent
   | AvailabilityEvent
   | BlackoutEvent;
+
+// Type guards for CalendarEvent types
+export function isClassEvent(event: CalendarEvent): event is ClassEvent {
+  return event.type === "class";
+}
+
+export function isBookingEvent(event: CalendarEvent): event is BookingEvent {
+  return event.type === "booking";
+}
+
+export function isAvailabilityEvent(
+  event: CalendarEvent,
+): event is AvailabilityEvent {
+  return event.type === "availability";
+}
+
+export function isBlackoutEvent(event: CalendarEvent): event is BlackoutEvent {
+  return event.type === "blackout";
+}
+
+// Type guards for ClassEvent service types
+export function isPrivateClassEvent(
+  event: CalendarEvent,
+): event is ClassEvent & { serviceType: "PRIVATE" } {
+  return isClassEvent(event) && event.serviceType === "PRIVATE";
+}
+
+export function isGroupClassEvent(
+  event: CalendarEvent,
+): event is ClassEvent & { serviceType: "GROUP" } {
+  return isClassEvent(event) && event.serviceType === "GROUP";
+}
+
+export function isCourseClassEvent(
+  event: CalendarEvent,
+): event is ClassEvent & { serviceType: "COURSE" } {
+  return isClassEvent(event) && event.serviceType === "COURSE";
+}
+
+// Event types for thrive-calendar CustomEvents
+export interface CalendarEventClickDetail {
+  event: CalendarEvent;
+}
+
+export interface CalendarRangeChangeDetail {
+  fromDate?: string;
+  untilDate?: string;
+}
+
+export type CalendarEventClickEvent = CustomEvent<CalendarEventClickDetail>;
+export type CalendarRangeChangeEvent = CustomEvent<CalendarRangeChangeDetail>;
 
 // Minimal client contract exposed on context. Avoid direct imports to prevent cycles.
 
@@ -90,14 +154,14 @@ export interface ThriveCalendarContextApi {
   registerDateRangeChangeCallback(
     callback: (
       start: Date,
-      end: Date
-    ) => BaseCalendarEvent[] | Promise<BaseCalendarEvent[]>
+      end: Date,
+    ) => BaseCalendarEvent[] | Promise<BaseCalendarEvent[]>,
   ): void;
   unregisterDateRangeChangeCallback(
     callback: (
       start: Date,
-      end: Date
-    ) => BaseCalendarEvent[] | Promise<BaseCalendarEvent[]>
+      end: Date,
+    ) => BaseCalendarEvent[] | Promise<BaseCalendarEvent[]>,
   ): void;
 
   // Navigation/view helpers (calendar blocks can call these and then refetch/ensure as needed)

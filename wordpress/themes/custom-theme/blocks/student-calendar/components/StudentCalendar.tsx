@@ -171,15 +171,16 @@ export default function StudentCalendar({
     }
   }, [events]);
 
+  useEventClick({
+    calendarRef,
+    mode,
+    currentRange,
+    fetchData,
+  });
+
   // Handle calendar events
   useEffect(() => {
     // Wire calendar and document-level event listeners via hook
-    useEventClick({
-      calendarRef,
-      mode,
-      currentRange,
-      fetchData,
-    });
 
     // Keep backward-compatible DOM listeners for booking and waitlist actions
     // which call the modal helpers imported above.
