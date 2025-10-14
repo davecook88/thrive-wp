@@ -72,7 +72,7 @@ export default function StudentCalendar({
       ]);
       if (mounted) {
         setTeachers(t);
-        setSelectedTeacherIds(t.map((teacher) => teacher.teacherId));
+        setSelectedTeacherIds(t.map((teacher) => teacher.id));
         setLevels(l);
         setSelectedLevelIds(l.map((level) => level.id));
       }

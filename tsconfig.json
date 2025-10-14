@@ -14,10 +14,18 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@wordpress/*": ["wordpress/node_modules/@wordpress/*"]
+      "@wordpress/*": ["wordpress/node_modules/@wordpress/*"],
+      "shared/*": ["shared/types/*"]
     }
   },
-  "include": ["eslint.config.mjs", "wordpress/**/*.ts"],
+  "include": [
+    "eslint.config.mjs",
+    "wordpress/**/*.ts",
+    "shared/**/*.ts",
+    "shared/index.ts",
+    "nestjs/src/**/*.ts",
+    "types/**/*.d.ts"
+  ],
   "files": ["eslint.config.mjs"],
   "exclude": ["node_modules", "vendor", "wordpress/vendor", "_logs_wp"]
 }

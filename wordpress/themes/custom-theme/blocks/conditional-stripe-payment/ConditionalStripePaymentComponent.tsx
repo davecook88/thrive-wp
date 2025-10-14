@@ -1,4 +1,9 @@
 import { useEffect, useState } from "@wordpress/element";
+import { z } from "zod";
+import {
+  StripeKeyResponseSchema,
+  CreateSessionResponseSchema,
+} from "../../../../shared/types/payments";
 
 interface ConditionalStripePaymentAttributes {
   heading: string;
@@ -75,7 +80,12 @@ const ConditionalStripePaymentComponent: React.FC<
         let stripeInstance = stripe;
         if (!stripeInstance) {
           const response = await fetch("/api/payments/stripe-key");
-          const { publishableKey } = await response.json();
+          const json = await response.json();
+          const parsed = StripeKeyResponseSchema.safeParse(json);
+          if (!parsed.success) {
+            throw new Error("Invalid stripe key response");
+          }
+          const { publishableKey } = parsed.data;
           stripeInstance = window.Stripe(publishableKey);
           setStripe(stripeInstance);
         }
@@ -100,7 +110,13 @@ const ConditionalStripePaymentComponent: React.FC<
           throw new Error("Failed to create payment session");
         }
 
-        const { clientSecret } = await sessionResponse.json();
+        const sessionJson = await sessionResponse.json();
+        const sessionParsed =
+          CreateSessionResponseSchema.safeParse(sessionJson);
+        if (!sessionParsed.success) {
+          throw new Error("Invalid session response");
+        }
+        const { clientSecret } = sessionParsed.data;
 
         // Create elements instance with clientSecret
         const elementsInstance = stripeInstance.elements({
@@ -133,7 +149,7 @@ const ConditionalStripePaymentComponent: React.FC<
     // Listen for package selection events
     document.addEventListener(
       "custom-theme:packageSelected",
-      handlePackageSelected
+      handlePackageSelected,
     );
 
     // Handle initial package from context
@@ -145,14 +161,14 @@ const ConditionalStripePaymentComponent: React.FC<
 
     if (initialPkg.id || initialPkg.priceId) {
       document.dispatchEvent(
-        new CustomEvent("custom-theme:packageSelected", { detail: initialPkg })
+        new CustomEvent("custom-theme:packageSelected", { detail: initialPkg }),
       );
     }
 
     return () => {
       document.removeEventListener(
         "custom-theme:packageSelected",
-        handlePackageSelected
+        handlePackageSelected,
       );
     };
   }, [stripe, start, end, teacher, context]);
@@ -169,9 +185,9 @@ const ConditionalStripePaymentComponent: React.FC<
         return_url: `${
           window.location.origin
         }/booking-success?session_start=${encodeURIComponent(
-          start
+          start,
         )}&session_end=${encodeURIComponent(end)}&teacher=${encodeURIComponent(
-          teacher
+          teacher,
         )}`,
       },
     });

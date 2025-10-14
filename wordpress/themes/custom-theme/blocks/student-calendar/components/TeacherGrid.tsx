@@ -1,6 +1,5 @@
+import { PublicTeacherDto } from "@shared/types/teachers";
 import type { Teacher } from "../../../../../../shared/types/calendar";
-import { Dispatch, SetStateAction } from "react";
-
 interface TeacherGridProps {
   teachers: Teacher[];
   selectedTeacherIds: number[];
@@ -12,8 +11,8 @@ export default function TeacherGrid({
   selectedTeacherIds,
   toggleTeacher,
 }: TeacherGridProps) {
-  const getInitials = (t: Teacher) =>
-    (t.firstName || t.name || "T").slice(0, 1).toUpperCase();
+  const getInitials = (t: PublicTeacherDto) =>
+    (t.displayName || "T").slice(0, 1).toUpperCase();
 
   return (
     <div>
@@ -35,64 +34,63 @@ export default function TeacherGrid({
           gap: "8px",
         }}
       >
-        {teachers.map((t) => (
-          <button
-            key={t.teacherId}
-            type="button"
-            onClick={() => toggleTeacher(t.teacherId)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: 10,
-              border: "1px solid #e5e7eb",
-              borderRadius: 8,
-              background: selectedTeacherIds.includes(t.teacherId)
-                ? "white"
-                : "#f9fafb",
-              cursor: "pointer",
-              textAlign: "left",
-              opacity: selectedTeacherIds.includes(t.teacherId) ? 1 : 0.5,
-              transition: "all 150ms ease",
-            }}
-          >
-            <div
+        {teachers.map((t) => {
+          const isSelected = selectedTeacherIds.includes(t.id);
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => toggleTeacher(t.id)}
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                background: selectedTeacherIds.includes(t.teacherId)
-                  ? "var(--wp--preset--color--accent, #10b981)"
-                  : "#e5e7eb",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                color: selectedTeacherIds.includes(t.teacherId)
-                  ? "white"
-                  : "#374151",
-                fontWeight: 700,
-                fontSize: 14,
-                flexShrink: 0,
+                gap: 10,
+                padding: 10,
+                border: "1px solid #e5e7eb",
+                borderRadius: 8,
+                background: isSelected ? "white" : "#f9fafb",
+                cursor: "pointer",
+                textAlign: "left",
+                opacity: isSelected ? 1 : 0.5,
+                transition: "all 150ms ease",
               }}
             >
-              {getInitials(t)}
-            </div>
-            <div style={{ minWidth: 0, flex: 1 }}>
               <div
                 style={{
-                  fontWeight: 600,
+                  width: 36,
+                  height: 36,
+                  borderRadius: "50%",
+                  background: isSelected
+                    ? "var(--wp--preset--color--accent, #10b981)"
+                    : "#e5e7eb",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: isSelected ? "white" : "#374151",
+                  fontWeight: 700,
                   fontSize: 14,
-                  marginBottom: 2,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
+                  flexShrink: 0,
                 }}
               >
-                {t.name || `${t.firstName} ${t.lastName}`.trim()}
+                {getInitials(t)}
               </div>
-            </div>
-          </button>
-        ))}
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div
+                  style={{
+                    fontWeight: 600,
+                    fontSize: 14,
+                    marginBottom: 2,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {t.displayName.trim()}
+                </div>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

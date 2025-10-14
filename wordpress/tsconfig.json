@@ -18,5 +18,6 @@
     }
   },
   "include": ["shared/**/*.ts", "types/**/*.ts", "plugins/**/*.ts", "**/*.ts"],
-  "exclude": ["node_modules", "vendor"]
+  "exclude": ["node_modules", "vendor"],
+  "references": [{ "path": "../shared/tsconfig.json" }]
 }

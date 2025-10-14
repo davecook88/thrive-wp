@@ -1,12 +1,18 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
+import { z } from "zod";
 import {
   AvailabilityEvent,
   ClassEvent,
   BookingEvent,
   Teacher,
   Level,
-} from "../types/calendar";
-import { StudentPackageMyCreditsResponse } from "../types/packages";
+} from "../types/calendar.js";
+import { StudentPackageMyCreditsResponse } from "../types/packages.js";
+import {
+  PreviewAvailabilityResponseSchema,
+  PublicTeacherSchema,
+  PublicTeacherApiSchema,
+  PublicTeacherDto,
+} from "../types/teachers.js";
 
 const options: Partial<RequestInit> = {
   headers: { "Content-Type": "application/json" },
@@ -28,17 +34,15 @@ export const thriveClient = {
       }),
     });
     if (!res.ok) return [];
-    const data = (await res.json()) as {
-      windows?: Array<{ start: string; end: string; teacherIds: number[] }>;
-    };
-    const wins = Array.isArray(data?.windows) ? data.windows : [];
-    return wins.map((w) => ({
+    const raw = (await res.json()) as unknown;
+    const parsed = PreviewAvailabilityResponseSchema.parse(raw);
+    return parsed.windows.map((w) => ({
       id: `avail:${w.start}|${w.end}`,
       title: "Available",
       startUtc: w.start,
       endUtc: w.end,
       type: "availability",
-      teacherIds: w.teacherIds,
+      teacherIds: [],
     }));
   },
 
@@ -62,17 +66,15 @@ export const thriveClient = {
       }),
     });
     if (!res.ok) return [];
-    const data = (await res.json()) as {
-      windows?: Array<{ start: string; end: string; teacherIds: number[] }>;
-    };
-    const wins = Array.isArray(data?.windows) ? data.windows : [];
-    return wins.map((w) => ({
+    const raw = await res.json();
+    const parsed = PreviewAvailabilityResponseSchema.parse(raw);
+    return parsed.windows.map((w) => ({
       id: `avail:${w.start}|${w.end}`,
       title: "Available",
       startUtc: w.start,
       endUtc: w.end,
       type: "availability",
-      teacherIds: w.teacherIds,
+      teacherIds: [],
     }));
   },
 
@@ -95,7 +97,7 @@ export const thriveClient = {
     return Array.isArray(data) ? data : [];
   },
 
-  fetchTeachers: async () => {
+  fetchTeachers: async (): Promise<PublicTeacherDto[]> => {
     try {
       const res = await fetch(`/api/teachers`, {
         credentials: "same-origin",
@@ -103,8 +105,13 @@ export const thriveClient = {
       if (!res.ok) {
         return [];
       }
-      const data = (await res.json()) as Teacher[];
-      return data;
+      const raw = (await res.json()) as unknown;
+      console.log("Raw teachers data:", raw);
+      // The API sometimes returns a different shape (teacherId, firstName, lastName, name, languagesSpoken, etc.).
+      // Try to parse as our PublicTeacherSchema first, otherwise fall back to API schema and map to local Teacher.
+
+      const parsed = z.array(PublicTeacherSchema).parse(raw);
+      return parsed;
     } catch (error) {
       console.error("Failed to fetch teachers:", error);
       return [];
@@ -119,8 +126,30 @@ export const thriveClient = {
         },
       );
       if (!res.ok) return null;
-      const data = (await res.json()) as Teacher;
-      return data;
+      const raw = (await res.json()) as unknown;
+      try {
+        const parsed = PublicTeacherSchema.parse(raw);
+        return parsed as unknown as Teacher;
+      } catch (e) {
+        const parsedApi = PublicTeacherApiSchema.parse(raw);
+        const mapped: Teacher = {
+          userId: parsedApi.userId,
+          teacherId: parsedApi.teacherId,
+          firstName: parsedApi.firstName || parsedApi.name || "",
+          lastName: parsedApi.lastName || "",
+          name:
+            parsedApi.name ||
+            `${parsedApi.firstName || ""} ${parsedApi.lastName || ""}`.trim(),
+          bio: parsedApi.bio ?? null,
+          avatarUrl: parsedApi.avatarUrl ?? null,
+          birthplace: (parsedApi.birthplace as any) ?? null,
+          currentLocation: (parsedApi.currentLocation as any) ?? null,
+          specialties: parsedApi.specialties ?? null,
+          yearsExperience: parsedApi.yearsExperience ?? null,
+          languagesSpoken: parsedApi.languagesSpoken ?? null,
+        };
+        return mapped;
+      }
     } catch (err) {
       console.error("Failed to fetch teacher:", err);
       return null;
@@ -169,8 +198,7 @@ export const thriveClient = {
       if (!Array.isArray(sessions)) return [];
 
       // Map to CalendarEvent format
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return sessions.map((s: any) => {
+      return sessions.map((s) => {
         // Transform teacher object to include name from user relation
         const teacher = s.teacher
           ? {

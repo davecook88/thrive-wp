@@ -1,4 +1,5 @@
 import { thriveClient } from "../clients/thrive";
+import { PublicTeacherDto } from "./teachers";
 
 // Local type definitions for CalendarEvent to avoid import issues
 export type ISODateTimeUTC = string; // e.g., '2025-09-01T14:00:00Z'
@@ -196,20 +197,7 @@ export interface TeacherLocation {
   lng?: number;
 }
 
-export interface Teacher {
-  userId: number;
-  teacherId: number;
-  firstName: string;
-  lastName: string;
-  name: string;
-  bio: string | null;
-  avatarUrl: string | null;
-  birthplace: TeacherLocation | null;
-  currentLocation: TeacherLocation | null;
-  specialties: string[] | null;
-  yearsExperience: number | null;
-  languagesSpoken: string[] | null;
-}
+export type Teacher = PublicTeacherDto;
 
 export interface Level {
   id: number;

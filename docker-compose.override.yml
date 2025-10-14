@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  nestjs:
+    volumes:
+      - ./nestjs:/usr/src/app:cached
+      - ./shared:/usr/src/app/shared:cached
+      - nestjs_node_modules:/usr/src/app/node_modules
+    command: npm run start:dev
+    environment:
+      NODE_ENV: development
+    ports:
+      - '3000:3000'

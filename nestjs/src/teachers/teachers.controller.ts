@@ -6,43 +6,27 @@ import {
   Body,
   UseGuards,
   Request,
-  Patch,
   Query,
-} from '@nestjs/common';
-import { TeachersService } from './teachers.service.js';
-import { TeacherGuard } from '../auth/teacher.guard.js';
+} from "@nestjs/common";
+import { TeachersService } from "./teachers.service.js";
+import { TeacherGuard } from "../auth/teacher.guard.js";
 import {
   UpdateAvailabilityDto,
   PreviewMyAvailabilityDto,
-} from './dto/availability.dto.js';
-import { UpdateTeacherProfileDto } from './dto/update-teacher-profile.dto.js';
-import type { Request as ExpressRequest } from 'express';
+} from "./dto/availability.dto.js";
+import type { Request as ExpressRequest } from "express";
+import type {
+  GetAvailabilityResponse,
+  PreviewAvailabilityResponse,
+} from "shared/teachers";
 
 type AuthenticatedRequest = ExpressRequest & {
   user: { id: number; email: string; roles: string[] };
 };
 
-interface GetAvailabilityResponse {
-  rules: Array<{
-    id: number;
-    weekday: number;
-    startTime: string;
-    endTime: string;
-  }>;
-  exceptions: Array<{
-    id: number;
-    date: string;
-    startTime?: string;
-    endTime?: string;
-    isBlackout: boolean;
-  }>;
-}
+// response types are imported from shared types
 
-interface PreviewAvailabilityResponse {
-  windows: Array<{ start: string; end: string }>;
-}
-
-@Controller('teachers/me/availability')
+@Controller("teachers/me/availability")
 @UseGuards(TeacherGuard)
 export class TeachersController {
   constructor(private readonly teachersService: TeachersService) {}
@@ -52,7 +36,7 @@ export class TeachersController {
     @Request() req: AuthenticatedRequest,
   ): Promise<GetAvailabilityResponse> {
     const teacherId = req.user.id;
-    return this.teachersService.getTeacherAvailability(teacherId);
+    return await this.teachersService.getTeacherAvailability(teacherId);
   }
 
   @Put()
@@ -61,36 +45,39 @@ export class TeachersController {
     @Body() dto: UpdateAvailabilityDto,
   ): Promise<GetAvailabilityResponse> {
     const teacherId = req.user.id;
-    return this.teachersService.updateTeacherAvailability(teacherId, dto);
+    return await this.teachersService.updateTeacherAvailability(teacherId, dto);
   }
 
-  @Post('preview')
+  @Post("preview")
   async previewAvailability(
     @Request() req: AuthenticatedRequest,
     @Body() dto: PreviewMyAvailabilityDto,
   ): Promise<PreviewAvailabilityResponse> {
     const userId = req.user.id;
     const teacherId = await this.teachersService.getTeacherIdByUserId(userId);
-    return this.teachersService.previewTeacherAvailability([teacherId], dto);
+    return await this.teachersService.previewTeacherAvailability(
+      [teacherId],
+      dto,
+    );
   }
 }
 
-@Controller('teachers/me')
+@Controller("teachers/me")
 @UseGuards(TeacherGuard)
 export class TeachersStatsController {
   constructor(private readonly teachersService: TeachersService) {}
 
-  @Get('stats')
+  @Get("stats")
   async getMyStats(@Request() req: AuthenticatedRequest) {
     const userId = req.user.id;
-    return this.teachersService.getTeacherStats(userId);
+    return await this.teachersService.getTeacherStats(userId);
   }
 
-  @Get('sessions')
+  @Get("sessions")
   async getMySessions(
     @Request() req: AuthenticatedRequest,
-    @Query('start') startDate?: string,
-    @Query('end') endDate?: string,
+    @Query("start") startDate?: string,
+    @Query("end") endDate?: string,
   ) {
     const userId = req.user.id;
     return this.teachersService.getTeacherSessions(userId, startDate, endDate);

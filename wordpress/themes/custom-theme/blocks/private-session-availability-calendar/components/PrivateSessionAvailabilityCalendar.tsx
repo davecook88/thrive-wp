@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "@wordpress/element";
 import type {
   BaseCalendarEvent,
   ThriveCalendarElement,
-  Teacher,
   CalendarEventClickEvent,
   CalendarRangeChangeEvent,
   BookingEvent,
@@ -10,6 +9,7 @@ import type {
 import { thriveClient } from "../../../../../../shared/clients/thrive";
 import { useAvailabilitySlots } from "../../hooks/use-availability-slots";
 import { fetchStudentBookings } from "../../student-calendar/utils/calendarData";
+import { PublicTeacherDto } from "@shared/types/teachers";
 
 interface Props {
   view: "week" | "day" | "month" | "list";
@@ -30,9 +30,9 @@ export default function PrivateSessionAvailabilityCalendar({
 }: Props) {
   const calendarRef = useRef<ThriveCalendarElement>(null);
   const [events, setEvents] = useState<BaseCalendarEvent[]>([]);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [teachers, setTeachers] = useState<PublicTeacherDto[]>([]);
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<number[]>(
-    teachers?.length ? teachers.map((t) => t.teacherId) : [],
+    teachers?.length ? teachers.map((t) => t.id) : [],
   );
   const [sessionDuration, setSessionDuration] = useState<number>(60); // Default to 1 hour
   const [currentRange, setCurrentRange] = useState<{
@@ -52,7 +52,7 @@ export default function PrivateSessionAvailabilityCalendar({
 
   useEffect(() => {
     if (!teachers?.length || selectedTeacherIds.length) return;
-    setSelectedTeacherIds(teachers.map((t) => t.teacherId));
+    setSelectedTeacherIds(teachers.map((t) => t.id));
   }, [teachers, selectedTeacherIds.length]);
 
   // Load teachers list once
@@ -97,14 +97,11 @@ export default function PrivateSessionAvailabilityCalendar({
     // Style student bookings as "booked" events
     const styledBookings = studentBookings.map((booking) => {
       // Find teacher name from teacherId
-      const teacher = teachers.find((t) => t.teacherId === booking.teacherId);
-      const teacherName = teacher
-        ? teacher.name || `${teacher.firstName} ${teacher.lastName}`.trim()
-        : "Unknown Teacher";
+      const teacher = teachers.find((t) => t.id === booking.teacherId);
 
       return {
         ...booking,
-        title: `Class with ${teacherName}`,
+        title: `Class with ${teacher?.displayName || "Teacher"}`,
         type: "booking" as const,
         // Add styling properties for greyed out appearance
         isBooked: true,
@@ -151,8 +148,8 @@ export default function PrivateSessionAvailabilityCalendar({
     );
   };
 
-  const getInitials = (t: Teacher) =>
-    (t.firstName || t.name || "T").slice(0, 1).toUpperCase();
+  const getInitials = (t: PublicTeacherDto) =>
+    (t.displayName || "T").slice(0, 1).toUpperCase();
 
   return (
     <div style={{ height: "100%", width: "100%" }}>
@@ -201,9 +198,9 @@ export default function PrivateSessionAvailabilityCalendar({
               >
                 {teachers.map((t) => (
                   <button
-                    key={t.teacherId}
+                    key={t.id}
                     type="button"
-                    onClick={() => toggleTeacher(t.teacherId)}
+                    onClick={() => toggleTeacher(t.id)}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -211,7 +208,7 @@ export default function PrivateSessionAvailabilityCalendar({
                       padding: 10,
                       border: "1px solid #e5e7eb",
                       borderRadius: 8,
-                      background: selectedTeacherIds.includes(t.teacherId)
+                      background: selectedTeacherIds.includes(t.id)
                         ? "#f3f4f6"
                         : "white",
                       cursor: "pointer",
@@ -246,7 +243,7 @@ export default function PrivateSessionAvailabilityCalendar({
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {t.name || `${t.firstName} ${t.lastName}`.trim()}
+                        {t.displayName?.trim()}
                       </div>
                       {t.bio && (
                         <div

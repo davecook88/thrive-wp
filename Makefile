@@ -1,6 +1,6 @@
 # Makefile for Thrive WP (WordPress + NestJS Hybrid)
 
-.PHONY: logs-nestjs logs-wp run stop build migrate-show migrate-run migrate-revert migrate-generate
+.PHONY: logs-nestjs logs-wp run stop build migrate-show migrate-run migrate-revert migrate-generate dev prod-deploy
 
 logs-nestjs:
 	docker-compose logs -f nestjs
@@ -50,6 +50,14 @@ watch-wp-themes:
 
 watch-admin-plugin:
 	cd wordpress/plugins/thrive-admin && npm run dev
+
+# Start development with hot-reload (uses docker-compose.override.yml)
+dev:
+	docker-compose -f docker-compose.yml -f docker-compose.override.yml up --build
+
+# Build and deploy production containers (detached)
+prod-deploy:
+	docker-compose -f docker-compose.yml up --build -d
 
 # Generate a new migration (pass NAME=DescriptiveName)
 migrate-generate:

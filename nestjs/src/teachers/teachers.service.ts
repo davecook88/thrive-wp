@@ -2,36 +2,29 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In, FindOptionsWhere } from 'typeorm';
-import { Teacher } from './entities/teacher.entity.js';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, DataSource, In, FindOptionsWhere } from "typeorm";
+import { Teacher } from "./entities/teacher.entity.js";
 import {
   TeacherAvailability,
   TeacherAvailabilityKind,
-} from './entities/teacher-availability.entity.js';
+} from "./entities/teacher-availability.entity.js";
 import {
   UpdateAvailabilityDto,
   PreviewAvailabilityDto,
   AvailabilityRuleDto,
   PreviewMyAvailabilityDto,
-} from './dto/availability.dto.js';
-import { Session } from '../sessions/entities/session.entity.js';
+} from "./dto/availability.dto.js";
+import { Session } from "../sessions/entities/session.entity.js";
+import type {
+  GetAvailabilityResponse,
+  PreviewAvailabilityResponse,
+  PublicTeacherDto,
+  TeacherProfileDto,
+} from "shared/teachers.js";
 
-interface AvailabilityRule {
-  id: number;
-  weekday: number;
-  startTime: string;
-  endTime: string;
-}
-
-interface AvailabilityException {
-  id: number;
-  date: string;
-  startTime?: string;
-  endTime?: string;
-  isBlackout: boolean;
-}
+// (local transient shapes are replaced by shared types)
 
 @Injectable()
 export class TeachersService {
@@ -50,57 +43,76 @@ export class TeachersService {
       where: { userId },
     });
     if (!teacher) {
-      throw new NotFoundException('Teacher not found');
+      throw new NotFoundException("Teacher not found");
     }
     return teacher.id;
   }
 
-  async getTeacherAvailability(userId: number) {
+  async getTeacherAvailability(
+    userId: number,
+  ): Promise<GetAvailabilityResponse> {
     const teacherId = await this.getTeacherIdByUserId(userId);
 
     if (!teacherId) {
-      throw new NotFoundException('Teacher not found');
+      throw new NotFoundException("Teacher not found");
     }
 
     const availabilities = await this.availabilityRepository.find({
       where: { teacherId, isActive: true },
-      order: { createdAt: 'ASC' },
+      order: { createdAt: "ASC" },
     });
 
-    const rules: AvailabilityRule[] = [];
-    const exceptions: AvailabilityException[] = [];
+    const rules: Array<{
+      id: number;
+      dayOfWeek: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+      startTime: string;
+      endTime: string;
+      maxBookings?: number | null;
+    }> = [];
+    const exceptions: Array<{
+      id: number;
+      date: string;
+      start?: string | null;
+      end?: string | null;
+      isAvailable: boolean;
+      note?: string | null;
+    }> = [];
 
     for (const avail of availabilities) {
       if (avail.kind === TeacherAvailabilityKind.RECURRING) {
         rules.push({
           id: avail.id,
-          weekday: avail.weekday!,
+          dayOfWeek: avail.weekday! as 0 | 1 | 2 | 3 | 4 | 5 | 6,
           startTime: this.minutesToTimeString(avail.startTimeMinutes!),
           endTime: this.minutesToTimeString(avail.endTimeMinutes! % (24 * 60)),
+          maxBookings: null,
         });
       } else if (avail.kind === TeacherAvailabilityKind.BLACKOUT) {
         exceptions.push({
           id: avail.id,
-          date: avail.startAt!.toISOString().split('T')[0],
-          startTime: avail.startAt
-            ? this.dateToTimeString(avail.startAt)
-            : undefined,
-          endTime: avail.endAt ? this.dateToTimeString(avail.endAt) : undefined,
-          isBlackout: true,
+          date: avail.startAt!.toISOString().split("T")[0],
+          start: avail.startAt ? avail.startAt.toISOString() : null,
+          end: avail.endAt ? avail.endAt.toISOString() : null,
+          isAvailable: false,
+          note: null,
         });
       }
     }
 
-    return { rules, exceptions };
+    // Minimal: attach timezone. System stores times as UTC.
+    return { timezone: "UTC", rules, exceptions };
   }
 
-  async updateTeacherAvailability(userId: number, dto: UpdateAvailabilityDto) {
+  async updateTeacherAvailability(
+    userId: number,
+    dto: UpdateAvailabilityDto,
+  ): Promise<GetAvailabilityResponse> {
     const teacher = await this.teacherRepository.findOne({
       where: { userId },
     });
 
     if (!teacher) {
-      throw new NotFoundException('Teacher not found');
+      throw new NotFoundException("Teacher not found");
     }
 
     // Validate rules for overlaps
@@ -172,14 +184,14 @@ export class TeachersService {
   async previewTeacherAvailability(
     teacherIds: number[],
     dto: PreviewAvailabilityDto | PreviewMyAvailabilityDto,
-  ) {
+  ): Promise<PreviewAvailabilityResponse> {
     // Check if all teachers exist
     for (const teacherId of teacherIds) {
       const teacher = await this.teacherRepository.findOne({
         where: { id: teacherId },
       });
       if (!teacher) {
-        throw new NotFoundException('Teacher not found');
+        throw new NotFoundException("Teacher not found");
       }
     }
 
@@ -189,7 +201,7 @@ export class TeachersService {
     const availabilities = await this.availabilityRepository.find({
       where,
     });
-    console.log('Found availabilities:', availabilities);
+    console.log("Found availabilities:", availabilities);
     const windows: { start: string; end: string; teacherIds: number[] }[] = [];
     const startDate = new Date(dto.start);
     const endDate = new Date(dto.end);
@@ -197,7 +209,7 @@ export class TeachersService {
     const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     if (diffDays > 90) {
-      throw new BadRequestException('Preview range cannot exceed 90 days');
+      throw new BadRequestException("Preview range cannot exceed 90 days");
     }
     // Prefetch all scheduled sessions for the full range in one query
     const rangeStart = new Date(startDate);
@@ -239,62 +251,67 @@ export class TeachersService {
       // advance by one day in UTC to avoid local timezone shifting weekdays
       currentDate.setUTCDate(currentDate.getUTCDate() + 1);
     }
-    return { windows };
+    // Convert windows shape to include `available` boolean and optional reason
+    const converted = windows.map((w) => ({
+      start: w.start,
+      end: w.end,
+      available: true,
+      reason: undefined,
+    }));
+    return { windows: converted };
   }
 
-  async getPublicTeacherById(id: number) {
+  async getPublicTeacherById(id: number): Promise<PublicTeacherDto> {
     const t = await this.teacherRepository
-      .createQueryBuilder('t')
-      .leftJoinAndSelect('t.user', 'u')
-      .where('t.id = :id', { id })
-      .andWhere('t.is_active = 1')
+      .createQueryBuilder("t")
+      .leftJoinAndSelect("t.user", "u")
+      .where("t.id = :id", { id })
+      .andWhere("t.is_active = 1")
       .getOne();
     if (!t) {
-      throw new NotFoundException('Teacher not found');
+      throw new NotFoundException("Teacher not found");
     }
-    return {
+    const teacher: PublicTeacherDto = {
+      id: t.id,
       userId: t.userId,
-      teacherId: t.id,
-      firstName: t.user?.firstName ?? '',
-      lastName: t.user?.lastName ?? '',
-      name:
-        [(t.user?.firstName ?? '').trim(), (t.user?.lastName ?? '').trim()]
+      displayName:
+        [(t.user?.firstName ?? "").trim(), (t.user?.lastName ?? "").trim()]
           .filter(Boolean)
-          .join(' ') || 'Teacher',
-      bio: t.bio ?? null,
-      avatarUrl: t.avatarUrl ?? null,
-      birthplace: t.birthplace ?? null,
-      currentLocation: t.currentLocation ?? null,
-      specialties: t.specialties ?? null,
-      yearsExperience: t.yearsExperience ?? null,
-      languagesSpoken: t.languagesSpoken ?? null,
+          .join(" ") || "Teacher",
+      bio: t.bio ?? undefined,
+      avatarUrl: t.avatarUrl ?? undefined,
+      languages: t.languagesSpoken ?? undefined,
+      specialties: t.specialties ?? undefined,
+      levels: undefined,
+      rating: undefined,
+      isActive: t.isActive,
+      initials: [t.user?.firstName?.charAt(0), t.user?.lastName?.charAt(0)]
+        .filter(Boolean)
+        .join("")
+        .toUpperCase(),
     };
+    return teacher;
   }
 
-  async getMyProfile(userId: number) {
+  async getMyProfile(userId: number): Promise<TeacherProfileDto> {
     const t = await this.teacherRepository
-      .createQueryBuilder('t')
-      .leftJoinAndSelect('t.user', 'u')
-      .where('t.user_id = :userId', { userId })
+      .createQueryBuilder("t")
+      .leftJoinAndSelect("t.user", "u")
+      .where("t.user_id = :userId", { userId })
       .getOne();
     if (!t) {
-      throw new NotFoundException('Teacher profile not found');
+      throw new NotFoundException("Teacher profile not found");
     }
     return {
+      id: t.id,
       userId: t.userId,
-      teacherId: t.id,
-      firstName: t.user?.firstName ?? '',
-      lastName: t.user?.lastName ?? '',
-      email: t.user?.email ?? '',
-      bio: t.bio ?? null,
-      avatarUrl: t.avatarUrl ?? null,
-      birthplace: t.birthplace ?? null,
-      currentLocation: t.currentLocation ?? null,
-      specialties: t.specialties ?? null,
-      yearsExperience: t.yearsExperience ?? null,
-      languagesSpoken: t.languagesSpoken ?? null,
-      tier: t.tier,
-      isActive: t.isActive,
+      headline: undefined,
+      bio: t.bio ?? undefined,
+      avatarUrl: t.avatarUrl ?? undefined,
+      languages: t.languagesSpoken ?? undefined,
+      specialties: t.specialties ?? undefined,
+      pricing: undefined,
+      availabilityPreview: undefined,
     };
   }
 
@@ -303,7 +320,12 @@ export class TeachersService {
     updateData: {
       bio?: string | null;
       avatarUrl?: string | null;
-      birthplace?: { city: string; country: string; lat?: number; lng?: number };
+      birthplace?: {
+        city: string;
+        country: string;
+        lat?: number;
+        lng?: number;
+      };
       currentLocation?: {
         city: string;
         country: string;
@@ -320,7 +342,7 @@ export class TeachersService {
     });
 
     if (!teacher) {
-      throw new NotFoundException('Teacher profile not found');
+      throw new NotFoundException("Teacher profile not found");
     }
 
     // Update only provided fields (explicitly allow null to clear fields)
@@ -573,19 +595,19 @@ export class TeachersService {
   }
 
   private parseTime(time: string): [number, number, number, number] {
-    const [hours, minutes] = time.split(':').map(Number);
+    const [hours, minutes] = time.split(":").map(Number);
     return [hours, minutes, 0, 0];
   }
 
   private timeStringToMinutes(time: string): number {
-    const [hours, minutes] = time.split(':').map(Number);
+    const [hours, minutes] = time.split(":").map(Number);
     return hours * 60 + minutes;
   }
 
   private minutesToTimeString(minutes: number): string {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+    return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
   }
 
   private dateToTimeString(date: Date): string {
@@ -611,9 +633,9 @@ export class TeachersService {
     const teacherPlaceholders = teacherIds
       .map((id) => {
         params.teacherIds.push(id);
-        return '?';
+        return "?";
       })
-      .join(',');
+      .join(",");
     // Overlap condition: session.start_at <= rangeEnd AND session.end_at >= rangeStart
     params.start = start;
     params.end = end;
@@ -795,19 +817,19 @@ export class TeachersService {
       AND s.status = 'SCHEDULED'
     `;
 
-    const params: any[] = [teacher.id];
+    const params: (number | Date)[] = [teacher.id];
 
     if (startDate) {
-      query += ' AND s.start_at >= ?';
-      params.push(startDate);
+      query += " AND s.start_at >= ?";
+      params.push(new Date(startDate));
     }
 
     if (endDate) {
-      query += ' AND s.end_at <= ?';
-      params.push(endDate);
+      query += " AND s.end_at <= ?";
+      params.push(new Date(endDate));
     }
 
-    query += ' ORDER BY s.start_at ASC';
+    query += " ORDER BY s.start_at ASC";
 
     const sessions = await this.dataSource.query<
       {

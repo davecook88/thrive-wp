@@ -1,7 +1,4 @@
-import {
-  Teacher,
-  ThriveCalendarContextApi,
-} from "../../../../../shared/types/calendar";
+import { PublicTeacherDto } from "../../../../../shared/types/teachers";
 import { useEffect, useMemo, useState } from "@wordpress/element";
 import CacheStore from "../utils/CacheStore";
 import { thriveClient } from "../../../../../shared/clients/thrive";
@@ -13,7 +10,7 @@ export const useGetTeachers = (opts?: {
   id?: string;
 }) => {
   console.trace("useGetTeachers", { opts });
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [teachers, setTeachers] = useState<PublicTeacherDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<number[]>([]);
 
@@ -23,7 +20,7 @@ export const useGetTeachers = (opts?: {
       const key = opts?.id ? `ctx-${opts.id}` : "global";
 
       if (!opts?.forceRefresh) {
-        const cached = teachersCache.read<Teacher[]>(key);
+        const cached = teachersCache.read<PublicTeacherDto[]>(key);
         console.log("Teachers cache read:", { key, cached });
         if (cached && cached.length) {
           setTeachers(cached);
@@ -32,24 +29,18 @@ export const useGetTeachers = (opts?: {
         }
       }
 
-      try {
-        const data = await thriveClient.fetchTeachers();
-        setTeachers(data);
-        teachersCache.write(key, data);
-      } catch (err) {
-        // leave teachers as-is on error
-      } finally {
-        setLoading(false);
-      }
+      const data = await thriveClient.fetchTeachers();
+      setTeachers(data);
+      teachersCache.write(key, data);
     };
 
-    fetchTeachers();
+    fetchTeachers().catch(console.error);
   }, [opts?.forceRefresh]);
 
   const selectedTeachers = useMemo(() => {
     if (!selectedTeacherIds.length) return teachers;
-    return teachers.filter((teacher) =>
-      selectedTeacherIds.includes(teacher.teacherId),
+    return teachers.filter(
+      (teacher) => teacher.id && selectedTeacherIds.includes(teacher.id),
     );
   }, [teachers, selectedTeacherIds]);
 
@@ -72,14 +63,14 @@ export const useGetTeachers = (opts?: {
   ) => {
     const tkey = `teacher-${teacherId}`;
     if (!opts?.forceRefresh) {
-      const cached = teachersCache.read<Teacher>(tkey);
+      const cached = teachersCache.read<PublicTeacherDto>(tkey);
       if (cached) return cached;
     }
     try {
       const t = await thriveClient.fetchTeacher(teacherId);
       if (t) teachersCache.write(tkey, t);
       return t;
-    } catch (err) {
+    } catch {
       return null;
     }
   };
