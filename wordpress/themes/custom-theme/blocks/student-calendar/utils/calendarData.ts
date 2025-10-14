@@ -1,8 +1,8 @@
 import type {
   BaseCalendarEvent,
   BookingEvent,
-} from "../../../../../shared/types/calendar";
-import { thriveClient } from "../../../../../shared/clients/thrive";
+} from "../../../../../../shared/types/calendar";
+import { thriveClient } from "../../../../../../shared/clients/thrive";
 
 export const fetchStudentBookings = async (
   start: Date,

@@ -4,8 +4,8 @@ import type {
   ThriveCalendarElement,
   CalendarEventClickEvent,
   CalendarRangeChangeEvent,
-} from "../../../../../shared/types/calendar";
-import { isBookingEvent } from "../../../../../shared/types/calendar";
+} from "../../../../../../shared/types/calendar";
+import { isBookingEvent } from "../../../../../../shared/types/calendar";
 import RulesSection from "../../teacher-availability/components/RulesSection";
 import ExceptionsSection from "../../teacher-availability/components/ExceptionsSection";
 

@@ -98,7 +98,6 @@ The repository contains additional, focused design notes and plans. Refer to the
 - `docs/gutenberg-calendar-block.md` — design and implementation notes for the calendar Gutenberg block.
 - `docs/reusable-calendar-plan.md` — plan for reusability and data flow of calendar components.
 - `docs/teachers-section-plan.md` — UX and data model for the teachers admin section.
-- `docs/thrive-calendar-context.md` — canonical data shape and context for calendar features.
 - `docs/thrive-modal-architecture.md` — modal design used by block editor and runtime (referenced by block implementations).
 
 When updating blocks, update the relevant doc in `docs/` and update this file if the runtime contract changes.

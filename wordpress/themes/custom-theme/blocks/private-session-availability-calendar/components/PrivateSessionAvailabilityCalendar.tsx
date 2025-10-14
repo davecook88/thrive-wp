@@ -6,8 +6,8 @@ import type {
   CalendarEventClickEvent,
   CalendarRangeChangeEvent,
   BookingEvent,
-} from "../../../../../shared/types/calendar";
-import { thriveClient } from "../../../../../shared/clients/thrive";
+} from "../../../../../../shared/types/calendar";
+import { thriveClient } from "../../../../../../shared/clients/thrive";
 import { useAvailabilitySlots } from "../../hooks/use-availability-slots";
 import { fetchStudentBookings } from "../../student-calendar/utils/calendarData";
 

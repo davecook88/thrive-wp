@@ -33,7 +33,7 @@ export default function StudentUpcomingSessions({
           `/api/students/me/upcoming?limit=${limit}`,
           {
             credentials: "include",
-          }
+          },
         );
 
         if (!response.ok) {
@@ -74,7 +74,8 @@ export default function StudentUpcomingSessions({
   const isSessionSoon = (startAt: string) => {
     const now = new Date();
     const sessionStart = new Date(startAt);
-    const hoursUntilSession = (sessionStart.getTime() - now.getTime()) / (1000 * 60 * 60);
+    const hoursUntilSession =
+      (sessionStart.getTime() - now.getTime()) / (1000 * 60 * 60);
     return hoursUntilSession <= 1 && hoursUntilSession > 0;
   };
 
@@ -118,7 +119,9 @@ export default function StudentUpcomingSessions({
               className={`session-card ${isSoon ? "session-soon" : ""}`}
             >
               <div className="session-time">
-                <div className="session-date">{formatDateTime(session.startAt)}</div>
+                <div className="session-date">
+                  {formatDateTime(session.startAt)}
+                </div>
                 <div className="session-duration">
                   {formatTime(session.startAt)} - {formatTime(session.endAt)}
                 </div>
@@ -129,7 +132,9 @@ export default function StudentUpcomingSessions({
                 {session.courseName && (
                   <div className="session-course">{session.courseName}</div>
                 )}
-                <div className="session-teacher">with {session.teacherName}</div>
+                <div className="session-teacher">
+                  with {session.teacherName}
+                </div>
               </div>
 
               {showMeetingLinks && session.meetingUrl && (

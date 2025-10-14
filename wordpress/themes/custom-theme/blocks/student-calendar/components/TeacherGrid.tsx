@@ -1,4 +1,4 @@
-import type { Teacher } from "../../../../../shared/types/calendar";
+import type { Teacher } from "../../../../../../shared/types/calendar";
 import { Dispatch, SetStateAction } from "react";
 
 interface TeacherGridProps {

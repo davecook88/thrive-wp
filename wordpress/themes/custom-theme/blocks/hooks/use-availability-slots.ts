@@ -1,6 +1,6 @@
 import { useEffect, useState } from "@wordpress/element";
-import type { AvailabilityEvent } from "../../../../shared/types/calendar";
-import { thriveClient } from "../../../../shared/clients/thrive";
+import type { AvailabilityEvent } from "../../../../../shared/types/calendar";
+import { thriveClient } from "../../../../../shared/clients/thrive";
 
 interface UseAvailabilitySlotsOptions {
   start: Date | null;

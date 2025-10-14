@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction } from "react";
-import type { Level } from "../../../../../shared/types/calendar";
+import type { Level } from "../../../../../../shared/types/calendar";
 
 interface BookingFiltersProps {
   showPrivateSessions: boolean;

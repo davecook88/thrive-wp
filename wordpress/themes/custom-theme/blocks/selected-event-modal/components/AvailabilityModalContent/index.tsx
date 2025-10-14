@@ -2,7 +2,7 @@ import { useState } from "@wordpress/element";
 import type {
   Teacher,
   AvailabilityEvent,
-} from "../../../../../../shared/types/calendar";
+} from "../../../../../../../shared/types/calendar";
 import { useGetTeachers } from "../../../hooks/get-teachers";
 import { useStudentCredits } from "../../../hooks/use-student-credits";
 import { buildBookingUrl } from "../../../../utils/booking";

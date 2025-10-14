@@ -5,7 +5,7 @@ import type {
   AvailabilityEvent,
   CalendarEvent,
   Teacher,
-} from "../../../../../shared/types/calendar";
+} from "../../../../../../shared/types/calendar";
 import { useGetCalendarContext } from "../../hooks/get-context";
 import { useGetTeachers } from "../../hooks/get-teachers";
 
@@ -35,7 +35,7 @@ export default function TeacherPicker({
   const getAvatarUrl = (teacher: Teacher) => {
     if (teacher.avatarUrl) return teacher.avatarUrl;
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
-      teacher.name
+      teacher.name,
     )}`;
   };
 
@@ -82,7 +82,7 @@ export default function TeacherPicker({
       } catch (error) {
         console.warn(
           "Failed to update availability preview on date range change",
-          error
+          error,
         );
         return [];
       }
@@ -157,7 +157,7 @@ export default function TeacherPicker({
                 border: "1px solid #e5e7eb",
                 borderRadius: "8px",
                 background: selectedTeachers.some(
-                  (t) => t.teacherId === teacher.teacherId
+                  (t) => t.teacherId === teacher.teacherId,
                 )
                   ? "#f3f4f6"
                   : "white",
@@ -171,7 +171,7 @@ export default function TeacherPicker({
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = selectedTeachers.some(
-                  (t) => t.teacherId === teacher.teacherId
+                  (t) => t.teacherId === teacher.teacherId,
                 )
                   ? "#f3f4f6"
                   : "white";

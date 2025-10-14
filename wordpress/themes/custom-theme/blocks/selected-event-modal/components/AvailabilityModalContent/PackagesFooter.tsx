@@ -1,8 +1,8 @@
 import type {
   AvailabilityEvent,
   Teacher,
-} from "../../../../../../shared/types/calendar";
-import { StudentPackage } from "../../../../../../shared/types/packages";
+} from "../../../../../../../shared/types/calendar";
+import { StudentPackage } from "../../../../../../../shared/types/packages";
 import PackageBookingButton from "./PackageBookingButton";
 
 interface User {

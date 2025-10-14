@@ -1,7 +1,10 @@
-import { Teacher, ThriveCalendarContextApi } from "../../../../shared/types/calendar";
+import {
+  Teacher,
+  ThriveCalendarContextApi,
+} from "../../../../../shared/types/calendar";
 import { useEffect, useMemo, useState } from "@wordpress/element";
 import CacheStore from "../utils/CacheStore";
-import { thriveClient } from "../../../../shared/clients/thrive";
+import { thriveClient } from "../../../../../shared/clients/thrive";
 
 const teachersCache = new CacheStore("thrive-teachers", 1000 * 60 * 15);
 
@@ -46,7 +49,7 @@ export const useGetTeachers = (opts?: {
   const selectedTeachers = useMemo(() => {
     if (!selectedTeacherIds.length) return teachers;
     return teachers.filter((teacher) =>
-      selectedTeacherIds.includes(teacher.teacherId)
+      selectedTeacherIds.includes(teacher.teacherId),
     );
   }, [teachers, selectedTeacherIds]);
 
@@ -54,7 +57,7 @@ export const useGetTeachers = (opts?: {
     setSelectedTeacherIds((prev) =>
       prev.includes(teacherId)
         ? prev.filter((id) => id !== teacherId)
-        : [...prev, teacherId]
+        : [...prev, teacherId],
     );
   };
 
@@ -65,7 +68,7 @@ export const useGetTeachers = (opts?: {
 
   const getTeacherById = async (
     teacherId: number,
-    opts?: { forceRefresh?: boolean }
+    opts?: { forceRefresh?: boolean },
   ) => {
     const tkey = `teacher-${teacherId}`;
     if (!opts?.forceRefresh) {

@@ -3,11 +3,11 @@ import type {
   ThriveCalendarElement,
   CalendarEventClickEvent,
   CalendarRangeChangeEvent,
-} from "../../../../../shared/types/calendar";
+} from "../../../../../../shared/types/calendar";
 import {
   isBookingEvent,
   isGroupClassEvent,
-} from "../../../../../shared/types/calendar";
+} from "../../../../../../shared/types/calendar";
 
 interface UseEventClickArgs {
   calendarRef: { current: ThriveCalendarElement | null };

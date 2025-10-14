@@ -1,9 +1,9 @@
 import { useRef, useState } from "@wordpress/element";
-import { CalendarEvent } from "../../../../shared/types/calendar";
+import { CalendarEvent } from "../../../../../shared/types/calendar";
 
 export type fetchEventsFunc = (
   start: Date,
-  end: Date
+  end: Date,
 ) => Promise<CalendarEvent[]>;
 
 export const useCalendarEvents = () => {
@@ -25,7 +25,7 @@ export const useCalendarEvents = () => {
     if (!start || !end) return [];
     // if events within date range already loaded, return those
     const loadedEvents = events.filter(
-      (e) => e.startUtc >= start.toISOString() && e.endUtc <= end.toISOString()
+      (e) => e.startUtc >= start.toISOString() && e.endUtc <= end.toISOString(),
     );
     if (loadedEvents.length > 0) {
       return loadedEvents;

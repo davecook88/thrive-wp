@@ -2,7 +2,7 @@ import { useState, useEffect } from "@wordpress/element";
 import type {
   Teacher,
   TeacherLocation,
-} from "../../../../../shared/types/calendar";
+} from "../../../../../../shared/types/calendar";
 
 interface TeacherInfoProps {
   teacher: Teacher | null;
@@ -40,7 +40,7 @@ export default function TeacherInfo({
   const getAvatarUrl = () => {
     if (teacher.avatarUrl) return teacher.avatarUrl;
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
-      teacher.name
+      teacher.name,
     )}`;
   };
 

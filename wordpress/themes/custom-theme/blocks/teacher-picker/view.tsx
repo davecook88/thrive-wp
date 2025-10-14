@@ -1,6 +1,6 @@
 import { createElement } from "@wordpress/element";
 import { createRoot } from "react-dom/client";
-import { getCalendarContextSafe } from "../../../../shared/types/calendar-utils";
+import { getCalendarContextSafe } from "../../../../../shared/types/calendar-utils";
 
 import TeacherPicker from "./components/TeacherPicker";
 
@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
         heading,
         showFilters,
         querySelector: ELEMENT_CLASS,
-      })
+      }),
     );
   });
 });

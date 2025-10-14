@@ -4,8 +4,8 @@ import type {
   ThriveCalendarElement,
   Teacher,
   Level,
-} from "../../../../../shared/types/calendar";
-import { thriveClient } from "../../../../../shared/clients/thrive";
+} from "../../../../../../shared/types/calendar";
+import { thriveClient } from "../../../../../../shared/clients/thrive";
 import {
   fetchStudentBookings,
   fetchAvailableGroupSessions,

@@ -1,8 +1,8 @@
 import { createElement } from "@wordpress/element";
 import { createRoot } from "react-dom/client";
 import { useState, useEffect } from "@wordpress/element";
-import { getCalendarContextSafe } from "../../../../shared/types/calendar-utils";
-import type { Teacher } from "../../../../shared/types/calendar";
+import { getCalendarContextSafe } from "../../../../../shared/types/calendar-utils";
+import type { Teacher } from "../../../../../shared/types/calendar";
 import TeacherInfo from "./components/TeacherInfo";
 import TeacherInfoSkeleton from "./components/TeacherInfoSkeleton";
 import "./teacher-info.css";
@@ -58,7 +58,7 @@ function TeacherInfoWrapper({
           const contextApi = getCalendarContextSafe(container);
           if (contextApi && contextApi.selectedTeacherId) {
             const response = await fetch(
-              `/api/teachers/${contextApi.selectedTeacherId}`
+              `/api/teachers/${contextApi.selectedTeacherId}`,
             );
             if (response.ok) {
               const data = await response.json();
@@ -164,7 +164,7 @@ document.addEventListener("DOMContentLoaded", () => {
         backgroundColor,
         borderRadius,
         container,
-      })
+      }),
     );
   });
 });
