@@ -1,18 +1,18 @@
-import { Injectable } from '@nestjs/common';
-import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
-import { Student } from './entities/student.entity.js';
+import { Injectable } from "@nestjs/common";
+import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
+import { DataSource, Repository } from "typeorm";
+import { Student } from "./entities/student.entity.js";
 
 export interface CalendarEvent {
   id: string;
   title: string;
   startUtc: Date;
   endUtc: Date;
-  type: 'class' | 'booking';
+  type: "class" | "booking";
   teacherId?: number;
   teacherName?: string;
-  classType?: 'PRIVATE' | 'GROUP' | 'COURSE';
-  status?: 'SCHEDULED' | 'CANCELLED' | 'COMPLETED';
+  classType?: "PRIVATE" | "GROUP" | "COURSE";
+  status?: "SCHEDULED" | "CANCELLED" | "COMPLETED";
   courseId?: number;
   courseName?: string;
   meetingUrl?: string;
@@ -68,21 +68,21 @@ export class StudentsService {
 
   findAll(): Promise<Student[]> {
     return this.studentRepository.find({
-      relations: ['user'],
+      relations: ["user"],
     });
   }
 
   findOne(id: number): Promise<Student | null> {
     return this.studentRepository.findOne({
       where: { id },
-      relations: ['user'],
+      relations: ["user"],
     });
   }
 
   findByUserId(userId: number): Promise<Student | null> {
     return this.studentRepository.findOne({
       where: { userId },
-      relations: ['user'],
+      relations: ["user"],
     });
   }
 
@@ -125,8 +125,8 @@ export class StudentsService {
       WHERE b.student_id = (SELECT id FROM student)
       AND s.deleted_at IS NULL
       AND b.status = 'CONFIRMED'
-      ${startDate ? 'AND s.start_at >= ?' : ''}
-      ${endDate ? 'AND s.start_at <= ?' : ''}
+      ${startDate ? "AND s.start_at >= ?" : ""}
+      ${endDate ? "AND s.start_at <= ?" : ""}
       `,
       [
         userId,
@@ -141,11 +141,11 @@ export class StudentsService {
         title: `${row.class_type} Session with ${row.teacher_name}`,
         startUtc: row.start_at,
         endUtc: row.end_at,
-        type: 'booking' as const,
+        type: "booking" as const,
         teacherId: row.teacher_id,
         teacherName: row.teacher_name,
-        classType: row.class_type as 'PRIVATE' | 'GROUP' | 'COURSE',
-        status: row.status as 'SCHEDULED' | 'CANCELLED' | 'COMPLETED',
+        classType: row.class_type as "PRIVATE" | "GROUP" | "COURSE",
+        status: row.status as "SCHEDULED" | "CANCELLED" | "COMPLETED",
         courseId: row.course_id || undefined,
         bookingId: row.booking_id,
         description: `${row.session_source} session`,
@@ -248,9 +248,9 @@ export class StudentsService {
             meetingUrl: nextSession.meeting_url,
           }
         : null,
-      totalCompleted: parseInt(completedQuery[0]?.count || '0', 10),
-      totalScheduled: parseInt(scheduledQuery[0]?.count || '0', 10),
-      activeCourses: parseInt(coursesQuery[0]?.count || '0', 10),
+      totalCompleted: parseInt(completedQuery[0]?.count || "0", 10),
+      totalScheduled: parseInt(scheduledQuery[0]?.count || "0", 10),
+      activeCourses: parseInt(coursesQuery[0]?.count || "0", 10),
     };
   }
 
@@ -271,8 +271,8 @@ export class StudentsService {
         s.course_id,
         s.meeting_url,
         s.status,
-        u.name as teacher_name,
-        c.name as course_name
+        CONCAT(u.first_name, ' ', u.last_name) as teacher_name,
+        c.title as course_name
       FROM session s
       JOIN booking b ON b.session_id = s.id
       JOIN teacher t ON t.id = s.teacher_id
@@ -358,8 +358,8 @@ export class StudentsService {
       enrolledAt: enrollment.enrolled_at,
       startDate: enrollment.start_date,
       endDate: enrollment.end_date,
-      totalSessions: parseInt(enrollment.total_sessions || '0', 10),
-      completedSessions: parseInt(enrollment.completed_sessions || '0', 10),
+      totalSessions: parseInt(enrollment.total_sessions || "0", 10),
+      completedSessions: parseInt(enrollment.completed_sessions || "0", 10),
       nextSessionAt: enrollment.next_session_at,
     }));
   }
