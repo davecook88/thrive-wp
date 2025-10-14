@@ -12,11 +12,18 @@ import TeacherSelectionPanel from "./TeacherSelectionPanel";
 import TeacherInfoPanel from "./TeacherInfoPanel";
 import PackagesFooter from "./PackagesFooter";
 
+interface User {
+  ID: number;
+  user_login: string;
+  user_email: string;
+  display_name: string;
+}
+
 type ModalAvailabilityEvent = AvailabilityEvent & {
   startLocal?: string;
   endLocal?: string;
-  user?: any;
-  currentUser?: any;
+  user?: User;
+  currentUser?: User;
 };
 
 export default function AvailabilityModalContent({
@@ -98,7 +105,7 @@ export default function AvailabilityModalContent({
           event={event}
           bookingConfirmationUrl={bookingConfirmationUrl}
           totalRemaining={totalRemaining}
-          onBookingSuccess={refetchCredits}
+          onBookingSuccess={refetchCredits as () => Promise<void>}
         />
       )}
     </div>

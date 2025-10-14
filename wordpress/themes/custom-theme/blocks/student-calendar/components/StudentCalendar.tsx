@@ -43,7 +43,7 @@ export default function StudentCalendar({
   const [showPrivateSessions, setShowPrivateSessions] = useState<boolean>(true);
   const [showGroupClasses, setShowGroupClasses] = useState<boolean>(true);
   const [sessionDuration, setSessionDuration] = useState<number>(60);
-  const [currentRange] = useState<{
+  const [currentRange, setCurrentRange] = useState<{
     from: Date;
     until: Date;
   } | null>(null);
@@ -52,6 +52,7 @@ export default function StudentCalendar({
   );
   const [groupSessions, setGroupSessions] = useState<BaseCalendarEvent[]>([]);
 
+  console.log("Student Calendar", currentRange);
   // Use availability slots hook for booking mode
   const { availabilitySlots } = useAvailabilitySlots({
     start: currentRange?.from || null,
@@ -168,14 +169,22 @@ export default function StudentCalendar({
     const calendar = calendarRef.current;
     if (calendar) {
       calendar.events = events;
+      // Set initial range if not set
+      if (!currentRange && calendar.fromDate && calendar.untilDate) {
+        setCurrentRange({
+          from: new Date(calendar.fromDate),
+          until: new Date(calendar.untilDate),
+        });
+      }
     }
-  }, [events]);
+  }, [events, currentRange]);
 
   useEventClick({
     calendarRef,
     mode,
     currentRange,
     fetchData,
+    setCurrentRange,
   });
 
   // Handle calendar events

@@ -2,20 +2,28 @@ import type {
   AvailabilityEvent,
   Teacher,
 } from "../../../../../../shared/types/calendar";
+import { StudentPackage } from "../../../../../../shared/types/packages";
 import PackageBookingButton from "./PackageBookingButton";
 
+interface User {
+  ID: number;
+  user_login: string;
+  user_email: string;
+  display_name: string;
+}
+
 interface PackagesFooterProps {
-  packages: any[];
+  packages: StudentPackage[];
   selectedTeacher: Teacher | null;
   event: AvailabilityEvent & {
     startLocal?: string;
     endLocal?: string;
-    user?: any;
-    currentUser?: any;
+    user?: User;
+    currentUser?: User;
   };
-  bookingConfirmationUrl: string;
+  bookingConfirmationUrl: string | null;
   totalRemaining: number;
-  onBookingSuccess: () => void;
+  onBookingSuccess: () => Promise<void>;
 }
 
 export default function PackagesFooter({
@@ -68,7 +76,7 @@ export default function PackagesFooter({
               flexWrap: "wrap",
             }}
           >
-            {packages.map((pkg: any) => (
+            {packages.map((pkg) => (
               <div
                 key={pkg.id}
                 style={{
@@ -137,7 +145,7 @@ export default function PackagesFooter({
             session{totalRemaining !== 1 ? "s" : ""} remaining
           </div>
           <a
-            href={bookingConfirmationUrl}
+            href={bookingConfirmationUrl || undefined}
             style={{
               display: "inline-block",
               marginTop: "0.5rem",

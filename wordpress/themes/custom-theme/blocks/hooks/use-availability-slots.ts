@@ -23,6 +23,14 @@ export const useAvailabilitySlots = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  console.log("Use availability slots", {
+    start,
+    end,
+    selectedTeacherIds,
+    sessionDuration,
+    slotDuration,
+  });
+
   useEffect(() => {
     if (!start || !end || selectedTeacherIds.length === 0 || end < new Date()) {
       setAvailabilitySlots([]);
@@ -30,6 +38,7 @@ export const useAvailabilitySlots = ({
     }
 
     const fetchAvailability = async () => {
+      console.log("Fetching availability slots...");
       setLoading(true);
       setError(null);
 
@@ -52,7 +61,7 @@ export const useAvailabilitySlots = ({
 
           while (current < winEnd) {
             const sessionEnd = new Date(
-              current.getTime() + sessionMinutes * 60 * 1000
+              current.getTime() + sessionMinutes * 60 * 1000,
             );
 
             if (sessionEnd <= winEnd) {
@@ -67,11 +76,13 @@ export const useAvailabilitySlots = ({
             }
 
             current = new Date(
-              current.getTime() + Math.max(5, slotDuration || 30) * 60 * 1000
+              current.getTime() + Math.max(5, slotDuration || 30) * 60 * 1000,
             );
           }
           return out;
         });
+
+        console.log("Availability chunks", { chunks });
 
         // Filter chunks in the past
         const now = new Date();
@@ -79,7 +90,7 @@ export const useAvailabilitySlots = ({
         setAvailabilitySlots(futureChunks);
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Failed to fetch availability"
+          err instanceof Error ? err.message : "Failed to fetch availability",
         );
         setAvailabilitySlots([]);
       } finally {
@@ -87,7 +98,7 @@ export const useAvailabilitySlots = ({
       }
     };
 
-    fetchAvailability();
+    fetchAvailability().catch(console.error);
   }, [start, end, selectedTeacherIds, sessionDuration, slotDuration]);
 
   return { availabilitySlots, loading, error };

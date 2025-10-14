@@ -14,6 +14,7 @@ interface UseEventClickArgs {
   mode: "view" | "book";
   currentRange: { from: Date; until: Date } | null;
   fetchData: (from: Date, until: Date) => Promise<void>;
+  setCurrentRange: (range: { from: Date; until: Date }) => void;
 }
 
 /**
@@ -26,6 +27,7 @@ export function useEventClick({
   mode,
   currentRange,
   fetchData,
+  setCurrentRange,
 }: UseEventClickArgs) {
   const handleEventClick = useCallback(
     (e: CalendarEventClickEvent) => {
@@ -68,11 +70,12 @@ export function useEventClick({
       if (detail?.fromDate && detail?.untilDate) {
         const from = new Date(detail.fromDate);
         const until = new Date(detail.untilDate);
+        setCurrentRange({ from, until });
         // update data for the new range
         void fetchData(from, until);
       }
     },
-    [fetchData],
+    [fetchData, setCurrentRange],
   );
 
   const handleRefreshCalendar = useCallback(() => {

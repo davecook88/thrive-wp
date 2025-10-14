@@ -139,7 +139,7 @@ function mountModal(event: any, modalType: ModalType, title?: string) {
     }
   };
   root.render(
-    createElement(ModalPortal, { event, modalType, title, onClose: cleanup })
+    createElement(ModalPortal, { event, modalType, title, onClose: cleanup }),
   );
 }
 
@@ -153,8 +153,8 @@ function pickModalType(event: any): ModalType {
 document.addEventListener("DOMContentLoaded", () => {
   const wrappers = Array.from(
     document.querySelectorAll<HTMLElement>(
-      ".wp-block-custom-theme-selected-event-modal"
-    )
+      ".wp-block-custom-theme-selected-event-modal",
+    ),
   );
   if (!wrappers.length) return;
 
@@ -165,23 +165,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const event = detail?.event;
       if (!event) return;
 
-      // Choose wrapper in the same calendar context if provided (kept for parity/future use)
-      let wrapper: HTMLElement | undefined = wrappers[0];
-      if (detail?.contextId) {
-        const inSameCtx = wrappers.find((w) => {
-          const ctx = w.closest(
-            ".wp-block-custom-theme-thrive-calendar-context"
-          ) as HTMLElement | null;
-          return ctx?.id === detail.contextId;
-        });
-        if (inSameCtx) wrapper = inSameCtx;
-      }
-      if (!wrapper) return;
-
       const modalType = pickModalType(event);
       const title = event?.title || event?.name || undefined;
       mountModal(event, modalType, title);
     },
-    false
+    false,
   );
 });

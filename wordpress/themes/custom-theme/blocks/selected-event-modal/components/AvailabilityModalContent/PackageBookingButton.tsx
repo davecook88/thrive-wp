@@ -3,6 +3,7 @@ import type {
   Teacher,
   AvailabilityEvent,
 } from "../../../../../../shared/types/calendar";
+import { StudentPackage } from "../../../../../../shared/types/packages";
 
 export default function PackageBookingButton({
   pkg,
@@ -11,13 +12,21 @@ export default function PackageBookingButton({
   bookingUrl,
   onBookingSuccess,
 }: {
-  pkg: any;
+  pkg: StudentPackage;
   selectedTeacher: Teacher | null;
   event: AvailabilityEvent;
   bookingUrl: string | null;
-  onBookingSuccess?: () => void;
+  onBookingSuccess?: () => Promise<void>;
 }) {
-  const { bookWithPackage, loading, success, error } = usePackageBooking();
+  const { bookWithPackage, loading, success, error } = usePackageBooking() as {
+    bookWithPackage: (
+      packageId: number | string,
+      bookingInfo: unknown,
+    ) => Promise<{ ok: boolean; data?: unknown; error?: string }>;
+    loading: boolean;
+    success: unknown;
+    error: string | null;
+  };
 
   console.log({ pkg, selectedTeacher, event, bookingUrl });
 
@@ -29,31 +38,34 @@ export default function PackageBookingButton({
     );
   }
 
+  const onClick = async () => {
+    if (!selectedTeacher) return;
+    // For availability events, we need to create the session first
+    // Send booking details instead of sessionId
+    const result = await bookWithPackage(pkg.id, {
+      teacherId: selectedTeacher.teacherId,
+      startAt: event.startUtc,
+      endAt: event.endUtc,
+    });
+
+    // If successful, trigger refetch callbacks
+    if (result.ok) {
+      // Refetch package credits
+      await onBookingSuccess?.();
+
+      // Dispatch event to refresh calendar data
+      document.dispatchEvent(new CustomEvent("thrive:refresh-calendar-data"));
+    }
+    return;
+  };
+
   return (
     <div>
       <button
         className="btn btn--book"
         type="button"
-        onClick={async () => {
-          if (!selectedTeacher) return;
-          // For availability events, we need to create the session first
-          // Send booking details instead of sessionId
-          const result = await bookWithPackage(pkg.id, {
-            teacherId: selectedTeacher.teacherId,
-            startAt: event.startUtc,
-            endAt: event.endUtc,
-          });
-
-          // If successful, trigger refetch callbacks
-          if (result.ok) {
-            // Refetch package credits
-            onBookingSuccess?.();
-
-            // Dispatch event to refresh calendar data
-            document.dispatchEvent(
-              new CustomEvent("thrive:refresh-calendar-data")
-            );
-          }
+        onClick={() => {
+          onClick().catch(console.error);
         }}
         style={{
           border: "none",
