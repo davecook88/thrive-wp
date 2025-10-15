@@ -1,4 +1,4 @@
-import type { DataSource } from 'typeorm';
+import type { DataSource } from "typeorm";
 
 /**
  * Truncate all (non-skipped) tables in the CURRENT database for a DataSource.
@@ -13,27 +13,27 @@ import type { DataSource } from 'typeorm';
  */
 
 // Tables to skip (migration metadata + any static reference tables if added later)
-const SKIP_TABLES = new Set<string>(['migrations', 'typeorm_metadata']);
+const SKIP_TABLES = new Set<string>(["migrations", "typeorm_metadata"]);
 
 // Hard blocked names to provide an extra safety net
-const BLOCKED_DB_NAMES = new Set<string>(['wordpress', 'production', 'prod']);
+const BLOCKED_DB_NAMES = new Set<string>(["wordpress", "production", "prod"]);
 
 export async function resetDatabase(ds: DataSource): Promise<void> {
   if (!ds) {
-    throw new Error('resetDatabase called with undefined DataSource');
+    throw new Error("resetDatabase called with undefined DataSource");
   }
   const queryRunner = ds.createQueryRunner();
   const dbName = String(
-    (queryRunner.connection.options as { database?: string }).database || '',
+    (queryRunner.connection.options as { database?: string }).database || "",
   );
 
   // Enforce explicit expected test DB (optional but stronger)
   const expectedTestDb = process.env.DB_DATABASE_TEST;
-  if (process.env.NODE_ENV === 'test') {
+  if (process.env.NODE_ENV === "test") {
     if (!expectedTestDb) {
       await queryRunner.release();
       throw new Error(
-        'DB_DATABASE_TEST must be set in test environment for safety.',
+        "DB_DATABASE_TEST must be set in test environment for safety.",
       );
     }
     if (dbName !== expectedTestDb) {
@@ -44,12 +44,12 @@ export async function resetDatabase(ds: DataSource): Promise<void> {
     }
   }
 
-  const allowOverride = process.env.ALLOW_RESET_NON_TEST_DB === 'true';
+  const allowOverride = process.env.ALLOW_RESET_NON_TEST_DB === "true";
   const isTestLike = /test/i.test(dbName); // simple heuristic
 
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === "production") {
     await queryRunner.release();
-    throw new Error('Refusing to reset database in production environment.');
+    throw new Error("Refusing to reset database in production environment.");
   }
 
   if (BLOCKED_DB_NAMES.has(dbName) && !allowOverride) {
@@ -72,7 +72,7 @@ export async function resetDatabase(ds: DataSource): Promise<void> {
     )) as unknown;
     const tables = rawTables as Array<{ TABLE_NAME: string }>;
     // Disable FK checks
-    await queryRunner.query('SET FOREIGN_KEY_CHECKS=0');
+    await queryRunner.query("SET FOREIGN_KEY_CHECKS=0");
     for (const { TABLE_NAME } of tables) {
       if (SKIP_TABLES.has(TABLE_NAME)) continue;
       await queryRunner.query(`TRUNCATE TABLE \`${TABLE_NAME}\``);
@@ -80,7 +80,7 @@ export async function resetDatabase(ds: DataSource): Promise<void> {
   } finally {
     // Re-enable FK checks
     try {
-      await queryRunner.query('SET FOREIGN_KEY_CHECKS=1');
+      await queryRunner.query("SET FOREIGN_KEY_CHECKS=1");
     } finally {
       await queryRunner.release();
     }

@@ -10,9 +10,9 @@
  * @see docs/credit-tiers-system.md for complete documentation
  */
 
-import { ServiceType } from './class-types.js';
-import type { Session } from '../../sessions/entities/session.entity.js';
-import type { StudentPackage } from '../../packages/entities/student-package.entity.js';
+import { ServiceType } from "./class-types.js";
+import type { Session } from "../../sessions/entities/session.entity.js";
+import type { StudentPackage } from "../../packages/entities/student-package.entity.js";
 
 /**
  * Base tier values for each service type.
@@ -53,7 +53,7 @@ export function getPackageTier(pkg: StudentPackage): number {
   // Parse teacher tier from metadata (stored as string in Stripe metadata)
   const teacherTierRaw = pkg.metadata?.teacher_tier;
   const teacherTier = teacherTierRaw
-    ? typeof teacherTierRaw === 'string'
+    ? typeof teacherTierRaw === "string"
       ? parseInt(teacherTierRaw, 10)
       : (teacherTierRaw as number)
     : 0;
@@ -102,21 +102,20 @@ export function getPackageDisplayLabel(pkg: StudentPackage): string {
   // Parse teacher tier from metadata
   const teacherTierRaw = pkg.metadata?.teacher_tier;
   const teacherTier = teacherTierRaw
-    ? typeof teacherTierRaw === 'string'
+    ? typeof teacherTierRaw === "string"
       ? parseInt(teacherTierRaw, 10)
       : (teacherTierRaw as number)
     : 0;
 
-  const isPremium =
-    Number.isFinite(teacherTier) && (teacherTier as number) > 0;
+  const isPremium = Number.isFinite(teacherTier) && (teacherTier as number) > 0;
 
   if (serviceType === ServiceType.PRIVATE) {
-    return isPremium ? 'Premium Private Credit' : 'Private Credit';
+    return isPremium ? "Premium Private Credit" : "Private Credit";
   } else if (serviceType === ServiceType.GROUP) {
-    return isPremium ? 'Premium Group Credit' : 'Group Credit';
+    return isPremium ? "Premium Group Credit" : "Group Credit";
   }
 
-  return 'Course Credit';
+  return "Course Credit";
 }
 
 /**
@@ -158,7 +157,7 @@ export function getCrossTierWarningMessage(
 
   const packageLabel = getPackageDisplayLabel(pkg);
   const sessionTypeLabel =
-    session.type === ServiceType.PRIVATE ? 'private class' : 'group class';
+    session.type === ServiceType.PRIVATE ? "private class" : "group class";
 
   return `This will use a ${packageLabel} for a ${sessionTypeLabel}`;
 }
@@ -215,7 +214,7 @@ export function getDurationMismatchWarning(
 
   if (sessionDurationMinutes < creditUnitMinutes) {
     const unusedMinutes = creditUnitMinutes - sessionDurationMinutes;
-    return `This session is ${sessionDurationMinutes} minutes, but your credit is for ${creditUnitMinutes} minutes. You'll use ${creditsRequired} credit${creditsRequired > 1 ? 's' : ''} and ${unusedMinutes} minutes will not be saved.`;
+    return `This session is ${sessionDurationMinutes} minutes, but your credit is for ${creditUnitMinutes} minutes. You'll use ${creditsRequired} credit${creditsRequired > 1 ? "s" : ""} and ${unusedMinutes} minutes will not be saved.`;
   } else {
     return `This session requires ${creditsRequired} of your ${creditUnitMinutes}-minute credits (total: ${sessionDurationMinutes} minutes)`;
   }

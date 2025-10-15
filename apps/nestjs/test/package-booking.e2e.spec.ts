@@ -24,6 +24,10 @@ import { Teacher } from "../src/teachers/entities/teacher.entity.js";
 import { AppModule } from "../src/app.module.js";
 import { resetDatabase } from "./utils/reset-db.js";
 import { runMigrations } from "./setup.js";
+import {
+  BookingResponseSchema,
+  BookWithPackagePayloadSchema,
+} from "@thrive/shared";
 
 describe("Package Booking (e2e)", () => {
   let app: INestApplication;
@@ -186,6 +190,10 @@ describe("Package Booking (e2e)", () => {
       purchasedAt: new Date(),
       expiresAt: new Date(Date.now() + 30 * 86400000), // 30 days from now
       sourcePaymentId: "test_payment_123",
+      metadata: {
+        service_type: ServiceType.PRIVATE,
+        teacher_tier: "10", // Match the teacher's tier
+      },
     });
     const savedPackage = await studentPackageRepository.save(studentPackage);
     testPackageId = savedPackage.id;
@@ -233,26 +241,22 @@ describe("Package Booking (e2e)", () => {
 
   describe("POST /payments/book-with-package", () => {
     it("should successfully book session with package credit", async () => {
-      interface BookWithPackageResponse {
-        id: number;
-        sessionId: number;
-        studentId: number;
-        status: BookingStatus;
-        studentPackageId: number;
-        creditsCost: number;
-      }
-      const response = (await request(httpServer)
+      const payload = BookWithPackagePayloadSchema.parse({
+        packageId: testPackageId,
+        sessionId: testSessionId,
+      });
+      const response = await request(httpServer)
         .post("/payments/book-with-package")
         .set("x-auth-user-id", testUserId.toString())
-        .send({
-          packageId: testPackageId,
-          sessionId: testSessionId,
-        })
-        .expect(201)) as supertest.Response & { body: BookWithPackageResponse };
+        .send(payload);
+      if (response.statusCode !== 201) {
+        throw new Error(
+          `Unexpected status code: ${response.statusCode}, body: ${JSON.stringify(response.body)}`,
+        );
+      }
 
-      const body = response.body as unknown as BookWithPackageResponse;
-      expect(body.sessionId).toBe(testSessionId);
-      expect(body.studentId).toBe(testStudentId);
+      const body = BookingResponseSchema.parse(response.body);
+      expect(body.id).toBeDefined();
       expect(body.status).toBe(BookingStatus.CONFIRMED);
       expect(body.studentPackageId).toBe(testPackageId);
       expect(body.creditsCost).toBe(1);

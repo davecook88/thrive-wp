@@ -2,22 +2,10 @@ import { describe, beforeAll, afterAll, beforeEach, it, expect } from "vitest";
 import { Test, TestingModule } from "@nestjs/testing";
 import { INestApplication } from "@nestjs/common";
 import { DataSource, Repository } from "typeorm";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { ConfigModule, ConfigService } from "@nestjs/config";
-import { TypeOrmModule } from "@nestjs/typeorm";
-import { DatabaseConfig } from "../src/config/configuration.js";
-import configuration from "../src/config/configuration.js";
-import { AuthModule } from "../src/auth/auth.module.js";
-import { PaymentsModule } from "../src/payments/payments.module.js";
-import { SessionsModule } from "../src/sessions/sessions.module.js";
-import { StudentsModule } from "../src/students/students.module.js";
-import { TeachersModule } from "../src/teachers/teachers.module.js";
+import { AppModule } from "../src/app.module.js";
 import { resetDatabase } from "./utils/reset-db.js";
+import { runMigrations } from "./setup.js";
 import { PaymentsService } from "../src/payments/payments.service.js";
-import { SessionsService } from "../src/sessions/services/sessions.service.js";
-import { StudentAvailabilityService } from "../src/students/services/student-availability.service.js";
-import { TeacherAvailabilityService } from "../src/teachers/services/teacher-availability.service.js";
 import { ParsedStripeMetadata } from "../src/payments/dto/stripe-metadata.dto.js";
 import { ServiceType } from "../src/common/types/class-types.js";
 import {
@@ -28,13 +16,13 @@ import { BookingStatus } from "../src/payments/entities/booking.entity.js";
 import { Student } from "../src/students/entities/student.entity.js";
 import { Session } from "../src/sessions/entities/session.entity.js";
 import { Booking } from "../src/payments/entities/booking.entity.js";
-import { Teacher } from "../src/teachers/entities/teacher.entity.js";
-import { TeacherAvailability } from "../src/teachers/entities/teacher-availability.entity.js";
-import { StripeProductMap } from "../src/payments/entities/stripe-product-map.entity.js";
 import { User } from "../src/users/entities/user.entity.js";
-import { PackagesModule } from "../src/packages/packages.module.js";
-import { StudentPackage } from "../src/packages/entities/student-package.entity.js";
-import { PackageUse } from "../src/packages/entities/package-use.entity.js";
+import { Teacher } from "../src/teachers/entities/teacher.entity.js";
+import {
+  TeacherAvailability,
+  TeacherAvailabilityKind,
+} from "../src/teachers/entities/teacher-availability.entity.js";
+import { StripeProductMap } from "../src/payments/entities/stripe-product-map.entity.js";
 
 describe("PaymentsService.createSessionAndBookingFromMetadata (e2e)", () => {
   let app: INestApplication;
@@ -43,6 +31,10 @@ describe("PaymentsService.createSessionAndBookingFromMetadata (e2e)", () => {
   let sessionRepository: Repository<Session>;
   let bookingRepository: Repository<Booking>;
   let studentRepository: Repository<Student>;
+  let userRepository: Repository<User>;
+  let teacherRepository: Repository<Teacher>;
+  let teacherAvailabilityRepository: Repository<TeacherAvailability>;
+  let stripeProductMapRepository: Repository<StripeProductMap>;
 
   // Test data IDs
   let studentId: number;
@@ -78,75 +70,36 @@ describe("PaymentsService.createSessionAndBookingFromMetadata (e2e)", () => {
   };
 
   beforeAll(async () => {
+    await runMigrations();
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [
-        ConfigModule.forRoot({
-          isGlobal: true,
-          load: [configuration],
-        }),
-        TypeOrmModule.forRootAsync({
-          imports: [ConfigModule],
-          useFactory: (configService: ConfigService) => {
-            const dbConfig = configService.get<DatabaseConfig>("database");
-            if (!dbConfig) {
-              throw new Error("Database configuration not found");
-            }
-            const moduleDir = dirname(fileURLToPath(import.meta.url));
-            const srcDir = join(dirname(moduleDir), "src");
-            return {
-              type: dbConfig.type,
-              host: dbConfig.host,
-              port: dbConfig.port,
-              username: dbConfig.username,
-              password: dbConfig.password,
-              database: dbConfig.database,
-              entities: [join(srcDir, "**/*.entity{.ts,.js}")],
-              synchronize: false,
-              logging: dbConfig.logging,
-              timezone: "Z",
-              dateStrings: false,
-            };
-          },
-          inject: [ConfigService],
-        }),
-        AuthModule,
-        PaymentsModule,
-        SessionsModule,
-        StudentsModule,
-        TeachersModule,
-        TypeOrmModule.forFeature([
-          Student,
-          Session,
-          Booking,
-          Teacher,
-          TeacherAvailability,
-          StripeProductMap,
-          User,
-          // Add package entities so StudentPackageRepository is available
-          StudentPackage,
-          PackageUse,
-        ]),
-        PackagesModule,
-      ],
-      providers: [
-        PaymentsService,
-        SessionsService,
-        StudentAvailabilityService,
-        TeacherAvailabilityService,
-      ],
+      imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    // Match production routing where NestJS is served under /api/
+    app.setGlobalPrefix("api");
     dataSource = moduleFixture.get(DataSource);
     paymentsService = moduleFixture.get(PaymentsService);
     sessionRepository = moduleFixture.get("SessionRepository");
     bookingRepository = moduleFixture.get("BookingRepository");
     studentRepository = moduleFixture.get("StudentRepository");
+    userRepository = moduleFixture.get("UserRepository");
+    teacherRepository = moduleFixture.get("TeacherRepository");
+    teacherAvailabilityRepository = moduleFixture.get(
+      "TeacherAvailabilityRepository",
+    );
+    stripeProductMapRepository = moduleFixture.get(
+      "StripeProductMapRepository",
+    );
     await app.init();
     // Prevent unused variable lint errors where not yet asserted
     void sessionRepository;
     void bookingRepository;
     void studentRepository;
+    void userRepository;
+    void teacherRepository;
+    void teacherAvailabilityRepository;
+    void stripeProductMapRepository;
   }, 30000);
 
   afterAll(async () => {
@@ -156,78 +109,94 @@ describe("PaymentsService.createSessionAndBookingFromMetadata (e2e)", () => {
   });
 
   beforeEach(async () => {
-    // Reset DB and create test user
+    // Reset DB and create test data
     await resetDatabase(dataSource);
+    await setupTestData();
+  });
 
-    const userResult = (await dataSource.query(
-      "INSERT INTO user (email, first_name, last_name, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())",
-      ["test@example.com", "Test", "User"],
-    )) as unknown as Array<{ insertId?: number }> | { insertId?: number };
-    userId = (
-      Array.isArray(userResult) ? userResult[0]?.insertId : userResult.insertId
-    ) as number;
+  async function setupTestData() {
+    // Create test user
+    const testUser = await userRepository.save({
+      email: "test@example.com",
+      firstName: "Test",
+      lastName: "User",
+      passwordHash: "hashed",
+    });
+    userId = testUser.id;
 
     // Student record is auto-created by database trigger on user insert
-    // Fetch the auto-created student ID
-    const students = (await dataSource.query(
-      "SELECT id FROM student WHERE user_id = ?",
-      [userId],
-    )) as unknown as Array<{ id: number }>;
-    studentId = students[0]?.id;
+    // Fetch the auto-created student
+    const testStudent = await studentRepository.findOne({
+      where: { userId: userId },
+    });
+    if (!testStudent) {
+      throw new Error(
+        "Student record was not auto-created by database trigger",
+      );
+    }
+    studentId = testStudent.id;
 
     // Create test teacher
-    const teacherResult = (await dataSource.query(
-      "INSERT INTO teacher (user_id, tier, is_active, created_at, updated_at) VALUES (?, 10, 1, NOW(), NOW())",
-      [userId],
-    )) as unknown as Array<{ insertId?: number }> | { insertId?: number };
-    teacherId = (
-      Array.isArray(teacherResult)
-        ? teacherResult[0]?.insertId
-        : teacherResult.insertId
-    ) as number;
+    const testTeacher = await teacherRepository.save({
+      userId: userId,
+      tier: 10,
+      bio: "Test teacher",
+      isActive: true,
+    });
+    teacherId = testTeacher.id;
 
     // Create teacher availability for testing
-    await dataSource.query(
-      'INSERT INTO teacher_availability (teacher_id, kind, start_at, end_at, created_at, updated_at) VALUES (?, "ONE_OFF", "2025-09-12 10:00:00", "2025-09-12 18:00:00", NOW(), NOW())',
-      [teacherId],
-    );
+    await teacherAvailabilityRepository.save({
+      teacherId: teacherId,
+      kind: TeacherAvailabilityKind.ONE_OFF,
+      startAt: new Date("2025-09-12T10:00:00.000Z"),
+      endAt: new Date("2025-09-12T18:00:00.000Z"),
+      isActive: true,
+    });
 
     // Create existing GROUP session for testing
-    const groupSessionResult = (await dataSource.query(
-      'INSERT INTO session (type, teacher_id, start_at, end_at, capacity_max, status, visibility, requires_enrollment, created_at, updated_at) VALUES (?, ?, "2025-09-12 14:00:00", "2025-09-12 15:00:00", 5, "SCHEDULED", "PUBLIC", 0, NOW(), NOW())',
-      [ServiceType.GROUP, teacherId],
-    )) as unknown as Array<{ insertId?: number }> | { insertId?: number };
-    existingGroupSessionId = (
-      Array.isArray(groupSessionResult)
-        ? groupSessionResult[0]?.insertId
-        : groupSessionResult.insertId
-    ) as number;
+    const groupSession = await sessionRepository.save({
+      type: ServiceType.GROUP,
+      teacherId: teacherId,
+      startAt: new Date("2025-09-12T14:00:00.000Z"),
+      endAt: new Date("2025-09-12T15:00:00.000Z"),
+      capacityMax: 5,
+      status: SessionStatus.SCHEDULED,
+      visibility: SessionVisibility.PUBLIC,
+      requiresEnrollment: false,
+    });
+    existingGroupSessionId = groupSession.id;
 
     // Create existing COURSE session for testing
-    const courseSessionResult = (await dataSource.query(
-      'INSERT INTO session (type, teacher_id, start_at, end_at, capacity_max, status, visibility, requires_enrollment, created_at, updated_at) VALUES (?, ?, "2025-09-12 16:00:00", "2025-09-12 17:00:00", 5, "SCHEDULED", "PRIVATE", 1, NOW(), NOW())',
-      [ServiceType.COURSE, teacherId],
-    )) as unknown as Array<{ insertId?: number }> | { insertId?: number };
-    existingCourseSessionId = (
-      Array.isArray(courseSessionResult)
-        ? courseSessionResult[0]?.insertId
-        : courseSessionResult.insertId
-    ) as number;
+    const courseSession = await sessionRepository.save({
+      type: ServiceType.COURSE,
+      teacherId: teacherId,
+      startAt: new Date("2025-09-12T16:00:00.000Z"),
+      endAt: new Date("2025-09-12T17:00:00.000Z"),
+      capacityMax: 5,
+      status: SessionStatus.SCHEDULED,
+      visibility: SessionVisibility.PRIVATE,
+      requiresEnrollment: true,
+    });
+    existingCourseSessionId = courseSession.id;
 
     // Create Stripe product mappings
-    await dataSource.query(
-      "INSERT INTO stripe_product_map (service_key, stripe_product_id, active, created_at, updated_at) VALUES (?, ?, 1, NOW(), NOW())",
-      ["PRIVATE_CLASS", "prod_test_private"],
-    );
-    await dataSource.query(
-      "INSERT INTO stripe_product_map (service_key, stripe_product_id, active, created_at, updated_at) VALUES (?, ?, 1, NOW(), NOW())",
-      ["GROUP_CLASS", "prod_test_group"],
-    );
-    await dataSource.query(
-      "INSERT INTO stripe_product_map (service_key, stripe_product_id, active, created_at, updated_at) VALUES (?, ?, 1, NOW(), NOW())",
-      ["COURSE_CLASS", "prod_test_course"],
-    );
-  });
+    await stripeProductMapRepository.save({
+      serviceKey: "PRIVATE_CLASS",
+      stripeProductId: "prod_test_private",
+      active: true,
+    });
+    await stripeProductMapRepository.save({
+      serviceKey: "GROUP_CLASS",
+      stripeProductId: "prod_test_group",
+      active: true,
+    });
+    await stripeProductMapRepository.save({
+      serviceKey: "COURSE_CLASS",
+      stripeProductId: "prod_test_course",
+      active: true,
+    });
+  }
 
   describe("createSessionAndBookingFromMetadata", () => {
     describe("PRIVATE sessions", () => {
