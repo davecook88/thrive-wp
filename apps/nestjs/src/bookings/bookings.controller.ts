@@ -13,14 +13,42 @@ import { BookingsService } from "./bookings.service.js";
 import { CancelBookingSchema } from "./bookings.service.js";
 import type { CancelBookingDto } from "./bookings.service.js";
 import type { Request as ExpressRequest } from "express";
+import {
+  CreateBookingRequestSchema,
+  type CreateBookingRequest,
+} from "@thrive/shared";
 
 @Controller("bookings")
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
-  /**
-   * Get all bookings for the authenticated student
-   */
+  @Post()
+  async createBooking(
+    @Body(new ZodValidationPipe(CreateBookingRequestSchema))
+    body: CreateBookingRequest,
+    @Request() req: ExpressRequest,
+  ) {
+    const userId = req.headers["x-auth-user-id"] as string;
+    if (!userId) throw new UnauthorizedException("Authentication required");
+
+    // The BookingsService.createBooking expects a studentId (student.id).
+    // Resolve the student id from the user id here using the Student repository.
+    // Reuse the pattern used elsewhere in the app (controllers lookup Student by userId).
+    const parsedUserId = parseInt(userId, 10);
+
+    const booking = await this.bookingsService.createBooking(
+      parsedUserId,
+      body.sessionId,
+      body.studentPackageId,
+      body.confirmed,
+    );
+
+    return {
+      bookingId: booking.id,
+      status: booking.status,
+    };
+  }
+
   @Get("student/:studentId")
   async getStudentBookings(
     @Param("studentId", ParseIntPipe) studentId: number,

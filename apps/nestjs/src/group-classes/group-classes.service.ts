@@ -1,23 +1,23 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { GroupClass } from './entities/group-class.entity.js';
-import { GroupClassLevel } from './entities/group-class-level.entity.js';
-import { GroupClassTeacher } from './entities/group-class-teacher.entity.js';
-import rruleModule from 'rrule';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { GroupClass } from "./entities/group-class.entity.js";
+import { GroupClassLevel } from "./entities/group-class-level.entity.js";
+import { GroupClassTeacher } from "./entities/group-class-teacher.entity.js";
+import rruleModule from "rrule";
 const { RRule } = rruleModule;
 import {
   Session,
   SessionStatus,
   SessionVisibility,
-} from '../sessions/entities/session.entity.js';
-import { ServiceType } from '../common/types/class-types.js';
+} from "../sessions/entities/session.entity.js";
+import { ServiceType } from "../common/types/class-types.js";
 import {
   SessionWithEnrollment,
   SessionWithEnrollmentResponse,
-} from './dto/session-with-enrollment.dto.js';
-import { CreateGroupClassDto } from './dto/create-group-class.dto.js';
-import { GroupClassListDto } from './dto/group-class-list.dto.js';
+} from "./dto/session-with-enrollment.dto.js";
+import { CreateGroupClassDto } from "./dto/create-group-class.dto.js";
+import { GroupClassListDto } from "./dto/group-class-list.dto.js";
 
 @Injectable()
 export class GroupClassesService {
@@ -35,12 +35,12 @@ export class GroupClassesService {
   async findAll(): Promise<GroupClassListDto[]> {
     const groupClasses = await this.groupClassesRepository.find({
       relations: [
-        'groupClassLevels',
-        'groupClassLevels.level',
-        'groupClassTeachers',
-        'groupClassTeachers.teacher',
-        'groupClassTeachers.teacher.user',
-        'sessions',
+        "groupClassLevels",
+        "groupClassLevels.level",
+        "groupClassTeachers",
+        "groupClassTeachers.teacher",
+        "groupClassTeachers.teacher.user",
+        "sessions",
       ],
     });
 
@@ -75,12 +75,12 @@ export class GroupClassesService {
             }
           | undefined;
         const name = teacher?.user
-          ? `${teacher.user.firstName ?? ''} ${teacher.user.lastName ?? ''}`.trim()
-          : 'Teacher';
+          ? `${teacher.user.firstName ?? ""} ${teacher.user.lastName ?? ""}`.trim()
+          : "Teacher";
         teachersMapped.push({
           teacherId: gct.teacherId,
           userId: teacher?.userId ?? 0,
-          name: name || 'Teacher',
+          name: name || "Teacher",
           isPrimary: gct.isPrimary,
         });
       }
@@ -116,13 +116,13 @@ export class GroupClassesService {
     const gc = await this.groupClassesRepository.findOne({
       where: { id },
       relations: [
-        'groupClassLevels',
-        'groupClassLevels.level',
-        'groupClassTeachers',
-        'groupClassTeachers.teacher',
-        'groupClassTeachers.teacher.user',
-        'sessions',
-        'sessions.bookings',
+        "groupClassLevels",
+        "groupClassLevels.level",
+        "groupClassTeachers",
+        "groupClassTeachers.teacher",
+        "groupClassTeachers.teacher.user",
+        "sessions",
+        "sessions.bookings",
       ],
     });
 
@@ -159,12 +159,12 @@ export class GroupClassesService {
           }
         | undefined;
       const name = teacher?.user
-        ? `${teacher.user.firstName ?? ''} ${teacher.user.lastName ?? ''}`.trim()
-        : 'Teacher';
+        ? `${teacher.user.firstName ?? ""} ${teacher.user.lastName ?? ""}`.trim()
+        : "Teacher";
       teachersMapped.push({
         teacherId: gct.teacherId,
         userId: teacher?.userId ?? 0,
-        name: name || 'Teacher',
+        name: name || "Teacher",
         isPrimary: gct.isPrimary,
       });
     }
@@ -192,10 +192,10 @@ export class GroupClassesService {
       const bookings =
         (s.bookings as Array<{ status: string }> | undefined) ?? [];
       const enrolledCount = bookings.filter(
-        (b) => b.status === 'CONFIRMED',
+        (b) => b.status === "CONFIRMED",
       ).length;
       const waitlistCount = bookings.filter(
-        (b) => b.status === 'WAITLISTED',
+        (b) => b.status === "WAITLISTED",
       ).length;
 
       sessionsMapped.push({
@@ -292,14 +292,14 @@ export class GroupClassesService {
     // Return the created group class with relations
     return this.groupClassesRepository.findOne({
       where: { id: savedGroupClass.id },
-      relations: ['groupClassLevels', 'groupClassTeachers'],
+      relations: ["groupClassLevels", "groupClassTeachers"],
     }) as Promise<GroupClass>;
   }
 
   async generateSessions(groupClassId: number): Promise<Session[]> {
     const groupClass = await this.groupClassesRepository.findOne({
       where: { id: groupClassId },
-      relations: ['groupClassTeachers'],
+      relations: ["groupClassTeachers"],
     });
     if (!groupClass || !groupClass.rrule) {
       return [];
@@ -345,35 +345,35 @@ export class GroupClassesService {
     endDate?: Date;
   }): Promise<SessionWithEnrollmentResponse[]> {
     const qb = this.sessionsRepository
-      .createQueryBuilder('session')
-      .leftJoinAndSelect('session.groupClass', 'groupClass')
-      .leftJoinAndSelect('groupClass.groupClassLevels', 'groupClassLevels')
-      .leftJoinAndSelect('groupClassLevels.level', 'level')
-      .leftJoinAndSelect('session.teacher', 'teacher')
-      .leftJoinAndSelect('teacher.user', 'user')
-      .loadRelationCountAndMap('session.enrolledCount', 'session.bookings')
-      .where('session.type = :type', { type: ServiceType.GROUP })
-      .andWhere('groupClass.isActive = true')
-      .andWhere('session.status = :status', { status: 'SCHEDULED' });
+      .createQueryBuilder("session")
+      .leftJoinAndSelect("session.groupClass", "groupClass")
+      .leftJoinAndSelect("groupClass.groupClassLevels", "groupClassLevels")
+      .leftJoinAndSelect("groupClassLevels.level", "level")
+      .leftJoinAndSelect("session.teacher", "teacher")
+      .leftJoinAndSelect("teacher.user", "user")
+      .loadRelationCountAndMap("session.enrolledCount", "session.bookings")
+      .where("session.type = :type", { type: ServiceType.GROUP })
+      .andWhere("groupClass.isActive = true")
+      .andWhere("session.status = :status", { status: "SCHEDULED" });
 
     if (filters.startDate) {
-      qb.andWhere('session.startAt >= :startDate', {
+      qb.andWhere("session.startAt >= :startDate", {
         startDate: filters.startDate,
       });
     }
 
     if (filters.endDate) {
-      qb.andWhere('session.startAt <= :endDate', { endDate: filters.endDate });
+      qb.andWhere("session.startAt <= :endDate", { endDate: filters.endDate });
     }
 
     if (filters.levelId) {
-      qb.andWhere('level.id = :levelId', {
+      qb.andWhere("level.id = :levelId", {
         levelId: filters.levelId,
       });
     }
 
     if (filters.teacherId) {
-      qb.andWhere('session.teacherId = :teacherId', {
+      qb.andWhere("session.teacherId = :teacherId", {
         teacherId: filters.teacherId,
       });
     }

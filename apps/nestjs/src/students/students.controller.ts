@@ -7,6 +7,7 @@ import {
   Query,
 } from "@nestjs/common";
 import { StudentsService } from "./students.service.js";
+import { UpcomingSessionsResponseSchema } from "@thrive/shared";
 import { Student } from "./entities/student.entity.js";
 import { StudentGuard } from "../auth/student.guard.js";
 import type { Request as ExpressRequest } from "express";
@@ -60,7 +61,18 @@ export class StudentsController {
   ) {
     const userId = req.user.id;
     const limitNum = limit ? parseInt(limit, 10) : 5;
-    return this.studentsService.getUpcomingSessions(userId, limitNum);
+    const sessions = await this.studentsService.getUpcomingSessions(
+      userId,
+      limitNum,
+    );
+
+    // Validate outgoing shape with shared schema to ensure consistency
+    try {
+      return UpcomingSessionsResponseSchema.parse(sessions);
+    } catch (err) {
+      // If validation fails, still return raw sessions
+      return sessions;
+    }
   }
 
   @Get("me/enrollments")

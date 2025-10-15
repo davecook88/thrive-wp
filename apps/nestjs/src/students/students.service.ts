@@ -240,8 +240,14 @@ export class StudentsService {
         ? {
             id: nextSession.id,
             classType: nextSession.class_type,
-            startAt: nextSession.start_at,
-            endAt: nextSession.end_at,
+            startAt:
+              nextSession.start_at instanceof Date
+                ? nextSession.start_at.toISOString()
+                : nextSession.start_at,
+            endAt:
+              nextSession.end_at instanceof Date
+                ? nextSession.end_at.toISOString()
+                : nextSession.end_at,
             teacherId: nextSession.teacher_id,
             teacherName: nextSession.teacher_name,
             courseId: nextSession.course_id,
@@ -289,11 +295,24 @@ export class StudentsService {
       [student.id, limit],
     );
 
+    const fmt = (d: unknown) => {
+      if (d instanceof Date) return d.toISOString();
+      if (d === null || d === undefined) return d;
+      if (
+        typeof d === "string" ||
+        typeof d === "number" ||
+        typeof d === "boolean"
+      )
+        return String(d);
+      // Fallback: return as-is (shouldn't happen for our DB fields)
+      return d;
+    };
+
     return sessions.map((session) => ({
       id: session.id,
       classType: session.class_type,
-      startAt: session.start_at,
-      endAt: session.end_at,
+      startAt: fmt(session.start_at),
+      endAt: fmt(session.end_at),
       teacherId: session.teacher_id,
       teacherName: session.teacher_name,
       courseId: session.course_id,

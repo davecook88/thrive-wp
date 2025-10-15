@@ -5,3 +5,5 @@ export * from "./types/class-types.js";
 export * from "./types/payments.js";
 export * from "./types/events.js";
 export * from "./types/level.js";
+export * from "./types/student-upcoming.js";
+export * from "./types/group-classes.js";

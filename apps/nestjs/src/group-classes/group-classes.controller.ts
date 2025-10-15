@@ -6,19 +6,19 @@ import {
   Query,
   Body,
   UseGuards,
-} from '@nestjs/common';
-import { ZodValidationPipe } from 'nestjs-zod';
-import { GroupClassesService } from './group-classes.service.js';
-import { GroupClass } from './entities/group-class.entity.js';
-import { Session } from '../sessions/entities/session.entity.js';
-import { AdminGuard } from '../auth/admin.guard.js';
+} from "@nestjs/common";
+import { ZodValidationPipe } from "nestjs-zod";
+import { GroupClassesService } from "./group-classes.service.js";
+import { GroupClass } from "./entities/group-class.entity.js";
+import { Session } from "../sessions/entities/session.entity.js";
+import { AdminGuard } from "../auth/admin.guard.js";
 import {
   CreateGroupClassSchema,
   type CreateGroupClassDto,
-} from './dto/create-group-class.dto.js';
-import { GroupClassListDto } from './dto/group-class-list.dto.js';
+} from "./dto/create-group-class.dto.js";
+import { GroupClassListDto } from "./dto/group-class-list.dto.js";
 
-@Controller('group-classes')
+@Controller("group-classes")
 export class GroupClassesController {
   constructor(private readonly groupClassesService: GroupClassesService) {}
 
@@ -27,7 +27,7 @@ export class GroupClassesController {
     return this.groupClassesService.findAll();
   }
 
-  @Get('available')
+  @Get("available")
   getAvailableSessions(
     @Query()
     filters: {
@@ -40,13 +40,13 @@ export class GroupClassesController {
     return this.groupClassesService.getAvailableSessions(filters);
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string): Promise<GroupClassListDto | null> {
+  @Get(":id")
+  async findOne(@Param("id") id: string): Promise<GroupClassListDto | null> {
     return await this.groupClassesService.findOne(+id);
   }
 
-  @Post(':id/generate-sessions')
-  generateSessions(@Param('id') id: string): Promise<Session[]> {
+  @Post(":id/generate-sessions")
+  generateSessions(@Param("id") id: string): Promise<Session[]> {
     return this.groupClassesService.generateSessions(+id);
   }
 

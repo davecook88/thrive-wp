@@ -190,7 +190,7 @@ describe("Credit Tier System Integration (e2e)", () => {
       );
       const privatePackage = await createPackage(ServiceType.PRIVATE, 0, 60);
 
-      const response = await request(app.getHttpServer())
+      const response = await request(getHttpServer(app))
         .get(`/packages/compatible-for-session/${privateSession.id}`)
         .set("x-auth-user-id", testUser.id.toString())
         .expect(200);
@@ -212,7 +212,7 @@ describe("Credit Tier System Integration (e2e)", () => {
       const groupPackage = await createPackage(ServiceType.GROUP, 0, 60);
       const privatePackage = await createPackage(ServiceType.PRIVATE, 0, 60);
 
-      const response = await request(app.getHttpServer())
+      const response = await request(getHttpServer(app))
         .get(`/packages/compatible-for-session/${groupSession.id}`)
         .set("x-auth-user-id", testUser.id.toString())
         .expect(200);
@@ -235,7 +235,7 @@ describe("Credit Tier System Integration (e2e)", () => {
       );
       await createPackage(ServiceType.GROUP, 0, 60);
 
-      const response = await request(app.getHttpServer())
+      const response = await request(getHttpServer(app))
         .get(`/packages/compatible-for-session/${privateSession.id}`)
         .set("x-auth-user-id", testUser.id.toString())
         .expect(200);
@@ -261,7 +261,7 @@ describe("Credit Tier System Integration (e2e)", () => {
         },
       });
 
-      const response = await request(app.getHttpServer())
+      const response = await request(getHttpServer(app))
         .get(`/packages/compatible-for-session/${session.id}`)
         .set("x-auth-user-id", testUser.id.toString())
         .expect(200);
@@ -279,7 +279,7 @@ describe("Credit Tier System Integration (e2e)", () => {
       const session = await createSession(ServiceType.PRIVATE, standardTeacher);
       await createPackage(ServiceType.PRIVATE, 0, 60, 0); // No remaining sessions
 
-      const response = await request(app.getHttpServer())
+      const response = await request(getHttpServer(app))
         .get(`/packages/compatible-for-session/${session.id}`)
         .set("x-auth-user-id", testUser.id.toString())
         .expect(200);
@@ -296,7 +296,7 @@ describe("Credit Tier System Integration (e2e)", () => {
       const standardPackage = await createPackage(ServiceType.PRIVATE, 0, 60);
       const premiumPackage = await createPackage(ServiceType.PRIVATE, 10, 60);
 
-      const response = await request(app.getHttpServer())
+      const response = await request(getHttpServer(app))
         .get(`/packages/compatible-for-session/${premiumSession.id}`)
         .set("x-auth-user-id", testUser.id.toString())
         .expect(200);
@@ -317,13 +317,13 @@ describe("Credit Tier System Integration (e2e)", () => {
     it("should return 401 when not authenticated", async () => {
       const session = await createSession(ServiceType.PRIVATE, standardTeacher);
 
-      await request(app.getHttpServer())
+      await request(getHttpServer(app))
         .get(`/packages/compatible-for-session/${session.id}`)
         .expect(401);
     });
 
     it("should return 404 for non-existent session", async () => {
-      await request(app.getHttpServer())
+      await request(getHttpServer(app))
         .get("/packages/compatible-for-session/999999")
         .set("x-auth-user-id", testUser.id.toString())
         .expect(404);
@@ -338,7 +338,7 @@ describe("Credit Tier System Integration (e2e)", () => {
       );
       const privatePackage = await createPackage(ServiceType.PRIVATE, 0, 60, 3);
 
-      const response = await request(app.getHttpServer())
+      const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
         .set("x-auth-user-id", testUser.id.toString())
         .send({
@@ -366,7 +366,7 @@ describe("Credit Tier System Integration (e2e)", () => {
       );
       const privatePackage = await createPackage(ServiceType.PRIVATE, 0, 60, 3);
 
-      const response = await request(app.getHttpServer())
+      const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
         .set("x-auth-user-id", testUser.id.toString())
         .send({
@@ -387,7 +387,7 @@ describe("Credit Tier System Integration (e2e)", () => {
       );
       const privatePackage = await createPackage(ServiceType.PRIVATE, 0, 60, 3);
 
-      const response = await request(app.getHttpServer())
+      const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
         .set("x-auth-user-id", testUser.id.toString())
         .send({
@@ -409,7 +409,7 @@ describe("Credit Tier System Integration (e2e)", () => {
       );
       const groupPackage = await createPackage(ServiceType.GROUP, 0, 60, 3);
 
-      const response = await request(app.getHttpServer())
+      const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
         .set("x-auth-user-id", testUser.id.toString())
         .send({
@@ -431,7 +431,7 @@ describe("Credit Tier System Integration (e2e)", () => {
       );
       const package30min = await createPackage(ServiceType.PRIVATE, 0, 30, 5);
 
-      const response = await request(app.getHttpServer())
+      const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
         .set("x-auth-user-id", testUser.id.toString())
         .send({
@@ -457,7 +457,7 @@ describe("Credit Tier System Integration (e2e)", () => {
       );
       const package60min = await createPackage(ServiceType.PRIVATE, 0, 60, 5);
 
-      const response = await request(app.getHttpServer())
+      const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
         .set("x-auth-user-id", testUser.id.toString())
         .send({
@@ -483,7 +483,7 @@ describe("Credit Tier System Integration (e2e)", () => {
       );
       const package30min = await createPackage(ServiceType.PRIVATE, 0, 30, 1); // Only 1 credit
 
-      const response = await request(app.getHttpServer())
+      const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
         .set("x-auth-user-id", testUser.id.toString())
         .send({
@@ -513,7 +513,7 @@ describe("Credit Tier System Integration (e2e)", () => {
         },
       });
 
-      await request(app.getHttpServer())
+      await request(getHttpServer(app))
         .post("/payments/book-with-package")
         .set("x-auth-user-id", testUser.id.toString())
         .send({
@@ -535,7 +535,7 @@ describe("Credit Tier System Integration (e2e)", () => {
         5,
       );
 
-      const response = await request(app.getHttpServer())
+      const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
         .set("x-auth-user-id", testUser.id.toString())
         .send({
@@ -561,7 +561,7 @@ describe("Credit Tier System Integration (e2e)", () => {
         5,
       );
 
-      const response = await request(app.getHttpServer())
+      const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
         .set("x-auth-user-id", testUser.id.toString())
         .send({
@@ -584,7 +584,7 @@ describe("Credit Tier System Integration (e2e)", () => {
       );
       const privatePackage = await createPackage(ServiceType.PRIVATE, 0, 60, 3);
 
-      const bookingRes = await request(app.getHttpServer())
+      const bookingRes = await request(getHttpServer(app))
         .post("/payments/book-with-package")
         .set("x-auth-user-id", testUser.id.toString())
         .send({
@@ -603,7 +603,7 @@ describe("Credit Tier System Integration (e2e)", () => {
       expect(updatedPackage?.remainingSessions).toBe(2);
 
       // Cancel the booking
-      const cancelRes = await request(app.getHttpServer())
+      const cancelRes = await request(getHttpServer(app))
         .post(`/bookings/${bookingId}/cancel`)
         .set("x-auth-user-id", testUser.id.toString())
         .send({
@@ -631,7 +631,7 @@ describe("Credit Tier System Integration (e2e)", () => {
       const package30min = await createPackage(ServiceType.PRIVATE, 0, 30, 5);
 
       // Book using 2 credits (60 min session / 30 min credit unit)
-      const bookingRes = await request(app.getHttpServer())
+      const bookingRes = await request(getHttpServer(app))
         .post("/payments/book-with-package")
         .set("x-auth-user-id", testUser.id.toString())
         .send({
@@ -649,7 +649,7 @@ describe("Credit Tier System Integration (e2e)", () => {
       expect(updatedPackage?.remainingSessions).toBe(3);
 
       // Cancel
-      await request(app.getHttpServer())
+      await request(getHttpServer(app))
         .post(`/bookings/${bookingRes.body.id}/cancel`)
         .set("x-auth-user-id", testUser.id.toString())
         .send({ reason: "Test" })
@@ -669,7 +669,7 @@ describe("Credit Tier System Integration (e2e)", () => {
       const pkg = await createPackage(ServiceType.PRIVATE, 0, 60, 1); // Only 1 credit
 
       // First booking should succeed
-      await request(app.getHttpServer())
+      await request(getHttpServer(app))
         .post("/payments/book-with-package")
         .set("x-auth-user-id", testUser.id.toString())
         .send({
@@ -683,7 +683,7 @@ describe("Credit Tier System Integration (e2e)", () => {
         ServiceType.PRIVATE,
         standardTeacher,
       );
-      await request(app.getHttpServer())
+      await request(getHttpServer(app))
         .post("/payments/book-with-package")
         .set("x-auth-user-id", testUser.id.toString())
         .send({
@@ -706,7 +706,7 @@ describe("Credit Tier System Integration (e2e)", () => {
       });
 
       // Should default to PRIVATE tier and allow booking
-      const response = await request(app.getHttpServer())
+      const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
         .set("x-auth-user-id", testUser.id.toString())
         .send({

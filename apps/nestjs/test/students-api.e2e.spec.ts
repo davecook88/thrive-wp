@@ -1,3 +1,8 @@
+import { describe, beforeAll, afterAll, it, expect } from "vitest";
+import {
+  UpcomingSessionsResponseSchema,
+  type UpcomingSessionsResponseDto,
+} from "@thrive/shared";
 import { Test, TestingModule } from "@nestjs/testing";
 import { INestApplication } from "@nestjs/common";
 import { DataSource } from "typeorm";
@@ -6,12 +11,15 @@ import jwt from "jsonwebtoken";
 import { AppModule } from "../src/app.module.js";
 import { resetDatabase } from "./utils/reset-db.js";
 import { execInsert } from "./utils/query-helpers.js";
+import { runMigrations } from "./setup.js";
+import { getHttpServer } from "./utils/get-httpserver.js";
 
 describe("Students API (e2e)", () => {
   let app: INestApplication;
   let dataSource: DataSource;
 
   beforeAll(async () => {
+    await runMigrations();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -124,21 +132,31 @@ describe("Students API (e2e)", () => {
     });
 
     it("should return upcoming sessions with correct teacher name", async () => {
-      const response = await request(app.getHttpServer())
+      const response = await request(getHttpServer(app))
         .get("/api/students/me/upcoming")
         .query({ limit: 5 })
         .set("Cookie", `thrive_sess=${accessToken}`)
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body).toHaveLength(1);
+      // Validate shape with shared zod schema in a type-safe way
+      const parsedResult = UpcomingSessionsResponseSchema.safeParse(
+        response.body as unknown,
+      );
+      // If parsing failed, print the error to help debugging
+      if (!parsedResult.success) {
+        console.error(parsedResult.error.format());
+      }
+      expect(parsedResult.success).toBe(true);
+      if (!parsedResult.success) return; // Type guard for TypeScript
 
-      const session = response.body[0];
-      expect(session).toHaveProperty("id", sessionId);
-      expect(session).toHaveProperty("teacherName", "John Doe"); // Should be concatenated first + last name
-      expect(session).toHaveProperty("classType", "PRIVATE");
-      expect(session).toHaveProperty("startAt");
-      expect(session).toHaveProperty("endAt");
+      const parsed = parsedResult.data;
+      expect(parsed).toHaveLength(1);
+      const session = parsed[0];
+      expect(session.id).toBe(sessionId);
+      expect(session.teacherName).toBe("John Doe"); // Should be concatenated first + last name
+      expect(session.classType).toBe("PRIVATE");
+      expect(session.startAt).toBeDefined();
+      expect(session.endAt).toBeDefined();
     });
 
     it("should respect limit parameter", async () => {
@@ -164,7 +182,7 @@ describe("Students API (e2e)", () => {
         [sessionId2, studentId, "CONFIRMED"],
       );
 
-      const response = await request(app.getHttpServer())
+      const response = await request(getHttpServer(app))
         .get("/api/students/me/upcoming")
         .query({ limit: 1 })
         .set("Cookie", `thrive_sess=${accessToken}`)
@@ -212,7 +230,7 @@ describe("Students API (e2e)", () => {
         expiresIn: "1d",
       });
 
-      const response = await request(app.getHttpServer())
+      const response = await request(getHttpServer(app))
         .get("/api/students/me/upcoming")
         .query({ limit: 5 })
         .set("Cookie", `thrive_sess=${otherToken}`)

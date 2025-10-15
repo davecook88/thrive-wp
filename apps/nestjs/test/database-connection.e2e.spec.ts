@@ -1,8 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import { AppModule } from '../src/app.module.js';
+import { describe, beforeAll, afterAll, it, expect } from "vitest";
+import { Test, TestingModule } from "@nestjs/testing";
+import { INestApplication } from "@nestjs/common";
+import { AppModule } from "../src/app.module.js";
 
-describe('Database Connection (e2e)', () => {
+describe("Database Connection (e2e)", () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -20,7 +21,7 @@ describe('Database Connection (e2e)', () => {
     }
   });
 
-  it('should initialize the app with test database', () => {
+  it("should initialize the app with test database", () => {
     expect(app).toBeDefined();
   });
 });

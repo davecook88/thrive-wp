@@ -5,6 +5,8 @@ import {
   BookingEvent,
   ClassEvent,
   StudentPackageMyCreditsResponse,
+  UpcomingSessionDto,
+  UpcomingSessionsResponseSchema,
 } from "@thrive/shared";
 import {
   PreviewAvailabilityResponseSchema,
@@ -143,6 +145,16 @@ export const thriveClient = {
       `/api/students/me/sessions?start=${encodeURIComponent(
         start.toISOString(),
       )}&end=${encodeURIComponent(end.toISOString())}`,
+    );
+    return Array.isArray(data) ? data : [];
+  },
+
+  fetchStudentUpcomingSessions: async (
+    limit: number = 5,
+  ): Promise<UpcomingSessionDto[]> => {
+    const data = await apiGet<UpcomingSessionDto[]>(
+      `/api/students/me/upcoming?limit=${encodeURIComponent(String(limit))}`,
+      UpcomingSessionsResponseSchema,
     );
     return Array.isArray(data) ? data : [];
   },

@@ -27,7 +27,7 @@
     },
     "dependencies": {
         "rrule": "^2.8.1",
-        "zod": "^4.1.12"
+        "zod": "^4.1.5"
     },
     "devDependencies": {
         "typescript": "^5.5.4"

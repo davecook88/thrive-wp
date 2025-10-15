@@ -1,17 +1,6 @@
-import React, { useEffect, useState } from "react";
-
-interface UpcomingSession {
-  id: number;
-  classType: string;
-  startAt: string;
-  endAt: string;
-  teacherId: number;
-  teacherName: string;
-  courseId: number | null;
-  courseName: string | null;
-  meetingUrl: string | null;
-  status: string;
-}
+import { useEffect, useState } from "react";
+import { thriveClient } from "../../../../../shared/thrive";
+import { UpcomingSessionDto } from "@thrive/shared";
 
 interface StudentUpcomingSessionsProps {
   limit?: number;
@@ -22,25 +11,14 @@ export default function StudentUpcomingSessions({
   limit = 5,
   showMeetingLinks = true,
 }: StudentUpcomingSessionsProps) {
-  const [sessions, setSessions] = useState<UpcomingSession[]>([]);
+  const [sessions, setSessions] = useState<UpcomingSessionDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSessions = async () => {
       try {
-        const response = await fetch(
-          `/api/students/me/upcoming?limit=${limit}`,
-          {
-            credentials: "include",
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch upcoming sessions");
-        }
-
-        const data = await response.json();
+        const data = await thriveClient.fetchStudentUpcomingSessions(limit);
         setSessions(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");

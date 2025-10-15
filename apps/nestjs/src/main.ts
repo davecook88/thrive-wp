@@ -1,8 +1,8 @@
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { AppModule } from './app.module.js';
-import cookieParser from 'cookie-parser';
-import { webcrypto } from 'crypto';
+import { NestFactory } from "@nestjs/core";
+import { ValidationPipe } from "@nestjs/common";
+import { AppModule } from "./app.module.js";
+import cookieParser from "cookie-parser";
+import { webcrypto } from "crypto";
 
 // Ensure global crypto (Node 18 should have, but polyfill defensively for libraries expecting it)
 

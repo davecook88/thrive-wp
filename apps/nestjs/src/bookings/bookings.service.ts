@@ -3,23 +3,23 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Booking, BookingStatus } from '../payments/entities/booking.entity.js';
-import { Session, SessionStatus } from '../sessions/entities/session.entity.js';
-import { Student } from '../students/entities/student.entity.js';
-import { StudentPackage } from '../packages/entities/student-package.entity.js';
-import { PoliciesService } from '../policies/policies.service.js';
-import { ServiceType } from '../common/types/class-types.js';
-import { WaitlistsService } from '../waitlists/waitlists.service.js';
-import { z } from 'zod';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Booking, BookingStatus } from "../payments/entities/booking.entity.js";
+import { Session, SessionStatus } from "../sessions/entities/session.entity.js";
+import { Student } from "../students/entities/student.entity.js";
+import { StudentPackage } from "../packages/entities/student-package.entity.js";
+import { PoliciesService } from "../policies/policies.service.js";
+import { ServiceType } from "../common/types/class-types.js";
+import { WaitlistsService } from "../waitlists/waitlists.service.js";
+import { z } from "zod";
 import {
   canUsePackageForSession,
   isCrossTierBooking,
   calculateCreditsRequired,
   getCrossTierWarningMessage,
-} from '../common/types/credit-tiers.js';
+} from "../common/types/credit-tiers.js";
 
 export const CancelBookingSchema = z.object({
   reason: z.string().optional(),
@@ -71,21 +71,21 @@ export class BookingsService {
   ): Promise<Booking> {
     const session = await this.sessionRepository.findOne({
       where: { id: sessionId },
-      relations: ['teacher'],
+      relations: ["teacher"],
     });
     if (!session) {
-      throw new NotFoundException('Session not found');
+      throw new NotFoundException("Session not found");
     }
 
     if (session.status !== SessionStatus.SCHEDULED) {
-      throw new BadRequestException('Session is not scheduled');
+      throw new BadRequestException("Session is not scheduled");
     }
 
     const student = await this.studentRepository.findOne({
       where: { id: studentId },
     });
     if (!student) {
-      throw new NotFoundException('Student not found');
+      throw new NotFoundException("Student not found");
     }
 
     // Check capacity
@@ -93,7 +93,7 @@ export class BookingsService {
       where: { sessionId, status: BookingStatus.CONFIRMED },
     });
     if (enrolledCount >= session.capacityMax) {
-      throw new BadRequestException('Session is full');
+      throw new BadRequestException("Session is full");
     }
 
     let studentPackage: StudentPackage | null = null;
@@ -104,13 +104,13 @@ export class BookingsService {
         where: { id: studentPackageId, studentId },
       });
       if (!studentPackage) {
-        throw new NotFoundException('Student package not found');
+        throw new NotFoundException("Student package not found");
       }
 
       // Tier validation: Check if package can be used for this session
       if (!canUsePackageForSession(studentPackage, session)) {
         throw new BadRequestException(
-          'This package cannot be used for this session type',
+          "This package cannot be used for this session type",
         );
       }
 
@@ -147,7 +147,7 @@ export class BookingsService {
 
       // Check if package is still valid (not expired)
       if (studentPackage.expiresAt && studentPackage.expiresAt < new Date()) {
-        throw new BadRequestException('Package has expired');
+        throw new BadRequestException("Package has expired");
       }
     }
 
@@ -172,8 +172,8 @@ export class BookingsService {
   async getStudentBookings(studentId: number): Promise<StudentBooking[]> {
     const bookings = await this.bookingRepository.find({
       where: { studentId, status: BookingStatus.CONFIRMED },
-      relations: ['session'],
-      order: { createdAt: 'DESC' },
+      relations: ["session"],
+      order: { createdAt: "DESC" },
     });
 
     const policy = await this.policiesService.getActivePolicy();
@@ -211,22 +211,22 @@ export class BookingsService {
   ): Promise<BookingModificationCheck> {
     const booking = await this.bookingRepository.findOne({
       where: { id: bookingId },
-      relations: ['session'],
+      relations: ["session"],
     });
 
     if (!booking) {
-      throw new NotFoundException('Booking not found');
+      throw new NotFoundException("Booking not found");
     }
 
     if (booking.studentId !== studentId) {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenException("Access denied");
     }
 
     if (booking.status !== BookingStatus.CONFIRMED) {
       return {
         canCancel: false,
         canReschedule: false,
-        reason: 'Booking is not confirmed',
+        reason: "Booking is not confirmed",
         hoursUntilSession: 0,
       };
     }
@@ -248,7 +248,7 @@ export class BookingsService {
     let reason: string | undefined;
     if (!canCancel && !canReschedule) {
       if (!policy.allowCancellation && !policy.allowRescheduling) {
-        reason = 'Cancellations and rescheduling are not allowed';
+        reason = "Cancellations and rescheduling are not allowed";
       } else if (
         hoursUntilSession <
         Math.min(
@@ -287,21 +287,21 @@ export class BookingsService {
   }> {
     const booking = await this.bookingRepository.findOne({
       where: { id: bookingId },
-      relations: ['session'],
+      relations: ["session"],
     });
 
     if (!booking) {
-      throw new NotFoundException('Booking not found');
+      throw new NotFoundException("Booking not found");
     }
 
     if (booking.studentId !== studentId) {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenException("Access denied");
     }
 
     // Check if cancellation is allowed
     const check = await this.canModifyBooking(bookingId, studentId);
     if (!check.canCancel) {
-      throw new BadRequestException(check.reason || 'Cancellation not allowed');
+      throw new BadRequestException(check.reason || "Cancellation not allowed");
     }
 
     const policy = await this.policiesService.getActivePolicy();
@@ -325,7 +325,7 @@ export class BookingsService {
         await manager.increment(
           StudentPackage,
           { id: booking.studentPackageId },
-          'remainingSessions',
+          "remainingSessions",
           booking.creditsCost || 1,
         );
         creditRefunded = true;
@@ -340,7 +340,9 @@ export class BookingsService {
       } else if (booking.session.type === ServiceType.GROUP) {
         // For group sessions, we just remove the booking, but the session remains active
         // and we might want to notify the waitlist
-        await this.waitlistsService.handleBookingCancellation(booking.sessionId);
+        await this.waitlistsService.handleBookingCancellation(
+          booking.sessionId,
+        );
       }
     });
 

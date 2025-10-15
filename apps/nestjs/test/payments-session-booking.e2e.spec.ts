@@ -1,41 +1,42 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { DatabaseConfig } from '../src/config/configuration.js';
-import configuration from '../src/config/configuration.js';
-import { AuthModule } from '../src/auth/auth.module.js';
-import { PaymentsModule } from '../src/payments/payments.module.js';
-import { SessionsModule } from '../src/sessions/sessions.module.js';
-import { StudentsModule } from '../src/students/students.module.js';
-import { TeachersModule } from '../src/teachers/teachers.module.js';
-import { resetDatabase } from './utils/reset-db.js';
-import { PaymentsService } from '../src/payments/payments.service.js';
-import { SessionsService } from '../src/sessions/services/sessions.service.js';
-import { StudentAvailabilityService } from '../src/students/services/student-availability.service.js';
-import { TeacherAvailabilityService } from '../src/teachers/services/teacher-availability.service.js';
-import { ParsedStripeMetadata } from '../src/payments/dto/stripe-metadata.dto.js';
-import { ServiceType } from '../src/common/types/class-types.js';
+import { describe, beforeAll, afterAll, beforeEach, it, expect } from "vitest";
+import { Test, TestingModule } from "@nestjs/testing";
+import { INestApplication } from "@nestjs/common";
+import { DataSource, Repository } from "typeorm";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { DatabaseConfig } from "../src/config/configuration.js";
+import configuration from "../src/config/configuration.js";
+import { AuthModule } from "../src/auth/auth.module.js";
+import { PaymentsModule } from "../src/payments/payments.module.js";
+import { SessionsModule } from "../src/sessions/sessions.module.js";
+import { StudentsModule } from "../src/students/students.module.js";
+import { TeachersModule } from "../src/teachers/teachers.module.js";
+import { resetDatabase } from "./utils/reset-db.js";
+import { PaymentsService } from "../src/payments/payments.service.js";
+import { SessionsService } from "../src/sessions/services/sessions.service.js";
+import { StudentAvailabilityService } from "../src/students/services/student-availability.service.js";
+import { TeacherAvailabilityService } from "../src/teachers/services/teacher-availability.service.js";
+import { ParsedStripeMetadata } from "../src/payments/dto/stripe-metadata.dto.js";
+import { ServiceType } from "../src/common/types/class-types.js";
 import {
   SessionStatus,
   SessionVisibility,
-} from '../src/sessions/entities/session.entity.js';
-import { BookingStatus } from '../src/payments/entities/booking.entity.js';
-import { Student } from '../src/students/entities/student.entity.js';
-import { Session } from '../src/sessions/entities/session.entity.js';
-import { Booking } from '../src/payments/entities/booking.entity.js';
-import { Teacher } from '../src/teachers/entities/teacher.entity.js';
-import { TeacherAvailability } from '../src/teachers/entities/teacher-availability.entity.js';
-import { StripeProductMap } from '../src/payments/entities/stripe-product-map.entity.js';
-import { User } from '../src/users/entities/user.entity.js';
-import { PackagesModule } from '../src/packages/packages.module.js';
-import { StudentPackage } from '../src/packages/entities/student-package.entity.js';
-import { PackageUse } from '../src/packages/entities/package-use.entity.js';
+} from "../src/sessions/entities/session.entity.js";
+import { BookingStatus } from "../src/payments/entities/booking.entity.js";
+import { Student } from "../src/students/entities/student.entity.js";
+import { Session } from "../src/sessions/entities/session.entity.js";
+import { Booking } from "../src/payments/entities/booking.entity.js";
+import { Teacher } from "../src/teachers/entities/teacher.entity.js";
+import { TeacherAvailability } from "../src/teachers/entities/teacher-availability.entity.js";
+import { StripeProductMap } from "../src/payments/entities/stripe-product-map.entity.js";
+import { User } from "../src/users/entities/user.entity.js";
+import { PackagesModule } from "../src/packages/packages.module.js";
+import { StudentPackage } from "../src/packages/entities/student-package.entity.js";
+import { PackageUse } from "../src/packages/entities/package-use.entity.js";
 
-describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
+describe("PaymentsService.createSessionAndBookingFromMetadata (e2e)", () => {
   let app: INestApplication;
   let dataSource: DataSource;
   let paymentsService: PaymentsService;
@@ -86,12 +87,12 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
         TypeOrmModule.forRootAsync({
           imports: [ConfigModule],
           useFactory: (configService: ConfigService) => {
-            const dbConfig = configService.get<DatabaseConfig>('database');
+            const dbConfig = configService.get<DatabaseConfig>("database");
             if (!dbConfig) {
-              throw new Error('Database configuration not found');
+              throw new Error("Database configuration not found");
             }
             const moduleDir = dirname(fileURLToPath(import.meta.url));
-            const srcDir = join(dirname(moduleDir), 'src');
+            const srcDir = join(dirname(moduleDir), "src");
             return {
               type: dbConfig.type,
               host: dbConfig.host,
@@ -99,10 +100,10 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
               username: dbConfig.username,
               password: dbConfig.password,
               database: dbConfig.database,
-              entities: [join(srcDir, '**/*.entity{.ts,.js}')],
+              entities: [join(srcDir, "**/*.entity{.ts,.js}")],
               synchronize: false,
               logging: dbConfig.logging,
-              timezone: 'Z',
+              timezone: "Z",
               dateStrings: false,
             };
           },
@@ -138,9 +139,9 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
     app = moduleFixture.createNestApplication();
     dataSource = moduleFixture.get(DataSource);
     paymentsService = moduleFixture.get(PaymentsService);
-    sessionRepository = moduleFixture.get('SessionRepository');
-    bookingRepository = moduleFixture.get('BookingRepository');
-    studentRepository = moduleFixture.get('StudentRepository');
+    sessionRepository = moduleFixture.get("SessionRepository");
+    bookingRepository = moduleFixture.get("BookingRepository");
+    studentRepository = moduleFixture.get("StudentRepository");
     await app.init();
     // Prevent unused variable lint errors where not yet asserted
     void sessionRepository;
@@ -159,8 +160,8 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
     await resetDatabase(dataSource);
 
     const userResult = (await dataSource.query(
-      'INSERT INTO user (email, first_name, last_name, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())',
-      ['test@example.com', 'Test', 'User'],
+      "INSERT INTO user (email, first_name, last_name, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())",
+      ["test@example.com", "Test", "User"],
     )) as unknown as Array<{ insertId?: number }> | { insertId?: number };
     userId = (
       Array.isArray(userResult) ? userResult[0]?.insertId : userResult.insertId
@@ -169,14 +170,14 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
     // Student record is auto-created by database trigger on user insert
     // Fetch the auto-created student ID
     const students = (await dataSource.query(
-      'SELECT id FROM student WHERE user_id = ?',
+      "SELECT id FROM student WHERE user_id = ?",
       [userId],
     )) as unknown as Array<{ id: number }>;
     studentId = students[0]?.id;
 
     // Create test teacher
     const teacherResult = (await dataSource.query(
-      'INSERT INTO teacher (user_id, tier, is_active, created_at, updated_at) VALUES (?, 10, 1, NOW(), NOW())',
+      "INSERT INTO teacher (user_id, tier, is_active, created_at, updated_at) VALUES (?, 10, 1, NOW(), NOW())",
       [userId],
     )) as unknown as Array<{ insertId?: number }> | { insertId?: number };
     teacherId = (
@@ -215,38 +216,38 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
 
     // Create Stripe product mappings
     await dataSource.query(
-      'INSERT INTO stripe_product_map (service_key, stripe_product_id, active, created_at, updated_at) VALUES (?, ?, 1, NOW(), NOW())',
-      ['PRIVATE_CLASS', 'prod_test_private'],
+      "INSERT INTO stripe_product_map (service_key, stripe_product_id, active, created_at, updated_at) VALUES (?, ?, 1, NOW(), NOW())",
+      ["PRIVATE_CLASS", "prod_test_private"],
     );
     await dataSource.query(
-      'INSERT INTO stripe_product_map (service_key, stripe_product_id, active, created_at, updated_at) VALUES (?, ?, 1, NOW(), NOW())',
-      ['GROUP_CLASS', 'prod_test_group'],
+      "INSERT INTO stripe_product_map (service_key, stripe_product_id, active, created_at, updated_at) VALUES (?, ?, 1, NOW(), NOW())",
+      ["GROUP_CLASS", "prod_test_group"],
     );
     await dataSource.query(
-      'INSERT INTO stripe_product_map (service_key, stripe_product_id, active, created_at, updated_at) VALUES (?, ?, 1, NOW(), NOW())',
-      ['COURSE_CLASS', 'prod_test_course'],
+      "INSERT INTO stripe_product_map (service_key, stripe_product_id, active, created_at, updated_at) VALUES (?, ?, 1, NOW(), NOW())",
+      ["COURSE_CLASS", "prod_test_course"],
     );
   });
 
-  describe('createSessionAndBookingFromMetadata', () => {
-    describe('PRIVATE sessions', () => {
-      it('should create session and booking in a transaction', async () => {
+  describe("createSessionAndBookingFromMetadata", () => {
+    describe("PRIVATE sessions", () => {
+      it("should create session and booking in a transaction", async () => {
         const metadata: ParsedStripeMetadata = {
           student_id: studentId.toString(),
           user_id: userId.toString(),
           service_type: ServiceType.PRIVATE,
           teacher_id: teacherId.toString(),
-          start_at: '2025-09-12T11:00:00.000Z',
-          end_at: '2025-09-12T12:00:00.000Z',
-          product_id: 'prod_test_private',
-          price_id: 'price_test_private',
+          start_at: "2025-09-12T11:00:00.000Z",
+          end_at: "2025-09-12T12:00:00.000Z",
+          product_id: "prod_test_private",
+          price_id: "price_test_private",
         };
 
         await paymentsService.createSessionAndBookingFromMetadata(metadata);
 
         // Verify session was created (raw DB rows are snake_case)
         const sessions = (await dataSource.query(
-          'SELECT * FROM session WHERE type = ? AND teacher_id = ?',
+          "SELECT * FROM session WHERE type = ? AND teacher_id = ?",
           [ServiceType.PRIVATE, teacherId],
         )) as unknown as DbSession[];
         expect(sessions.length).toBe(1);
@@ -256,14 +257,14 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
 
         // Verify booking was created
         const bookings = (await dataSource.query(
-          'SELECT * FROM booking WHERE session_id = ? AND student_id = ?',
+          "SELECT * FROM booking WHERE session_id = ? AND student_id = ?",
           [sessions[0].id, studentId],
         )) as unknown as DbBooking[];
         expect(bookings.length).toBe(1);
         expect(bookings[0].status).toBe(BookingStatus.CONFIRMED);
       });
 
-      it('should fail if teacher availability validation fails', async () => {
+      it("should fail if teacher availability validation fails", async () => {
         // Create a conflicting session
         await dataSource.query(
           'INSERT INTO session (type, teacher_id, start_at, end_at, capacity_max, status, visibility, requires_enrollment, created_at, updated_at) VALUES (?, ?, "2025-09-12 10:30:00", "2025-09-12 11:30:00", 1, "SCHEDULED", "PRIVATE", 0, NOW(), NOW())',
@@ -275,10 +276,10 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
           user_id: userId.toString(),
           service_type: ServiceType.PRIVATE,
           teacher_id: teacherId.toString(),
-          start_at: '2025-09-12T11:00:00.000Z',
-          end_at: '2025-09-12T12:00:00.000Z',
-          product_id: 'prod_test_private',
-          price_id: 'price_test_private',
+          start_at: "2025-09-12T11:00:00.000Z",
+          end_at: "2025-09-12T12:00:00.000Z",
+          product_id: "prod_test_private",
+          price_id: "price_test_private",
         };
 
         // Call the method - validation fails with database error, but session is created anyway
@@ -286,22 +287,22 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
 
         // Verify session was created despite validation failure
         const sessions = (await dataSource.query(
-          'SELECT * FROM session WHERE type = ? AND teacher_id = ?',
+          "SELECT * FROM session WHERE type = ? AND teacher_id = ?",
           [ServiceType.PRIVATE, teacherId],
         )) as unknown as DbSession[];
         expect(sessions.length).toBe(2); // The conflicting one and the new one
       });
     });
 
-    describe('GROUP sessions', () => {
-      it('should create booking for existing session', async () => {
+    describe("GROUP sessions", () => {
+      it("should create booking for existing session", async () => {
         const metadata: ParsedStripeMetadata = {
           student_id: studentId.toString(),
           user_id: userId.toString(),
           service_type: ServiceType.GROUP,
           session_id: existingGroupSessionId.toString(),
-          product_id: 'prod_test_group',
-          price_id: 'price_test_group',
+          product_id: "prod_test_group",
+          price_id: "price_test_group",
         };
 
         // Call the method
@@ -309,7 +310,7 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
 
         // Verify session still exists (unchanged)
         const session = (await dataSource.query(
-          'SELECT * FROM session WHERE id = ?',
+          "SELECT * FROM session WHERE id = ?",
           [existingGroupSessionId],
         )) as unknown as DbSession[];
         expect(session.length).toBe(1);
@@ -317,21 +318,21 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
 
         // Verify booking was created
         const bookings = (await dataSource.query(
-          'SELECT * FROM booking WHERE session_id = ? AND student_id = ?',
+          "SELECT * FROM booking WHERE session_id = ? AND student_id = ?",
           [existingGroupSessionId, studentId],
         )) as unknown as DbBooking[];
         expect(bookings.length).toBe(1);
         expect(bookings[0].status).toBe(BookingStatus.CONFIRMED);
       });
 
-      it('should fail if student does not exist', async () => {
+      it("should fail if student does not exist", async () => {
         const metadata: ParsedStripeMetadata = {
-          student_id: '99999', // Non-existent student
+          student_id: "99999", // Non-existent student
           user_id: userId.toString(),
           service_type: ServiceType.GROUP,
           session_id: existingGroupSessionId.toString(),
-          product_id: 'prod_test_group',
-          price_id: 'price_test_group',
+          product_id: "prod_test_group",
+          price_id: "price_test_group",
         };
 
         // Call the method - should not create booking
@@ -339,20 +340,20 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
 
         // Verify no booking was created
         const bookings = (await dataSource.query(
-          'SELECT * FROM booking WHERE session_id = ?',
+          "SELECT * FROM booking WHERE session_id = ?",
           [existingGroupSessionId],
         )) as unknown as DbBooking[];
         expect(bookings.length).toBe(0);
       });
 
-      it('should fail if session type mismatch', async () => {
+      it("should fail if session type mismatch", async () => {
         const metadata: ParsedStripeMetadata = {
           student_id: studentId.toString(),
           user_id: userId.toString(),
           service_type: ServiceType.PRIVATE, // Wrong type
           session_id: existingGroupSessionId.toString(),
-          product_id: 'prod_test_private',
-          price_id: 'price_test_private',
+          product_id: "prod_test_private",
+          price_id: "price_test_private",
         };
 
         // Call the method - should not create booking
@@ -360,22 +361,22 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
 
         // Verify no booking was created
         const bookings = (await dataSource.query(
-          'SELECT * FROM booking WHERE student_id = ?',
+          "SELECT * FROM booking WHERE student_id = ?",
           [studentId],
         )) as unknown as DbBooking[];
         expect(bookings.length).toBe(0);
       });
     });
 
-    describe('COURSE sessions', () => {
-      it('should create booking for existing course session', async () => {
+    describe("COURSE sessions", () => {
+      it("should create booking for existing course session", async () => {
         const metadata: ParsedStripeMetadata = {
           student_id: studentId.toString(),
           user_id: userId.toString(),
           service_type: ServiceType.COURSE,
           session_id: existingCourseSessionId.toString(),
-          product_id: 'prod_test_course',
-          price_id: 'price_test_course',
+          product_id: "prod_test_course",
+          price_id: "price_test_course",
         };
 
         // Call the method
@@ -383,7 +384,7 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
 
         // Verify booking was created
         const bookings = (await dataSource.query(
-          'SELECT * FROM booking WHERE session_id = ? AND student_id = ?',
+          "SELECT * FROM booking WHERE session_id = ? AND student_id = ?",
           [existingCourseSessionId, studentId],
         )) as unknown as DbBooking[];
         expect(bookings.length).toBe(1);
@@ -391,16 +392,16 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
       });
     });
 
-    describe('Error handling', () => {
-      it('should handle missing student_id gracefully', async () => {
+    describe("Error handling", () => {
+      it("should handle missing student_id gracefully", async () => {
         const metadata: ParsedStripeMetadata = {
           user_id: userId.toString(),
           service_type: ServiceType.PRIVATE,
           teacher_id: teacherId.toString(),
-          start_at: '2025-09-12T11:00:00.000Z',
-          end_at: '2025-09-12T12:00:00.000Z',
-          product_id: 'prod_test_private',
-          price_id: 'price_test_private',
+          start_at: "2025-09-12T11:00:00.000Z",
+          end_at: "2025-09-12T12:00:00.000Z",
+          product_id: "prod_test_private",
+          price_id: "price_test_private",
           // Missing student_id
         };
 
@@ -409,22 +410,22 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
 
         // Verify no session was created
         const sessions = (await dataSource.query(
-          'SELECT * FROM session WHERE type = ?',
+          "SELECT * FROM session WHERE type = ?",
           [ServiceType.PRIVATE],
         )) as unknown as DbSession[];
         expect(sessions.length).toBe(0);
       });
 
-      it('should handle invalid service type for session creation', async () => {
+      it("should handle invalid service type for session creation", async () => {
         const metadata: ParsedStripeMetadata = {
           student_id: studentId.toString(),
           user_id: userId.toString(),
           service_type: ServiceType.GROUP, // GROUP without session_id
           teacher_id: teacherId.toString(),
-          start_at: '2025-09-12T11:00:00.000Z',
-          end_at: '2025-09-12T12:00:00.000Z',
-          product_id: 'prod_test_group',
-          price_id: 'price_test_group',
+          start_at: "2025-09-12T11:00:00.000Z",
+          end_at: "2025-09-12T12:00:00.000Z",
+          product_id: "prod_test_group",
+          price_id: "price_test_group",
         };
 
         // Should not throw, just log error and return
@@ -432,7 +433,7 @@ describe('PaymentsService.createSessionAndBookingFromMetadata (e2e)', () => {
 
         // Verify no session was created
         const sessions = (await dataSource.query(
-          'SELECT * FROM session WHERE type = ?',
+          "SELECT * FROM session WHERE type = ?",
           [ServiceType.GROUP],
         )) as unknown as DbSession[];
         expect(sessions.length).toBe(1); // Only the existing one

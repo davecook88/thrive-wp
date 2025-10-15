@@ -10,7 +10,7 @@ import { Repository, IsNull } from "typeorm";
 import Stripe from "stripe";
 import {
   PackageResponseDto,
-  CompatiblePackagesForSessionResponse,
+  CompatiblePackagesForSessionResponseDto,
 } from "@thrive/shared";
 import {
   StripeProductMap,
@@ -350,13 +350,13 @@ export class PackagesService {
           service_type: createPackageDto.serviceType,
           credits: createPackageDto.credits,
           credit_unit_minutes: createPackageDto.creditUnitMinutes,
-          expires_in_days: createPackageDto.expiresInDays,
+          expires_in_days: createPackageDto.expiresInDays ?? undefined,
           scope: createPackageDto.scope,
           stripe_price_id: stripePrice.id,
           lookup_key: lookupKey ?? "",
-          teacher_tier: createPackageDto.teacherTier ?? null,
+          teacher_tier: createPackageDto.teacherTier ?? undefined,
         },
-      }) as StripeProductMap;
+      });
 
       const savedMapping =
         await this.stripeProductMapRepository.save(productMapping);
@@ -602,7 +602,7 @@ export class PackagesService {
   async getCompatiblePackagesForSession(
     studentId: number,
     sessionId: number,
-  ): Promise<CompatiblePackagesForSessionResponse> {
+  ): Promise<CompatiblePackagesForSessionResponseDto> {
     const {
       canUsePackageForSession,
       getPackageTier,
