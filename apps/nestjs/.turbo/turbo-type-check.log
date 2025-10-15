@@ -1,0 +1,5 @@
+
+
+> @thrive/api@0.0.1 type-check /Users/davidcook/personal/thrive-wp/apps/nestjs
+> tsc --noEmit
+

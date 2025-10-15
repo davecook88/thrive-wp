@@ -1,31 +1,9 @@
-# Exclude node_modules from Docker build context
 node_modules
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Exclude development files
-.env.local
-.env.*.local
-
-# Exclude IDE files
-.vscode
-.idea
-
-# Exclude OS files
-.DS_Store
-Thumbs.db
-
-# Exclude git
+**/node_modules
+**/dist
+**/.next
 .git
-.gitignore
-
-# Exclude logs
-logs
-*.log
-
-# Exclude coverage
+.env*
+!.env.example
+.turbo
 coverage
-
-# Exclude build artifacts
-dist

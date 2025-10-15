@@ -13,6 +13,7 @@
     "allowJs": true,
     "noEmit": true,
     "baseUrl": ".",
+    "types": [],
     "paths": {
       "@wordpress/*": ["wordpress/node_modules/@wordpress/*"],
       "shared/*": ["shared/types/*"]

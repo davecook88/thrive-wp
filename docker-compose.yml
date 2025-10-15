@@ -13,9 +13,9 @@ services:
         define('WP_DEBUG_DISPLAY', false);
         define('SCRIPT_DEBUG', true);
     volumes:
-      - ./wordpress/plugins/thrive-admin:/var/www/html/wp-content/plugins/thrive-admin
+      - ./apps/wordpress/plugins/thrive-admin:/var/www/html/wp-content/plugins/thrive-admin
       - ./_logs_wp:/var/www/html/wp-content/debug.log:rw
-      - ./wordpress/themes/custom-theme:/var/www/html/wp-content/themes/custom-theme
+      - ./apps/wordpress/themes/custom-theme:/var/www/html/wp-content/themes/custom-theme
     depends_on:
       - db
       - nestjs
@@ -50,22 +50,30 @@ services:
   nestjs:
     build:
       context: .
-      dockerfile: ./nestjs/Dockerfile
+      dockerfile: docker/nestjs.Dockerfile
+      target: development  # Use development stage
+    command: sh -c "cd /app/apps/nestjs && pnpm exec nest start --watch"
+    working_dir: /app
     volumes:
-      # Mount source code for hot reload during development
-      # Use named volume for node_modules to avoid platform-specific binary issues
-      # and prevent host's node_modules from overriding container's dependencies.
-      # No need to bind-mount shared in production image build because we COPY it in the Dockerfile
-      - nestjs_node_modules:/usr/src/app/node_modules
-    # If you see "Cannot find module" errors, rebuild safely without dropping DB:
-    #  - Rebuild just the nestjs service (no DB impact):
-    #      docker-compose up --build --no-deps --force-recreate nestjs
-    #  - If the node_modules volume is corrupted, remove only that named volume first:
-    #      docker-compose down && docker volume rm ${PWD##*/}_nestjs_node_modules || true
-    #    then start services:
-    #      docker-compose up --build
+      # Mount source files for hot reload
+      - ./apps/nestjs/src:/app/apps/nestjs/src:cached
+      - ./apps/nestjs/test:/app/apps/nestjs/test:cached
+      - ./apps/nestjs/package.json:/app/apps/nestjs/package.json:cached
+      - ./apps/nestjs/tsconfig.json:/app/apps/nestjs/tsconfig.json:cached
+      - ./apps/nestjs/nest-cli.json:/app/apps/nestjs/nest-cli.json:cached
+      # Mount shared package for hot reload
+      - ./packages/shared/src:/app/packages/shared/src:cached
+      - ./packages/shared/dist:/app/packages/shared/dist:cached
+      - ./packages/shared/package.json:/app/packages/shared/package.json:cached
+      - ./packages/shared/tsconfig.json:/app/packages/shared/tsconfig.json:cached
+      # Mount workspace config
+      - ./package.json:/app/package.json:cached
+      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml:cached
+      # DON'T mount node_modules - let the image's built node_modules with symlinks be used
     env_file:
-      - ./nestjs/.env
+      - ./apps/nestjs/.env
+    environment:
+      NODE_ENV: development
     networks:
       - wordpress_net
     depends_on:
@@ -86,14 +94,15 @@ services:
       - '8080:80'
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d:ro
-      - ./web-components/thrive-calendar/dist:/usr/share/nginx/html/assets/calendar:ro
+      - ./apps/web-calendar/dist:/usr/share/nginx/html/assets/calendar:ro
     networks:
       - wordpress_net
 
 volumes:
   wordpress:
   db:
-  nestjs_node_modules:
+  # nestjs_node_modules:
+  # nestjs_app_node_modules:
 
 networks:
   wordpress_net:

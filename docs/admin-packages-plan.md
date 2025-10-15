@@ -178,7 +178,7 @@ Idempotency: POST should support an optional client-provided idempotencyKey; bac
 
 ## WordPress Integration (thrive-admin)
 
-- PHP (includes/class-thrive-admin-bridge-admin.php):
+- PHP (apps/wordpress/plugins/thrive-admin/includes/admin/bridge-admin.php):
   - Add submenu 'Packages' with templates/packages.php
   - Register AJAX handlers:
     - thrive_admin_packages_list → calls GET /api/admin/packages

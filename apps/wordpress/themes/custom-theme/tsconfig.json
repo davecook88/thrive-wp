@@ -1,0 +1,7 @@
+{
+  "extends": "../../../../tsconfig.base.json",
+  "compilerOptions": {
+    // Let webpack handle the @thrive/shared aliasing
+  },
+  "references": [{ "path": "../../../../packages/shared" }]
+}

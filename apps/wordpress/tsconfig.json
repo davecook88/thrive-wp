@@ -1,0 +1,26 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "node16",
+    "moduleResolution": "nodenext",
+    "lib": ["ES2020", "DOM"],
+    "strict": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@wordpress/*": ["node_modules/@wordpress/*"],
+      "@thrive/shared": ["../../packages/shared/dist"],
+      "@thrive/shared/*": ["../../packages/shared/dist/*"],
+      "../types/*": ["types/*"]
+    }
+  },
+  "include": ["types/**/*.ts", "plugins/**/*.ts", "**/*.ts", "shared/**/*.ts"],
+  "exclude": ["node_modules", "vendor"],
+  "references": [{ "path": "../../packages/shared" }]
+}

@@ -1,6 +1,6 @@
-# Makefile for Thrive WP (WordPress + NestJS Hybrid)
+# Makefile for Thrive WP (WordPress + NestJS Hybrid Monorepo)
 
-.PHONY: logs-nestjs logs-wp run stop build migrate-show migrate-run migrate-revert migrate-generate dev prod-deploy
+.PHONY: logs-nestjs logs-wp logs-nginx run stop build test lint type-check clean migrate-show migrate-run migrate-revert migrate-generate dev prod-deploy watch-wp-themes watch-admin-plugin
 
 logs-nestjs:
 	docker-compose logs -f nestjs
@@ -11,20 +11,30 @@ logs-wp:
 logs-nginx:
 	docker-compose logs -f web
 
+# Monorepo commands using turbo
 build:
-	docker compose build
+	pnpm run build
+
+test:
+	pnpm run test
+
+lint:
+	pnpm run lint
+
+type-check:
+	pnpm run type-check
+
+clean:
+	pnpm run clean
 
 run:
-	(docker compose up &)
-	(make watch-wp-themes &)
-	(make watch-admin-plugin &)
-	wait
+	docker compose up
 
 stop:
 	docker compose down
 
-nest-npmci:
-	docker compose exec nestjs npm ci
+nest-pnpmi:
+	docker compose exec nestjs pnpm install
 
 # --- Database Migrations (executed inside nestjs container) ---
 # Usage examples:
@@ -37,29 +47,29 @@ NESTJS?=nestjs
 MIGRATIONS_DIR?=src/migrations
 
 migrate-show:
-	docker compose exec $(NESTJS) npm run typeorm -- migration:show
+	docker compose exec $(NESTJS) pnpm run typeorm -- migration:show
 
 migrate-run:
-	docker compose exec $(NESTJS) npm run typeorm -- migration:run
+	docker compose exec $(NESTJS) pnpm run typeorm -- migration:run
 
 migrate-revert:
-	docker compose exec $(NESTJS) npm run typeorm -- migration:revert
+	docker compose exec $(NESTJS) pnpm run typeorm -- migration:revert
 
 watch-wp-themes:
-	cd wordpress/themes/custom-theme && npm run start
+	cd apps/wordpress/themes/custom-theme && pnpm run start
 
 watch-admin-plugin:
-	cd wordpress/plugins/thrive-admin && npm run dev
+	cd apps/wordpress/plugins/thrive-admin && pnpm run dev
 
-# Start development with hot-reload (uses docker-compose.override.yml)
+# Start development with hot-reload (source files mounted for live updates)
 dev:
-	docker-compose -f docker-compose.yml -f docker-compose.override.yml up --build
+	docker-compose up --build
 
 # Build and deploy production containers (detached)
 prod-deploy:
-	docker-compose -f docker-compose.yml up --build -d
+	docker-compose up --build -d
 
 # Generate a new migration (pass NAME=DescriptiveName)
 migrate-generate:
 	@if [ -z "$(NAME)" ]; then echo "ERROR: provide NAME=YourMigrationName"; exit 1; fi; \
-	docker compose exec $(NESTJS) npm run typeorm -- migration:generate $(MIGRATIONS_DIR)/$(NAME)
+	docker compose exec $(NESTJS) pnpm run typeorm -- migration:generate $(MIGRATIONS_DIR)/$(NAME)
