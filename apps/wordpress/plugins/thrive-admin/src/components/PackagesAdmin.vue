@@ -240,21 +240,8 @@
 
 <script lang="ts">
 import { defineComponent, ref, onMounted } from 'vue';
-
-interface Package {
-  id: number;
-  name: string;
-  serviceType: string;
-  credits: number;
-  creditUnitMinutes: number;
-  expiresInDays?: number;
-  stripe: {
-    productId: string;
-    priceId: string;
-    lookupKey: string;
-  };
-  active: boolean;
-}
+import { thriveClient } from '../lib/thrive';
+import type { Package, CreatePackageData } from '../lib/types/packages';
 
 export default defineComponent({
   name: 'PackagesAdmin',
@@ -270,7 +257,7 @@ export default defineComponent({
       description: '',
       credits: 5,
       creditUnitMinutes: 30,
-      expiresInDays: null as number | null,
+      expiresInDays: 90 as number ,
       currency: 'usd',
       amountMinor: 19900,
       lookupKey: ''
@@ -279,18 +266,9 @@ export default defineComponent({
     const loadPackages = async () => {
       loading.value = true;
       error.value = null;
-      
+
       try {
-        const response = await fetch('/api/admin/packages', {
-          credentials: 'same-origin',
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        packages.value = data;
+        packages.value = await thriveClient.packages.getPackages();
       } catch (err: any) {
         error.value = err.message || 'Failed to load packages';
       } finally {
@@ -303,22 +281,12 @@ export default defineComponent({
       error.value = null;
 
       try {
-        const response = await fetch('/api/admin/packages', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-          },
-          credentials: 'same-origin',
-          body: JSON.stringify({
-            ...form.value,
-            serviceType: 'PRIVATE'
-          })
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-          throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-        }
+        const packageData: CreatePackageData = {
+          ...form.value,
+          serviceType: 'PRIVATE'
+        };
+
+        await thriveClient.packages.createPackage(packageData);
 
         // Reset form and reload packages
         resetForm();
@@ -337,16 +305,7 @@ export default defineComponent({
       }
 
       try {
-        const response = await fetch(`/api/admin/packages/${pkg.id}/deactivate`, { 
-          method: 'POST',
-          credentials: 'same-origin',
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-          throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-        }
-        
+        await thriveClient.packages.deactivatePackage(pkg.id);
         await loadPackages();
       } catch (err: any) {
         error.value = err.message || 'Failed to deactivate package';
@@ -359,7 +318,7 @@ export default defineComponent({
         description: '',
         credits: 5,
         creditUnitMinutes: 30,
-        expiresInDays: null,
+        expiresInDays: 90,
         currency: 'usd',
         amountMinor: 19900,
         lookupKey: ''
