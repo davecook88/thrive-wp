@@ -1,29 +1,30 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import request, { Response } from 'supertest';
-import jwt from 'jsonwebtoken';
-import type { Application } from 'express';
-import { AppModule } from '../src/app.module.js';
-import { DataSource, Repository } from 'typeorm';
-import { resetDatabase } from './utils/reset-db.js';
-import { User } from '../src/users/entities/user.entity.js';
-import { Student } from '../src/students/entities/student.entity.js';
-import { Teacher } from '../src/teachers/entities/teacher.entity.js';
-import { GroupClass } from '../src/group-classes/entities/group-class.entity.js';
+import { describe, beforeEach, afterEach, it, expect } from "vitest";
+import { Test, TestingModule } from "@nestjs/testing";
+import { INestApplication } from "@nestjs/common";
+import request, { Response } from "supertest";
+import jwt from "jsonwebtoken";
+import type { Application } from "express";
+import { AppModule } from "../src/app.module.js";
+import { DataSource, Repository } from "typeorm";
+import { resetDatabase } from "./utils/reset-db.js";
+import { User } from "../src/users/entities/user.entity.js";
+import { Student } from "../src/students/entities/student.entity.js";
+import { Teacher } from "../src/teachers/entities/teacher.entity.js";
+import { GroupClass } from "../src/group-classes/entities/group-class.entity.js";
 import {
   Booking,
   BookingStatus,
-} from '../src/payments/entities/booking.entity.js';
-import { Level } from '../src/levels/entities/level.entity.js';
-import { Session } from '../src/sessions/entities/session.entity.js';
-import { Waitlist } from '../src/waitlists/entities/waitlist.entity.js';
-import { ServiceType } from '@/common/types/class-types.js';
+} from "../src/payments/entities/booking.entity.js";
+import { Level } from "../src/levels/entities/level.entity.js";
+import { Session } from "../src/sessions/entities/session.entity.js";
+import { Waitlist } from "../src/waitlists/entities/waitlist.entity.js";
+import { ServiceType } from "@/common/types/class-types.js";
 import {
   CancellationPolicy,
   PenaltyType,
-} from '@/policies/entities/cancellation-policy.entity.js';
+} from "@/policies/entities/cancellation-policy.entity.js";
 
-describe('Waitlist (e2e)', () => {
+describe("Waitlist (e2e)", () => {
   let app: INestApplication;
   let dataSource: DataSource;
   let userRepository: Repository<User>;
@@ -94,31 +95,31 @@ describe('Waitlist (e2e)', () => {
         penaltyType: PenaltyType.NONE,
         refundCreditsOnCancel: true,
         isActive: true,
-        policyName: 'test-default',
+        policyName: "test-default",
       });
     }
     const teacherUser = await userRepository.save({
-      email: 'teacher@test.com',
-      firstName: 'Test',
-      lastName: 'Teacher',
-      passwordHash: 'hash',
+      email: "teacher@test.com",
+      firstName: "Test",
+      lastName: "Teacher",
+      passwordHash: "hash",
     });
     testTeacher = await teacherRepository.save({
       userId: teacherUser.id,
-      bio: 'I teach things.',
+      bio: "I teach things.",
       tier: 1,
     });
     const foundLevel = await levelRepository.findOne({
-      where: { code: 'A1' },
+      where: { code: "A1" },
     });
     // If migrations/seed were truncated by resetDatabase, ensure the test level exists
     if (foundLevel) {
       testLevel = foundLevel;
     } else {
       const newLevel = levelRepository.create({
-        code: 'A1',
-        name: 'Beginner A1',
-        description: 'Test level A1',
+        code: "A1",
+        name: "Beginner A1",
+        description: "Test level A1",
         sortOrder: 10,
         isActive: true,
       });
@@ -133,14 +134,14 @@ describe('Waitlist (e2e)', () => {
     const sessionEndAt = new Date(sessionStartAt.getTime() + 60 * 60 * 1000);
 
     const groupClass = await groupClassRepository.save({
-      title: 'Full Class for Waitlist',
+      title: "Full Class for Waitlist",
       levelId: testLevel.id,
       capacityMax: 1,
       teacherIds: [testTeacher.id],
       primaryTeacherId: testTeacher.id,
-      rrule: 'FREQ=WEEKLY;COUNT=1;BYDAY=WE',
+      rrule: "FREQ=WEEKLY;COUNT=1;BYDAY=WE",
       startDate: futureDateOnly,
-      sessionStartTime: '12:00',
+      sessionStartTime: "12:00",
       sessionDuration: 60,
     });
 
@@ -158,10 +159,10 @@ describe('Waitlist (e2e)', () => {
 
     // Create a student to fill the class
     const user1 = await userRepository.save({
-      email: 'student1@test.com',
-      firstName: 'First',
-      lastName: 'Student',
-      passwordHash: 'hash',
+      email: "student1@test.com",
+      firstName: "First",
+      lastName: "Student",
+      passwordHash: "hash",
     });
     let student1 = await studentRepository.findOne({
       where: { userId: user1.id },
@@ -177,10 +178,10 @@ describe('Waitlist (e2e)', () => {
 
     // Create a student to be on the waitlist
     testUser = await userRepository.save({
-      email: 'student2@test.com',
-      firstName: 'Second',
-      lastName: 'Student',
-      passwordHash: 'hash',
+      email: "student2@test.com",
+      firstName: "Second",
+      lastName: "Student",
+      passwordHash: "hash",
     });
     const existing = await studentRepository.findOne({
       where: { userId: testUser.id },
@@ -194,10 +195,10 @@ describe('Waitlist (e2e)', () => {
     }
   }
 
-  it('should allow a student to join a waitlist for a full group class session', async () => {
+  it("should allow a student to join a waitlist for a full group class session", async () => {
     const server = app.getHttpServer() as unknown as Application;
     const response: Response = await request(server)
-      .post('/waitlists')
+      .post("/waitlists")
       .send({ sessionId: testSession.id, studentId: testStudent.id })
       .expect(201);
 
@@ -207,9 +208,9 @@ describe('Waitlist (e2e)', () => {
     expect(body.position).toBe(1);
   });
 
-  it('should not allow a student to join a waitlist for a session that is not full', async () => {
+  it("should not allow a student to join a waitlist for a session that is not full", async () => {
     const groupClass = await groupClassRepository.save({
-      title: 'Not Full Class',
+      title: "Not Full Class",
       levelId: testLevel.id,
       capacityMax: 2,
     });
@@ -217,21 +218,21 @@ describe('Waitlist (e2e)', () => {
       type: ServiceType.GROUP,
       groupClassId: groupClass.id,
       teacherId: testTeacher.id,
-      startAt: new Date('2025-01-09T12:00:00Z'),
-      endAt: new Date('2025-01-09T13:00:00Z'),
+      startAt: new Date("2025-01-09T12:00:00Z"),
+      endAt: new Date("2025-01-09T13:00:00Z"),
       capacityMax: 2,
     });
 
     await request(app.getHttpServer() as unknown as Application)
-      .post('/waitlists')
+      .post("/waitlists")
       .send({ sessionId: notFullSession.id, studentId: testStudent.id })
       .expect(400);
   });
 
-  it('when a booking is cancelled, the first student on the waitlist is notified', async () => {
+  it("when a booking is cancelled, the first student on the waitlist is notified", async () => {
     // Student 2 joins the waitlist
     await request(app.getHttpServer() as unknown as Application)
-      .post('/waitlists')
+      .post("/waitlists")
       .send({ sessionId: testSession.id, studentId: testStudent.id })
       .expect(201);
 
@@ -241,30 +242,30 @@ describe('Waitlist (e2e)', () => {
     });
     expect(booking).not.toBeNull();
     if (!booking)
-      throw new Error('Expected booking to exist for cancellation test');
+      throw new Error("Expected booking to exist for cancellation test");
     // Sanity checks to avoid confusing 404 errors
-    console.debug('[TEST DEBUG] booking fetched for cancellation:', booking);
+    console.debug("[TEST DEBUG] booking fetched for cancellation:", booking);
     if (!booking) {
       console.debug(
-        '[TEST DEBUG] no booking found for session',
+        "[TEST DEBUG] no booking found for session",
         testSession.id,
       );
     } else {
       const bookingStudent = await studentRepository.findOne({
         where: { id: booking.studentId },
       });
-      console.debug('[TEST DEBUG] bookingStudent found:', bookingStudent);
+      console.debug("[TEST DEBUG] bookingStudent found:", bookingStudent);
     }
     const bookingStudent = await studentRepository.findOne({
       where: { id: booking.studentId },
     });
     expect(bookingStudent).not.toBeNull();
-    if (!bookingStudent) throw new Error('Expected booking student to exist');
+    if (!bookingStudent) throw new Error("Expected booking student to exist");
 
     await request(app.getHttpServer() as unknown as Application)
       .post(`/bookings/${booking.id}/cancel`)
-      .set('x-auth-user-id', String(bookingStudent.userId))
-      .send({ reason: 'test' })
+      .set("x-auth-user-id", String(bookingStudent.userId))
+      .send({ reason: "test" })
       .expect(201);
 
     const waitlistEntry = await waitlistRepository.findOne({
@@ -272,17 +273,17 @@ describe('Waitlist (e2e)', () => {
     });
     expect(waitlistEntry).not.toBeNull();
     if (!waitlistEntry)
-      throw new Error('Expected waitlist entry to exist after cancellation');
+      throw new Error("Expected waitlist entry to exist after cancellation");
     expect(waitlistEntry.notifiedAt).not.toBeNull();
     expect(waitlistEntry.notificationExpiresAt).not.toBeNull();
   });
 
-  it('admin can promote a student from the waitlist to a booking', async () => {
+  it("admin can promote a student from the waitlist to a booking", async () => {
     // Student 2 joins the waitlist
     const waitlistResponse = await request(
       app.getHttpServer() as unknown as Application,
     )
-      .post('/waitlists')
+      .post("/waitlists")
       .send({ sessionId: testSession.id, studentId: testStudent.id })
       .expect(201);
 
@@ -294,45 +295,45 @@ describe('Waitlist (e2e)', () => {
     });
     expect(bookingToDelete).not.toBeNull();
     if (!bookingToDelete)
-      throw new Error('Expected existing booking to delete');
+      throw new Error("Expected existing booking to delete");
     await bookingRepository.delete(bookingToDelete.id);
 
     // Admin promotes student 2
     const adminUser = await userRepository.save({
-      email: 'admin@test.com',
-      firstName: 'Admin',
-      lastName: 'User',
-      passwordHash: 'hash',
+      email: "admin@test.com",
+      firstName: "Admin",
+      lastName: "User",
+      passwordHash: "hash",
       isAdmin: true,
     });
     // Create a signed session cookie for admin to satisfy AdminGuard
     const secret =
-      process.env.SESSION_SECRET || 'dev_insecure_secret_change_me';
+      process.env.SESSION_SECRET || "dev_insecure_secret_change_me";
     const token = jwt.sign(
       {
         sub: String(adminUser.id),
         email: adminUser.email,
         name: [adminUser.firstName, adminUser.lastName]
           .filter(Boolean)
-          .join(' '),
-        roles: ['admin'],
-        sid: 'test-session',
-        type: 'access',
+          .join(" "),
+        roles: ["admin"],
+        sid: "test-session",
+        type: "access",
       },
       secret,
-      { algorithm: 'HS256', expiresIn: '1d' },
+      { algorithm: "HS256", expiresIn: "1d" },
     );
 
     await request(app.getHttpServer() as unknown as Application)
       .post(`/waitlists/${waitlistBody.id}/promote`)
-      .set('Cookie', `thrive_sess=${token}`)
+      .set("Cookie", `thrive_sess=${token}`)
       .expect(201);
 
     const newBooking = await bookingRepository.findOne({
       where: { sessionId: testSession.id, studentId: testStudent.id },
     });
     expect(newBooking).not.toBeNull();
-    if (!newBooking) throw new Error('Expected new booking after promotion');
+    if (!newBooking) throw new Error("Expected new booking after promotion");
     expect(newBooking.status).toBe(BookingStatus.CONFIRMED);
 
     const finalWaitlistEntry = await waitlistRepository.findOne({

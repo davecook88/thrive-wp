@@ -9,12 +9,12 @@ import {
   UnauthorizedException,
   NotFoundException,
   BadRequestException,
-} from '@nestjs/common';
-import { ZodValidationPipe } from 'nestjs-zod';
-import { z } from 'zod';
-import { Request } from 'express';
-import { PackagesService } from './packages.service.js';
-import { StudentsService } from '../students/students.service.js';
+} from "@nestjs/common";
+import { ZodValidationPipe } from "nestjs-zod";
+import { z } from "zod";
+import { Request } from "express";
+import { PackagesService } from "./packages.service.js";
+import { StudentsService } from "../students/students.service.js";
 
 const BookingDataSchema = z.object({
   teacherId: z.number(),
@@ -22,23 +22,25 @@ const BookingDataSchema = z.object({
   endAt: z.string(),
 });
 
-const UsePackageSchema = z.object({
-  sessionId: z.number().optional(),
-  bookingData: BookingDataSchema.optional(),
-}).refine(
-  (data) => data.sessionId !== undefined || data.bookingData !== undefined,
-  { message: 'Either sessionId or bookingData must be provided' }
-);
+const UsePackageSchema = z
+  .object({
+    sessionId: z.number().optional(),
+    bookingData: BookingDataSchema.optional(),
+  })
+  .refine(
+    (data) => data.sessionId !== undefined || data.bookingData !== undefined,
+    { message: "Either sessionId or bookingData must be provided" },
+  );
 
 type UsePackageDto = z.infer<typeof UsePackageSchema>;
 
 interface AuthenticatedRequest extends Request {
-  headers: Request['headers'] & {
-    'x-auth-user-id'?: string;
+  headers: Request["headers"] & {
+    "x-auth-user-id"?: string;
   };
 }
 
-@Controller('packages')
+@Controller("packages")
 export class PackagesController {
   constructor(
     private readonly packagesService: PackagesService,
@@ -51,11 +53,11 @@ export class PackagesController {
     return this.packagesService.getActivePackages();
   }
 
-  @Get('my-credits')
+  @Get("my-credits")
   async myCredits(@Req() req: AuthenticatedRequest) {
-    const userId = req.headers['x-auth-user-id'];
+    const userId = req.headers["x-auth-user-id"];
     if (!userId) {
-      throw new UnauthorizedException('User ID not found in auth headers');
+      throw new UnauthorizedException("User ID not found in auth headers");
     }
 
     // Convert user ID to student ID
@@ -63,20 +65,20 @@ export class PackagesController {
       parseInt(userId, 10),
     );
     if (!student) {
-      throw new NotFoundException('Student record not found for this user');
+      throw new NotFoundException("Student record not found for this user");
     }
 
     return this.packagesService.getActivePackagesForStudent(student.id);
   }
 
-  @Get('compatible-for-session/:sessionId')
+  @Get("compatible-for-session/:sessionId")
   async getCompatiblePackagesForSession(
-    @Param('sessionId', ParseIntPipe) sessionId: number,
+    @Param("sessionId", ParseIntPipe) sessionId: number,
     @Req() req: AuthenticatedRequest,
   ) {
-    const userId = req.headers['x-auth-user-id'];
+    const userId = req.headers["x-auth-user-id"];
     if (!userId) {
-      throw new UnauthorizedException('User ID not found in auth headers');
+      throw new UnauthorizedException("User ID not found in auth headers");
     }
 
     // Convert user ID to student ID
@@ -84,7 +86,7 @@ export class PackagesController {
       parseInt(userId, 10),
     );
     if (!student) {
-      throw new NotFoundException('Student record not found for this user');
+      throw new NotFoundException("Student record not found for this user");
     }
 
     return this.packagesService.getCompatiblePackagesForSession(
@@ -93,15 +95,15 @@ export class PackagesController {
     );
   }
 
-  @Post(':id/use')
+  @Post(":id/use")
   async usePackage(
-    @Param('id', ParseIntPipe) packageId: number,
+    @Param("id", ParseIntPipe) packageId: number,
     @Body(new ZodValidationPipe(UsePackageSchema)) body: UsePackageDto,
     @Req() req: AuthenticatedRequest,
   ) {
-    const userId = req.headers['x-auth-user-id'];
+    const userId = req.headers["x-auth-user-id"];
     if (!userId) {
-      throw new UnauthorizedException('User ID not found in auth headers');
+      throw new UnauthorizedException("User ID not found in auth headers");
     }
     const userIdNum = parseInt(userId, 10);
 
@@ -124,6 +126,8 @@ export class PackagesController {
       );
     }
 
-    throw new BadRequestException('Either sessionId or bookingData must be provided');
+    throw new BadRequestException(
+      "Either sessionId or bookingData must be provided",
+    );
   }
 }
