@@ -56,7 +56,7 @@ docker-compose logs -f wordpress
 
 ### NestJS Development Pattern  
 - Standard NestJS structure in `nestjs/` directory
-- Hot reload available via `npm run start:dev` (run inside container)
+- Hot reload available via `pnpm run start:dev` (run inside container)
 - Add new endpoints in `app.controller.ts` for WordPress integration
 - Use Docker internal hostnames for service-to-service communication
 

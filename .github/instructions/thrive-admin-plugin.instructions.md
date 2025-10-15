@@ -82,7 +82,7 @@ Each admin page uses PHP for server-side rendering of the basic structure, with 
 1. **Install Dependencies**:
    ```bash
    cd wordpress/plugins/thrive-admin
-   npm install
+   pnpm install
    ```
 
 2. **Start Development**:
@@ -263,7 +263,7 @@ The plugin automatically builds assets when `WP_DEBUG = false`. For manual build
 
 ```bash
 cd wordpress/plugins/thrive-admin
-npm run build
+pnpm run build
 ```
 
 ### Build Output
@@ -307,7 +307,7 @@ wp_enqueue_script('thrive-admin-vue', $assets_dir . $manifest['src/main.js']['fi
 
 2. **Styling issues**:
    - Clear browser cache
-   - Rebuild assets: `npm run build`
+   - Rebuild assets: `pnpm run build`
    - Check Tailwind configuration
 
 3. **AJAX requests failing**:
@@ -320,7 +320,7 @@ wp_enqueue_script('thrive-admin-vue', $assets_dir . $manifest['src/main.js']['fi
 - Use browser dev tools to inspect Vue components
 - Enable Vue DevTools extension for debugging
 - Check WordPress debug logs for PHP errors
-- Use `npm run dev` for manual Vite server control
+- Use `pnpm run dev` for manual Vite server control
 
 ## Future Enhancements
 

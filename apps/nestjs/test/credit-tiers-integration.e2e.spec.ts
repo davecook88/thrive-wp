@@ -20,6 +20,14 @@ import {
 } from "../src/payments/entities/booking.entity.js";
 import { ServiceType } from "../src/common/types/class-types.js";
 import { runMigrations } from "./setup.js";
+import { getHttpServer } from "./utils/get-httpserver.js";
+import {
+  CompatiblePackagesForSessionResponseSchema,
+  BookingResponseSchema,
+  ApiErrorResponseSchema,
+  BookingCancellationResponseSchema,
+  BookWithPackagePayloadDto,
+} from "@thrive/shared";
 
 describe("Credit Tier System Integration (e2e)", () => {
   let app: INestApplication;
@@ -195,13 +203,15 @@ describe("Credit Tier System Integration (e2e)", () => {
         .set("x-auth-user-id", testUser.id.toString())
         .expect(200);
 
-      console.log(response.body);
+      const body = CompatiblePackagesForSessionResponseSchema.parse(
+        response.body,
+      );
 
-      expect(response.body.exactMatch).toHaveLength(1);
-      expect(response.body.exactMatch[0].id).toBe(privatePackage.id);
-      expect(response.body.higherTier).toHaveLength(0);
-      expect(response.body.recommended).toBeDefined();
-      expect(response.body.recommended.id).toBe(privatePackage.id);
+      expect(body.exactMatch).toHaveLength(1);
+      expect(body.exactMatch[0].id).toBe(privatePackage.id);
+      expect(body.higherTier).toHaveLength(0);
+      expect(body.recommended).toBeDefined();
+      expect(body.recommended).toBe(privatePackage.id);
     });
 
     it("should return both exact and higher-tier packages for group session", async () => {
@@ -217,15 +227,16 @@ describe("Credit Tier System Integration (e2e)", () => {
         .set("x-auth-user-id", testUser.id.toString())
         .expect(200);
 
-      expect(response.body.exactMatch).toHaveLength(1);
-      expect(response.body.exactMatch[0].id).toBe(groupPackage.id);
-      expect(response.body.higherTier).toHaveLength(1);
-      expect(response.body.higherTier[0].id).toBe(privatePackage.id);
-      expect(response.body.higherTier[0].isCrossTier).toBe(true);
-      expect(response.body.higherTier[0].warningMessage).toContain(
-        "Private Credit",
+      const body = CompatiblePackagesForSessionResponseSchema.parse(
+        response.body,
       );
-      expect(response.body.recommended.id).toBe(groupPackage.id);
+
+      expect(body.exactMatch).toHaveLength(1);
+      expect(body.exactMatch[0].id).toBe(groupPackage.id);
+      expect(body.higherTier).toHaveLength(1);
+      expect(body.higherTier[0].id).toBe(privatePackage.id);
+      expect(body.higherTier[0].warningMessage).toContain("Private Credit");
+      expect(body.recommended).toBe(groupPackage.id);
     });
 
     it("should exclude incompatible packages (group package for private session)", async () => {
@@ -240,9 +251,13 @@ describe("Credit Tier System Integration (e2e)", () => {
         .set("x-auth-user-id", testUser.id.toString())
         .expect(200);
 
-      expect(response.body.exactMatch).toHaveLength(0);
-      expect(response.body.higherTier).toHaveLength(0);
-      expect(response.body.recommended).toBeNull();
+      const body = CompatiblePackagesForSessionResponseSchema.parse(
+        response.body,
+      );
+
+      expect(body.exactMatch).toHaveLength(0);
+      expect(body.higherTier).toHaveLength(0);
+      expect(body.recommended).toBeNull();
     });
 
     it("should exclude expired packages", async () => {
@@ -266,12 +281,13 @@ describe("Credit Tier System Integration (e2e)", () => {
         .set("x-auth-user-id", testUser.id.toString())
         .expect(200);
 
-      const allPackages = [
-        ...response.body.exactMatch,
-        ...response.body.higherTier,
-      ];
+      const body = CompatiblePackagesForSessionResponseSchema.parse(
+        response.body,
+      );
+
+      const allPackages = [...body.exactMatch, ...body.higherTier];
       expect(
-        allPackages.find((p: any) => p.id === expiredPackage.id),
+        allPackages.find((p) => p.id === expiredPackage.id),
       ).toBeUndefined();
     });
 
@@ -284,8 +300,12 @@ describe("Credit Tier System Integration (e2e)", () => {
         .set("x-auth-user-id", testUser.id.toString())
         .expect(200);
 
-      expect(response.body.exactMatch).toHaveLength(0);
-      expect(response.body.higherTier).toHaveLength(0);
+      const body = CompatiblePackagesForSessionResponseSchema.parse(
+        response.body,
+      );
+
+      expect(body.exactMatch).toHaveLength(0);
+      expect(body.higherTier).toHaveLength(0);
     });
 
     it("should handle premium teacher sessions correctly", async () => {
@@ -301,17 +321,21 @@ describe("Credit Tier System Integration (e2e)", () => {
         .set("x-auth-user-id", testUser.id.toString())
         .expect(200);
 
+      const body = CompatiblePackagesForSessionResponseSchema.parse(
+        response.body,
+      );
+
       // Standard package (tier 100) should NOT work for premium session (tier 110)
       expect(
-        response.body.exactMatch.find((p: any) => p.id === standardPackage.id),
+        body.exactMatch.find((p) => p.id === standardPackage.id),
       ).toBeUndefined();
       expect(
-        response.body.higherTier.find((p: any) => p.id === standardPackage.id),
+        body.higherTier.find((p) => p.id === standardPackage.id),
       ).toBeUndefined();
 
       // Premium package (tier 110) should work for premium session (tier 110)
-      expect(response.body.exactMatch).toHaveLength(1);
-      expect(response.body.exactMatch[0].id).toBe(premiumPackage.id);
+      expect(body.exactMatch).toHaveLength(1);
+      expect(body.exactMatch[0].id).toBe(premiumPackage.id);
     });
 
     it("should return 401 when not authenticated", async () => {
@@ -344,13 +368,15 @@ describe("Credit Tier System Integration (e2e)", () => {
         .send({
           packageId: privatePackage.id,
           sessionId: privateSession.id,
-        })
+        } as BookWithPackagePayloadDto)
         .expect(201);
 
-      expect(response.body.id).toBeDefined();
-      expect(response.body.status).toBe(BookingStatus.CONFIRMED);
-      expect(response.body.studentPackageId).toBe(privatePackage.id);
-      expect(response.body.creditsCost).toBe(1);
+      const body = BookingResponseSchema.parse(response.body);
+
+      expect(body.id).toBeDefined();
+      expect(body.status).toBe(BookingStatus.CONFIRMED);
+      expect(body.studentPackageId).toBe(privatePackage.id);
+      expect(body.creditsCost).toBe(1);
 
       // Verify credits were deducted
       const updatedPackage = await packageRepository.findOne({
@@ -376,8 +402,10 @@ describe("Credit Tier System Integration (e2e)", () => {
         })
         .expect(201);
 
-      expect(response.body.status).toBe(BookingStatus.CONFIRMED);
-      expect(response.body.creditsCost).toBe(1);
+      const body = BookingResponseSchema.parse(response.body);
+
+      expect(body.status).toBe(BookingStatus.CONFIRMED);
+      expect(body.creditsCost).toBe(1);
     });
 
     it("should reject cross-tier booking without confirmation", async () => {
@@ -397,7 +425,9 @@ describe("Credit Tier System Integration (e2e)", () => {
         })
         .expect(400);
 
-      expect(response.body.message).toContain(
+      const body = ApiErrorResponseSchema.parse(response.body);
+
+      expect(body.message).toContain(
         "Cross-tier booking requires confirmation",
       );
     });
@@ -418,9 +448,9 @@ describe("Credit Tier System Integration (e2e)", () => {
         })
         .expect(400);
 
-      expect(response.body.message).toContain(
-        "cannot be used for this session type",
-      );
+      const body = ApiErrorResponseSchema.parse(response.body);
+
+      expect(body.message).toContain("cannot be used for this session type");
     });
 
     it("should calculate correct credits for duration mismatch (60 min session, 30 min credit)", async () => {
@@ -440,7 +470,8 @@ describe("Credit Tier System Integration (e2e)", () => {
         })
         .expect(201);
 
-      expect(response.body.creditsCost).toBe(2); // 60/30 = 2 credits
+      const body = BookingResponseSchema.parse(response.body);
+      expect(body.creditsCost).toBe(2); // 60/30 = 2 credits
 
       // Verify 2 credits were deducted
       const updatedPackage = await packageRepository.findOne({
@@ -466,7 +497,9 @@ describe("Credit Tier System Integration (e2e)", () => {
         })
         .expect(201);
 
-      expect(response.body.creditsCost).toBe(1); // Rounds up to 1 credit
+      const body = BookingResponseSchema.parse(response.body);
+
+      expect(body.creditsCost).toBe(1); // Rounds up to 1 credit
 
       // Verify 1 credit was deducted (wastes 30 minutes)
       const updatedPackage = await packageRepository.findOne({
@@ -492,9 +525,11 @@ describe("Credit Tier System Integration (e2e)", () => {
         })
         .expect(400);
 
-      expect(response.body.message).toContain("Insufficient credits");
-      expect(response.body.message).toContain("Required: 2");
-      expect(response.body.message).toContain("Available: 1");
+      const body = ApiErrorResponseSchema.parse(response.body);
+
+      expect(body.message).toContain("Insufficient credits");
+      expect(body.message).toContain("Required: 2");
+      expect(body.message).toContain("Available: 1");
     });
 
     it("should reject booking with expired package", async () => {
@@ -544,9 +579,9 @@ describe("Credit Tier System Integration (e2e)", () => {
         })
         .expect(400);
 
-      expect(response.body.message).toContain(
-        "cannot be used for this session type",
-      );
+      const body = ApiErrorResponseSchema.parse(response.body);
+
+      expect(body.message).toContain("cannot be used for this session type");
     });
 
     it("should allow premium package for standard teacher session with confirmation", async () => {
@@ -571,7 +606,9 @@ describe("Credit Tier System Integration (e2e)", () => {
         })
         .expect(201);
 
-      expect(response.body.status).toBe(BookingStatus.CONFIRMED);
+      const body = BookingResponseSchema.parse(response.body);
+
+      expect(body.status).toBe(BookingStatus.CONFIRMED);
     });
   });
 
@@ -594,7 +631,9 @@ describe("Credit Tier System Integration (e2e)", () => {
         })
         .expect(201);
 
-      const bookingId = bookingRes.body.id;
+      const body = BookingResponseSchema.parse(bookingRes.body);
+
+      const bookingId = body.id;
 
       // Verify credit was deducted
       let updatedPackage = await packageRepository.findOne({

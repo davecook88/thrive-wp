@@ -88,7 +88,7 @@ fetch('/api/classes', { method: 'POST', headers: { 'Content-Type': 'application/
 
 Plugin/theme development: files under `wordpress/plugins/` and `wordpress/themes/custom-theme/` are mounted as volumes and change immediately in the container.
 
-NestJS dev: `npm run start:dev` (inside the Nest container) for hot reload if configured.
+NestJS dev: `pnpm run start:dev` (inside the Nest container) for hot reload if configured.
 
 ---
 ## 6. Related design docs (in `docs/`)

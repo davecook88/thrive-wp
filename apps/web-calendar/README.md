@@ -21,8 +21,8 @@ Build a reusable calendar web component and serve it via Nginx under /assets/cal
 
 ```bash
 cd web-components/thrive-calendar
-npm i
-npm run build
+pnpm i
+pnpm run build
 ```
 
 The bundle outputs to `dist/thrive-calendar.js`.
@@ -30,7 +30,7 @@ The bundle outputs to `dist/thrive-calendar.js`.
 - Run development server with demo:
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 This will start a development server and open the demo page at `http://localhost:5173`.
