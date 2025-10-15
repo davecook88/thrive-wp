@@ -1,4 +1,4 @@
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect } from "@wordpress/element";
 
 /**
  * Compatible packages response from the API
@@ -55,9 +55,10 @@ export interface UseCompatibleCreditsResult {
  * ```
  */
 export function useCompatibleCredits(
-  sessionId: number | null
+  sessionId: number | null,
 ): UseCompatibleCreditsResult {
-  const [compatible, setCompatible] = useState<CompatibleCreditsResponse | null>(null);
+  const [compatible, setCompatible] =
+    useState<CompatibleCreditsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
   const [fetchTrigger, setFetchTrigger] = useState<number>(0);
@@ -80,21 +81,23 @@ export function useCompatibleCredits(
         const response = await fetch(
           `/api/packages/compatible-for-session/${sessionId}`,
           {
-            method: 'GET',
-            credentials: 'include', // Include cookies for auth
+            method: "GET",
+            credentials: "include", // Include cookies for auth
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
-          }
+          },
         );
 
         if (!response.ok) {
           if (response.status === 401) {
-            throw new Error('You must be logged in to view available credits');
+            throw new Error("You must be logged in to view available credits");
           } else if (response.status === 404) {
-            throw new Error('Session not found');
+            throw new Error("Session not found");
           } else {
-            throw new Error(`Failed to fetch compatible credits: ${response.statusText}`);
+            throw new Error(
+              `Failed to fetch compatible credits: ${response.statusText}`,
+            );
           }
         }
 
@@ -106,7 +109,7 @@ export function useCompatibleCredits(
         }
       } catch (err) {
         if (!isCancelled) {
-          setError(err instanceof Error ? err : new Error('Unknown error'));
+          setError(err instanceof Error ? err : new Error("Unknown error"));
           setCompatible(null);
         }
       } finally {
@@ -124,7 +127,7 @@ export function useCompatibleCredits(
   }, [sessionId, fetchTrigger]);
 
   const refetch = () => {
-    setFetchTrigger(prev => prev + 1);
+    setFetchTrigger((prev) => prev + 1);
   };
 
   return {
@@ -138,7 +141,9 @@ export function useCompatibleCredits(
 /**
  * Helper function to check if there are any available credits
  */
-export function hasAnyCredits(compatible: CompatibleCreditsResponse | null): boolean {
+export function hasAnyCredits(
+  compatible: CompatibleCreditsResponse | null,
+): boolean {
   if (!compatible) return false;
   return compatible.exactMatch.length > 0 || compatible.higherTier.length > 0;
 }
@@ -147,19 +152,19 @@ export function hasAnyCredits(compatible: CompatibleCreditsResponse | null): boo
  * Helper function to get the recommended package from the response
  */
 export function getRecommendedPackage(
-  compatible: CompatibleCreditsResponse | null
+  compatible: CompatibleCreditsResponse | null,
 ): CompatiblePackage | HigherTierPackage | null {
   if (!compatible || !compatible.recommended) return null;
 
   // Check exact match first
   const exactMatch = compatible.exactMatch.find(
-    pkg => pkg.id === compatible.recommended
+    (pkg) => pkg.id === compatible.recommended,
   );
   if (exactMatch) return exactMatch;
 
   // Then check higher tier
   const higherTier = compatible.higherTier.find(
-    pkg => pkg.id === compatible.recommended
+    (pkg) => pkg.id === compatible.recommended,
   );
   return higherTier || null;
 }
@@ -169,10 +174,10 @@ export function getRecommendedPackage(
  */
 export function isCrossTier(
   packageId: number,
-  compatible: CompatibleCreditsResponse | null
+  compatible: CompatibleCreditsResponse | null,
 ): boolean {
   if (!compatible) return false;
-  return compatible.higherTier.some(pkg => pkg.id === packageId);
+  return compatible.higherTier.some((pkg) => pkg.id === packageId);
 }
 
 /**
@@ -180,9 +185,9 @@ export function isCrossTier(
  */
 export function getCrossTierWarning(
   packageId: number,
-  compatible: CompatibleCreditsResponse | null
+  compatible: CompatibleCreditsResponse | null,
 ): string | null {
   if (!compatible) return null;
-  const pkg = compatible.higherTier.find(p => p.id === packageId);
+  const pkg = compatible.higherTier.find((p) => p.id === packageId);
   return pkg?.warningMessage || null;
 }

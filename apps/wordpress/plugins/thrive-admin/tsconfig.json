@@ -17,7 +17,8 @@
     "paths": {
       "@/*": ["src/*"],
       "@thrive/shared": ["../../../../../packages/shared/src"],
-      "@thrive/shared/*": ["../../../../../packages/shared/src/*"]
+      "@thrive/shared/*": ["../../../../../packages/shared/src/*"],
+      "@thrive/shared/thrive": ["../../shared/thrive"]
     }
   },
   "references": [{ "path": "../../../../packages/shared" }],

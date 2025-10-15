@@ -13,6 +13,11 @@ import {
   PublicTeacherDto,
   LevelDto,
   LevelSchema,
+  CompatiblePackagesForSessionResponseDto,
+  CompatiblePackagesForSessionResponseSchema,
+  PackageResponseSchema,
+  CreatePackageDto,
+  PackageResponseDto,
 } from "@thrive/shared";
 
 interface SessionWithEnrollmentResponse {
@@ -42,23 +47,54 @@ const options: Partial<RequestInit> = {
   credentials: "same-origin",
 };
 
+// Generic API helper functions
+const apiRequest = async <T>(
+  url: string,
+  requestOptions: RequestInit = {},
+  schema?: z.ZodSchema<T>,
+): Promise<T | null> => {
+  try {
+    const res = await fetch(url, { ...options, ...requestOptions });
+    if (!res.ok) return null;
+    const raw = (await res.json()) as unknown;
+    return schema ? schema.parse(raw) : (raw as T);
+  } catch (err) {
+    console.error(`API request failed for ${url}:`, err);
+    return null;
+  }
+};
+
+const apiGet = async <T>(
+  url: string,
+  schema?: z.ZodSchema<T>,
+): Promise<T | null> => {
+  return apiRequest<T>(url, { method: "GET" }, schema);
+};
+
+const apiPost = async <T>(
+  url: string,
+  data: Record<string, unknown> | undefined,
+  schema?: z.ZodSchema<T>,
+): Promise<T | null> => {
+  const body = data ? JSON.stringify(data) : undefined;
+  return apiRequest<T>(url, { method: "POST", body }, schema);
+};
+
 export const thriveClient = {
   fetchAvailabilityPreview: async (
     start: Date,
     end: Date,
   ): Promise<AvailabilityEvent[]> => {
-    const res = await fetch(`/api/teachers/me/availability/preview`, {
-      ...options,
-      method: "POST",
-      body: JSON.stringify({
+    const data = await apiPost(
+      `/api/teachers/me/availability/preview`,
+      {
         start: start.toISOString(),
         end: end.toISOString(),
-      }),
-    });
-    if (!res.ok) return [];
-    const raw = (await res.json()) as unknown;
-    const parsed = PreviewAvailabilityResponseSchema.parse(raw);
-    return parsed.windows.map((w) => ({
+      },
+      PreviewAvailabilityResponseSchema,
+    );
+    if (!data) return [];
+    return data.windows.map((w) => ({
       id: `avail:${w.start}|${w.end}`,
       title: "Available",
       startUtc: w.start,
@@ -78,19 +114,17 @@ export const thriveClient = {
     end: Date;
   }): Promise<AvailabilityEvent[]> => {
     // TODO: This is searching by userId. I need to make sure that the selected teacher IDs are correct
-    const res = await fetch(`/api/teachers/availability/preview`, {
-      ...options,
-      method: "POST",
-      body: JSON.stringify({
+    const data = await apiPost(
+      `/api/teachers/availability/preview`,
+      {
         teacherIds,
         start: start.toISOString(),
         end: end.toISOString(),
-      }),
-    });
-    if (!res.ok) return [];
-    const raw = (await res.json()) as unknown;
-    const parsed = PreviewAvailabilityResponseSchema.parse(raw);
-    return parsed.windows.map((w) => ({
+      },
+      PreviewAvailabilityResponseSchema,
+    );
+    if (!data) return [];
+    return data.windows.map((w) => ({
       id: `avail:${w.start}|${w.end}`,
       title: "Available",
       startUtc: w.start,
@@ -105,91 +139,53 @@ export const thriveClient = {
     end: Date,
   ): Promise<BookingEvent[]> => {
     console.trace("Fetching student calendar events:", { start, end });
-    const res = await fetch(
+    const data = await apiGet<BookingEvent[]>(
       `/api/students/me/sessions?start=${encodeURIComponent(
         start.toISOString(),
       )}&end=${encodeURIComponent(end.toISOString())}`,
-      {
-        ...options,
-        method: "GET",
-      },
     );
-    if (!res.ok) return [];
-    const data = (await res.json()) as BookingEvent[];
     return Array.isArray(data) ? data : [];
   },
 
   fetchTeachers: async (): Promise<PublicTeacherDto[]> => {
-    try {
-      const res = await fetch(`/api/teachers`, {
-        credentials: "same-origin",
-      });
-      if (!res.ok) {
-        return [];
-      }
-      const raw = (await res.json()) as unknown;
-      console.log("Raw teachers data:", raw);
-      // The API sometimes returns a different shape (teacherId, firstName, lastName, name, languagesSpoken, etc.).
-      // Try to parse as our PublicTeacherSchema first, otherwise fall back to API schema and map to local Teacher.
-
-      const parsed = z.array(PublicTeacherSchema).parse(raw);
-      return parsed;
-    } catch (error) {
-      console.error("Failed to fetch teachers:", error);
-      return [];
-    }
+    const data = await apiGet<PublicTeacherDto[]>(
+      "/api/teachers",
+      z.array(PublicTeacherSchema),
+    );
+    return data || [];
   },
   fetchTeacher: async (id: number): Promise<Teacher | null> => {
+    const raw = await apiGet(`/api/teachers/${encodeURIComponent(String(id))}`);
+    if (!raw) return null;
     try {
-      const res = await fetch(
-        `/api/teachers/${encodeURIComponent(String(id))}`,
-        {
-          credentials: "same-origin",
-        },
-      );
-      if (!res.ok) return null;
-      const raw = (await res.json()) as unknown;
-      try {
-        const parsed = PublicTeacherSchema.parse(raw);
-        return parsed as unknown as Teacher;
-      } catch {
-        const parsedApi = PublicTeacherApiSchema.parse(raw);
-        const mapped: Teacher = {
-          userId: parsedApi.userId,
-          teacherId: parsedApi.teacherId,
-          firstName: parsedApi.firstName || parsedApi.name || "",
-          lastName: parsedApi.lastName || "",
-          name:
-            parsedApi.name ||
-            `${parsedApi.firstName || ""} ${parsedApi.lastName || ""}`.trim(),
-          bio: parsedApi.bio ?? null,
-          avatarUrl: parsedApi.avatarUrl ?? null,
-          birthplace: parsedApi.birthplace ?? null,
-          currentLocation: parsedApi.currentLocation ?? null,
-          specialties: parsedApi.specialties ?? null,
-          yearsExperience: parsedApi.yearsExperience ?? null,
-          languagesSpoken: parsedApi.languagesSpoken ?? null,
-        };
-        return mapped;
-      }
-    } catch (err) {
-      console.error("Failed to fetch teacher:", err);
-      return null;
+      const parsed = PublicTeacherSchema.parse(raw);
+      return parsed as unknown as Teacher;
+    } catch {
+      const parsedApi = PublicTeacherApiSchema.parse(raw);
+      const mapped: Teacher = {
+        userId: parsedApi.userId,
+        teacherId: parsedApi.teacherId,
+        firstName: parsedApi.firstName || parsedApi.name || "",
+        lastName: parsedApi.lastName || "",
+        name:
+          parsedApi.name ||
+          `${parsedApi.firstName || ""} ${parsedApi.lastName || ""}`.trim(),
+        bio: parsedApi.bio ?? null,
+        avatarUrl: parsedApi.avatarUrl ?? null,
+        birthplace: parsedApi.birthplace ?? null,
+        currentLocation: parsedApi.currentLocation ?? null,
+        specialties: parsedApi.specialties ?? null,
+        yearsExperience: parsedApi.yearsExperience ?? null,
+        languagesSpoken: parsedApi.languagesSpoken ?? null,
+      };
+      return mapped;
     }
   },
   fetchStudentCredits:
     async (): Promise<StudentPackageMyCreditsResponse | null> => {
-      try {
-        const res = await fetch(`/api/packages/my-credits`, {
-          credentials: "same-origin",
-        });
-        if (!res.ok) return null;
-        const data = (await res.json()) as StudentPackageMyCreditsResponse; // {"packages":[{"id":6,"packageName":"5 hour premium package","totalSessions":5,"remainingSessions":4,"purchasedAt":"2025-09-15T18:13:21.250Z","expiresAt":null}],"totalRemaining":4}
-        return data;
-      } catch (err) {
-        console.error("Failed to fetch student credits:", err);
-        return null;
-      }
+      return await apiGet<StudentPackageMyCreditsResponse>(
+        "/api/packages/my-credits",
+      );
     },
   fetchAvailableGroupSessions: async ({
     levelId,
@@ -202,70 +198,92 @@ export const thriveClient = {
     endDate?: Date;
     teacherId?: number;
   } = {}): Promise<ClassEvent[]> => {
-    try {
-      const params = new URLSearchParams();
-      if (levelId) params.append("levelId", String(levelId));
-      if (startDate) params.append("startDate", startDate.toISOString());
-      if (endDate) params.append("endDate", endDate.toISOString());
-      if (teacherId) params.append("teacherId", String(teacherId));
+    const params = new URLSearchParams();
+    if (levelId) params.append("levelId", String(levelId));
+    if (startDate) params.append("startDate", startDate.toISOString());
+    if (endDate) params.append("endDate", endDate.toISOString());
+    if (teacherId) params.append("teacherId", String(teacherId));
 
-      const res = await fetch(
-        `/api/group-classes/available?${params.toString()}`,
-        {
-          credentials: "same-origin",
-        },
-      );
-      if (!res.ok) return [];
-      const sessions = (await res.json()) as SessionWithEnrollmentResponse[];
-      if (!Array.isArray(sessions)) return [];
+    const data = await apiGet<SessionWithEnrollmentResponse[]>(
+      `/api/group-classes/available?${params.toString()}`,
+    );
+    if (!Array.isArray(data)) return [];
 
-      // Map to CalendarEvent format
-      return sessions.map((s) => {
-        // Transform teacher object to include name from user relation
-        const teacher = s.teacher;
+    // Map to CalendarEvent format
+    return data.map((s) => {
+      // Transform teacher object to include name from user relation
+      const teacher = s.teacher;
 
-        return {
-          id: `group-session-${s.id}`,
-          type: "class" as const,
-          serviceType: "GROUP" as const,
-          title: s.groupClass.title,
-          startUtc: s.startAt,
-          endUtc: s.endAt,
-          sessionId: String(s.id),
-          groupClassId: s.groupClass.id,
-          level: s.groupClass.level,
-          teacher,
-          capacityMax: s.capacityMax,
-          enrolledCount: s.enrolledCount,
-          availableSpots: s.availableSpots,
-          isFull: s.isFull,
-          canJoinWaitlist: s.canJoinWaitlist,
-          meetingUrl: s.meetingUrl || undefined,
-          status: "SCHEDULED" as const,
-        };
-      });
-    } catch (err) {
-      console.error("Failed to fetch available group sessions:", err);
-      return [];
-    }
+      return {
+        id: `group-session-${s.id}`,
+        type: "class" as const,
+        serviceType: "GROUP" as const,
+        title: s.groupClass.title,
+        startUtc: s.startAt,
+        endUtc: s.endAt,
+        sessionId: String(s.id),
+        groupClassId: s.groupClass.id,
+        level: s.groupClass.level,
+        teacher,
+        capacityMax: s.capacityMax,
+        enrolledCount: s.enrolledCount,
+        availableSpots: s.availableSpots,
+        isFull: s.isFull,
+        canJoinWaitlist: s.canJoinWaitlist,
+        meetingUrl: s.meetingUrl || undefined,
+        status: "SCHEDULED" as const,
+      };
+    });
   },
   fetchLevels: async (): Promise<LevelDto[]> => {
-    try {
-      const res = await fetch(`/api/levels`, {
-        credentials: "same-origin",
-      });
-      if (!res.ok) return [];
-      const data = (await res.json()) as unknown;
-      if (!Array.isArray(data)) {
-        throw new Error("Invalid levels data");
-      }
-      const levels = (data as LevelDto[]).map((level) =>
-        LevelSchema.parse(level),
+    const data = await apiGet<LevelDto[]>("/api/levels");
+    if (!Array.isArray(data)) return [];
+    return data.map((level) => LevelSchema.parse(level));
+  },
+  fetchAvailablePackages: async (): Promise<PackageResponseDto[]> => {
+    const data = await apiGet<PackageResponseDto[]>(
+      "/api/packages",
+      z.array(PackageResponseSchema),
+    );
+    if (!Array.isArray(data)) return [];
+    return data.map((pkg) => PackageResponseSchema.parse(pkg));
+  },
+  fetchCompatiblePackagesForSession: async (
+    sessionId: number,
+  ): Promise<CompatiblePackagesForSessionResponseDto | null> => {
+    return await apiGet<CompatiblePackagesForSessionResponseDto | null>(
+      `/api/packages/compatible-for-session/${sessionId}`,
+      CompatiblePackagesForSessionResponseSchema,
+    );
+  },
+
+  getPackages: async (): Promise<
+    import("@thrive/shared").PackageResponseDto[]
+  > => {
+    const data =
+      await apiGet<import("@thrive/shared").PackageResponseDto[]>(
+        "/admin/packages",
       );
-      return levels;
-    } catch (err) {
-      console.error("Failed to fetch levels:", err);
-      return [];
+    if (!Array.isArray(data)) {
+      throw new Error("Invalid packages data");
     }
+    return data.map((pkg) => PackageResponseSchema.parse(pkg));
+  },
+
+  createPackage: async (
+    data: CreatePackageDto,
+  ): Promise<import("@thrive/shared").PackageResponseDto> => {
+    const result = await apiPost<import("@thrive/shared").PackageResponseDto>(
+      "/admin/packages",
+      data,
+      PackageResponseSchema,
+    );
+    if (!result) throw new Error("Failed to create package");
+    return result;
+  },
+
+  deactivatePackage: async (id: number): Promise<void> => {
+    const result = await apiPost(`/admin/packages/${id}/deactivate`, undefined);
+    if (!result) throw new Error("Failed to deactivate package");
   },
 } as const;

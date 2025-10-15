@@ -240,19 +240,19 @@
 
 <script lang="ts">
 import { defineComponent, ref, onMounted } from 'vue';
-import { thriveClient } from '../lib/thrive';
-import type { Package, CreatePackageData } from '../lib/types/packages';
+import { thriveClient } from '../lib';
+import { CreatePackageDto, PackageResponseDto, ServiceType } from '@thrive/shared';
 
 export default defineComponent({
   name: 'PackagesAdmin',
   setup() {
     const activeTab = ref<'list' | 'create'>('list');
-    const packages = ref<Package[]>([]);
+    const packages = ref<PackageResponseDto[]>([]);
     const loading = ref(false);
     const creating = ref(false);
     const error = ref<string | null>(null);
 
-    const form = ref({
+    const form = ref<CreatePackageDto>({
       name: '',
       description: '',
       credits: 5,
@@ -260,7 +260,9 @@ export default defineComponent({
       expiresInDays: 90 as number ,
       currency: 'usd',
       amountMinor: 19900,
-      lookupKey: ''
+      lookupKey: '',
+      serviceType: ServiceType.PRIVATE,
+      scope: ''
     });
 
     const loadPackages = async () => {
@@ -268,7 +270,7 @@ export default defineComponent({
       error.value = null;
 
       try {
-        packages.value = await thriveClient.packages.getPackages();
+        packages.value = await thriveClient.getPackages();
       } catch (err: any) {
         error.value = err.message || 'Failed to load packages';
       } finally {
@@ -281,12 +283,13 @@ export default defineComponent({
       error.value = null;
 
       try {
-        const packageData: CreatePackageData = {
+        const packageData: CreatePackageDto = {
           ...form.value,
-          serviceType: 'PRIVATE'
+          
+          serviceType: ServiceType.PRIVATE
         };
 
-        await thriveClient.packages.createPackage(packageData);
+        await thriveClient.createPackage(packageData);
 
         // Reset form and reload packages
         resetForm();
@@ -299,13 +302,13 @@ export default defineComponent({
       }
     };
 
-    const deactivatePackage = async (pkg: Package) => {
+    const deactivatePackage = async (pkg: PackageResponseDto) => {
       if (!confirm(`Are you sure you want to deactivate "${pkg.name}"?`)) {
         return;
       }
 
       try {
-        await thriveClient.packages.deactivatePackage(pkg.id);
+        await thriveClient.deactivatePackage(pkg.id);
         await loadPackages();
       } catch (err: any) {
         error.value = err.message || 'Failed to deactivate package';
@@ -321,8 +324,9 @@ export default defineComponent({
         expiresInDays: 90,
         currency: 'usd',
         amountMinor: 19900,
-        lookupKey: ''
-      };
+        lookupKey: '',
+        scope:""
+      } as CreatePackageDto
     };
 
     onMounted(loadPackages);
