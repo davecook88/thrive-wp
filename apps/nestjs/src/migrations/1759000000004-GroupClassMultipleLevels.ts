@@ -1,6 +1,8 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class GroupClassMultipleLevels1759000000004 implements MigrationInterface {
+export class GroupClassMultipleLevels1759000000004
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Create group_class_level junction table
     await queryRunner.query(`

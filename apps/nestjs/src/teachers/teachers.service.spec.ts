@@ -1,18 +1,19 @@
-import { jest } from '@jest/globals';
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
-import { TeachersService } from './teachers.service.js';
-import { Teacher } from './entities/teacher.entity.js';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { Test, TestingModule } from "@nestjs/testing";
+import { getRepositoryToken } from "@nestjs/typeorm";
+import { Repository, DataSource, UpdateResult } from "typeorm";
+import { TeachersService } from "./teachers.service.js";
+import { Teacher } from "./entities/teacher.entity.js";
 import {
   TeacherAvailability,
   TeacherAvailabilityKind,
-} from './entities/teacher-availability.entity.js';
+} from "./entities/teacher-availability.entity.js";
 import {
   UpdateAvailabilityDto,
   PreviewAvailabilityDto,
-} from './dto/availability.dto.js';
-import { Session } from '../sessions/entities/session.entity.js';
+} from "./dto/availability.dto.js";
+import { Session } from "../sessions/entities/session.entity.js";
 
 // Mock types
 type MockTeacher = {
@@ -23,13 +24,13 @@ type MockTeacher = {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
-  availability?: any[];
+  availability?: TeacherAvailability[];
 };
 
 type UpdateFunc = () => Promise<{ affected: number }>;
 type SaveFunc = () => Promise<{ id: number }>;
 
-describe('TeachersService', () => {
+describe("TeachersService", () => {
   let service: TeachersService;
   let teacherRepo: Repository<Teacher>;
   let availabilityRepo: Repository<TeacherAvailability>;
@@ -55,8 +56,8 @@ describe('TeachersService', () => {
         {
           provide: DataSource,
           useValue: {
-            transaction: jest.fn(),
-            query: jest.fn(),
+            transaction: vi.fn(),
+            query: vi.fn(),
           },
         },
       ],
@@ -71,22 +72,22 @@ describe('TeachersService', () => {
     dataSource = module.get<DataSource>(DataSource);
 
     // Mock dataSource.query to return empty results for scheduled sessions
-    jest.spyOn(dataSource, 'query').mockResolvedValue([]);
+    vi.spyOn(dataSource, "query").mockResolvedValue([]);
   });
 
-  it('should be defined', () => {
+  it("should be defined", () => {
     expect(service).toBeDefined();
   });
 
-  describe('updateTeacherAvailability', () => {
-    it('should handle rules that span midnight', async () => {
+  describe("updateTeacherAvailability", () => {
+    it("should handle rules that span midnight", async () => {
       const teacherId = 1;
       const dto: UpdateAvailabilityDto = {
         rules: [
           {
             weekday: 3, // Wednesday
-            startTime: '18:00',
-            endTime: '04:00', // Spans to next day
+            startTime: "18:00",
+            endTime: "04:00", // Spans to next day
           },
         ],
         exceptions: [],
@@ -103,31 +104,43 @@ describe('TeachersService', () => {
       };
 
       // Mock repository methods
-      jest.spyOn(teacherRepo, 'findOne').mockResolvedValue(mockTeacher as any);
-      jest.spyOn(availabilityRepo, 'find').mockResolvedValue([]);
-      jest
-        .spyOn(availabilityRepo, 'update')
-        .mockResolvedValue({ affected: 1 } as any);
+      vi.spyOn(teacherRepo, "findOne").mockResolvedValue(
+        mockTeacher as Teacher,
+      );
+      vi.spyOn(availabilityRepo, "find").mockResolvedValue([]);
+      vi.spyOn(availabilityRepo, "update").mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      } as UpdateResult);
 
       const mockManager = {
-        update: jest.fn<UpdateFunc>().mockResolvedValue({ affected: 1 }),
-        save: jest.fn<SaveFunc>().mockResolvedValue({ id: 1 }),
+        update: vi.fn<UpdateFunc>().mockResolvedValue({ affected: 1 }),
+        save: vi.fn<SaveFunc>().mockResolvedValue({ id: 1 }),
       };
 
-      (dataSource.transaction as jest.Mock).mockImplementation(
-        async (callback: any) => {
+      (
+        dataSource.transaction as unknown as ReturnType<typeof vi.fn>
+      ).mockImplementation(
+        async (
+          callback: (manager: {
+            update: UpdateFunc;
+            save: SaveFunc;
+          }) => Promise<unknown>,
+        ) => {
           return callback(mockManager);
         },
       );
 
       // Mock getTeacherAvailability
-      jest.spyOn(service as any, 'getTeacherAvailability').mockResolvedValue({
+
+      vi.spyOn(service as any, "getTeacherAvailability").mockResolvedValue({
         rules: [
           {
             id: 1,
             weekday: 3,
-            startTime: '18:00',
-            endTime: '04:00',
+            startTime: "18:00",
+            endTime: "04:00",
           },
         ],
         exceptions: [],
@@ -140,8 +153,8 @@ describe('TeachersService', () => {
           {
             id: 1,
             weekday: 3,
-            startTime: '18:00',
-            endTime: '04:00',
+            startTime: "18:00",
+            endTime: "04:00",
           },
         ],
         exceptions: [],
@@ -158,21 +171,21 @@ describe('TeachersService', () => {
       });
     });
 
-    it('should handle normal rules without spanning', async () => {
+    it("should handle normal rules without spanning", async () => {
       const teacherId = 1;
       const dto: UpdateAvailabilityDto = {
         rules: [
           {
             weekday: 1,
-            startTime: '09:00',
-            endTime: '17:00',
+            startTime: "09:00",
+            endTime: "17:00",
           },
         ],
         exceptions: [],
       };
 
       const mockTeacher: MockTeacher = {
-        id: 1,
+        id: teacherId,
         userId: teacherId,
         tier: 1,
         bio: null,
@@ -181,30 +194,34 @@ describe('TeachersService', () => {
         updatedAt: new Date(),
       };
 
-      jest.spyOn(teacherRepo, 'findOne').mockResolvedValue(mockTeacher as any);
-      jest.spyOn(availabilityRepo, 'find').mockResolvedValue([]);
-      jest
-        .spyOn(availabilityRepo, 'update')
-        .mockResolvedValue({ affected: 1 } as any);
+      vi.spyOn(teacherRepo, "findOne").mockResolvedValue(
+        mockTeacher as Teacher,
+      );
+      vi.spyOn(availabilityRepo, "find").mockResolvedValue([
+        mockAvailability as unknown as TeacherAvailability,
+      ]);
+      vi.spyOn(sessionRepo, "find").mockResolvedValue([]);
 
       const mockManager = {
-        update: jest.fn<UpdateFunc>().mockResolvedValue({ affected: 1 }),
-        save: jest.fn<SaveFunc>().mockResolvedValue({ id: 1 }),
+        update: vi.fn<UpdateFunc>().mockResolvedValue({ affected: 1 }),
+        save: vi.fn<SaveFunc>().mockResolvedValue({ id: 1 }),
       };
 
-      (dataSource.transaction as jest.Mock).mockImplementation(
-        async (callback: any) => {
+      (
+        dataSource.transaction as unknown as ReturnType<typeof vi.fn>
+      ).mockImplementation(
+        (callback: (manager: typeof mockManager) => Promise<void>) => {
           return callback(mockManager);
         },
       );
 
-      jest.spyOn(service as any, 'getTeacherAvailability').mockResolvedValue({
+      vi.spyOn(service as any, "getTeacherAvailability").mockResolvedValue({
         rules: [
           {
             id: 1,
             weekday: 1,
-            startTime: '09:00',
-            endTime: '17:00',
+            startTime: "09:00",
+            endTime: "17:00",
           },
         ],
         exceptions: [],
@@ -217,8 +234,8 @@ describe('TeachersService', () => {
           {
             id: 1,
             weekday: 1,
-            startTime: '09:00',
-            endTime: '17:00',
+            startTime: "09:00",
+            endTime: "17:00",
           },
         ],
         exceptions: [],
@@ -235,15 +252,15 @@ describe('TeachersService', () => {
       });
     });
 
-    it('should handle exceptions that span midnight', async () => {
+    it("should handle exceptions that span midnight", async () => {
       const teacherId = 1;
       const dto: UpdateAvailabilityDto = {
         rules: [],
         exceptions: [
           {
-            date: '2025-09-03',
-            startTime: '22:00',
-            endTime: '02:00', // Spans to next day
+            date: "2025-09-03",
+            startTime: "22:00",
+            endTime: "02:00", // Spans to next day
             isBlackout: true,
           },
         ],
@@ -259,31 +276,37 @@ describe('TeachersService', () => {
         updatedAt: new Date(),
       };
 
-      jest.spyOn(teacherRepo, 'findOne').mockResolvedValue(mockTeacher as any);
-      jest.spyOn(availabilityRepo, 'find').mockResolvedValue([]);
-      jest
-        .spyOn(availabilityRepo, 'update')
-        .mockResolvedValue({ affected: 1 } as any);
+      vi.spyOn(teacherRepo, "findOne").mockResolvedValue(
+        mockTeacher as Teacher,
+      );
+      vi.spyOn(availabilityRepo, "find").mockResolvedValue([]);
+      vi.spyOn(availabilityRepo, "update").mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      } as UpdateResult);
 
       const mockManager = {
-        update: jest.fn<UpdateFunc>().mockResolvedValue({ affected: 1 }),
-        save: jest.fn<SaveFunc>().mockResolvedValue({ id: 1 }),
+        update: vi.fn<UpdateFunc>().mockResolvedValue({ affected: 1 }),
+        save: vi.fn<SaveFunc>().mockResolvedValue({ id: 1 }),
       };
 
-      (dataSource.transaction as jest.Mock).mockImplementation(
-        async (callback: any) => {
+      (
+        dataSource.transaction as unknown as ReturnType<typeof vi.fn>
+      ).mockImplementation(
+        (callback: (manager: typeof mockManager) => Promise<void>) => {
           return callback(mockManager);
         },
       );
 
-      jest.spyOn(service as any, 'getTeacherAvailability').mockResolvedValue({
+      vi.spyOn(service as any, "getTeacherAvailability").mockResolvedValue({
         rules: [],
         exceptions: [
           {
             id: 1,
-            date: '2025-09-03',
-            startTime: '22:00',
-            endTime: '02:00',
+            date: "2025-09-03",
+            startTime: "22:00",
+            endTime: "02:00",
             isBlackout: true,
           },
         ],
@@ -296,17 +319,17 @@ describe('TeachersService', () => {
         exceptions: [
           {
             id: 1,
-            date: '2025-09-03',
-            startTime: '22:00',
-            endTime: '02:00',
+            date: "2025-09-03",
+            startTime: "22:00",
+            endTime: "02:00",
             isBlackout: true,
           },
         ],
       });
 
       // Verify that endAt is set to next day
-      const expectedStartAt = new Date('2025-09-03T22:00:00.000Z');
-      const expectedEndAt = new Date('2025-09-04T02:00:00.000Z'); // Next day
+      const expectedStartAt = new Date("2025-09-03T22:00:00.000Z");
+      const expectedEndAt = new Date("2025-09-04T02:00:00.000Z"); // Next day
 
       expect(mockManager.save).toHaveBeenCalledWith(TeacherAvailability, {
         teacherId: 1,
@@ -317,23 +340,23 @@ describe('TeachersService', () => {
       });
     });
 
-    it('should throw NotFoundException if teacher not found', async () => {
+    it("should throw NotFoundException if teacher not found", async () => {
       const teacherId = 999;
       const dto: UpdateAvailabilityDto = {
         rules: [],
         exceptions: [],
       };
 
-      jest.spyOn(teacherRepo, 'findOne').mockResolvedValue(null);
+      vi.spyOn(teacherRepo, "findOne").mockResolvedValue(null);
 
       await expect(
         service.updateTeacherAvailability(teacherId, dto),
-      ).rejects.toThrow('Teacher not found');
+      ).rejects.toThrow("Teacher not found");
     });
   });
 
-  describe('getTeacherAvailability', () => {
-    it('should return wrapped endTime for spanning rules', async () => {
+  describe("getTeacherAvailability", () => {
+    it("should return wrapped endTime for spanning rules", async () => {
       const teacherId = 1;
       const mockTeacher = {
         id: 1,
@@ -357,10 +380,12 @@ describe('TeachersService', () => {
         updatedAt: new Date(),
       };
 
-      jest.spyOn(teacherRepo, 'findOne').mockResolvedValue(mockTeacher as any);
-      jest
-        .spyOn(availabilityRepo, 'find')
-        .mockResolvedValue([mockAvailability as any]);
+      vi.spyOn(teacherRepo, "findOne").mockResolvedValue(
+        mockTeacher as unknown as Teacher,
+      );
+      vi.spyOn(availabilityRepo, "find").mockResolvedValue([
+        mockAvailability as unknown as TeacherAvailability,
+      ]);
 
       const result = await service.getTeacherAvailability(teacherId);
 
@@ -369,8 +394,8 @@ describe('TeachersService', () => {
           {
             id: 1,
             weekday: 3,
-            startTime: '18:00',
-            endTime: '04:00', // Wrapped back from 1680 % 1440 = 240 -> 04:00
+            startTime: "18:00",
+            endTime: "04:00", // Wrapped back from 1680 % 1440 = 240 -> 04:00
           },
         ],
         exceptions: [],
@@ -378,14 +403,14 @@ describe('TeachersService', () => {
     });
   });
 
-  describe('previewTeacherAvailability', () => {});
+  describe("previewTeacherAvailability", () => {});
 
-  describe('previewTeacherAvailability', () => {
-    it('should generate correct preview windows for spanning rules', async () => {
+  describe("previewTeacherAvailability", () => {
+    it("should generate correct preview windows for spanning rules", async () => {
       const teacherId = 1;
       const dto: PreviewAvailabilityDto = {
-        start: '2025-09-03T00:00:00.000Z', // Wednesday
-        end: '2025-09-03T23:59:59.999Z',
+        start: "2025-09-03T00:00:00.000Z", // Wednesday
+        end: "2025-09-03T23:59:59.999Z",
         teacherIds: [teacherId],
       };
 
@@ -412,11 +437,11 @@ describe('TeachersService', () => {
         updatedAt: new Date(),
       };
 
-      jest.spyOn(teacherRepo, 'findOne').mockResolvedValue(mockTeacher as any);
+      vi.spyOn(teacherRepo, "findOne").mockResolvedValue(mockTeacher as any);
       jest
-        .spyOn(availabilityRepo, 'find')
+        .spyOn(availabilityRepo, "find")
         .mockResolvedValue([mockAvailability as any]);
-      jest.spyOn(sessionRepo, 'find').mockResolvedValue([]);
+      vi.spyOn(sessionRepo, "find").mockResolvedValue([]);
 
       const result = await service.previewTeacherAvailability([teacherId], dto);
 
@@ -424,16 +449,16 @@ describe('TeachersService', () => {
 
       const window = result.windows[0];
       // Should start at 18:00 on 2025-09-03
-      expect(window.start).toBe('2025-09-03T18:00:00.000Z');
+      expect(window.start).toBe("2025-09-03T18:00:00.000Z");
       // Should end at 04:00 on 2025-09-04 (next day)
-      expect(window.end).toBe('2025-09-04T04:00:00.000Z');
+      expect(window.end).toBe("2025-09-04T04:00:00.000Z");
     });
 
-    it('should generate correct preview windows for normal rules', async () => {
+    it("should generate correct preview windows for normal rules", async () => {
       const teacherId = 1;
       const dto: PreviewAvailabilityDto = {
-        start: '2025-09-01T00:00:00.000Z', // Monday
-        end: '2025-09-01T23:59:59.999Z',
+        start: "2025-09-01T00:00:00.000Z", // Monday
+        end: "2025-09-01T23:59:59.999Z",
         teacherIds: [teacherId],
       };
 
@@ -460,26 +485,26 @@ describe('TeachersService', () => {
         updatedAt: new Date(),
       };
 
-      jest.spyOn(teacherRepo, 'findOne').mockResolvedValue(mockTeacher as any);
+      vi.spyOn(teacherRepo, "findOne").mockResolvedValue(mockTeacher as any);
       jest
-        .spyOn(availabilityRepo, 'find')
+        .spyOn(availabilityRepo, "find")
         .mockResolvedValue([mockAvailability as any]);
-      jest.spyOn(sessionRepo, 'find').mockResolvedValue([]);
+      vi.spyOn(sessionRepo, "find").mockResolvedValue([]);
 
       const result = await service.previewTeacherAvailability([teacherId], dto);
 
       expect(result.windows).toHaveLength(1);
 
       const window = result.windows[0];
-      expect(window.start).toBe('2025-09-01T09:00:00.000Z');
-      expect(window.end).toBe('2025-09-01T17:00:00.000Z');
+      expect(window.start).toBe("2025-09-01T09:00:00.000Z");
+      expect(window.end).toBe("2025-09-01T17:00:00.000Z");
     });
 
-    it('should handle multiple days with spanning rules', async () => {
+    it("should handle multiple days with spanning rules", async () => {
       const teacherId = 1;
       const dto: PreviewAvailabilityDto = {
-        start: '2025-09-03T00:00:00.000Z', // Wednesday
-        end: '2025-09-04T23:59:59.999Z', // Thursday
+        start: "2025-09-03T00:00:00.000Z", // Wednesday
+        end: "2025-09-04T23:59:59.999Z", // Thursday
         teacherIds: [teacherId],
       };
 
@@ -498,7 +523,7 @@ describe('TeachersService', () => {
         id: 1,
         teacherId: 1,
         kind: TeacherAvailabilityKind.RECURRING,
-        weekday: 3, // Wednesday
+        weekday: 3,
         startTimeMinutes: 18 * 60, // 1080
         endTimeMinutes: 4 * 60 + 24 * 60, // 1680
         isActive: true,
@@ -506,42 +531,44 @@ describe('TeachersService', () => {
         updatedAt: new Date(),
       };
 
-      jest.spyOn(teacherRepo, 'findOne').mockResolvedValue(mockTeacher as any);
-      jest
-        .spyOn(availabilityRepo, 'find')
-        .mockResolvedValue([mockAvailability as any]);
-      jest.spyOn(sessionRepo, 'find').mockResolvedValue([]);
+      vi.spyOn(teacherRepo, "findOne").mockResolvedValue(
+        mockTeacher as Teacher,
+      );
+      vi.spyOn(availabilityRepo, "find").mockResolvedValue([
+        mockAvailability as TeacherAvailability,
+      ]);
+      vi.spyOn(sessionRepo, "find").mockResolvedValue([]);
 
       const result = await service.previewTeacherAvailability([teacherId], dto);
 
       expect(result.windows).toHaveLength(1);
 
       const window = result.windows[0];
-      expect(window.start).toBe('2025-09-03T18:00:00.000Z');
-      expect(window.end).toBe('2025-09-04T04:00:00.000Z');
+      expect(window.start).toBe("2025-09-03T18:00:00.000Z");
+      expect(window.end).toBe("2025-09-04T04:00:00.000Z");
     });
 
-    it('should throw NotFoundException if teacher not found', async () => {
+    it("should throw NotFoundException if teacher not found", async () => {
       const teacherId = 999;
       const dto: PreviewAvailabilityDto = {
-        start: '2025-09-03T00:00:00.000Z',
-        end: '2025-09-03T23:59:59.999Z',
+        start: "2025-09-03T00:00:00.000Z",
+        end: "2025-09-03T23:59:59.999Z",
         teacherIds: [teacherId],
       };
 
-      jest.spyOn(teacherRepo, 'findOne').mockResolvedValue(null);
-      jest.spyOn(availabilityRepo, 'find').mockResolvedValue([]);
+      vi.spyOn(teacherRepo, "findOne").mockResolvedValue(null);
+      vi.spyOn(availabilityRepo, "find").mockResolvedValue([]);
 
       await expect(
         service.previewTeacherAvailability([teacherId], dto),
-      ).rejects.toThrow('Teacher not found');
+      ).rejects.toThrow("Teacher not found");
     });
 
-    it('should throw BadRequestException for range exceeding 90 days', async () => {
+    it("should throw BadRequestException for range exceeding 90 days", async () => {
       const teacherId = 1;
       const dto: PreviewAvailabilityDto = {
-        start: '2025-09-03T00:00:00.000Z',
-        end: '2026-12-03T23:59:59.999Z', // More than 90 days
+        start: "2025-09-03T00:00:00.000Z",
+        end: "2026-12-03T23:59:59.999Z", // More than 90 days
         teacherIds: [teacherId],
       };
 
@@ -555,12 +582,12 @@ describe('TeachersService', () => {
         updatedAt: new Date(),
       };
 
-      jest.spyOn(teacherRepo, 'findOne').mockResolvedValue(mockTeacher as any);
-      jest.spyOn(availabilityRepo, 'find').mockResolvedValue([]);
+      vi.spyOn(teacherRepo, "findOne").mockResolvedValue(mockTeacher as any);
+      vi.spyOn(availabilityRepo, "find").mockResolvedValue([]);
 
       await expect(
         service.previewTeacherAvailability([teacherId], dto),
-      ).rejects.toThrow('Preview range cannot exceed 90 days');
+      ).rejects.toThrow("Preview range cannot exceed 90 days");
     });
   });
 });

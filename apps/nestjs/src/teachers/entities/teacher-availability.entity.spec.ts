@@ -1,27 +1,27 @@
-import { getMetadataArgsStorage } from 'typeorm';
+import { getMetadataArgsStorage } from "typeorm";
 import {
   TeacherAvailability,
   TeacherAvailabilityKind,
-} from './teacher-availability.entity.js';
+} from "./teacher-availability.entity.js";
 
-describe('TeacherAvailability Entity', () => {
-  it('should be registered with the correct table name', () => {
+describe("TeacherAvailability Entity", () => {
+  it("should be registered with the correct table name", () => {
     const entity = getMetadataArgsStorage().tables.find(
       (t) => t.target === TeacherAvailability,
     );
     expect(entity).toBeDefined();
-    expect(entity?.name).toBe('teacher_availability');
+    expect(entity?.name).toBe("teacher_availability");
   });
 
-  it('should expose enum values', () => {
+  it("should expose enum values", () => {
     expect(Object.values(TeacherAvailabilityKind).sort()).toEqual([
-      'BLACKOUT',
-      'ONE_OFF',
-      'RECURRING',
+      "BLACKOUT",
+      "ONE_OFF",
+      "RECURRING",
     ]);
   });
 
-  it('should have expected columns', () => {
+  it("should have expected columns", () => {
     // Get columns from the current class and all parent classes
     const getAllColumns = (target: any) => {
       const columns: any[] = [];
@@ -42,31 +42,31 @@ describe('TeacherAvailability Entity', () => {
     const columnProps = columns.map((c) => c.propertyName).sort();
     expect(columnProps).toEqual(
       expect.arrayContaining([
-        'id',
-        'teacherId',
-        'kind',
-        'weekday',
-        'startTimeMinutes',
-        'endTimeMinutes',
-        'startAt',
-        'endAt',
-        'isActive',
-        'createdAt',
-        'updatedAt',
-        'deletedAt',
+        "id",
+        "teacherId",
+        "kind",
+        "weekday",
+        "startTimeMinutes",
+        "endTimeMinutes",
+        "startAt",
+        "endAt",
+        "isActive",
+        "createdAt",
+        "updatedAt",
+        "deletedAt",
       ]),
     );
   });
 
-  it('should define indices including teacherId & kind', () => {
+  it("should define indices including teacherId & kind", () => {
     const indices = getMetadataArgsStorage().indices.filter(
       (i) => i.target === TeacherAvailability,
     );
     const composite = indices.find(
       (i) =>
         Array.isArray(i.columns) &&
-        i.columns.includes('teacherId') &&
-        i.columns.includes('kind'),
+        i.columns.includes("teacherId") &&
+        i.columns.includes("kind"),
     );
     expect(composite).toBeDefined();
   });

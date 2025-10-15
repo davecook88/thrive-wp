@@ -17,6 +17,14 @@ export default tseslint.config(
       globals: {
         ...globals.node,
         ...globals.jest,
+        vi: "readonly",
+        describe: "readonly",
+        it: "readonly",
+        expect: "readonly",
+        beforeEach: "readonly",
+        afterEach: "readonly",
+        beforeAll: "readonly",
+        afterAll: "readonly",
       },
       sourceType: "commonjs",
       parserOptions: {

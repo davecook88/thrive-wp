@@ -1,8 +1,6 @@
 import { Module } from "@nestjs/common";
 import { APP_PIPE } from "@nestjs/core";
 import { ZodValidationPipe } from "nestjs-zod";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { DatabaseConfig } from "./config/configuration.js";
@@ -30,12 +28,21 @@ import { AppService } from "./app.service.js";
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
+      useFactory: async (configService: ConfigService) => {
         const dbConfig = configService.get<DatabaseConfig>("database");
         if (!dbConfig) {
           throw new Error("Database configuration not found");
         }
-        const moduleDir = dirname(fileURLToPath(import.meta.url));
+
+        // Import entities directly - this works perfectly with Vitest/SWC!
+        // No need for file globs or compiled dist files
+        const entityModule = await import("./entities.js");
+        const entities = Object.values(entityModule);
+
+        console.log(
+          `[AppModule] Loaded ${entities.length} entities directly via import`,
+        );
+
         return {
           type: dbConfig.type,
           host: dbConfig.host,
@@ -43,9 +50,7 @@ import { AppService } from "./app.service.js";
           username: dbConfig.username,
           password: dbConfig.password,
           database: dbConfig.database,
-          // Important: do NOT start the glob with '/' or join() will discard moduleDir
-          // This pattern works both in ts-node (dev) and compiled dist (prod)
-          entities: [join(moduleDir, "**/*.entity{.ts,.js}")],
+          entities: entities,
           // Force disable auto-sync; rely on migrations to avoid FK/index conflicts
           synchronize: false,
           logging: dbConfig.logging,

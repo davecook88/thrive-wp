@@ -1,33 +1,58 @@
-import { config } from 'dotenv';
-import path from 'node:path';
-import { MigrationTestDataSource } from '../src/migration-test-data-source.js';
-
-// Load .env.test (already loaded in setupFiles but harmless if re-run)
-// Avoid import.meta so this runs reliably as an early Jest setup file.
+// Load .env.test BEFORE ANY OTHER IMPORTS
+import { config } from "dotenv";
+import path from "node:path";
 const currentDir = process.cwd();
-config({ path: path.resolve(currentDir, '../.env.test') });
+console.log("[TEST SETUP] Current dir:", currentDir);
+console.log(
+  "[TEST SETUP] Loading .env.test from:",
+  path.resolve(currentDir, ".env.test"),
+);
+const result = config({
+  path: path.resolve(currentDir, ".env.test"),
+  override: true,
+});
+console.log("[TEST SETUP] dotenv result:", result);
+console.log("[TEST SETUP] DB_HOST after dotenv:", process.env.DB_HOST);
+
+console.log("process.env.DB_HOST:", process.env.DB_HOST);
+import { MigrationTestDataSource } from "../src/migration-test-data-source.js";
 
 let migrated = false;
-console.log('\n[TEST SETUP] Preparing to run database migrations...\n');
+
 const setup = async () => {
-  console.log('\n[TEST SETUP] Running database migrations...\n');
+  console.log("\n[TEST SETUP] Running database migrations...\n");
   if (migrated) return;
+  console.log(
+    "MigrationTestDataSource.options:",
+    MigrationTestDataSource.options,
+  );
   // Safety: verify migration DS targeting a test DB
   const targetDb = (MigrationTestDataSource.options as { database?: string })
     .database;
+  console.log("Target DB for migrations:", targetDb);
   if (!targetDb || !/test/i.test(String(targetDb))) {
     throw new Error(
       `Refusing to run migrations on non-test database: ${targetDb}`,
     );
   }
-  await MigrationTestDataSource.initialize();
+  console.log("Initializing MigrationTestDataSource...");
+  await MigrationTestDataSource.initialize().catch((err) => {
+    console.error("Error during MigrationTestDataSource initialization:", err);
+    throw err;
+  });
+  console.log("Running migrations...");
   await MigrationTestDataSource.runMigrations();
+  console.log("Migrations complete.");
   await MigrationTestDataSource.destroy();
+  console.log("MigrationTestDataSource destroyed.");
   migrated = true;
 };
 
-// Run migrations once before all tests in a single test file to avoid repeated
-// initialize/destroy cycles which can race with Jest's environment teardown.
-beforeAll(async () => {
-  await setup();
-});
+// Export setup function for tests that need database migrations
+export const runMigrations = setup;
+
+// Don't run migrations automatically - let tests opt-in by calling runMigrations()
+// This prevents database setup for simple unit tests that don't need it
+console.log(
+  "[TEST SETUP] Migration setup available. Call runMigrations() if needed.",
+);
