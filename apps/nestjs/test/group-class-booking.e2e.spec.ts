@@ -228,8 +228,10 @@ describe("Group Class Booking (e2e)", () => {
         .get("/group-classes/available")
         .expect(200);
 
+      console.log("Available Sessions Response:", availableSessionsRes.body);
+
       // Validate response with zod schema
-      const availableSessionsParse = parseAvailableSessions(
+      const availableSessionsParse = AvailableSessionsResponseSchema.safeParse(
         availableSessionsRes.body,
       );
       if (!availableSessionsParse.success) {
@@ -294,8 +296,8 @@ describe("Group Class Booking (e2e)", () => {
           `Invalid AvailableSessionsResponse: ${updatedSessionsParse.error.message}`,
         );
       }
-      const updatedSessionsData = updatedSessionsParse.data;
-      const updatedSession = updatedSessionsData.sessions.find(
+      const updatedSessionsData: AvailableSession[] = updatedSessionsParse.data;
+      const updatedSession = updatedSessionsData.find(
         (s) => s.sessionId === sessionToBook.sessionId,
       );
 
@@ -344,7 +346,7 @@ describe("Group Class Booking (e2e)", () => {
         );
       }
       const availableSessionsData = availableSessionsParse.data;
-      const sessionToBook = availableSessionsData.sessions[0];
+      const sessionToBook = availableSessionsData[0];
 
       // First student books the only spot
       await request(getHttpServer(app))

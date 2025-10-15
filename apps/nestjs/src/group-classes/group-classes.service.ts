@@ -18,6 +18,7 @@ import {
 } from "./dto/session-with-enrollment.dto.js";
 import { CreateGroupClassDto } from "./dto/create-group-class.dto.js";
 import { GroupClassListDto } from "./dto/group-class-list.dto.js";
+import { AvailableSession } from "@thrive/shared";
 
 @Injectable()
 export class GroupClassesService {
@@ -343,7 +344,7 @@ export class GroupClassesService {
     teacherId?: number;
     startDate?: Date;
     endDate?: Date;
-  }): Promise<SessionWithEnrollmentResponse[]> {
+  }): Promise<AvailableSession[]> {
     const qb = this.sessionsRepository
       .createQueryBuilder("session")
       .leftJoinAndSelect("session.groupClass", "groupClass")
@@ -381,11 +382,15 @@ export class GroupClassesService {
     // Cast to SessionWithEnrollment because loadRelationCountAndMap adds enrolledCount at runtime
     const sessions = (await qb.getMany()) as SessionWithEnrollment[];
 
-    return sessions.map((session) => ({
-      ...session,
-      availableSpots: session.capacityMax - session.enrolledCount,
-      isFull: session.enrolledCount >= session.capacityMax,
-      canJoinWaitlist: session.enrolledCount >= session.capacityMax,
-    }));
+    return sessions.map(
+      (session) =>
+        ({
+          ...session,
+          sessionId: session.id,
+          availableSpots: session.capacityMax - session.enrolledCount,
+          isFull: session.enrolledCount >= session.capacityMax,
+          canJoinWaitlist: session.enrolledCount >= session.capacityMax,
+        }) as AvailableSession,
+    );
   }
 }

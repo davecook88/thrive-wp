@@ -14,6 +14,7 @@ import { CancelBookingSchema } from "./bookings.service.js";
 import type { CancelBookingDto } from "./bookings.service.js";
 import type { Request as ExpressRequest } from "express";
 import {
+  AvailableSessionsResponseSchema,
   CreateBookingRequestSchema,
   type CreateBookingRequest,
 } from "@thrive/shared";

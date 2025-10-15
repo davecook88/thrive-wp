@@ -13,8 +13,8 @@ export type CreateGroupClassResponse = z.infer<
 export const AvailableSessionSchema = z.object({
   id: z.number().int().positive(),
   sessionId: z.number().int().positive(), // Alias for id
-  startAt: z.date(),
-  endAt: z.date(),
+  startAt: z.coerce.date(),
+  endAt: z.coerce.date(),
   capacityMax: z.number().int().positive(),
   enrolledCount: z.number().int().nonnegative(),
   availableSpots: z.number().int().nonnegative(),
