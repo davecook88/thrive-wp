@@ -19,6 +19,7 @@ import {
   BookingStatus,
 } from "../src/payments/entities/booking.entity.js";
 import { ServiceType } from "../src/common/types/class-types.js";
+import { CancellationPolicy, PenaltyType } from "../src/policies/entities/cancellation-policy.entity.js";
 import { runMigrations } from "./setup.js";
 import { getHttpServer } from "./utils/get-httpserver.js";
 import {
@@ -27,6 +28,7 @@ import {
   ApiErrorResponseSchema,
   BookingCancellationResponseSchema,
   BookWithPackagePayloadDto,
+  CancelBookingDto,
 } from "@thrive/shared";
 
 describe("Credit Tier System Integration (e2e)", () => {
@@ -38,6 +40,7 @@ describe("Credit Tier System Integration (e2e)", () => {
   let sessionRepository: Repository<Session>;
   let packageRepository: Repository<StudentPackage>;
   let bookingRepository: Repository<Booking>;
+  let cancellationPolicyRepository: Repository<CancellationPolicy>;
 
   let testUser: User;
   let testStudent: Student;
@@ -65,6 +68,7 @@ describe("Credit Tier System Integration (e2e)", () => {
     sessionRepository = dataSource.getRepository(Session);
     packageRepository = dataSource.getRepository(StudentPackage);
     bookingRepository = dataSource.getRepository(Booking);
+    cancellationPolicyRepository = dataSource.getRepository(CancellationPolicy);
 
     await setupTestData();
   });
@@ -74,6 +78,24 @@ describe("Credit Tier System Integration (e2e)", () => {
   });
 
   async function setupTestData() {
+    // Ensure there is an active cancellation policy for tests
+    const existingPolicy = await cancellationPolicyRepository.findOne({
+      where: { isActive: true },
+    });
+    if (!existingPolicy) {
+      await cancellationPolicyRepository.save({
+        allowCancellation: true,
+        cancellationDeadlineHours: 1,
+        allowRescheduling: true,
+        reschedulingDeadlineHours: 1,
+        maxReschedulesPerBooking: 2,
+        penaltyType: PenaltyType.NONE,
+        refundCreditsOnCancel: true,
+        isActive: true,
+        policyName: "test-default",
+      });
+    }
+
     // Create or reuse test user
     let savedUser = await userRepository.findOne({
       where: { email: "student@tier-test.com" },

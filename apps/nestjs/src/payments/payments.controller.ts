@@ -15,7 +15,6 @@ import {
 import {
   BookingResponseSchema,
   BookWithPackagePayloadSchema,
-  BookWithPackageSchema,
   CreatePaymentIntentSchema,
   CreateSessionSchema,
 } from "@thrive/shared";

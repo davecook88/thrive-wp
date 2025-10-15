@@ -13,19 +13,13 @@ import { StudentPackage } from "../packages/entities/student-package.entity.js";
 import { PoliciesService } from "../policies/policies.service.js";
 import { ServiceType } from "../common/types/class-types.js";
 import { WaitlistsService } from "../waitlists/waitlists.service.js";
-import { z } from "zod";
 import {
   canUsePackageForSession,
   isCrossTierBooking,
   calculateCreditsRequired,
   getCrossTierWarningMessage,
 } from "../common/types/credit-tiers.js";
-
-export const CancelBookingSchema = z.object({
-  reason: z.string().optional(),
-});
-
-export type CancelBookingDto = z.infer<typeof CancelBookingSchema>;
+import { CancelBookingDto } from "@thrive/shared";
 
 export interface BookingModificationCheck {
   canCancel: boolean;

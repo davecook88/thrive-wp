@@ -56,3 +56,9 @@ export const BookWithPackagePayloadSchema = z.object({
 export type BookWithPackagePayloadDto = z.infer<
   typeof BookWithPackagePayloadSchema
 >;
+
+export const CancelBookingSchema = z.object({
+  reason: z.string().optional(),
+});
+
+export type CancelBookingDto = z.infer<typeof CancelBookingSchema>;

@@ -10,13 +10,13 @@ import {
 } from "@nestjs/common";
 import { ZodValidationPipe } from "nestjs-zod";
 import { BookingsService } from "./bookings.service.js";
-import { CancelBookingSchema } from "./bookings.service.js";
-import type { CancelBookingDto } from "./bookings.service.js";
 import type { Request as ExpressRequest } from "express";
 import {
   AvailableSessionsResponseSchema,
   CreateBookingRequestSchema,
   type CreateBookingRequest,
+  CancelBookingSchema,
+  type CancelBookingDto,
 } from "@thrive/shared";
 
 @Controller("bookings")
