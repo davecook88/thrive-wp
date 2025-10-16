@@ -19,16 +19,18 @@ import {
   BookingStatus,
 } from "../src/payments/entities/booking.entity.js";
 import { ServiceType } from "../src/common/types/class-types.js";
-import { CancellationPolicy, PenaltyType } from "../src/policies/entities/cancellation-policy.entity.js";
+import {
+  CancellationPolicy,
+  PenaltyType,
+} from "../src/policies/entities/cancellation-policy.entity.js";
 import { runMigrations } from "./setup.js";
 import { getHttpServer } from "./utils/get-httpserver.js";
 import {
   CompatiblePackagesForSessionResponseSchema,
   BookingResponseSchema,
   ApiErrorResponseSchema,
-  BookingCancellationResponseSchema,
   BookWithPackagePayloadDto,
-  CancelBookingDto,
+  BookingCancellationResponseSchema,
 } from "@thrive/shared";
 
 describe("Credit Tier System Integration (e2e)", () => {
@@ -39,9 +41,9 @@ describe("Credit Tier System Integration (e2e)", () => {
   let teacherRepository: Repository<Teacher>;
   let sessionRepository: Repository<Session>;
   let packageRepository: Repository<StudentPackage>;
-  let bookingRepository: Repository<Booking>;
   let cancellationPolicyRepository: Repository<CancellationPolicy>;
-
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  let bookingRepository: Repository<Booking>;
   let testUser: User;
   let testStudent: Student;
   let standardTeacher: Teacher;
@@ -672,9 +674,13 @@ describe("Credit Tier System Integration (e2e)", () => {
         })
         .expect(201);
 
-      expect(cancelRes.body.success).toBe(true);
-      expect(cancelRes.body.creditRefunded).toBe(true);
-      expect(cancelRes.body.refundedToPackageId).toBe(privatePackage.id);
+      const cancelBody = BookingCancellationResponseSchema.parse(
+        cancelRes.body,
+      );
+
+      expect(cancelBody.success).toBe(true);
+      expect(cancelBody.creditRefunded).toBe(true);
+      expect(cancelBody.refundedToPackageId).toBe(privatePackage.id);
 
       // Verify credit was refunded to the PRIVATE package (original)
       updatedPackage = await packageRepository.findOne({
@@ -701,7 +707,9 @@ describe("Credit Tier System Integration (e2e)", () => {
         })
         .expect(201);
 
-      expect(bookingRes.body.creditsCost).toBe(2);
+      const body = BookingResponseSchema.parse(bookingRes.body);
+
+      expect(body.creditsCost).toBe(2);
 
       // Verify 2 credits deducted
       let updatedPackage = await packageRepository.findOne({
@@ -711,7 +719,7 @@ describe("Credit Tier System Integration (e2e)", () => {
 
       // Cancel
       await request(getHttpServer(app))
-        .post(`/bookings/${bookingRes.body.id}/cancel`)
+        .post(`/bookings/${body.id}/cancel`)
         .set("x-auth-user-id", testUser.id.toString())
         .send({ reason: "Test" })
         .expect(201);
@@ -776,7 +784,9 @@ describe("Credit Tier System Integration (e2e)", () => {
         })
         .expect(201);
 
-      expect(response.body.status).toBe(BookingStatus.CONFIRMED);
+      const body = BookingResponseSchema.parse(response.body);
+
+      expect(body.status).toBe(BookingStatus.CONFIRMED);
     });
   });
 });

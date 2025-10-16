@@ -2,16 +2,16 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
-import { User } from './entities/user.entity.js';
-import { Admin } from '../courses/entities/admin.entity.js';
-import { Teacher } from '../teachers/entities/teacher.entity.js';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, IsNull } from "typeorm";
+import { User } from "./entities/user.entity.js";
+import { Admin } from "../courses/entities/admin.entity.js";
+import { Teacher } from "../teachers/entities/teacher.entity.js";
 import {
   UserResponseDto,
   PaginatedUsersResponseDto,
-} from './dto/user-response.dto.js';
+} from "./dto/user-response.dto.js";
 
 export interface GetUsersOptions {
   page: number;
@@ -38,31 +38,31 @@ export class UsersService {
     const offset = (page - 1) * limit;
 
     let queryBuilder = this.usersRepo
-      .createQueryBuilder('user')
-      .leftJoinAndSelect('user.admin', 'admin')
-      .leftJoinAndSelect('user.teacher', 'teacher')
-      .where('user.deletedAt IS NULL')
-      .orderBy('user.createdAt', 'DESC')
+      .createQueryBuilder("user")
+      .leftJoinAndSelect("user.admin", "admin")
+      .leftJoinAndSelect("user.teacher", "teacher")
+      .where("user.deletedAt IS NULL")
+      .orderBy("user.createdAt", "DESC")
       .skip(offset)
       .take(limit);
 
     // Apply search filter
     if (search) {
       queryBuilder = queryBuilder.andWhere(
-        '(user.email LIKE :search OR user.firstName LIKE :search OR user.lastName LIKE :search)',
+        "(user.email LIKE :search OR user.firstName LIKE :search OR user.lastName LIKE :search)",
         { search: `%${search}%` },
       );
     }
 
     // Apply role filter
     if (role) {
-      if (role === 'admin') {
+      if (role === "admin") {
         queryBuilder = queryBuilder.andWhere(
-          'admin.id IS NOT NULL AND admin.isActive = 1',
+          "admin.id IS NOT NULL AND admin.isActive = 1",
         );
-      } else if (role === 'teacher') {
+      } else if (role === "teacher") {
         queryBuilder = queryBuilder.andWhere(
-          'teacher.id IS NOT NULL AND teacher.isActive = 1',
+          "teacher.id IS NOT NULL AND teacher.isActive = 1",
         );
       }
     }
@@ -83,22 +83,22 @@ export class UsersService {
     // Find the user
     const user = await this.usersRepo.findOne({
       where: { id: userId, deletedAt: IsNull() },
-      relations: ['admin', 'teacher'],
+      relations: ["admin", "teacher"],
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
 
     // Check if user is already an admin
     if (user.admin) {
-      throw new ConflictException('User is already an admin');
+      throw new ConflictException("User is already an admin");
     }
 
     // Create admin record
     const admin = this.adminRepo.create({
       userId: user.id,
-      role: 'admin',
+      role: "admin",
       isActive: true,
     });
 
@@ -107,11 +107,11 @@ export class UsersService {
     // Reload user with admin relation
     const updatedUser = await this.usersRepo.findOne({
       where: { id: userId },
-      relations: ['admin', 'teacher'],
+      relations: ["admin", "teacher"],
     });
 
     if (!updatedUser) {
-      throw new NotFoundException('User not found after update');
+      throw new NotFoundException("User not found after update");
     }
 
     return UserResponseDto.fromEntity(updatedUser);
@@ -121,16 +121,16 @@ export class UsersService {
     // Find the user
     const user = await this.usersRepo.findOne({
       where: { id: userId, deletedAt: IsNull() },
-      relations: ['admin', 'teacher'],
+      relations: ["admin", "teacher"],
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
 
     // Check if user is already a teacher
     if (user.teacher) {
-      throw new ConflictException('User is already a teacher');
+      throw new ConflictException("User is already a teacher");
     }
 
     // Create teacher record
@@ -146,11 +146,11 @@ export class UsersService {
     // Reload user with teacher relation
     const updatedUser = await this.usersRepo.findOne({
       where: { id: userId },
-      relations: ['admin', 'teacher'],
+      relations: ["admin", "teacher"],
     });
 
     if (!updatedUser) {
-      throw new NotFoundException('User not found after update');
+      throw new NotFoundException("User not found after update");
     }
 
     return UserResponseDto.fromEntity(updatedUser);

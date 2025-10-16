@@ -3,13 +3,13 @@ import {
   Logger,
   BadRequestException,
   UnauthorizedException,
-} from '@nestjs/common';
-import bcrypt from 'bcryptjs';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from '../users/entities/user.entity.js';
-import { Admin } from '../courses/entities/admin.entity.js';
-import { Teacher } from '../teachers/entities/teacher.entity.js';
+} from "@nestjs/common";
+import bcrypt from "bcryptjs";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { User } from "../users/entities/user.entity.js";
+import { Admin } from "../courses/entities/admin.entity.js";
+import { Teacher } from "../teachers/entities/teacher.entity.js";
 
 interface GoogleProfileLike {
   id: string;
@@ -38,11 +38,11 @@ export class AuthService {
     let dirty = false;
 
     if (user.firstName !== profile.name?.givenName) {
-      user.firstName = profile.name?.givenName ?? '';
+      user.firstName = profile.name?.givenName ?? "";
       dirty = true;
     }
     if (user.lastName !== profile.name?.familyName) {
-      user.lastName = profile.name?.familyName ?? '';
+      user.lastName = profile.name?.familyName ?? "";
       dirty = true;
     }
     return dirty ? user : null;
@@ -50,9 +50,9 @@ export class AuthService {
 
   async validateGoogleUser(profile: GoogleProfileLike): Promise<User> {
     const email = profile.emails?.[0]?.value?.toLowerCase();
-    console.log('Google profile:', profile);
+    console.log("Google profile:", profile);
     if (!email) {
-      throw new Error('Google profile missing email');
+      throw new Error("Google profile missing email");
     }
 
     // Check if user already exists
@@ -69,8 +69,8 @@ export class AuthService {
       // Create new user
       user = this.usersRepo.create({
         email,
-        firstName: profile.name?.givenName ?? '',
-        lastName: profile.name?.familyName ?? '',
+        firstName: profile.name?.givenName ?? "",
+        lastName: profile.name?.familyName ?? "",
       });
       user = await this.usersRepo.save(user);
       this.logger.log(`Created new Google user ${email}`);
@@ -82,15 +82,15 @@ export class AuthService {
   async registerLocal(
     email: string,
     password: string,
-    firstName = '',
-    lastName = '',
+    firstName = "",
+    lastName = "",
   ): Promise<User> {
     email = email.toLowerCase();
 
     // Check if user already exists with password
     const existing = await this.usersRepo.findOne({ where: { email } });
     if (existing && existing.passwordHash) {
-      throw new BadRequestException('Email already registered');
+      throw new BadRequestException("Email already registered");
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
@@ -121,11 +121,11 @@ export class AuthService {
     email = email.toLowerCase();
     const user = await this.usersRepo.findOne({ where: { email } });
     if (!user || !user.passwordHash) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
     return user;
   }

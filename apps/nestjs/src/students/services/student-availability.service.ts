@@ -1,15 +1,15 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Student } from '../entities/student.entity.js';
+import { Injectable, BadRequestException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Student } from "../entities/student.entity.js";
 import {
   Booking,
   BookingStatus,
-} from '../../payments/entities/booking.entity.js';
+} from "../../payments/entities/booking.entity.js";
 import {
   Session,
   SessionStatus,
-} from '../../sessions/entities/session.entity.js';
+} from "../../sessions/entities/session.entity.js";
 
 @Injectable()
 export class StudentAvailabilityService {
@@ -46,20 +46,20 @@ export class StudentAvailabilityService {
 
     // Check for conflicting bookings
     const conflictingBookings = await this.bookingRepository
-      .createQueryBuilder('booking')
-      .leftJoinAndSelect('booking.session', 'session')
-      .where('booking.studentId = :studentId', { studentId })
-      .andWhere('booking.status IN (:...statuses)', {
+      .createQueryBuilder("booking")
+      .leftJoinAndSelect("booking.session", "session")
+      .where("booking.studentId = :studentId", { studentId })
+      .andWhere("booking.status IN (:...statuses)", {
         statuses: [
           BookingStatus.CONFIRMED,
           BookingStatus.INVITED,
           BookingStatus.PENDING,
         ],
       })
-      .andWhere('session.status = :sessionStatus', {
+      .andWhere("session.status = :sessionStatus", {
         sessionStatus: SessionStatus.SCHEDULED,
       })
-      .andWhere('(session.startAt < :endAt AND session.endAt > :startAt)', {
+      .andWhere("(session.startAt < :endAt AND session.endAt > :startAt)", {
         startAt: new Date(startAt),
         endAt: new Date(endAt),
       })
@@ -87,24 +87,24 @@ export class StudentAvailabilityService {
     endDate: Date;
   }): Promise<Booking[]> {
     return await this.bookingRepository
-      .createQueryBuilder('booking')
-      .leftJoinAndSelect('booking.session', 'session')
-      .leftJoinAndSelect('session.teacher', 'teacher')
-      .leftJoinAndSelect('teacher.user', 'teacherUser')
-      .where('booking.studentId = :studentId', { studentId })
-      .andWhere('session.startAt >= :startDate', { startDate })
-      .andWhere('session.startAt <= :endDate', { endDate })
-      .andWhere('booking.status IN (:...statuses)', {
+      .createQueryBuilder("booking")
+      .leftJoinAndSelect("booking.session", "session")
+      .leftJoinAndSelect("session.teacher", "teacher")
+      .leftJoinAndSelect("teacher.user", "teacherUser")
+      .where("booking.studentId = :studentId", { studentId })
+      .andWhere("session.startAt >= :startDate", { startDate })
+      .andWhere("session.startAt <= :endDate", { endDate })
+      .andWhere("booking.status IN (:...statuses)", {
         statuses: [
           BookingStatus.CONFIRMED,
           BookingStatus.INVITED,
           BookingStatus.PENDING,
         ],
       })
-      .andWhere('session.status = :sessionStatus', {
+      .andWhere("session.status = :sessionStatus", {
         sessionStatus: SessionStatus.SCHEDULED,
       })
-      .orderBy('session.startAt', 'ASC')
+      .orderBy("session.startAt", "ASC")
       .getMany();
   }
 }

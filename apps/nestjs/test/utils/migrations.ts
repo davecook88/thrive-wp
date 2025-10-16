@@ -1,4 +1,4 @@
-import type { DataSource } from 'typeorm';
+import type { DataSource } from "typeorm";
 
 let migrationsRun = false;
 

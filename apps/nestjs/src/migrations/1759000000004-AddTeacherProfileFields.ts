@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 /**
  * Add profile fields to teacher table to support rich teacher profiles
@@ -12,7 +12,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 export class AddTeacherProfileFields1759000000004
   implements MigrationInterface
 {
-  name = 'AddTeacherProfileFields1759000000004';
+  name = "AddTeacherProfileFields1759000000004";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Add new columns to teacher table

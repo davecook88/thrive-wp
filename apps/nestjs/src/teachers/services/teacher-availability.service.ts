@@ -2,9 +2,9 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
-} from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+} from "@nestjs/common";
+import { InjectDataSource } from "@nestjs/typeorm";
+import { DataSource } from "typeorm";
 // import { TeacherAvailabilityKind } from '../entities/teacher-availability.entity.js';
 
 export interface ValidateAvailabilityResult {
@@ -89,7 +89,7 @@ export class TeacherAvailabilityService {
     let sql = sqlBase;
     let params: unknown[] = [];
 
-    if (typeof studentId === 'number') {
+    if (typeof studentId === "number") {
       sql = `
       SELECT
         t.id AS teacher_id,
@@ -180,23 +180,23 @@ export class TeacherAvailabilityService {
 
       const row = rows[0];
 
-      if (!row['is_active']) {
+      if (!row["is_active"]) {
         throw new BadRequestException(`Teacher ${teacherId} is inactive.`);
       }
 
-      if (row['has_blackout']) {
+      if (row["has_blackout"]) {
         throw new BadRequestException(
           `Teacher ${teacherId} has a blackout during the requested time.`,
         );
       }
 
-      if (!row['has_availability']) {
+      if (!row["has_availability"]) {
         throw new BadRequestException(
           `Teacher ${teacherId} is not available during the requested time.`,
         );
       }
 
-      if (row['has_conflict']) {
+      if (row["has_conflict"]) {
         throw new BadRequestException(
           `Teacher ${teacherId} has a conflicting booking during the requested time.`,
         );
@@ -212,7 +212,7 @@ export class TeacherAvailabilityService {
         throw error;
       }
       throw new BadRequestException(
-        'Failed to validate session due to a database error.',
+        "Failed to validate session due to a database error.",
       );
     }
   }

@@ -14,6 +14,7 @@ import {
   PreviewAvailabilityDto,
 } from "./dto/availability.dto.js";
 import { Session } from "../sessions/entities/session.entity.js";
+import { GetAvailabilityResponse } from "@thrive/shared";
 
 // Mock types
 type MockTeacher = {
@@ -29,6 +30,18 @@ type MockTeacher = {
 
 type UpdateFunc = () => Promise<{ affected: number }>;
 type SaveFunc = () => Promise<{ id: number }>;
+
+const mockAvailability = {
+  id: 1,
+  teacherId: 1,
+  kind: TeacherAvailabilityKind.RECURRING,
+  weekday: 3, // Wednesday
+  startTimeMinutes: 18 * 60, // 1080
+  endTimeMinutes: 4 * 60 + 24 * 60, // 1680 (spanning to next day)
+  isActive: true,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
 
 describe("TeachersService", () => {
   let service: TeachersService;
@@ -393,13 +406,15 @@ describe("TeachersService", () => {
         rules: [
           {
             id: 1,
-            weekday: 3,
+            dayOfWeek: 3,
             startTime: "18:00",
+            maxBookings: null,
             endTime: "04:00", // Wrapped back from 1680 % 1440 = 240 -> 04:00
           },
         ],
         exceptions: [],
-      });
+        timezone: "UTC",
+      } as GetAvailabilityResponse);
     });
   });
 
@@ -425,22 +440,11 @@ describe("TeachersService", () => {
       };
 
       // Mock availability with spanning rule (Wednesday: 18:00 to 04:00 next day)
-      const mockAvailability = {
-        id: 1,
-        teacherId: 1,
-        kind: TeacherAvailabilityKind.RECURRING,
-        weekday: 3, // Wednesday
-        startTimeMinutes: 18 * 60, // 1080
-        endTimeMinutes: 4 * 60 + 24 * 60, // 1680 (spanning to next day)
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
 
       vi.spyOn(teacherRepo, "findOne").mockResolvedValue(mockTeacher as any);
-      jest
-        .spyOn(availabilityRepo, "find")
-        .mockResolvedValue([mockAvailability as any]);
+      vi.spyOn(availabilityRepo, "find").mockResolvedValue([
+        mockAvailability as any,
+      ]);
       vi.spyOn(sessionRepo, "find").mockResolvedValue([]);
 
       const result = await service.previewTeacherAvailability([teacherId], dto);
@@ -486,9 +490,9 @@ describe("TeachersService", () => {
       };
 
       vi.spyOn(teacherRepo, "findOne").mockResolvedValue(mockTeacher as any);
-      jest
-        .spyOn(availabilityRepo, "find")
-        .mockResolvedValue([mockAvailability as any]);
+      vi.spyOn(availabilityRepo, "find").mockResolvedValue([
+        mockAvailability as any,
+      ]);
       vi.spyOn(sessionRepo, "find").mockResolvedValue([]);
 
       const result = await service.previewTeacherAvailability([teacherId], dto);

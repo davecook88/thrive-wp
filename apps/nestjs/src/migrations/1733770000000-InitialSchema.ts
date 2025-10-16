@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 /**
  * Initial schema baseline migration.
@@ -6,7 +6,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * NOTE: Because WordPress shares the same database, we guard creations with IF NOT EXISTS.
  */
 export class InitialSchema1733770000000 implements MigrationInterface {
-  name = 'InitialSchema1733770000000';
+  name = "InitialSchema1733770000000";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
@@ -26,6 +26,6 @@ export class InitialSchema1733770000000 implements MigrationInterface {
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Drop simplified users table
-    await queryRunner.query('DROP TABLE IF EXISTS users;');
+    await queryRunner.query("DROP TABLE IF EXISTS users;");
   }
 }

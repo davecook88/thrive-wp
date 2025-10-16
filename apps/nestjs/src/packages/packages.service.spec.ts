@@ -1,15 +1,19 @@
-import { jest } from '@jest/globals';
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, EntityManager } from 'typeorm';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { PackagesService } from './packages.service.js';
-import { StripeProductMap } from '../payments/entities/stripe-product-map.entity.js';
-import { StudentPackage } from './entities/student-package.entity.js';
-import { PackageUse } from './entities/package-use.entity.js';
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { Test, TestingModule } from "@nestjs/testing";
+import { getRepositoryToken } from "@nestjs/typeorm";
+import { Repository, EntityManager } from "typeorm";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { PackagesService } from "./packages.service.js";
+import { StripeProductMap } from "../payments/entities/stripe-product-map.entity.js";
+import { StudentPackage } from "./entities/student-package.entity.js";
+import { PackageUse } from "./entities/package-use.entity.js";
+import { Student } from "../students/entities/student.entity.js";
+import { Session } from "../sessions/entities/session.entity.js";
+import { Booking } from "../payments/entities/booking.entity.js";
+import { SessionsService } from "../sessions/services/sessions.service.js";
 
-describe('PackagesService', () => {
+describe("PackagesService", () => {
   let service: PackagesService;
   let packageRepo: Repository<StudentPackage>;
   let useRepo: Repository<PackageUse>;
@@ -24,15 +28,33 @@ describe('PackagesService', () => {
         },
         {
           provide: ConfigService,
-          useValue: { get: () => 'sss_test_dummy' },
+          useValue: { get: () => "sss_test_dummy" },
         },
         {
           provide: getRepositoryToken(StudentPackage),
           useClass: Repository,
         },
         {
+          provide: getRepositoryToken(Student),
+          useClass: Repository,
+        },
+        {
           provide: getRepositoryToken(PackageUse),
           useClass: Repository,
+        },
+        {
+          provide: getRepositoryToken(Session),
+          useClass: Repository,
+        },
+        {
+          provide: getRepositoryToken(Booking),
+          useClass: Repository,
+        },
+        {
+          provide: SessionsService,
+          useValue: {
+            validatePrivateSession: vi.fn(),
+          },
         },
       ],
     }).compile();
@@ -46,12 +68,12 @@ describe('PackagesService', () => {
     );
   });
 
-  it('should be defined', () => {
+  it("should be defined", () => {
     expect(service).toBeDefined();
   });
 
-  describe('getActivePackagesForStudent', () => {
-    it('should return active packages for a student', async () => {
+  describe("getActivePackagesForStudent", () => {
+    it("should return active packages for a student", async () => {
       const now = new Date();
       const futureDate = new Date(now.getTime() + 86400000); // +1 day
 
@@ -59,7 +81,7 @@ describe('PackagesService', () => {
         {
           id: 1,
           studentId: 1,
-          packageName: '5-class pack',
+          packageName: "5-class pack",
           totalSessions: 5,
           remainingSessions: 3,
           purchasedAt: now,
@@ -72,7 +94,7 @@ describe('PackagesService', () => {
         },
       ];
 
-      jest.spyOn(packageRepo, 'find').mockResolvedValue(mockPackages);
+      vi.spyOn(packageRepo, "find").mockResolvedValue(mockPackages);
 
       const result = await service.getActivePackagesForStudent(1);
 
@@ -80,12 +102,12 @@ describe('PackagesService', () => {
       expect(result.packages[0].remainingSessions).toBe(3);
       expect(result.totalRemaining).toBe(3);
       // New metadata-derived fields should exist (null when absent)
-      expect(result.packages[0]).toHaveProperty('creditUnitMinutes');
-      expect(result.packages[0]).toHaveProperty('teacherTier');
-      expect(result.packages[0]).toHaveProperty('serviceType');
+      expect(result.packages[0]).toHaveProperty("creditUnitMinutes");
+      expect(result.packages[0]).toHaveProperty("teacherTier");
+      expect(result.packages[0]).toHaveProperty("serviceType");
     });
 
-    it('should filter out expired packages', async () => {
+    it("should filter out expired packages", async () => {
       const now = new Date();
       const pastDate = new Date(now.getTime() - 86400000); // -1 day
 
@@ -93,7 +115,7 @@ describe('PackagesService', () => {
         {
           id: 1,
           studentId: 1,
-          packageName: 'Expired pack',
+          packageName: "Expired pack",
           totalSessions: 5,
           remainingSessions: 3,
           purchasedAt: pastDate,
@@ -106,7 +128,7 @@ describe('PackagesService', () => {
         },
       ];
 
-      jest.spyOn(packageRepo, 'find').mockResolvedValue(mockPackages);
+      vi.spyOn(packageRepo, "find").mockResolvedValue(mockPackages);
 
       const result = await service.getActivePackagesForStudent(1);
 
@@ -115,14 +137,14 @@ describe('PackagesService', () => {
       expect(result.totalRemainingByTime).toBe(0);
     });
 
-    it('should filter out packages with no remaining sessions', async () => {
+    it("should filter out packages with no remaining sessions", async () => {
       const now = new Date();
 
       const mockPackages: any[] = [
         {
           id: 1,
           studentId: 1,
-          packageName: 'Used up pack',
+          packageName: "Used up pack",
           totalSessions: 5,
           remainingSessions: 0, // no sessions left
           purchasedAt: now,
@@ -135,7 +157,7 @@ describe('PackagesService', () => {
         },
       ];
 
-      jest.spyOn(packageRepo, 'find').mockResolvedValue(mockPackages);
+      vi.spyOn(packageRepo, "find").mockResolvedValue(mockPackages);
 
       const result = await service.getActivePackagesForStudent(1);
 
@@ -145,15 +167,15 @@ describe('PackagesService', () => {
     });
   });
 
-  describe('usePackageForSession', () => {
-    it('should successfully use package for session with happy path', async () => {
+  describe("usePackageForSession", () => {
+    it("should successfully use package for session with happy path", async () => {
       const now = new Date();
       const futureDate = new Date(now.getTime() + 86400000);
 
       const mockPackage: any = {
         id: 1,
         studentId: 1,
-        packageName: '5-class pack',
+        packageName: "5-class pack",
         totalSessions: 5,
         remainingSessions: 2,
         purchasedAt: now,
@@ -181,24 +203,24 @@ describe('PackagesService', () => {
       };
 
       // Mock initial findOne
-      jest.spyOn(packageRepo, 'findOne').mockResolvedValue(mockPackage);
+      vi.spyOn(packageRepo, "findOne").mockResolvedValue(mockPackage);
 
       // Mock transaction manager
       const mockTx = {
-        findOne: jest.fn().mockResolvedValue(mockPackage),
-        save: jest.fn().mockResolvedValue(mockLockedPackage),
-        create: jest.fn().mockReturnValue(mockPackageUse),
+        findOne: vi.fn().mockResolvedValue(mockPackage),
+        save: vi.fn().mockResolvedValue(mockLockedPackage),
+        create: vi.fn().mockReturnValue(mockPackageUse),
       } as unknown as EntityManager;
 
       const mockManager = {
-        transaction: jest
+        transaction: vi
           .fn()
           .mockImplementation((callback: (x: unknown) => Promise<void>) => {
             return callback(mockTx);
           }),
       };
 
-      Object.defineProperty(packageRepo, 'manager', {
+      Object.defineProperty(packageRepo, "manager", {
         value: mockManager,
         writable: true,
       });
@@ -209,23 +231,23 @@ describe('PackagesService', () => {
       expect(result.use).toBeDefined();
       expect(mockTx.findOne).toHaveBeenCalledWith(StudentPackage, {
         where: { id: 1 },
-        lock: { mode: 'pessimistic_write' },
+        lock: { mode: "pessimistic_write" },
       });
     });
 
-    it('should throw NotFoundException when package not found', async () => {
-      jest.spyOn(packageRepo, 'findOne').mockResolvedValue(null);
+    it("should throw NotFoundException when package not found", async () => {
+      vi.spyOn(packageRepo, "findOne").mockResolvedValue(null);
 
       await expect(
         service.usePackageForSession(1, 999, 123, 1),
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw BadRequestException when no remaining sessions', async () => {
+    it("should throw BadRequestException when no remaining sessions", async () => {
       const mockPackage: any = {
         id: 1,
         studentId: 1,
-        packageName: '5-class pack',
+        packageName: "5-class pack",
         totalSessions: 5,
         remainingSessions: 0, // no sessions left
         purchasedAt: new Date(),
@@ -234,21 +256,21 @@ describe('PackagesService', () => {
         metadata: null,
       };
 
-      jest.spyOn(packageRepo, 'findOne').mockResolvedValue(mockPackage);
+      vi.spyOn(packageRepo, "findOne").mockResolvedValue(mockPackage);
 
       await expect(service.usePackageForSession(1, 1, 123, 1)).rejects.toThrow(
         BadRequestException,
       );
     });
 
-    it('should throw BadRequestException when package is expired', async () => {
+    it("should throw BadRequestException when package is expired", async () => {
       const now = new Date();
       const pastDate = new Date(now.getTime() - 86400000); // -1 day
 
       const mockPackage: any = {
         id: 1,
         studentId: 1,
-        packageName: 'Expired pack',
+        packageName: "Expired pack",
         totalSessions: 5,
         remainingSessions: 3,
         purchasedAt: pastDate,
@@ -257,19 +279,19 @@ describe('PackagesService', () => {
         metadata: null,
       };
 
-      jest.spyOn(packageRepo, 'findOne').mockResolvedValue(mockPackage);
+      vi.spyOn(packageRepo, "findOne").mockResolvedValue(mockPackage);
 
       await expect(service.usePackageForSession(1, 1, 123, 1)).rejects.toThrow(
         BadRequestException,
       );
-      expect(jest.mocked(packageRepo.findOne).mock.calls[0][0]).toEqual({
+      expect(vi.mocked(packageRepo.findOne).mock.calls[0][0]).toEqual({
         where: { id: 1, studentId: 1 },
       });
     });
   });
 
-  describe('linkUseToBooking', () => {
-    it('should successfully link use to booking', async () => {
+  describe("linkUseToBooking", () => {
+    it("should successfully link use to booking", async () => {
       const mockUse: any = {
         id: 1,
         studentPackageId: 1,
@@ -282,8 +304,8 @@ describe('PackagesService', () => {
 
       const mockUpdatedUse: any = { ...mockUse, bookingId: 456 };
 
-      jest.spyOn(useRepo, 'findOne').mockResolvedValue(mockUse);
-      jest.spyOn(useRepo, 'save').mockResolvedValue(mockUpdatedUse);
+      vi.spyOn(useRepo, "findOne").mockResolvedValue(mockUse);
+      vi.spyOn(useRepo, "save").mockResolvedValue(mockUpdatedUse);
 
       const result = await service.linkUseToBooking(1, 456);
 
@@ -293,8 +315,8 @@ describe('PackagesService', () => {
       );
     });
 
-    it('should return null when use not found', async () => {
-      jest.spyOn(useRepo, 'findOne').mockResolvedValue(null);
+    it("should return null when use not found", async () => {
+      vi.spyOn(useRepo, "findOne").mockResolvedValue(null);
 
       const result = await service.linkUseToBooking(999, 456);
 

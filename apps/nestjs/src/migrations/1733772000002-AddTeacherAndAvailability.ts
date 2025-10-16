@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 /**
  * Adds teachers & teacher_availability tables.
@@ -7,7 +7,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 export class AddTeacherAndAvailability1733772000002
   implements MigrationInterface
 {
-  name = 'AddTeacherAndAvailability1733772000002';
+  name = "AddTeacherAndAvailability1733772000002";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
@@ -51,7 +51,7 @@ export class AddTeacherAndAvailability1733772000002
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query('DROP TABLE IF EXISTS teacher_availability;');
-    await queryRunner.query('DROP TABLE IF EXISTS teacher;');
+    await queryRunner.query("DROP TABLE IF EXISTS teacher_availability;");
+    await queryRunner.query("DROP TABLE IF EXISTS teacher;");
   }
 }

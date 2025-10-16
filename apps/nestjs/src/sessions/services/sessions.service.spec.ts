@@ -1,22 +1,24 @@
-import { jest } from '@jest/globals';
-import { Test, TestingModule } from '@nestjs/testing';
-import { SessionsService } from './sessions.service.js';
-import { TeacherAvailabilityService } from '../../teachers/services/teacher-availability.service.js';
-import { StudentAvailabilityService } from '../../students/services/student-availability.service.js';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { describe, vi, it, expect, beforeEach, type Mocked } from "vitest";
+import { Test, TestingModule } from "@nestjs/testing";
+import { SessionsService } from "./sessions.service.js";
+import { TeacherAvailabilityService } from "../../teachers/services/teacher-availability.service.js";
+import { StudentAvailabilityService } from "../../students/services/student-availability.service.js";
+import { NotFoundException, BadRequestException } from "@nestjs/common";
 
-describe('SessionsService', () => {
+/* eslint-disable @typescript-eslint/unbound-method */
+
+describe("SessionsService", () => {
   let service: SessionsService;
-  let teacherAvailabilityService: jest.Mocked<TeacherAvailabilityService>;
-  let studentAvailabilityService: jest.Mocked<StudentAvailabilityService>;
+  let teacherAvailabilityService: Mocked<TeacherAvailabilityService>;
+  let studentAvailabilityService: Mocked<StudentAvailabilityService>;
 
   beforeEach(async () => {
     const mockTeacherAvailabilityService = {
-      validateAvailability: jest.fn(),
+      validateAvailability: vi.fn(),
     };
 
     const mockStudentAvailabilityService = {
-      validateStudentAvailability: jest.fn(),
+      validateStudentAvailability: vi.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -34,23 +36,27 @@ describe('SessionsService', () => {
     }).compile();
 
     service = module.get<SessionsService>(SessionsService);
-    teacherAvailabilityService = module.get(TeacherAvailabilityService);
-    studentAvailabilityService = module.get(StudentAvailabilityService);
+    teacherAvailabilityService = vi.mocked(
+      module.get(TeacherAvailabilityService),
+    );
+    studentAvailabilityService = vi.mocked(
+      module.get(StudentAvailabilityService),
+    );
   });
 
-  it('should be defined', () => {
+  it("should be defined", () => {
     expect(service).toBeDefined();
   });
 
-  describe('validateAvailability', () => {
+  describe("validateAvailability", () => {
     const mockParams = {
       teacherId: 1,
-      startAt: '2025-09-10T10:00:00Z',
-      endAt: '2025-09-10T11:00:00Z',
+      startAt: "2025-09-10T10:00:00Z",
+      endAt: "2025-09-10T11:00:00Z",
       studentId: 2,
     };
 
-    it('should return valid result when session is valid', async () => {
+    it("should return valid result when session is valid", async () => {
       teacherAvailabilityService.validateAvailability.mockResolvedValue({
         valid: true,
         teacherId: 1,
@@ -82,9 +88,9 @@ describe('SessionsService', () => {
       });
     });
 
-    it('should throw NotFoundException when teacher is not found', async () => {
+    it("should throw NotFoundException when teacher is not found", async () => {
       teacherAvailabilityService.validateAvailability.mockRejectedValue(
-        new NotFoundException('Teacher 1 not found.'),
+        new NotFoundException("Teacher 1 not found."),
       );
 
       await expect(service.validatePrivateSession(mockParams)).rejects.toThrow(
@@ -100,9 +106,9 @@ describe('SessionsService', () => {
       });
     });
 
-    it('should throw BadRequestException when teacher is inactive', async () => {
+    it("should throw BadRequestException when teacher is inactive", async () => {
       teacherAvailabilityService.validateAvailability.mockRejectedValue(
-        new BadRequestException('Teacher 1 is inactive.'),
+        new BadRequestException("Teacher 1 is inactive."),
       );
 
       await expect(service.validatePrivateSession(mockParams)).rejects.toThrow(
@@ -118,10 +124,10 @@ describe('SessionsService', () => {
       });
     });
 
-    it('should throw BadRequestException when teacher has no availability', async () => {
+    it("should throw BadRequestException when teacher has no availability", async () => {
       teacherAvailabilityService.validateAvailability.mockRejectedValue(
         new BadRequestException(
-          'Teacher 1 is not available during the requested time.',
+          "Teacher 1 is not available during the requested time.",
         ),
       );
 
@@ -138,10 +144,10 @@ describe('SessionsService', () => {
       });
     });
 
-    it('should throw BadRequestException when teacher has a blackout', async () => {
+    it("should throw BadRequestException when teacher has a blackout", async () => {
       teacherAvailabilityService.validateAvailability.mockRejectedValue(
         new BadRequestException(
-          'Teacher 1 has a blackout during the requested time.',
+          "Teacher 1 has a blackout during the requested time.",
         ),
       );
 
@@ -158,10 +164,10 @@ describe('SessionsService', () => {
       });
     });
 
-    it('should throw BadRequestException when there is a conflicting booking', async () => {
+    it("should throw BadRequestException when there is a conflicting booking", async () => {
       teacherAvailabilityService.validateAvailability.mockRejectedValue(
         new BadRequestException(
-          'Teacher 1 has a conflicting booking during the requested time.',
+          "Teacher 1 has a conflicting booking during the requested time.",
         ),
       );
 
@@ -178,9 +184,9 @@ describe('SessionsService', () => {
       });
     });
 
-    it('should throw BadRequestException on database error', async () => {
+    it("should throw BadRequestException on database error", async () => {
       teacherAvailabilityService.validateAvailability.mockRejectedValue(
-        new Error('Database connection failed'),
+        new Error("Database connection failed"),
       );
 
       await expect(service.validatePrivateSession(mockParams)).rejects.toThrow(

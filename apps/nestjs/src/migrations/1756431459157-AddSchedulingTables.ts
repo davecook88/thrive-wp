@@ -1,11 +1,11 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 /**
  * Add scheduling and classes tables: course, session, booking, course_enrollment, course_teacher
  * Implements the schema for PRIVATE, GROUP, and COURSE session types with proper relations and constraints.
  */
 export class AddSchedulingTables1756431459157 implements MigrationInterface {
-  name = 'AddSchedulingTables1756431459157';
+  name = "AddSchedulingTables1756431459157";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Create course table
@@ -122,10 +122,10 @@ export class AddSchedulingTables1756431459157 implements MigrationInterface {
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Drop tables in reverse order to handle foreign keys
-    await queryRunner.query('DROP TABLE IF EXISTS course_teacher;');
-    await queryRunner.query('DROP TABLE IF EXISTS course_enrollment;');
-    await queryRunner.query('DROP TABLE IF EXISTS booking;');
-    await queryRunner.query('DROP TABLE IF EXISTS session;');
-    await queryRunner.query('DROP TABLE IF EXISTS course;');
+    await queryRunner.query("DROP TABLE IF EXISTS course_teacher;");
+    await queryRunner.query("DROP TABLE IF EXISTS course_enrollment;");
+    await queryRunner.query("DROP TABLE IF EXISTS booking;");
+    await queryRunner.query("DROP TABLE IF EXISTS session;");
+    await queryRunner.query("DROP TABLE IF EXISTS course;");
   }
 }

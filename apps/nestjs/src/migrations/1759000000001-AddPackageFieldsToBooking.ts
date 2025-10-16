@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 /**
  * Add package-related fields to the booking table.
@@ -7,7 +7,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 export class AddPackageFieldsToBooking1759000000001
   implements MigrationInterface
 {
-  name = 'AddPackageFieldsToBooking1759000000001';
+  name = "AddPackageFieldsToBooking1759000000001";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Add package fields to booking table

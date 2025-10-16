@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const JoinWaitlistSchema = z.object({
   sessionId: z.number().int().positive(),

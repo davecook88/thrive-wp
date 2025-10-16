@@ -4,7 +4,7 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   BaseEntity as TypeOrmBaseEntity,
-} from 'typeorm';
+} from "typeorm";
 
 /**
  * Base entity class with common fields for all entities
@@ -15,30 +15,30 @@ export abstract class BaseEntity extends TypeOrmBaseEntity {
   id: number;
 
   @CreateDateColumn({
-    name: 'created_at',
-    type: 'datetime',
+    name: "created_at",
+    type: "datetime",
     precision: 3,
-    default: () => 'CURRENT_TIMESTAMP(3)',
-    comment: 'Record creation timestamp in UTC',
+    default: () => "CURRENT_TIMESTAMP(3)",
+    comment: "Record creation timestamp in UTC",
   })
   createdAt: Date;
 
   @UpdateDateColumn({
-    name: 'updated_at',
-    type: 'datetime',
+    name: "updated_at",
+    type: "datetime",
     precision: 3,
-    default: () => 'CURRENT_TIMESTAMP(3)',
-    onUpdate: 'CURRENT_TIMESTAMP(3)',
-    comment: 'Record last update timestamp in UTC',
+    default: () => "CURRENT_TIMESTAMP(3)",
+    onUpdate: "CURRENT_TIMESTAMP(3)",
+    comment: "Record last update timestamp in UTC",
   })
   updatedAt: Date;
 
   @DeleteDateColumn({
-    name: 'deleted_at',
-    type: 'datetime',
+    name: "deleted_at",
+    type: "datetime",
     precision: 3,
     nullable: true,
-    comment: 'Soft delete timestamp in UTC',
+    comment: "Soft delete timestamp in UTC",
   })
   deletedAt?: Date;
 }

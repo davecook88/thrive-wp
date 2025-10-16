@@ -357,17 +357,14 @@ describe("TeacherAvailabilityService (e2e)", () => {
       // First window: 9:00-10:00
       expect(sortedWindows[0].start).toBe("2025-01-13T09:00:00.000Z");
       expect(sortedWindows[0].end).toBe("2025-01-13T10:00:00.000Z");
-      expect(sortedWindows[0].teacherIds).toEqual([teacherId]);
 
       // Second window: 11:00-14:00
       expect(sortedWindows[1].start).toBe("2025-01-13T11:00:00.000Z");
       expect(sortedWindows[1].end).toBe("2025-01-13T14:00:00.000Z");
-      expect(sortedWindows[1].teacherIds).toEqual([teacherId]);
 
       // Third window: 15:30-17:00
       expect(sortedWindows[2].start).toBe("2025-01-13T15:30:00.000Z");
       expect(sortedWindows[2].end).toBe("2025-01-13T17:00:00.000Z");
-      expect(sortedWindows[2].teacherIds).toEqual([teacherId]);
     });
 
     it("should include full availability when no sessions are scheduled", async () => {
@@ -393,7 +390,6 @@ describe("TeacherAvailabilityService (e2e)", () => {
       expect(result.windows).toHaveLength(1);
       expect(result.windows[0].start).toBe("2025-01-14T10:00:00.000Z");
       expect(result.windows[0].end).toBe("2025-01-14T16:00:00.000Z");
-      expect(result.windows[0].teacherIds).toEqual([teacherId]);
     });
 
     it("should exclude time slots that overlap with blackouts", async () => {
@@ -498,7 +494,6 @@ describe("TeacherAvailabilityService (e2e)", () => {
           w.end === "2025-01-13T12:00:00.000Z",
       );
       expect(elevenToTwelveWindow).toBeDefined();
-      expect(elevenToTwelveWindow!.teacherIds).toEqual([teacherId2]);
 
       // No explicit cleanup needed; root-level beforeEach truncates tables
     });

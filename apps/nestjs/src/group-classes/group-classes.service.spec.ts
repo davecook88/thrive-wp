@@ -1,28 +1,38 @@
-import { jest } from '@jest/globals';
-import { Test, TestingModule } from '@nestjs/testing';
-import { GroupClassesService } from './group-classes.service.js';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { GroupClass } from './entities/group-class.entity.js';
-import { Session, SessionStatus } from '../sessions/entities/session.entity.js';
-import { ServiceType } from '../common/types/class-types.js';
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+  type MockInstance,
+} from "vitest";
+import { Test, TestingModule } from "@nestjs/testing";
+import { GroupClassesService } from "./group-classes.service.js";
+import { getRepositoryToken } from "@nestjs/typeorm";
+import { GroupClass } from "./entities/group-class.entity.js";
+import { GroupClassLevel } from "./entities/group-class-level.entity.js";
+import { GroupClassTeacher } from "./entities/group-class-teacher.entity.js";
+import { Session, SessionStatus } from "../sessions/entities/session.entity.js";
+import { ServiceType } from "../common/types/class-types.js";
 
 type MockQueryBuilder = {
-  leftJoinAndSelect: jest.Mock;
-  loadRelationCountAndMap: jest.Mock;
-  where: jest.Mock;
-  andWhere: jest.Mock;
-  getMany: jest.Mock<() => Promise<Session[]>>;
+  leftJoinAndSelect: MockInstance<() => MockQueryBuilder>;
+  loadRelationCountAndMap: MockInstance<() => MockQueryBuilder>;
+  where: MockInstance<() => MockQueryBuilder>;
+  andWhere: MockInstance<() => MockQueryBuilder>;
+  getMany: MockInstance<() => Promise<Session[]>>;
 };
 
-describe('GroupClassesService', () => {
+describe("GroupClassesService", () => {
   let service: GroupClassesService;
 
   const mockQueryBuilder: MockQueryBuilder = {
-    leftJoinAndSelect: jest.fn(),
-    loadRelationCountAndMap: jest.fn(),
-    where: jest.fn(),
-    andWhere: jest.fn(),
-    getMany: jest.fn(),
+    leftJoinAndSelect: vi.fn().mockReturnThis(),
+    loadRelationCountAndMap: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    andWhere: vi.fn().mockReturnThis(),
+    getMany: vi.fn(),
   };
 
   beforeEach(async () => {
@@ -32,15 +42,29 @@ describe('GroupClassesService', () => {
         {
           provide: getRepositoryToken(GroupClass),
           useValue: {
-            findOne: jest.fn(),
-            find: jest.fn(),
+            findOne: vi.fn(),
+            find: vi.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(GroupClassLevel),
+          useValue: {
+            findOne: vi.fn(),
+            find: vi.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(GroupClassTeacher),
+          useValue: {
+            findOne: vi.fn(),
+            find: vi.fn(),
           },
         },
         {
           provide: getRepositoryToken(Session),
           useValue: {
-            save: jest.fn(),
-            createQueryBuilder: jest.fn(() => mockQueryBuilder),
+            save: vi.fn(),
+            createQueryBuilder: vi.fn(() => mockQueryBuilder),
           },
         },
       ],
@@ -50,31 +74,31 @@ describe('GroupClassesService', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
-  it('should be defined', () => {
+  it("should be defined", () => {
     expect(service).toBeDefined();
   });
 
-  describe('generateSessions', () => {
-    it.skip('should parse RRULE strings correctly (skipped - rrule import issues in test)', () => {
+  describe("generateSessions", () => {
+    it.skip("should parse RRULE strings correctly (skipped - rrule import issues in test)", () => {
       // Note: RRULE functionality works in the service but has import issues in tests
       // This is tested via integration tests instead
-      const rruleString = 'FREQ=WEEKLY;BYDAY=MO,WE,FR;COUNT=6';
+      const rruleString = "FREQ=WEEKLY;BYDAY=MO,WE,FR;COUNT=6";
       expect(rruleString).toBeDefined();
     });
   });
 
-  describe('getAvailableSessions', () => {
-    it('should return sessions with enrollment count and computed fields', async () => {
+  describe("getAvailableSessions", () => {
+    it("should return sessions with enrollment count and computed fields", async () => {
       // Mock session data with enrolledCount added by loadRelationCountAndMap
       const mockSessions = [
         {
           id: 1,
           type: ServiceType.GROUP,
-          startAt: new Date('2025-01-15T14:00:00Z'),
-          endAt: new Date('2025-01-15T15:00:00Z'),
+          startAt: new Date("2025-01-15T14:00:00Z"),
+          endAt: new Date("2025-01-15T15:00:00Z"),
           capacityMax: 6,
           status: SessionStatus.SCHEDULED,
           groupClassId: 1,
@@ -82,18 +106,18 @@ describe('GroupClassesService', () => {
           enrolledCount: 4, // Dynamically added by TypeORM
           groupClass: {
             id: 1,
-            title: 'Spanish B1',
+            title: "Spanish B1",
             isActive: true,
             levelId: 3,
-            level: { id: 3, code: 'B1', name: 'Intermediate B1' },
+            level: { id: 3, code: "B1", name: "Intermediate B1" },
           },
-          teacher: { id: 1, userId: 1, bio: '' },
+          teacher: { id: 1, userId: 1, bio: "" },
         },
         {
           id: 2,
           type: ServiceType.GROUP,
-          startAt: new Date('2025-01-16T14:00:00Z'),
-          endAt: new Date('2025-01-16T15:00:00Z'),
+          startAt: new Date("2025-01-16T14:00:00Z"),
+          endAt: new Date("2025-01-16T15:00:00Z"),
           capacityMax: 6,
           status: SessionStatus.SCHEDULED,
           groupClassId: 1,
@@ -101,25 +125,21 @@ describe('GroupClassesService', () => {
           enrolledCount: 6, // Full session
           groupClass: {
             id: 1,
-            title: 'Spanish B1',
+            title: "Spanish B1",
             isActive: true,
             levelId: 3,
-            level: { id: 3, code: 'B1', name: 'Intermediate B1' },
+            level: { id: 3, code: "B1", name: "Intermediate B1" },
           },
-          teacher: { id: 1, name: 'Teacher One' },
+          teacher: { id: 1, name: "Teacher One" },
         },
       ] as unknown as Session[];
 
       // Setup mock query builder chain
-      mockQueryBuilder.leftJoinAndSelect.mockReturnThis();
-      mockQueryBuilder.loadRelationCountAndMap.mockReturnThis();
-      mockQueryBuilder.where.mockReturnThis();
-      mockQueryBuilder.andWhere.mockReturnThis();
       mockQueryBuilder.getMany.mockResolvedValue(mockSessions);
 
       const result = await service.getAvailableSessions({
-        startDate: new Date('2025-01-15T00:00:00Z'),
-        endDate: new Date('2025-01-20T00:00:00Z'),
+        startDate: new Date("2025-01-15T00:00:00Z"),
+        endDate: new Date("2025-01-20T00:00:00Z"),
       });
 
       expect(result).toHaveLength(2);
@@ -137,37 +157,29 @@ describe('GroupClassesService', () => {
       expect(result[1].canJoinWaitlist).toBe(true);
     });
 
-    it('should apply level filter correctly', async () => {
-      mockQueryBuilder.leftJoinAndSelect.mockReturnThis();
-      mockQueryBuilder.loadRelationCountAndMap.mockReturnThis();
-      mockQueryBuilder.where.mockReturnThis();
-      mockQueryBuilder.andWhere.mockReturnThis();
+    it("should apply level filter correctly", async () => {
       mockQueryBuilder.getMany.mockResolvedValue([]);
 
       await service.getAvailableSessions({ levelId: 3 });
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'groupClass.levelId = :levelId',
+        "level.id = :levelId",
         { levelId: 3 },
       );
     });
 
-    it('should apply teacher filter correctly', async () => {
-      mockQueryBuilder.leftJoinAndSelect.mockReturnThis();
-      mockQueryBuilder.loadRelationCountAndMap.mockReturnThis();
-      mockQueryBuilder.where.mockReturnThis();
-      mockQueryBuilder.andWhere.mockReturnThis();
+    it("should apply teacher filter correctly", async () => {
       mockQueryBuilder.getMany.mockResolvedValue([]);
 
       await service.getAvailableSessions({ teacherId: 1 });
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'session.teacherId = :teacherId',
+        "session.teacherId = :teacherId",
         { teacherId: 1 },
       );
     });
 
-    it('should calculate availableSpots as capacityMax - enrolledCount', async () => {
+    it("should calculate availableSpots as capacityMax - enrolledCount", async () => {
       const mockSession = {
         id: 1,
         capacityMax: 10,
@@ -177,10 +189,6 @@ describe('GroupClassesService', () => {
         groupClass: { isActive: true },
       } as unknown as Session;
 
-      mockQueryBuilder.leftJoinAndSelect.mockReturnThis();
-      mockQueryBuilder.loadRelationCountAndMap.mockReturnThis();
-      mockQueryBuilder.where.mockReturnThis();
-      mockQueryBuilder.andWhere.mockReturnThis();
       mockQueryBuilder.getMany.mockResolvedValue([mockSession]);
 
       const result = await service.getAvailableSessions({});

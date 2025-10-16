@@ -2,9 +2,9 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
-} from '@nestjs/common';
-import { TeacherAvailabilityService } from '../../teachers/services/teacher-availability.service.js';
-import { StudentAvailabilityService } from '../../students/services/student-availability.service.js';
+} from "@nestjs/common";
+import { TeacherAvailabilityService } from "../../teachers/services/teacher-availability.service.js";
+import { StudentAvailabilityService } from "../../students/services/student-availability.service.js";
 
 @Injectable()
 export class SessionsService {
@@ -51,7 +51,7 @@ export class SessionsService {
         throw error;
       }
       throw new BadRequestException(
-        'Failed to validate session due to a database error.',
+        "Failed to validate session due to a database error.",
       );
     }
   }

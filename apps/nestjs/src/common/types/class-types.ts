@@ -1,13 +1,13 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Enumeration of class/session types.
  * Supports private, group, and course sessions.
  */
 export enum ServiceType {
-  PRIVATE = 'PRIVATE', // One-to-one individual sessions
-  GROUP = 'GROUP', // Group classes with enrollment limits
-  COURSE = 'COURSE', // Multi-session programs with curriculum
+  PRIVATE = "PRIVATE", // One-to-one individual sessions
+  GROUP = "GROUP", // Group classes with enrollment limits
+  COURSE = "COURSE", // Multi-session programs with curriculum
 }
 
 /**
@@ -20,9 +20,9 @@ export const ServiceTypeSchema = z.enum(ServiceType);
  * Maps service types to Stripe products.
  */
 export enum ServiceKey {
-  PRIVATE_CLASS = 'PRIVATE', // Maps to Stripe products for private sessions
-  GROUP_CLASS = 'GROUP_CLASS', // Maps to Stripe products for group classes
-  COURSE_CLASS = 'COURSE_CLASS', // Maps to Stripe products for courses
+  PRIVATE_CLASS = "PRIVATE", // Maps to Stripe products for private sessions
+  GROUP_CLASS = "GROUP_CLASS", // Maps to Stripe products for group classes
+  COURSE_CLASS = "COURSE_CLASS", // Maps to Stripe products for courses
 }
 
 /**

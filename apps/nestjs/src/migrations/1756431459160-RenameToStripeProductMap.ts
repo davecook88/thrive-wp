@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 /**
  * Rename stripe_price_map to stripe_product_map and remove price-specific fields.
@@ -7,7 +7,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 export class RenameToStripeProductMap1756431459160
   implements MigrationInterface
 {
-  name = 'RenameToStripeProductMap1756431459160';
+  name = "RenameToStripeProductMap1756431459160";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Create new stripe_product_map table
@@ -48,7 +48,7 @@ export class RenameToStripeProductMap1756431459160
     `);
 
     // Drop old table
-    await queryRunner.query('DROP TABLE IF EXISTS stripe_price_map;');
+    await queryRunner.query("DROP TABLE IF EXISTS stripe_price_map;");
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
@@ -94,6 +94,6 @@ export class RenameToStripeProductMap1756431459160
     `);
 
     // Drop new table
-    await queryRunner.query('DROP TABLE IF EXISTS stripe_product_map;');
+    await queryRunner.query("DROP TABLE IF EXISTS stripe_product_map;");
   }
 }

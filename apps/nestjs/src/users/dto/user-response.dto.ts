@@ -1,6 +1,6 @@
-import { User } from '../entities/user.entity.js';
-import { Admin } from '../../courses/entities/admin.entity.js';
-import { Teacher } from '../../teachers/entities/teacher.entity.js';
+import { User } from "../entities/user.entity.js";
+import { Admin } from "../../courses/entities/admin.entity.js";
+import { Teacher } from "../../teachers/entities/teacher.entity.js";
 
 export class UserResponseDto {
   id: number;

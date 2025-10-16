@@ -1,9 +1,9 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class AddStudentPackagesTables1759000000000
   implements MigrationInterface
 {
-  name = 'AddStudentPackagesTables1759000000000';
+  name = "AddStudentPackagesTables1759000000000";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`

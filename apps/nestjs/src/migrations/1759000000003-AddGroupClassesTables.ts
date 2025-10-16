@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class AddGroupClassesTables1759000000003 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -88,8 +88,12 @@ export class AddGroupClassesTables1759000000003 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TABLE waitlist DROP COLUMN notified_at, DROP COLUMN notification_expires_at`);
-    await queryRunner.query(`ALTER TABLE session DROP FOREIGN KEY fk_session_group_class`);
+    await queryRunner.query(
+      `ALTER TABLE waitlist DROP COLUMN notified_at, DROP COLUMN notification_expires_at`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE session DROP FOREIGN KEY fk_session_group_class`,
+    );
     await queryRunner.query(`ALTER TABLE session DROP COLUMN group_class_id`);
     await queryRunner.query(`DROP TABLE group_class_teacher`);
     await queryRunner.query(`DROP TABLE group_class`);

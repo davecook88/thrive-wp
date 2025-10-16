@@ -1,11 +1,11 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 /**
  * Add pricing system tables: stripe_price_map, order, order_item
  * Implements the Stripe-as-source-of-truth pricing system per pricing-system-plan.md
  */
 export class AddPricingSystemTables1756431459159 implements MigrationInterface {
-  name = 'AddPricingSystemTables1756431459159';
+  name = "AddPricingSystemTables1756431459159";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Create stripe_price_map table
@@ -92,15 +92,15 @@ export class AddPricingSystemTables1756431459159 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Remove stripe_customer_id from student table
     await queryRunner.query(
-      'ALTER TABLE student DROP KEY IDX_student_stripe_customer_id_unique;',
+      "ALTER TABLE student DROP KEY IDX_student_stripe_customer_id_unique;",
     );
     await queryRunner.query(
-      'ALTER TABLE student DROP COLUMN stripe_customer_id;',
+      "ALTER TABLE student DROP COLUMN stripe_customer_id;",
     );
 
     // Drop tables in reverse order to handle foreign keys
-    await queryRunner.query('DROP TABLE IF EXISTS order_item;');
-    await queryRunner.query('DROP TABLE IF EXISTS `order`;');
-    await queryRunner.query('DROP TABLE IF EXISTS stripe_price_map;');
+    await queryRunner.query("DROP TABLE IF EXISTS order_item;");
+    await queryRunner.query("DROP TABLE IF EXISTS `order`;");
+    await queryRunner.query("DROP TABLE IF EXISTS stripe_price_map;");
   }
 }

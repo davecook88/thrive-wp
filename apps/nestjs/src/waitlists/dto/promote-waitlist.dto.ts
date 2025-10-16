@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const PromoteWaitlistSchema = z.object({
   studentPackageId: z.number().int().positive().optional(),

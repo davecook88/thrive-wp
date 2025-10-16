@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const NotifyWaitlistSchema = z.object({
   expiresInHours: z.number().int().positive().optional().default(24),

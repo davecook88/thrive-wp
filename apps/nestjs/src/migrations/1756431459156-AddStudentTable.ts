@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 /**
  * Add student table for student profiles.
@@ -6,7 +6,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * Includes a trigger to auto-create student record when user is inserted.
  */
 export class AddStudentTable1756431459156 implements MigrationInterface {
-  name = 'AddStudentTable1756431459156';
+  name = "AddStudentTable1756431459156";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
@@ -37,8 +37,8 @@ export class AddStudentTable1756431459156 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Drop trigger first
     await queryRunner.query(
-      'DROP TRIGGER IF EXISTS create_student_on_user_insert;',
+      "DROP TRIGGER IF EXISTS create_student_on_user_insert;",
     );
-    await queryRunner.query('DROP TABLE IF EXISTS student;');
+    await queryRunner.query("DROP TABLE IF EXISTS student;");
   }
 }

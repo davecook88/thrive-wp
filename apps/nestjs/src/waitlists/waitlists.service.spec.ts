@@ -1,36 +1,39 @@
-import { jest } from '@jest/globals';
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { WaitlistsService } from './waitlists.service.js';
-import { Waitlist } from './entities/waitlist.entity.js';
-import { Session, SessionStatus } from '../sessions/entities/session.entity.js';
-import { Booking, BookingStatus } from '../payments/entities/booking.entity.js';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { ServiceType } from '../common/types/class-types.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { Test, TestingModule } from "@nestjs/testing";
+import { getRepositoryToken } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { WaitlistsService } from "./waitlists.service.js";
+import { Waitlist } from "./entities/waitlist.entity.js";
+import { Session, SessionStatus } from "../sessions/entities/session.entity.js";
+import { Booking } from "../payments/entities/booking.entity.js";
+import { NotFoundException, BadRequestException } from "@nestjs/common";
+import { ServiceType } from "../common/types/class-types.js";
 
-describe('WaitlistsService', () => {
+describe("WaitlistsService", () => {
   let service: WaitlistsService;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let waitlistRepository: Repository<Waitlist>;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let sessionRepository: Repository<Session>;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let bookingRepository: Repository<Booking>;
 
   const mockWaitlistRepository = {
-    findOne: jest.fn(),
-    find: jest.fn(),
-    create: jest.fn(),
-    save: jest.fn(),
-    delete: jest.fn(),
-    createQueryBuilder: jest.fn(),
+    findOne: vi.fn(),
+    find: vi.fn(),
+    create: vi.fn(),
+    save: vi.fn(),
+    delete: vi.fn(),
+    createQueryBuilder: vi.fn(),
   };
 
   const mockSessionRepository = {
-    findOne: jest.fn(),
+    findOne: vi.fn(),
   };
 
   const mockBookingRepository = {
-    count: jest.fn(),
-    save: jest.fn(),
+    count: vi.fn(),
+    save: vi.fn(),
   };
 
   beforeEach(async () => {
@@ -65,11 +68,11 @@ describe('WaitlistsService', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
-  describe('joinWaitlist', () => {
-    it('should add student to waitlist when session is full', async () => {
+  describe("joinWaitlist", () => {
+    it("should add student to waitlist when session is full", async () => {
       const sessionId = 1;
       const studentId = 1;
       const session = {
@@ -83,9 +86,9 @@ describe('WaitlistsService', () => {
       mockBookingRepository.count.mockResolvedValue(5); // Session is full
       mockWaitlistRepository.findOne.mockResolvedValue(null); // No existing entry
       mockWaitlistRepository.createQueryBuilder.mockReturnValue({
-        select: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn().mockResolvedValue({ maxPosition: 2 }),
+        select: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        getRawOne: vi.fn().mockResolvedValue({ maxPosition: 2 }),
       });
 
       const newWaitlistEntry = {
@@ -106,7 +109,7 @@ describe('WaitlistsService', () => {
       expect(mockWaitlistRepository.save).toHaveBeenCalled();
     });
 
-    it('should throw NotFoundException if session does not exist', async () => {
+    it("should throw NotFoundException if session does not exist", async () => {
       mockSessionRepository.findOne.mockResolvedValue(null);
 
       await expect(service.joinWaitlist(1, 1)).rejects.toThrow(
@@ -114,7 +117,7 @@ describe('WaitlistsService', () => {
       );
     });
 
-    it('should throw BadRequestException if session is not full', async () => {
+    it("should throw BadRequestException if session is not full", async () => {
       const session = {
         id: 1,
         capacityMax: 5,
@@ -129,7 +132,7 @@ describe('WaitlistsService', () => {
       );
     });
 
-    it('should return existing entry if student already on waitlist', async () => {
+    it("should return existing entry if student already on waitlist", async () => {
       const session = { id: 1, capacityMax: 5 } as Session;
       const existingEntry = {
         id: 1,
@@ -149,8 +152,8 @@ describe('WaitlistsService', () => {
     });
   });
 
-  describe('leaveWaitlist', () => {
-    it('should remove student from waitlist and reorder positions', async () => {
+  describe("leaveWaitlist", () => {
+    it("should remove student from waitlist and reorder positions", async () => {
       const waitlistEntry = {
         id: 1,
         sessionId: 1,
@@ -161,10 +164,10 @@ describe('WaitlistsService', () => {
       mockWaitlistRepository.findOne.mockResolvedValue(waitlistEntry);
       mockWaitlistRepository.delete.mockResolvedValue({ affected: 1 });
       mockWaitlistRepository.createQueryBuilder.mockReturnValue({
-        update: jest.fn().mockReturnThis(),
-        set: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValue({ affected: 2 }),
+        update: vi.fn().mockReturnThis(),
+        set: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        execute: vi.fn().mockResolvedValue({ affected: 2 }),
       });
 
       await service.leaveWaitlist(1, 1);
@@ -172,7 +175,7 @@ describe('WaitlistsService', () => {
       expect(mockWaitlistRepository.delete).toHaveBeenCalledWith(1);
     });
 
-    it('should throw NotFoundException if entry does not exist', async () => {
+    it("should throw NotFoundException if entry does not exist", async () => {
       mockWaitlistRepository.findOne.mockResolvedValue(null);
 
       await expect(service.leaveWaitlist(1, 1)).rejects.toThrow(
@@ -181,8 +184,8 @@ describe('WaitlistsService', () => {
     });
   });
 
-  describe('notifyWaitlistMember', () => {
-    it('should update notifiedAt and notificationExpiresAt fields', async () => {
+  describe("notifyWaitlistMember", () => {
+    it("should update notifiedAt and notificationExpiresAt fields", async () => {
       const waitlistEntry = {
         id: 1,
         sessionId: 1,
@@ -202,12 +205,13 @@ describe('WaitlistsService', () => {
       await service.notifyWaitlistMember(1, 24);
 
       expect(mockWaitlistRepository.save).toHaveBeenCalled();
-      const savedEntry = mockWaitlistRepository.save.mock.calls[0][0];
+      const savedEntry = mockWaitlistRepository.save.mock
+        .calls[0][0] as Waitlist;
       expect(savedEntry.notifiedAt).toBeDefined();
       expect(savedEntry.notificationExpiresAt).toBeDefined();
     });
 
-    it('should throw NotFoundException if entry does not exist', async () => {
+    it("should throw NotFoundException if entry does not exist", async () => {
       mockWaitlistRepository.findOne.mockResolvedValue(null);
 
       await expect(service.notifyWaitlistMember(1)).rejects.toThrow(
@@ -216,8 +220,8 @@ describe('WaitlistsService', () => {
     });
   });
 
-  describe('handleBookingCancellation', () => {
-    it('should notify first waitlist member when booking is cancelled', async () => {
+  describe("handleBookingCancellation", () => {
+    it("should notify first waitlist member when booking is cancelled", async () => {
       const waitlist = [
         { id: 1, position: 1, studentId: 1 } as Waitlist,
         { id: 2, position: 2, studentId: 2 } as Waitlist,
@@ -232,7 +236,7 @@ describe('WaitlistsService', () => {
       expect(mockWaitlistRepository.save).toHaveBeenCalled();
     });
 
-    it('should do nothing if no waitlist exists', async () => {
+    it("should do nothing if no waitlist exists", async () => {
       mockWaitlistRepository.find.mockResolvedValue([]);
 
       await service.handleBookingCancellation(1);
@@ -241,8 +245,8 @@ describe('WaitlistsService', () => {
     });
   });
 
-  describe('getMyWaitlists', () => {
-    it('should return waitlists for a student', async () => {
+  describe("getMyWaitlists", () => {
+    it("should return waitlists for a student", async () => {
       const waitlists = [
         {
           id: 1,
@@ -264,8 +268,13 @@ describe('WaitlistsService', () => {
       expect(result).toEqual(waitlists);
       expect(mockWaitlistRepository.find).toHaveBeenCalledWith({
         where: { studentId: 1 },
-        order: { createdAt: 'DESC' },
-        relations: ['session', 'session.groupClass', 'session.groupClass.level'],
+        order: { createdAt: "DESC" },
+        relations: [
+          "session",
+          "session.groupClass",
+          "session.groupClass.groupClassLevels",
+          "session.groupClass.groupClassLevels.level",
+        ],
       });
     });
   });

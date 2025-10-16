@@ -1,16 +1,16 @@
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { PassportModule } from '@nestjs/passport';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AuthController } from './auth.controller.js';
-import { GoogleStrategy } from './strategies/google.strategy.js';
-import { AuthService } from './auth.service.js';
-import { User } from '../users/entities/user.entity.js';
-import { Admin } from '../courses/entities/admin.entity.js';
-import { Teacher } from '../teachers/entities/teacher.entity.js';
-import { StudentGuard } from './student.guard.js';
-import { TeacherGuard } from './teacher.guard.js';
-import { AdminGuard } from './admin.guard.js';
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { PassportModule } from "@nestjs/passport";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { AuthController } from "./auth.controller.js";
+import { GoogleStrategy } from "./strategies/google.strategy.js";
+import { AuthService } from "./auth.service.js";
+import { User } from "../users/entities/user.entity.js";
+import { Admin } from "../courses/entities/admin.entity.js";
+import { Teacher } from "../teachers/entities/teacher.entity.js";
+import { StudentGuard } from "./student.guard.js";
+import { TeacherGuard } from "./teacher.guard.js";
+import { AdminGuard } from "./admin.guard.js";
 
 @Module({
   imports: [

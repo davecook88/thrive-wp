@@ -1,9 +1,9 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 // NOTE: MySQL enum alteration requires recreating the enum column definition.
 // We add DRAFT to session.status and PENDING to booking.status maintaining existing order where possible.
 export class AddDraftStatuses1756431459161 implements MigrationInterface {
-  name = 'AddDraftStatuses1756431459161';
+  name = "AddDraftStatuses1756431459161";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // session.status: add 'DRAFT'

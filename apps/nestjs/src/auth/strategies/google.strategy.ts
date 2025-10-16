@@ -1,29 +1,29 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, Profile } from 'passport-google-oauth20';
-import { ConfigService } from '@nestjs/config';
-import { AuthService } from '../auth.service.js';
-import { User } from '@/users/entities/user.entity.js';
+import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { PassportStrategy } from "@nestjs/passport";
+import { Strategy, Profile } from "passport-google-oauth20";
+import { ConfigService } from "@nestjs/config";
+import { AuthService } from "../auth.service.js";
+import { User } from "@/users/entities/user.entity.js";
 
 @Injectable()
-export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
+export class GoogleStrategy extends PassportStrategy(Strategy, "google") {
   constructor(
     private readonly configService: ConfigService,
     private readonly authService: AuthService,
   ) {
-    const clientID = configService.get<string>('google.clientId');
-    const clientSecret = configService.get<string>('google.clientSecret');
+    const clientID = configService.get<string>("google.clientId");
+    const clientSecret = configService.get<string>("google.clientSecret");
     if (!clientID || !clientSecret) {
-      throw new Error('Google OAuth client ID/secret not configured');
+      throw new Error("Google OAuth client ID/secret not configured");
     }
     if (!process.env.GOOGLE_CALLBACK_URL) {
-      throw new Error('Google OAuth callback URL not configured');
+      throw new Error("Google OAuth callback URL not configured");
     }
     super({
       clientID,
       clientSecret,
       callbackURL: process.env.GOOGLE_CALLBACK_URL,
-      scope: ['profile', 'email'],
+      scope: ["profile", "email"],
       passReqToCallback: true,
     });
   }
@@ -32,7 +32,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   // We default to select_account so users can switch accounts after logging out locally.
   // To change at runtime, set GOOGLE_OAUTH_PROMPT env var (e.g. 'consent select_account').
   public authorizationParams(): Record<string, string> {
-    const prompt = process.env.GOOGLE_OAUTH_PROMPT || 'select_account';
+    const prompt = process.env.GOOGLE_OAUTH_PROMPT || "select_account";
     return { prompt };
   }
 

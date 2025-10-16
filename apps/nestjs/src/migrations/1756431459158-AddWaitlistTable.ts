@@ -1,10 +1,10 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 /**
  * Add waitlist table for queuing students on full sessions.
  */
 export class AddWaitlistTable1756431459158 implements MigrationInterface {
-  name = 'AddWaitlistTable1756431459158';
+  name = "AddWaitlistTable1756431459158";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
@@ -26,6 +26,6 @@ export class AddWaitlistTable1756431459158 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query('DROP TABLE IF EXISTS waitlist;');
+    await queryRunner.query("DROP TABLE IF EXISTS waitlist;");
   }
 }

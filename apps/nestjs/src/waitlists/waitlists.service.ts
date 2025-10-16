@@ -1,15 +1,14 @@
-
 import {
   Injectable,
   NotFoundException,
   BadRequestException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Waitlist } from './entities/waitlist.entity.js';
-import { Session } from '../sessions/entities/session.entity.js';
-import { Booking, BookingStatus } from '../payments/entities/booking.entity.js';
-import { StudentPackage } from '../packages/entities/student-package.entity.js';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Waitlist } from "./entities/waitlist.entity.js";
+import { Session } from "../sessions/entities/session.entity.js";
+import { Booking, BookingStatus } from "../payments/entities/booking.entity.js";
+import { StudentPackage } from "../packages/entities/student-package.entity.js";
 
 @Injectable()
 export class WaitlistsService {
@@ -27,14 +26,14 @@ export class WaitlistsService {
       where: { id: sessionId },
     });
     if (!session) {
-      throw new NotFoundException('Session not found');
+      throw new NotFoundException("Session not found");
     }
 
     const enrolledCount = await this.bookingRepository.count({
       where: { sessionId, status: BookingStatus.CONFIRMED },
     });
     if (enrolledCount < session.capacityMax) {
-      throw new BadRequestException('Session is not full');
+      throw new BadRequestException("Session is not full");
     }
 
     const existingEntry = await this.waitlistRepository.findOne({
@@ -45,9 +44,9 @@ export class WaitlistsService {
     }
 
     const maxPosition = await this.waitlistRepository
-      .createQueryBuilder('waitlist')
-      .select('MAX(waitlist.position)', 'maxPosition')
-      .where('waitlist.sessionId = :sessionId', { sessionId })
+      .createQueryBuilder("waitlist")
+      .select("MAX(waitlist.position)", "maxPosition")
+      .where("waitlist.sessionId = :sessionId", { sessionId })
       .getRawOne();
 
     const newPosition = (maxPosition.maxPosition || 0) + 1;
@@ -66,7 +65,7 @@ export class WaitlistsService {
       where: { id: waitlistId, studentId },
     });
     if (!entry) {
-      throw new NotFoundException('Waitlist entry not found');
+      throw new NotFoundException("Waitlist entry not found");
     }
 
     await this.waitlistRepository.delete(waitlistId);
@@ -75,8 +74,8 @@ export class WaitlistsService {
     await this.waitlistRepository
       .createQueryBuilder()
       .update(Waitlist)
-      .set({ position: () => 'position - 1' })
-      .where('sessionId = :sessionId AND position > :position', {
+      .set({ position: () => "position - 1" })
+      .where("sessionId = :sessionId AND position > :position", {
         sessionId: entry.sessionId,
         position: entry.position,
       })
@@ -86,20 +85,20 @@ export class WaitlistsService {
   async getWaitlistForSession(sessionId: number): Promise<Waitlist[]> {
     return this.waitlistRepository.find({
       where: { sessionId },
-      order: { position: 'ASC' },
-      relations: ['student', 'student.user'],
+      order: { position: "ASC" },
+      relations: ["student", "student.user"],
     });
   }
 
   async getMyWaitlists(studentId: number): Promise<Waitlist[]> {
     return this.waitlistRepository.find({
       where: { studentId },
-      order: { createdAt: 'DESC' },
+      order: { createdAt: "DESC" },
       relations: [
-        'session',
-        'session.groupClass',
-        'session.groupClass.groupClassLevels',
-        'session.groupClass.groupClassLevels.level',
+        "session",
+        "session.groupClass",
+        "session.groupClass.groupClassLevels",
+        "session.groupClass.groupClassLevels.level",
       ],
     });
   }
@@ -114,49 +113,57 @@ export class WaitlistsService {
     }
   }
 
-  async notifyWaitlistMember(waitlistId: number, expiresInHours = 24): Promise<void> {
-    const waitlistEntry = await this.waitlistRepository.findOne({ where: { id: waitlistId } });
+  async notifyWaitlistMember(
+    waitlistId: number,
+    expiresInHours = 24,
+  ): Promise<void> {
+    const waitlistEntry = await this.waitlistRepository.findOne({
+      where: { id: waitlistId },
+    });
     if (!waitlistEntry) {
-        throw new NotFoundException('Waitlist entry not found');
+      throw new NotFoundException("Waitlist entry not found");
     }
 
     waitlistEntry.notifiedAt = new Date();
     waitlistEntry.notificationExpiresAt = new Date(
-        Date.now() + expiresInHours * 60 * 60 * 1000,
+      Date.now() + expiresInHours * 60 * 60 * 1000,
     );
 
     // In a real app, you'd send an email/notification here
     console.log(
-        `Notifying student ${waitlistEntry.studentId} about opening in session ${waitlistEntry.sessionId}`,
+      `Notifying student ${waitlistEntry.studentId} about opening in session ${waitlistEntry.sessionId}`,
     );
 
     await this.waitlistRepository.save(waitlistEntry);
   }
 
-  async promoteToBooking(waitlistId: number, studentPackageId?: number): Promise<Booking> {
+  async promoteToBooking(
+    waitlistId: number,
+    studentPackageId?: number,
+  ): Promise<Booking> {
     const waitlistEntry = await this.waitlistRepository.findOne({
-        where: { id: waitlistId },
-        relations: ['session', 'student'],
+      where: { id: waitlistId },
+      relations: ["session", "student"],
     });
 
     if (!waitlistEntry) {
-        throw new NotFoundException('Waitlist entry not found');
+      throw new NotFoundException("Waitlist entry not found");
     }
 
     const { session, student } = waitlistEntry;
 
     const enrolledCount = await this.bookingRepository.count({
-        where: { sessionId: session.id, status: BookingStatus.CONFIRMED },
+      where: { sessionId: session.id, status: BookingStatus.CONFIRMED },
     });
 
     if (enrolledCount >= session.capacityMax) {
-        throw new BadRequestException('Session is still full');
+      throw new BadRequestException("Session is still full");
     }
 
-    let usedPackage: StudentPackage | null = null;
+    const usedPackage: StudentPackage | null = null;
     if (studentPackageId) {
-        // This part needs access to StudentPackage repository, which should be added
-        // For now, this logic is simplified
+      // This part needs access to StudentPackage repository, which should be added
+      // For now, this logic is simplified
     }
 
     const booking = new Booking();
@@ -171,14 +178,14 @@ export class WaitlistsService {
 
     // Reorder remaining entries
     await this.waitlistRepository
-        .createQueryBuilder()
-        .update(Waitlist)
-        .set({ position: () => 'position - 1' })
-        .where('sessionId = :sessionId AND position > :position', {
-            sessionId: waitlistEntry.sessionId,
-            position: waitlistEntry.position,
-        })
-        .execute();
+      .createQueryBuilder()
+      .update(Waitlist)
+      .set({ position: () => "position - 1" })
+      .where("sessionId = :sessionId AND position > :position", {
+        sessionId: waitlistEntry.sessionId,
+        position: waitlistEntry.position,
+      })
+      .execute();
 
     return savedBooking;
   }

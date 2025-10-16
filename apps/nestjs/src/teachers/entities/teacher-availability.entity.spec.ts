@@ -1,8 +1,15 @@
+import { describe, it, expect } from "vitest";
 import { getMetadataArgsStorage } from "typeorm";
 import {
   TeacherAvailability,
   TeacherAvailabilityKind,
 } from "./teacher-availability.entity.js";
+
+// TypeORM metadata types for better type safety
+interface ColumnMetadata {
+  target: unknown;
+  propertyName: string;
+}
 
 describe("TeacherAvailability Entity", () => {
   it("should be registered with the correct table name", () => {
@@ -23,14 +30,14 @@ describe("TeacherAvailability Entity", () => {
 
   it("should have expected columns", () => {
     // Get columns from the current class and all parent classes
-    const getAllColumns = (target: any) => {
-      const columns: any[] = [];
+    const getAllColumns = (target: unknown): ColumnMetadata[] => {
+      const columns: ColumnMetadata[] = [];
       let current = target;
 
       while (current && current !== Object.prototype) {
         const classColumns = getMetadataArgsStorage().columns.filter(
           (c) => c.target === current,
-        );
+        ) as ColumnMetadata[];
         columns.push(...classColumns);
         current = Object.getPrototypeOf(current);
       }

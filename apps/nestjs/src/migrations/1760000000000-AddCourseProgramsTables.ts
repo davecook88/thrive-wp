@@ -1,9 +1,9 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class AddCourseProgramsTables1760000000000
   implements MigrationInterface
 {
-  name = 'AddCourseProgramsTables1760000000000';
+  name = "AddCourseProgramsTables1760000000000";
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Create course_program table
     await queryRunner.query(`
@@ -133,11 +133,11 @@ export class AddCourseProgramsTables1760000000000
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Drop tables in reverse order to avoid FK constraint issues
-    await queryRunner.query('DROP TABLE IF EXISTS student_course_progress');
-    await queryRunner.query('DROP TABLE IF EXISTS student_course_enrollment');
-    await queryRunner.query('DROP TABLE IF EXISTS course_step_option');
-    await queryRunner.query('DROP TABLE IF EXISTS course_bundle_component');
-    await queryRunner.query('DROP TABLE IF EXISTS course_step');
-    await queryRunner.query('DROP TABLE IF EXISTS course_program');
+    await queryRunner.query("DROP TABLE IF EXISTS student_course_progress");
+    await queryRunner.query("DROP TABLE IF EXISTS student_course_enrollment");
+    await queryRunner.query("DROP TABLE IF EXISTS course_step_option");
+    await queryRunner.query("DROP TABLE IF EXISTS course_bundle_component");
+    await queryRunner.query("DROP TABLE IF EXISTS course_step");
+    await queryRunner.query("DROP TABLE IF EXISTS course_program");
   }
 }

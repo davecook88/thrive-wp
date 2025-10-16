@@ -10,35 +10,28 @@ import {
   UnauthorizedException,
   ParseIntPipe,
   NotFoundException,
-} from '@nestjs/common';
-import { ZodValidationPipe } from 'nestjs-zod';
-import type { Request as ExpressRequest } from 'express';
-import { WaitlistsService } from './waitlists.service.js';
-import { Waitlist } from './entities/waitlist.entity.js';
-import { AdminGuard } from '../auth/admin.guard.js';
-import { Booking } from '../payments/entities/booking.entity.js';
-import { Student } from '../students/entities/student.entity.js';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+} from "@nestjs/common";
+import { ZodValidationPipe } from "nestjs-zod";
+import type { Request as ExpressRequest } from "express";
+import { WaitlistsService } from "./waitlists.service.js";
+import { AdminGuard } from "../auth/admin.guard.js";
+import { Booking } from "../payments/entities/booking.entity.js";
+import { Student } from "../students/entities/student.entity.js";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 import {
   JoinWaitlistSchema,
   type JoinWaitlistDto,
-} from './dto/join-waitlist.dto.js';
-import {
   NotifyWaitlistSchema,
   type NotifyWaitlistDto,
-} from './dto/notify-waitlist.dto.js';
-import {
   PromoteWaitlistSchema,
   type PromoteWaitlistDto,
-} from './dto/promote-waitlist.dto.js';
-import type {
-  WaitlistResponseDto,
-  WaitlistWithSessionDto,
-  WaitlistWithStudentDto,
-} from './dto/waitlist-response.dto.js';
+  type WaitlistResponseDto,
+  type WaitlistWithSessionDto,
+  type WaitlistWithStudentDto,
+} from "@thrive/shared";
 
-@Controller('waitlists')
+@Controller("waitlists")
 export class WaitlistsController {
   constructor(
     private readonly waitlistsService: WaitlistsService,
@@ -54,9 +47,9 @@ export class WaitlistsController {
     @Body(new ZodValidationPipe(JoinWaitlistSchema)) dto: JoinWaitlistDto,
     @Request() req: ExpressRequest,
   ): Promise<WaitlistResponseDto> {
-    const userId = req.headers['x-auth-user-id'] as string;
+    const userId = req.headers["x-auth-user-id"] as string;
     if (!userId) {
-      throw new UnauthorizedException('Authentication required');
+      throw new UnauthorizedException("Authentication required");
     }
 
     // Get student ID from user ID
@@ -64,7 +57,7 @@ export class WaitlistsController {
       where: { userId: parseInt(userId, 10) },
     });
     if (!student) {
-      throw new NotFoundException('Student profile not found');
+      throw new NotFoundException("Student profile not found");
     }
 
     const waitlist = await this.waitlistsService.joinWaitlist(
@@ -77,7 +70,8 @@ export class WaitlistsController {
       sessionId: waitlist.sessionId,
       position: waitlist.position,
       notifiedAt: waitlist.notifiedAt?.toISOString() || null,
-      notificationExpiresAt: waitlist.notificationExpiresAt?.toISOString() || null,
+      notificationExpiresAt:
+        waitlist.notificationExpiresAt?.toISOString() || null,
       createdAt: waitlist.createdAt.toISOString(),
     };
   }
@@ -85,20 +79,20 @@ export class WaitlistsController {
   /**
    * Get my waitlist entries (Student)
    */
-  @Get('me')
+  @Get("me")
   async getMyWaitlists(
     @Request() req: ExpressRequest,
   ): Promise<WaitlistWithSessionDto[]> {
-    const userId = req.headers['x-auth-user-id'] as string;
+    const userId = req.headers["x-auth-user-id"] as string;
     if (!userId) {
-      throw new UnauthorizedException('Authentication required');
+      throw new UnauthorizedException("Authentication required");
     }
 
     const student = await this.studentRepository.findOne({
       where: { userId: parseInt(userId, 10) },
     });
     if (!student) {
-      throw new NotFoundException('Student profile not found');
+      throw new NotFoundException("Student profile not found");
     }
 
     const waitlists = await this.waitlistsService.getMyWaitlists(student.id);
@@ -134,10 +128,10 @@ export class WaitlistsController {
   /**
    * Get waitlist for a specific session (Admin)
    */
-  @Get('session/:sessionId')
+  @Get("session/:sessionId")
   @UseGuards(AdminGuard)
   async getWaitlistForSession(
-    @Param('sessionId', ParseIntPipe) sessionId: number,
+    @Param("sessionId", ParseIntPipe) sessionId: number,
   ): Promise<WaitlistWithStudentDto[]> {
     const waitlists =
       await this.waitlistsService.getWaitlistForSession(sessionId);
@@ -161,21 +155,21 @@ export class WaitlistsController {
   /**
    * Leave waitlist (Student)
    */
-  @Delete(':id')
+  @Delete(":id")
   async leaveWaitlist(
-    @Param('id', ParseIntPipe) id: number,
+    @Param("id", ParseIntPipe) id: number,
     @Request() req: ExpressRequest,
   ): Promise<{ success: boolean }> {
-    const userId = req.headers['x-auth-user-id'] as string;
+    const userId = req.headers["x-auth-user-id"] as string;
     if (!userId) {
-      throw new UnauthorizedException('Authentication required');
+      throw new UnauthorizedException("Authentication required");
     }
 
     const student = await this.studentRepository.findOne({
       where: { userId: parseInt(userId, 10) },
     });
     if (!student) {
-      throw new NotFoundException('Student profile not found');
+      throw new NotFoundException("Student profile not found");
     }
 
     await this.waitlistsService.leaveWaitlist(id, student.id);
@@ -185,10 +179,10 @@ export class WaitlistsController {
   /**
    * Notify waitlist member of opening (Admin)
    */
-  @Post(':id/notify')
+  @Post(":id/notify")
   @UseGuards(AdminGuard)
   async notifyWaitlistMember(
-    @Param('id', ParseIntPipe) id: number,
+    @Param("id", ParseIntPipe) id: number,
     @Body(new ZodValidationPipe(NotifyWaitlistSchema)) dto: NotifyWaitlistDto,
   ): Promise<{ success: boolean }> {
     await this.waitlistsService.notifyWaitlistMember(id, dto.expiresInHours);
@@ -198,10 +192,10 @@ export class WaitlistsController {
   /**
    * Promote waitlist member to booking (Admin)
    */
-  @Post(':id/promote')
+  @Post(":id/promote")
   @UseGuards(AdminGuard)
   async promoteToBooking(
-    @Param('id', ParseIntPipe) id: number,
+    @Param("id", ParseIntPipe) id: number,
     @Body(new ZodValidationPipe(PromoteWaitlistSchema))
     dto: PromoteWaitlistDto,
   ): Promise<Booking> {

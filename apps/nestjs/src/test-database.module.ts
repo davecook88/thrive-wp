@@ -1,6 +1,6 @@
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { TestDataSource } from './test-data-source.js';
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { TestDataSource } from "./test-data-source.js";
 
 @Module({
   imports: [

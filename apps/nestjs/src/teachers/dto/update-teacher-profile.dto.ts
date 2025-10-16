@@ -8,8 +8,8 @@ import {
   Max,
   Matches,
   ValidateIf,
-} from 'class-validator';
-import { Type } from 'class-transformer';
+} from "class-validator";
+import { Type } from "class-transformer";
 
 export class TeacherLocationDto {
   @IsString()
@@ -33,10 +33,10 @@ export class UpdateTeacherProfileDto {
   bio?: string | null;
 
   @IsOptional()
-  @ValidateIf((o) => o.avatarUrl !== null && o.avatarUrl !== '')
+  @ValidateIf((o) => o.avatarUrl !== null && o.avatarUrl !== "")
   @IsString()
   @Matches(/^https?:\/\/.+/, {
-    message: 'avatarUrl must be a valid URL starting with http:// or https://',
+    message: "avatarUrl must be a valid URL starting with http:// or https://",
   })
   avatarUrl?: string | null;
 

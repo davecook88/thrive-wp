@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { CancellationPolicy } from './entities/cancellation-policy.entity.js';
-import { z } from 'zod';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { CancellationPolicy } from "./entities/cancellation-policy.entity.js";
+import { z } from "zod";
 
 export const CreateCancellationPolicySchema = z.object({
   allowCancellation: z.boolean().default(true),
@@ -31,11 +31,11 @@ export class PoliciesService {
   async getActivePolicy(): Promise<CancellationPolicy> {
     const policy = await this.cancellationPolicyRepository.findOne({
       where: { isActive: true },
-      order: { createdAt: 'DESC' },
+      order: { createdAt: "DESC" },
     });
 
     if (!policy) {
-      throw new NotFoundException('No active cancellation policy found');
+      throw new NotFoundException("No active cancellation policy found");
     }
 
     return policy;
@@ -68,7 +68,7 @@ export class PoliciesService {
    */
   async getAllPolicies(): Promise<CancellationPolicy[]> {
     return this.cancellationPolicyRepository.find({
-      order: { createdAt: 'DESC' },
+      order: { createdAt: "DESC" },
     });
   }
 }

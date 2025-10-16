@@ -107,7 +107,7 @@ export function getPackageDisplayLabel(pkg: StudentPackage): string {
       : (teacherTierRaw as number)
     : 0;
 
-  const isPremium = Number.isFinite(teacherTier) && (teacherTier as number) > 0;
+  const isPremium = Number.isFinite(teacherTier) && teacherTier > 0;
 
   if (serviceType === ServiceType.PRIVATE) {
     return isPremium ? "Premium Private Credit" : "Private Credit";

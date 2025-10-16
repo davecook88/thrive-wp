@@ -5,17 +5,17 @@ import {
   Body,
   UseGuards,
   Request,
-} from '@nestjs/common';
-import { TeachersService } from './teachers.service.js';
-import { TeacherGuard } from '../auth/teacher.guard.js';
-import { UpdateTeacherProfileDto } from './dto/update-teacher-profile.dto.js';
-import type { Request as ExpressRequest } from 'express';
+} from "@nestjs/common";
+import { TeachersService } from "./teachers.service.js";
+import { TeacherGuard } from "../auth/teacher.guard.js";
+import { UpdateTeacherProfileDto } from "./dto/update-teacher-profile.dto.js";
+import type { Request as ExpressRequest } from "express";
 
 type AuthenticatedRequest = ExpressRequest & {
   user: { id: number; email: string; roles: string[] };
 };
 
-@Controller('teachers/me/profile')
+@Controller("teachers/me/profile")
 @UseGuards(TeacherGuard)
 export class TeachersProfileController {
   constructor(private readonly teachersService: TeachersService) {}

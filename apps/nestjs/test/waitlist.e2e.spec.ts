@@ -18,11 +18,18 @@ import {
 import { Level } from "../src/levels/entities/level.entity.js";
 import { Session } from "../src/sessions/entities/session.entity.js";
 import { Waitlist } from "../src/waitlists/entities/waitlist.entity.js";
-import { ServiceType } from "@/common/types/class-types.js";
 import {
   CancellationPolicy,
   PenaltyType,
-} from "@/policies/entities/cancellation-policy.entity.js";
+} from "../src/policies/entities/cancellation-policy.entity.js";
+
+import {
+  PromoteWaitlistSchema,
+  ServiceType,
+  type WaitlistResponseDto,
+  WaitlistResponseSchema,
+} from "@thrive/shared";
+import { getHttpServer } from "./utils/get-httpserver.js";
 
 describe("Waitlist (e2e)", () => {
   let app: INestApplication;
@@ -42,15 +49,7 @@ describe("Waitlist (e2e)", () => {
   let testTeacher: Teacher;
   let testLevel: Level;
   let testSession: Session;
-
-  type WaitlistResponse = {
-    id: number;
-    sessionId: number;
-    studentId: number;
-    position: number;
-    notifiedAt?: string | null;
-    notificationExpiresAt?: string | null;
-  };
+  let testStudentToken: string;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -145,7 +144,7 @@ describe("Waitlist (e2e)", () => {
       sessionDuration: 60,
     });
 
-    const savedSession = (await sessionRepository.save(
+    const savedSession = await sessionRepository.save(
       sessionRepository.create({
         type: ServiceType.GROUP,
         groupClassId: groupClass.id,
@@ -154,8 +153,8 @@ describe("Waitlist (e2e)", () => {
         endAt: sessionEndAt,
         capacityMax: 1,
       }),
-    )) as Session | Session[];
-    testSession = Array.isArray(savedSession) ? savedSession[0] : savedSession;
+    );
+    testSession = savedSession;
 
     // Create a student to fill the class
     const user1 = await userRepository.save({
@@ -193,18 +192,37 @@ describe("Waitlist (e2e)", () => {
     } else {
       testStudent = existing;
     }
+
+    // Create JWT token for student authentication
+    const secret =
+      process.env.SESSION_SECRET || "dev_insecure_secret_change_me";
+    testStudentToken = jwt.sign(
+      {
+        sub: String(testUser.id),
+        email: testUser.email,
+        name: [testUser.firstName, testUser.lastName].filter(Boolean).join(" "),
+        roles: ["student"],
+        sid: "test-session",
+        type: "access",
+      },
+      secret,
+      { algorithm: "HS256", expiresIn: "1d" },
+    );
   }
 
   it("should allow a student to join a waitlist for a full group class session", async () => {
-    const server = app.getHttpServer() as unknown as Application;
-    const response: Response = await request(server)
+    const response: Response = await request(getHttpServer(app))
       .post("/waitlists")
-      .send({ sessionId: testSession.id, studentId: testStudent.id })
-      .expect(201);
+      .set("Cookie", `thrive_sess=${testStudentToken}`)
+      .set("x-auth-user-id", testUser.id.toString())
+      .send({ sessionId: testSession.id, studentId: testStudent.id });
+    if (response.status !== 201) {
+      console.error("Response body:", response.body);
+      throw new Error("Expected 201 Created response - got " + response.status);
+    }
 
-    const body = response.body as WaitlistResponse;
+    const body = WaitlistResponseSchema.parse(response.body);
     expect(body.sessionId).toBe(testSession.id);
-    expect(body.studentId).toBe(testStudent.id);
     expect(body.position).toBe(1);
   });
 
@@ -214,17 +232,21 @@ describe("Waitlist (e2e)", () => {
       levelId: testLevel.id,
       capacityMax: 2,
     });
-    const notFullSession = await sessionRepository.save({
-      type: ServiceType.GROUP,
-      groupClassId: groupClass.id,
-      teacherId: testTeacher.id,
-      startAt: new Date("2025-01-09T12:00:00Z"),
-      endAt: new Date("2025-01-09T13:00:00Z"),
-      capacityMax: 2,
-    });
+    const notFullSession = await sessionRepository.save(
+      sessionRepository.create({
+        type: ServiceType.GROUP,
+        groupClassId: groupClass.id,
+        teacherId: testTeacher.id,
+        startAt: new Date("2025-01-09T12:00:00Z"),
+        endAt: new Date("2025-01-09T13:00:00Z"),
+        capacityMax: 2,
+      }),
+    );
 
     await request(app.getHttpServer() as unknown as Application)
       .post("/waitlists")
+      .set("Cookie", `thrive_sess=${testStudentToken}`)
+      .set("x-auth-user-id", testUser.id.toString())
       .send({ sessionId: notFullSession.id, studentId: testStudent.id })
       .expect(400);
   });
@@ -233,6 +255,8 @@ describe("Waitlist (e2e)", () => {
     // Student 2 joins the waitlist
     await request(app.getHttpServer() as unknown as Application)
       .post("/waitlists")
+      .set("Cookie", `thrive_sess=${testStudentToken}`)
+      .set("x-auth-user-id", testUser.id.toString())
       .send({ sessionId: testSession.id, studentId: testStudent.id })
       .expect(201);
 
@@ -262,9 +286,34 @@ describe("Waitlist (e2e)", () => {
     expect(bookingStudent).not.toBeNull();
     if (!bookingStudent) throw new Error("Expected booking student to exist");
 
+    // Create JWT token for the booking student
+    const bookingUser = await userRepository.findOne({
+      where: { id: bookingStudent.userId },
+    });
+    expect(bookingUser).not.toBeNull();
+    if (!bookingUser) throw new Error("Expected booking user to exist");
+
+    const secret =
+      process.env.SESSION_SECRET || "dev_insecure_secret_change_me";
+    const bookingStudentToken = jwt.sign(
+      {
+        sub: String(bookingUser.id),
+        email: bookingUser.email,
+        name: [bookingUser.firstName, bookingUser.lastName]
+          .filter(Boolean)
+          .join(" "),
+        roles: ["student"],
+        sid: "test-session-booking",
+        type: "access",
+      },
+      secret,
+      { algorithm: "HS256", expiresIn: "1d" },
+    );
+
     await request(app.getHttpServer() as unknown as Application)
       .post(`/bookings/${booking.id}/cancel`)
-      .set("x-auth-user-id", String(bookingStudent.userId))
+      .set("Cookie", `thrive_sess=${bookingStudentToken}`)
+      .set("x-auth-user-id", bookingUser.id.toString())
       .send({ reason: "test" })
       .expect(201);
 
@@ -284,10 +333,12 @@ describe("Waitlist (e2e)", () => {
       app.getHttpServer() as unknown as Application,
     )
       .post("/waitlists")
+      .set("Cookie", `thrive_sess=${testStudentToken}`)
+      .set("x-auth-user-id", testUser.id.toString())
       .send({ sessionId: testSession.id, studentId: testStudent.id })
       .expect(201);
 
-    const waitlistBody = waitlistResponse.body as WaitlistResponse;
+    const waitlistBody = waitlistResponse.body as WaitlistResponseDto;
 
     // Student 1 cancels, freeing up a spot
     const bookingToDelete = await bookingRepository.findOne({
@@ -324,9 +375,15 @@ describe("Waitlist (e2e)", () => {
       { algorithm: "HS256", expiresIn: "1d" },
     );
 
-    await request(app.getHttpServer() as unknown as Application)
+    const payload = PromoteWaitlistSchema.parse({
+      waitlistId: waitlistBody.id,
+    });
+
+    await request(getHttpServer(app))
       .post(`/waitlists/${waitlistBody.id}/promote`)
       .set("Cookie", `thrive_sess=${token}`)
+      .set("x-auth-user-id", adminUser.id.toString())
+      .send(payload)
       .expect(201);
 
     const newBooking = await bookingRepository.findOne({

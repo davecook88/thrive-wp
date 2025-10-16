@@ -6,35 +6,35 @@ import {
   Query,
   UseGuards,
   BadRequestException,
-} from '@nestjs/common';
-import { ZodValidationPipe } from 'nestjs-zod';
-import { AdminGuard } from '../auth/admin.guard.js';
-import { PaginatedUsersResponseDto } from './dto/user-response.dto.js';
-import { MakeAdminSchema, MakeTeacherSchema } from './dto/admin-actions.dto.js';
-import type { MakeAdminDto, MakeTeacherDto } from './dto/admin-actions.dto.js';
-import { UsersService } from './users.service.js';
+} from "@nestjs/common";
+import { ZodValidationPipe } from "nestjs-zod";
+import { AdminGuard } from "../auth/admin.guard.js";
+import { PaginatedUsersResponseDto } from "./dto/user-response.dto.js";
+import { MakeAdminSchema, MakeTeacherSchema } from "./dto/admin-actions.dto.js";
+import type { MakeAdminDto, MakeTeacherDto } from "./dto/admin-actions.dto.js";
+import { UsersService } from "./users.service.js";
 
-@Controller('users')
+@Controller("users")
 @UseGuards(AdminGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
   async getUsers(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('search') search?: string,
-    @Query('role') role?: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+    @Query("search") search?: string,
+    @Query("role") role?: string,
   ): Promise<PaginatedUsersResponseDto> {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
 
     if (pageNum < 1 || limitNum < 1 || limitNum > 100) {
-      throw new BadRequestException('Invalid pagination parameters');
+      throw new BadRequestException("Invalid pagination parameters");
     }
 
     // Validate role parameter
-    if (role && !['admin', 'teacher'].includes(role)) {
+    if (role && !["admin", "teacher"].includes(role)) {
       throw new BadRequestException(
         'Invalid role parameter. Must be "admin" or "teacher"',
       );
@@ -48,14 +48,14 @@ export class UsersController {
     });
   }
 
-  @Post('make-admin')
+  @Post("make-admin")
   async makeUserAdmin(
     @Body(new ZodValidationPipe(MakeAdminSchema)) dto: MakeAdminDto,
   ) {
     return this.usersService.makeUserAdmin(dto.userId);
   }
 
-  @Post('make-teacher')
+  @Post("make-teacher")
   async makeUserTeacher(
     @Body(new ZodValidationPipe(MakeTeacherSchema)) dto: MakeTeacherDto,
   ) {

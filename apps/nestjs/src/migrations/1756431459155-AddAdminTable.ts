@@ -1,11 +1,11 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 /**
  * Add admin table for administrative users.
  * Creates admin table with one-to-one relationship to users.
  */
 export class AddAdminTable1756431459155 implements MigrationInterface {
-  name = 'AddAdminTable1756431459155';
+  name = "AddAdminTable1756431459155";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
@@ -25,6 +25,6 @@ export class AddAdminTable1756431459155 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query('DROP TABLE IF EXISTS admin;');
+    await queryRunner.query("DROP TABLE IF EXISTS admin;");
   }
 }
