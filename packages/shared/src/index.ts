@@ -9,3 +9,4 @@ export * from "./types/events.js";
 export * from "./types/level.js";
 export * from "./types/student-upcoming.js";
 export * from "./types/group-classes.js";
+export * from "./types/waitlists.js";

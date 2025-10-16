@@ -1,5 +1,6 @@
 import { useState } from "@wordpress/element";
 import { createPortal } from "react-dom";
+import type { JoinWaitlistDto, WaitlistResponseDto } from "@thrive/shared";
 
 interface WaitlistModalProps {
   sessionId: number;
@@ -27,11 +28,12 @@ export function WaitlistModal({
     setJoining(true);
     setError(null);
     try {
+      const payload: JoinWaitlistDto = { sessionId };
       const response = await fetch("/api/waitlists", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ sessionId }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -39,16 +41,14 @@ export function WaitlistModal({
         throw new Error(data.message || "Failed to join waitlist");
       }
 
-      const result = await response.json();
+      const result: WaitlistResponseDto = await response.json();
       alert(
-        `You've been added to the waitlist at position ${result.position}. We'll notify you if a spot opens up!`
+        `You've been added to the waitlist at position ${result.position}. We'll notify you if a spot opens up!`,
       );
       onJoin();
       onClose();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to join waitlist"
-      );
+      setError(err instanceof Error ? err.message : "Failed to join waitlist");
     } finally {
       setJoining(false);
     }
@@ -149,7 +149,8 @@ export function WaitlistModal({
                 style={{
                   display: "inline-block",
                   padding: "2px 8px",
-                  backgroundColor: "var(--wp--preset--color--accent-light, #f0fdf4)",
+                  backgroundColor:
+                    "var(--wp--preset--color--accent-light, #f0fdf4)",
                   color: "var(--wp--preset--color--accent, #10b981)",
                   borderRadius: "4px",
                   fontSize: "12px",
@@ -214,8 +215,8 @@ export function WaitlistModal({
             }}
           >
             💡 <strong>How it works:</strong> If a spot becomes available,
-            you'll be notified via email. You'll have 24 hours to claim the
-            spot before it's offered to the next person on the waitlist.
+            you'll be notified via email. You'll have 24 hours to claim the spot
+            before it's offered to the next person on the waitlist.
           </p>
         </div>
 
@@ -291,7 +292,7 @@ export function WaitlistModal({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 
@@ -317,7 +318,7 @@ export function showWaitlistModal(props: Omit<WaitlistModalProps, "onClose">) {
           closeModal();
           root.unmount();
         }}
-      />
+      />,
     );
   }
 }
