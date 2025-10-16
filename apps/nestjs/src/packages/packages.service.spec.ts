@@ -77,7 +77,7 @@ describe("PackagesService", () => {
       const now = new Date();
       const futureDate = new Date(now.getTime() + 86400000); // +1 day
 
-      const mockPackages: any[] = [
+      const mockPackages = [
         {
           id: 1,
           studentId: 1,
@@ -94,7 +94,9 @@ describe("PackagesService", () => {
         },
       ];
 
-      vi.spyOn(packageRepo, "find").mockResolvedValue(mockPackages);
+      vi.spyOn(packageRepo, "find").mockResolvedValue(
+        mockPackages as unknown as StudentPackage[],
+      );
 
       const result = await service.getActivePackagesForStudent(1);
 
@@ -111,7 +113,7 @@ describe("PackagesService", () => {
       const now = new Date();
       const pastDate = new Date(now.getTime() - 86400000); // -1 day
 
-      const mockPackages: any[] = [
+      const mockPackages = [
         {
           id: 1,
           studentId: 1,
@@ -128,7 +130,9 @@ describe("PackagesService", () => {
         },
       ];
 
-      vi.spyOn(packageRepo, "find").mockResolvedValue(mockPackages);
+      vi.spyOn(packageRepo, "find").mockResolvedValue(
+        mockPackages as unknown as StudentPackage[],
+      );
 
       const result = await service.getActivePackagesForStudent(1);
 
@@ -140,7 +144,7 @@ describe("PackagesService", () => {
     it("should filter out packages with no remaining sessions", async () => {
       const now = new Date();
 
-      const mockPackages: any[] = [
+      const mockPackages = [
         {
           id: 1,
           studentId: 1,
@@ -157,7 +161,9 @@ describe("PackagesService", () => {
         },
       ];
 
-      vi.spyOn(packageRepo, "find").mockResolvedValue(mockPackages);
+      vi.spyOn(packageRepo, "find").mockResolvedValue(
+        mockPackages as unknown as StudentPackage[],
+      );
 
       const result = await service.getActivePackagesForStudent(1);
 
@@ -172,7 +178,7 @@ describe("PackagesService", () => {
       const now = new Date();
       const futureDate = new Date(now.getTime() + 86400000);
 
-      const mockPackage: any = {
+      const mockPackage = {
         id: 1,
         studentId: 1,
         packageName: "5-class pack",
@@ -187,9 +193,9 @@ describe("PackagesService", () => {
         deletedAt: null,
       };
 
-      const mockLockedPackage: any = { ...mockPackage, remainingSessions: 1 };
+      const mockLockedPackage = { ...mockPackage, remainingSessions: 1 };
 
-      const mockPackageUse: any = {
+      const mockPackageUse = {
         id: 1,
         studentPackageId: 1,
         bookingId: null,
@@ -203,13 +209,21 @@ describe("PackagesService", () => {
       };
 
       // Mock initial findOne
-      vi.spyOn(packageRepo, "findOne").mockResolvedValue(mockPackage);
+      vi.spyOn(packageRepo, "findOne").mockResolvedValue(
+        mockPackage as unknown as StudentPackage,
+      );
 
       // Mock transaction manager
       const mockTx = {
-        findOne: vi.fn().mockResolvedValue(mockPackage),
-        save: vi.fn().mockResolvedValue(mockLockedPackage),
-        create: vi.fn().mockReturnValue(mockPackageUse),
+        findOne: vi
+          .fn()
+          .mockResolvedValue(mockPackage as unknown as StudentPackage),
+        save: vi
+          .fn()
+          .mockResolvedValue(mockLockedPackage as unknown as StudentPackage),
+        create: vi
+          .fn()
+          .mockReturnValue(mockPackageUse as unknown as PackageUse),
       } as unknown as EntityManager;
 
       const mockManager = {
@@ -229,6 +243,7 @@ describe("PackagesService", () => {
 
       expect(result.package.remainingSessions).toBe(1);
       expect(result.use).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockTx.findOne).toHaveBeenCalledWith(StudentPackage, {
         where: { id: 1 },
         lock: { mode: "pessimistic_write" },
@@ -244,7 +259,7 @@ describe("PackagesService", () => {
     });
 
     it("should throw BadRequestException when no remaining sessions", async () => {
-      const mockPackage: any = {
+      const mockPackage = {
         id: 1,
         studentId: 1,
         packageName: "5-class pack",
@@ -256,7 +271,9 @@ describe("PackagesService", () => {
         metadata: null,
       };
 
-      vi.spyOn(packageRepo, "findOne").mockResolvedValue(mockPackage);
+      vi.spyOn(packageRepo, "findOne").mockResolvedValue(
+        mockPackage as unknown as StudentPackage,
+      );
 
       await expect(service.usePackageForSession(1, 1, 123, 1)).rejects.toThrow(
         BadRequestException,
@@ -267,7 +284,7 @@ describe("PackagesService", () => {
       const now = new Date();
       const pastDate = new Date(now.getTime() - 86400000); // -1 day
 
-      const mockPackage: any = {
+      const mockPackage = {
         id: 1,
         studentId: 1,
         packageName: "Expired pack",
@@ -279,11 +296,14 @@ describe("PackagesService", () => {
         metadata: null,
       };
 
-      vi.spyOn(packageRepo, "findOne").mockResolvedValue(mockPackage);
+      vi.spyOn(packageRepo, "findOne").mockResolvedValue(
+        mockPackage as unknown as StudentPackage,
+      );
 
       await expect(service.usePackageForSession(1, 1, 123, 1)).rejects.toThrow(
         BadRequestException,
       );
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(vi.mocked(packageRepo.findOne).mock.calls[0][0]).toEqual({
         where: { id: 1, studentId: 1 },
       });
@@ -292,7 +312,7 @@ describe("PackagesService", () => {
 
   describe("linkUseToBooking", () => {
     it("should successfully link use to booking", async () => {
-      const mockUse: any = {
+      const mockUse = {
         id: 1,
         studentPackageId: 1,
         bookingId: null,
@@ -302,14 +322,19 @@ describe("PackagesService", () => {
         note: null,
       };
 
-      const mockUpdatedUse: any = { ...mockUse, bookingId: 456 };
+      const mockUpdatedUse = { ...mockUse, bookingId: 456 };
 
-      vi.spyOn(useRepo, "findOne").mockResolvedValue(mockUse);
-      vi.spyOn(useRepo, "save").mockResolvedValue(mockUpdatedUse);
+      vi.spyOn(useRepo, "findOne").mockResolvedValue(
+        mockUse as unknown as PackageUse,
+      );
+      vi.spyOn(useRepo, "save").mockResolvedValue(
+        mockUpdatedUse as unknown as PackageUse,
+      );
 
       const result = await service.linkUseToBooking(1, 456);
 
       expect(result?.bookingId).toBe(456);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(useRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({ bookingId: 456 }),
       );

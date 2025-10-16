@@ -56,10 +56,11 @@ describe("AuthService", () => {
     });
 
     it("should return both roles when user is admin and teacher", async () => {
-            // Mock the query method to return both roles
-      vi
-        .spyOn(userRepo, "query")
-        .mockResolvedValue([{ role: "admin" }, { role: "teacher" }]);
+      // Mock the query method to return both roles
+      vi.spyOn(userRepo, "query").mockResolvedValue([
+        { role: "admin" },
+        { role: "teacher" },
+      ]);
 
       const roles = await service.getUserRoles(1);
       expect(roles).toEqual(["admin", "teacher"]);
