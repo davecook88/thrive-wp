@@ -50,7 +50,6 @@ export default function StudentCalendar({
   );
   const [groupSessions, setGroupSessions] = useState<BaseCalendarEvent[]>([]);
 
-  console.log("Student Calendar", currentRange);
   // Use availability slots hook for booking mode
   const { availabilitySlots } = useAvailabilitySlots({
     start: currentRange?.from || null,

@@ -5,7 +5,7 @@ import "./student-calendar/view";
 import "./student-class-credits/view";
 import "./private-session-availability-calendar/view";
 import "./selected-event-modal/view";
-import "./teacher-picker/view";
+// import "./teacher-picker/view"; // Removed - block deleted
 import "./booking-session-details/view";
 import "./conditional-stripe-payment/view";
 import "./student-package-details/view";

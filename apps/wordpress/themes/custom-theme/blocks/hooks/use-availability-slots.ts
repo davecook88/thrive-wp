@@ -1,6 +1,6 @@
 import { useEffect, useState } from "@wordpress/element";
-import type { AvailabilityEvent } from "@thrive/shared/calendar";
-import { thriveClient } from "@thrive/shared/thrive";
+import { thriveClient } from "../../../../shared/thrive";
+import { AvailabilityEvent } from "@thrive/shared";
 
 interface UseAvailabilitySlotsOptions {
   start: Date | null;
@@ -23,14 +23,6 @@ export const useAvailabilitySlots = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  console.log("Use availability slots", {
-    start,
-    end,
-    selectedTeacherIds,
-    sessionDuration,
-    slotDuration,
-  });
-
   useEffect(() => {
     if (!start || !end || selectedTeacherIds.length === 0 || end < new Date()) {
       setAvailabilitySlots([]);
@@ -38,7 +30,6 @@ export const useAvailabilitySlots = ({
     }
 
     const fetchAvailability = async () => {
-      console.log("Fetching availability slots...");
       setLoading(true);
       setError(null);
 
@@ -81,8 +72,6 @@ export const useAvailabilitySlots = ({
           }
           return out;
         });
-
-        console.log("Availability chunks", { chunks });
 
         // Filter chunks in the past
         const now = new Date();

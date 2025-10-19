@@ -7,14 +7,10 @@ const ELEMENT_CLASS = ".student-calendar-block";
 // Mount the React component when the DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll<HTMLElement>(ELEMENT_CLASS).forEach((container) => {
-    console.log("Student Calendar: Found container", container);
     if (!container) return;
 
-    // Check if already mounted
-    if ((container as any)._reactRoot) return;
-
     const root = createRoot(container);
-    (container as any)._reactRoot = root;
+    // container._reactRoot = root;
 
     // Read attributes from data attributes
     const view =
@@ -24,11 +20,11 @@ document.addEventListener("DOMContentLoaded", () => {
         | "month"
         | "list") || "week";
     const slotDuration = parseInt(
-      container.getAttribute("data-slot-duration") || "30"
+      container.getAttribute("data-slot-duration") || "30",
     );
     const snapTo = parseInt(container.getAttribute("data-snap-to") || "15");
     const viewHeight = parseInt(
-      container.getAttribute("data-view-height") || "600"
+      container.getAttribute("data-view-height") || "600",
     );
 
     // Render the React component
@@ -38,7 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
         slotDuration,
         snapTo,
         viewHeight,
-      })
+      }),
     );
   });
 });

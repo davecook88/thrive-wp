@@ -6,7 +6,7 @@ import type {
   CalendarRangeChangeEvent,
   BookingEvent,
 } from "@thrive/shared/calendar";
-import { thriveClient } from "@thrive/shared/thrive";
+import { thriveClient } from "../../../../../shared/thrive";
 import { useAvailabilitySlots } from "../../hooks/use-availability-slots";
 import { fetchStudentBookings } from "../../student-calendar/utils/calendarData";
 import { PublicTeacherDto } from "@thrive/shared/types/teachers";

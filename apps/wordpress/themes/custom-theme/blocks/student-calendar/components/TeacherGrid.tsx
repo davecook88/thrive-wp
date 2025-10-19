@@ -1,19 +1,89 @@
 import { PublicTeacherDto } from "@thrive/shared/types/teachers";
-import type { Teacher } from "@thrive/shared/calendar";
 interface TeacherGridProps {
-  teachers: Teacher[];
+  teachers: PublicTeacherDto[];
   selectedTeacherIds: number[];
   toggleTeacher: (id: number) => void;
 }
+
+const InitialAvatar = ({
+  initials,
+  isSelected,
+}: {
+  initials: string;
+  isSelected: boolean;
+}) => (
+  <div
+    style={{
+      width: 36,
+      height: 36,
+      borderRadius: "50%",
+      background: isSelected
+        ? "var(--wp--preset--color--accent, #10b981)"
+        : "#e5e7eb",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: isSelected ? "white" : "#374151",
+      fontWeight: 700,
+      fontSize: 14,
+      flexShrink: 0,
+    }}
+  >
+    {initials}
+  </div>
+);
+
+const AvatarImage = ({
+  src,
+  alt,
+  isSelected,
+}: {
+  src: string;
+  alt: string;
+  isSelected: boolean;
+}) => (
+  <img
+    src={src}
+    alt={alt}
+    style={{
+      width: 36,
+      height: 36,
+      borderRadius: "50%",
+      objectFit: "cover",
+      border: isSelected
+        ? "2px solid var(--wp--preset--color--accent, #10b981)"
+        : "2px solid transparent",
+      flexShrink: 0,
+    }}
+  />
+);
+
+const Avatar = ({
+  teacher,
+  isSelected,
+}: {
+  teacher: PublicTeacherDto;
+  isSelected: boolean;
+}) => {
+  const initials = (teacher.displayName || "T").slice(0, 1).toUpperCase();
+  console.log("Rendering Avatar for teacher:", teacher);
+  return teacher.avatarUrl ? (
+    <AvatarImage
+      src={teacher.avatarUrl}
+      alt={teacher.displayName}
+      isSelected={isSelected}
+    />
+  ) : (
+    <InitialAvatar initials={initials} isSelected={isSelected} />
+  );
+};
 
 export default function TeacherGrid({
   teachers,
   selectedTeacherIds,
   toggleTeacher,
 }: TeacherGridProps) {
-  const getInitials = (t: PublicTeacherDto) =>
-    (t.displayName || "T").slice(0, 1).toUpperCase();
-
+  console.log("Rendering TeacherGrid with teachers:", teachers);
   return (
     <div>
       <label
@@ -55,25 +125,7 @@ export default function TeacherGrid({
                 transition: "all 150ms ease",
               }}
             >
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: "50%",
-                  background: isSelected
-                    ? "var(--wp--preset--color--accent, #10b981)"
-                    : "#e5e7eb",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: isSelected ? "white" : "#374151",
-                  fontWeight: 700,
-                  fontSize: 14,
-                  flexShrink: 0,
-                }}
-              >
-                {getInitials(t)}
-              </div>
+              <Avatar teacher={t} isSelected={isSelected} />
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div
                   style={{

@@ -2,7 +2,7 @@ import { useState, useEffect } from "@wordpress/element";
 import TeacherInfo from "./components/TeacherInfo";
 import TeacherInfoSkeleton from "./components/TeacherInfoSkeleton";
 import "./teacher-info.css";
-import { thriveClient } from "@thrive/shared/clients/thrive";
+import { thriveClient } from "../../../../shared/thrive";
 import { PublicTeacherDto } from "@thrive/shared/types/teachers";
 
 interface TeacherInfoWrapperProps {

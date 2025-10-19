@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { thriveClient } from "../../../../../shared/thrive";
+import { thriveClient } from "../../../../shared/thrive";
 import { UpcomingSessionDto } from "@thrive/shared";
 
 interface StudentUpcomingSessionsProps {

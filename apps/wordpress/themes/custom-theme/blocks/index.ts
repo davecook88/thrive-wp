@@ -7,7 +7,7 @@ import "./teacher-availability/index.tsx";
 import "./teacher-profile-form/index.tsx";
 // import "./thrive-calendar-context/index.tsx"; // Commented out - block doesn't exist
 import "./selected-event-modal/index.tsx";
-import "./teacher-picker/index.tsx";
+// import "./teacher-picker/index.tsx"; // Removed - block deleted
 import "./booking-status/index.tsx";
 import "./booking-session-details/index.tsx";
 import "./package-selection/index.tsx";
