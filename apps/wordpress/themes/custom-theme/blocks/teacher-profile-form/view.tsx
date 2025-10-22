@@ -1,35 +1,17 @@
-import { createRoot } from "react-dom/client";
+import { createRoot, Root } from "react-dom/client";
 import { useState, useEffect } from "@wordpress/element";
 import { ProfilePictureUpload, EditableProfileField } from "../../components";
+import { thriveClient } from "../../../../shared/thrive";
 import "./teacher-profile-form.css";
 import "../../components/upload-components.css";
+import { PublicTeacherDto, UpdateTeacherProfileDto } from "@thrive/shared";
 
 const ELEMENT_CLASS = ".thrive-teacher-profile-form";
 
-interface TeacherLocation {
-  city: string;
-  country: string;
-  lat?: number;
-  lng?: number;
-}
+// Track mounted roots to prevent double-mounting
+const mountedRoots = new WeakMap<HTMLElement, Root>();
 
-interface TeacherProfile {
-  userId: number;
-  teacherId: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  bio: string | null;
-  avatarUrl: string | null;
-  birthplace: TeacherLocation | null;
-  currentLocation: TeacherLocation | null;
-  specialties: string[] | null;
-  yearsExperience: number | null;
-  languagesSpoken: string[] | null;
-  tier: number;
-  isActive: boolean;
-}
-
+// Define the EditableField type to avoid implicit any
 type EditableField =
   | "bio"
   | "avatar"
@@ -40,14 +22,14 @@ type EditableField =
   | "languages";
 
 function TeacherProfileForm() {
-  const [profile, setProfile] = useState<TeacherProfile | null>(null);
+  const [profile, setProfile] = useState<PublicTeacherDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [editingField, setEditingField] = useState<EditableField | null>(null);
 
-  // Form fields
+  // Form fields - refine yearsExperience to number | null for consistency
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [birthplaceCity, setBirthplaceCity] = useState("");
@@ -55,25 +37,23 @@ function TeacherProfileForm() {
   const [currentLocationCity, setCurrentLocationCity] = useState("");
   const [currentLocationCountry, setCurrentLocationCountry] = useState("");
   const [specialtiesText, setSpecialtiesText] = useState("");
-  const [yearsExperience, setYearsExperience] = useState<number | "">("");
+  const [yearsExperience, setYearsExperience] = useState<number | null>(null);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
 
   useEffect(() => {
-    fetchProfile();
+    fetchProfile().catch(console.error);
   }, []);
 
   const fetchProfile = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch("/api/teachers/me/profile");
-
-      if (!response.ok) {
+      const data = await thriveClient.fetchTeacherProfile();
+      if (data) {
+        setProfile(data);
+      } else {
         throw new Error("Failed to load profile");
       }
-
-      const data = await response.json();
-      setProfile(data);
 
       // Populate form fields
       setBio(data.bio || "");
@@ -83,7 +63,7 @@ function TeacherProfileForm() {
       setCurrentLocationCity(data.currentLocation?.city || "");
       setCurrentLocationCountry(data.currentLocation?.country || "");
       setSpecialtiesText((data.specialties || []).join(", "));
-      setYearsExperience(data.yearsExperience ?? "");
+      setYearsExperience(data.yearsExperience ?? null);
       setSelectedLanguages(data.languagesSpoken || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -98,7 +78,7 @@ function TeacherProfileForm() {
     setSuccess(false);
 
     try {
-      const updateData: any = {};
+      const updateData: UpdateTeacherProfileDto = {};
 
       switch (field) {
         case "bio":
@@ -113,6 +93,8 @@ function TeacherProfileForm() {
               city: birthplaceCity,
               country: birthplaceCountry,
             };
+          } else {
+            updateData.birthplace = undefined;
           }
           break;
         case "location":
@@ -121,6 +103,8 @@ function TeacherProfileForm() {
               city: currentLocationCity,
               country: currentLocationCountry,
             };
+          } else {
+            updateData.currentLocation = undefined;
           }
           break;
         case "specialties":
@@ -134,8 +118,7 @@ function TeacherProfileForm() {
           }
           break;
         case "experience":
-          updateData.yearsExperience =
-            yearsExperience !== "" ? Number(yearsExperience) : null;
+          updateData.yearsExperience = yearsExperience ?? undefined;
           break;
         case "languages":
           updateData.languagesSpoken =
@@ -143,19 +126,12 @@ function TeacherProfileForm() {
           break;
       }
 
-      const response = await fetch("/api/teachers/me/profile", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updateData),
-      });
+      const updatedProfile =
+        await thriveClient.updateTeacherProfile(updateData);
 
-      if (!response.ok) {
+      if (!updatedProfile) {
         throw new Error("Failed to update profile");
       }
-
-      const updatedProfile = await response.json();
       setProfile(updatedProfile);
       setSuccess(true);
       setEditingField(null);
@@ -179,7 +155,7 @@ function TeacherProfileForm() {
       setCurrentLocationCity(profile.currentLocation?.city || "");
       setCurrentLocationCountry(profile.currentLocation?.country || "");
       setSpecialtiesText((profile.specialties || []).join(", "));
-      setYearsExperience(profile.yearsExperience ?? "");
+      setYearsExperience(profile.yearsExperience ?? null);
       setSelectedLanguages(profile.languagesSpoken || []);
     }
     setEditingField(null);
@@ -207,13 +183,11 @@ function TeacherProfileForm() {
             onAvatarUpdate={(url: string | null) => {
               setAvatarUrl(url || "");
               if (url !== avatarUrl) {
-                handleSaveField("avatar");
+                void handleSaveField("avatar");
               }
             }}
             onError={(err: string) => setError(err)}
-            userName={
-              profile ? `${profile.firstName} ${profile.lastName}` : undefined
-            }
+            userName={profile?.displayName || "Teacher"}
             disabled={saving}
           />
         </div>
@@ -224,7 +198,9 @@ function TeacherProfileForm() {
           value={profile?.bio || null}
           isEditing={editingField === "bio"}
           onEdit={() => setEditingField("bio")}
-          onSave={() => handleSaveField("bio")}
+          onSave={() => {
+            void handleSaveField("bio").catch(console.error);
+          }}
           onCancel={handleCancelEdit}
           saving={saving}
           type="textarea"
@@ -247,7 +223,9 @@ function TeacherProfileForm() {
           }
           isEditing={editingField === "birthplace"}
           onEdit={() => setEditingField("birthplace")}
-          onSave={() => handleSaveField("birthplace")}
+          onSave={() => {
+            handleSaveField("birthplace").catch(console.error);
+          }}
           onCancel={handleCancelEdit}
           saving={saving}
           type="location"
@@ -271,7 +249,7 @@ function TeacherProfileForm() {
           }
           isEditing={editingField === "location"}
           onEdit={() => setEditingField("location")}
-          onSave={() => handleSaveField("location")}
+          onSave={() => void handleSaveField("location")}
           onCancel={handleCancelEdit}
           saving={saving}
           type="location"
@@ -289,7 +267,7 @@ function TeacherProfileForm() {
           value={profile?.specialties ? profile.specialties.join(", ") : null}
           isEditing={editingField === "specialties"}
           onEdit={() => setEditingField("specialties")}
-          onSave={() => handleSaveField("specialties")}
+          onSave={() => void handleSaveField("specialties")}
           onCancel={handleCancelEdit}
           saving={saving}
           type="text"
@@ -310,14 +288,14 @@ function TeacherProfileForm() {
           }
           isEditing={editingField === "experience"}
           onEdit={() => setEditingField("experience")}
-          onSave={() => handleSaveField("experience")}
+          onSave={() => void handleSaveField("experience")}
           onCancel={handleCancelEdit}
           saving={saving}
           type="number"
           fieldId="experience-input"
-          fieldValue={yearsExperience}
+          fieldValue={yearsExperience ?? ""}
           onFieldChange={(value) =>
-            setYearsExperience(value === "" ? "" : Number(value))
+            setYearsExperience(value === "" ? null : Number(value))
           }
           placeholder="0"
           min={0}
@@ -332,7 +310,7 @@ function TeacherProfileForm() {
           }
           isEditing={editingField === "languages"}
           onEdit={() => setEditingField("languages")}
-          onSave={() => handleSaveField("languages")}
+          onSave={() => void handleSaveField("languages")}
           onCancel={handleCancelEdit}
           saving={saving}
           type="languages"
@@ -346,16 +324,18 @@ function TeacherProfileForm() {
 
 // Mount the React component when the DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll<HTMLElement>(ELEMENT_CLASS).forEach((container) => {
-    if (!container) return;
+  console.log("Mounting TeacherProfileForm...");
+  const containers = document.querySelectorAll<HTMLElement>(ELEMENT_CLASS);
+  console.log(`Found ${containers.length} containers to mount.`);
+  containers.forEach((container) => {
+    if (!container || mountedRoots.has(container)) return;
 
-    // Check if already mounted
-    if ((container as any)._reactRoot) return;
-
-    const root = createRoot(container);
-    (container as any)._reactRoot = root;
-
-    // Render the React component
-    root.render(<TeacherProfileForm />);
+    try {
+      const root = createRoot(container);
+      mountedRoots.set(container, root);
+      root.render(<TeacherProfileForm />);
+    } catch (error) {
+      console.error("Failed to mount TeacherProfileForm:", error);
+    }
   });
 });

@@ -13,6 +13,11 @@ export default function TeacherSelectionRow({
   onTeacherSelect,
   loading = false,
 }: TeacherSelectionRowProps) {
+  console.log("TeacherSelectionRow render", {
+    teachers,
+    selectedTeacher,
+    loading,
+  });
   if (loading) {
     return (
       <div

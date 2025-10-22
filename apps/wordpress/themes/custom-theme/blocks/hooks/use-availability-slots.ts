@@ -41,6 +41,7 @@ export const useAvailabilitySlots = ({
             ? selectedTeacherIds
             : undefined,
         });
+        console.log("Fetched availability:", avail);
 
         // Chunk windows into session-sized availability events
         const sessionMinutes = sessionDuration;

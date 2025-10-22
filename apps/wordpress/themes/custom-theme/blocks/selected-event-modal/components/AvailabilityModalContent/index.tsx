@@ -1,8 +1,5 @@
 import { useState } from "@wordpress/element";
-import type {
-  Teacher,
-  AvailabilityEvent,
-} from "@thrive/shared/calendar";
+import type { AvailabilityEvent } from "@thrive/shared/calendar";
 import { useGetTeachers } from "../../../hooks/get-teachers";
 import { useStudentCredits } from "../../../hooks/use-student-credits";
 import { buildBookingUrl } from "../../../../utils/booking";
@@ -11,6 +8,7 @@ import Header from "./Header";
 import TeacherSelectionPanel from "./TeacherSelectionPanel";
 import TeacherInfoPanel from "./TeacherInfoPanel";
 import PackagesFooter from "./PackagesFooter";
+import { PublicTeacherDto } from "@thrive/shared";
 
 interface User {
   ID: number;
@@ -32,13 +30,24 @@ export default function AvailabilityModalContent({
   event: ModalAvailabilityEvent;
 }) {
   const { loading: loadingTeachers, teachers } = useGetTeachers();
+  console.log("useGetTeachers", { loadingTeachers, teachers });
   const {
     packagesResponse,
     totalRemaining,
     refetch: refetchCredits,
   } = useStudentCredits();
 
-  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
+  const [selectedTeacher, setSelectedTeacher] =
+    useState<PublicTeacherDto | null>(null);
+
+  console.log("AvailabilityModalContent render", {
+    event,
+    selectedTeacher,
+    teachers,
+    loadingTeachers,
+    packagesResponse,
+    totalRemaining,
+  });
 
   const packages = packagesResponse?.packages ?? [];
   const hasPackages = packages.length > 0;
@@ -49,7 +58,7 @@ export default function AvailabilityModalContent({
           return buildBookingUrl({
             startUtc: event.startUtc,
             endUtc: event.endUtc,
-            teacherId: selectedTeacher.teacherId,
+            teacherId: selectedTeacher.id,
             serviceType: event.type === "availability" ? "PRIVATE" : event.type,
           });
         } catch {

@@ -9,9 +9,9 @@ export const useGetTeachers = (opts?: {
   forceRefresh?: boolean;
   id?: string;
 }) => {
-  console.trace("useGetTeachers", { opts });
+  console.log("useGetTeachers - HOT RELOAD TEST", { opts });
   const [teachers, setTeachers] = useState<PublicTeacherDto[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<number[]>([]);
 
   useEffect(() => {
@@ -31,6 +31,7 @@ export const useGetTeachers = (opts?: {
 
       const data = await thriveClient.fetchTeachers();
       setTeachers(data);
+      setLoading(false);
       teachersCache.write(key, data);
     };
 

@@ -1,10 +1,10 @@
-import type { Teacher } from "../../../../types/calendar";
+import { PublicTeacherDto } from "@thrive/shared";
 import { TeacherSelectionRow } from "../../../../components";
 
 interface TeacherSelectionPanelProps {
-  teachers: Teacher[];
-  selectedTeacher: Teacher | null;
-  onTeacherSelect: (teacher: Teacher | null) => void;
+  teachers: PublicTeacherDto[];
+  selectedTeacher: PublicTeacherDto | null;
+  onTeacherSelect: (teacher: PublicTeacherDto | null) => void;
   loading: boolean;
   availableTeacherCount: number;
 }
@@ -16,6 +16,7 @@ export default function TeacherSelectionPanel({
   loading,
   availableTeacherCount,
 }: TeacherSelectionPanelProps) {
+  console.log("TeacherSelectionPanel render", teachers);
   return (
     <div
       style={{
