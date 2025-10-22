@@ -10,6 +10,3 @@ export * from "./types/level.js";
 export * from "./types/student-upcoming.js";
 export * from "./types/group-classes.js";
 export * from "./types/waitlists.js";
-
-// Re-export schemas for validation
-export { UpdateTeacherProfileSchema, LocationInputSchema } from "./types/teachers.js";

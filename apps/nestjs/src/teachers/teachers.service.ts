@@ -278,10 +278,14 @@ export class TeachersService {
       .leftJoinAndSelect("t.user", "u")
       .where("t.user_id = :userId", { userId })
       .getOne();
+
+    console.log("Fetched teacher profile:", t);
     if (!t) {
       throw new NotFoundException("Teacher profile not found");
     }
-    return t.toPublicDto();
+    const dto = t.toPublicDto();
+    console.log("Mapped teacher profile DTO:", dto);
+    return dto;
   }
 
   async updateMyProfile(

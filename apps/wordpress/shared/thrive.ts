@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { Teacher } from "./calendar.js";
 import {
   AvailabilityEvent,
   BookingEvent,
@@ -13,7 +12,6 @@ import {
 import {
   PreviewAvailabilityResponseSchema,
   PublicTeacherSchema,
-  PublicTeacherApiSchema,
   PublicTeacherDto,
   LevelDto,
   LevelSchema,
@@ -178,31 +176,16 @@ export const thriveClient = {
     );
     return data || [];
   },
-  fetchTeacher: async (id: number): Promise<Teacher | null> => {
+  fetchTeacher: async (id: number): Promise<PublicTeacherDto | null> => {
     const raw = await apiGet(`/api/teachers/${encodeURIComponent(String(id))}`);
     if (!raw) return null;
     try {
       const parsed = PublicTeacherSchema.parse(raw);
-      return parsed as unknown as Teacher;
+      return parsed as unknown as PublicTeacherDto;
     } catch {
-      const parsedApi = PublicTeacherApiSchema.parse(raw);
-      const mapped: Teacher = {
-        userId: parsedApi.userId,
-        teacherId: parsedApi.teacherId,
-        firstName: parsedApi.firstName || parsedApi.name || "",
-        lastName: parsedApi.lastName || "",
-        name:
-          parsedApi.name ||
-          `${parsedApi.firstName || ""} ${parsedApi.lastName || ""}`.trim(),
-        bio: parsedApi.bio ?? null,
-        avatarUrl: parsedApi.avatarUrl ?? null,
-        birthplace: parsedApi.birthplace ?? null,
-        currentLocation: parsedApi.currentLocation ?? null,
-        specialties: parsedApi.specialties ?? null,
-        yearsExperience: parsedApi.yearsExperience ?? null,
-        languagesSpoken: parsedApi.languagesSpoken ?? null,
-      };
-      return mapped;
+      const parsedApi = PublicTeacherSchema.parse(raw);
+
+      return parsedApi;
     }
   },
   fetchStudentCredits:

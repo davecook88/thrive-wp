@@ -187,12 +187,12 @@ export class Teacher extends BaseEntity {
     return {
       id: this.id,
       userId: this.userId,
-      bio: this.bio ?? undefined,
-      avatarUrl: this.avatarUrl ?? undefined,
-      languagesSpoken: this.languagesSpoken ?? undefined,
+      bio: this.bio ?? null,
+      avatarUrl: this.avatarUrl ?? null,
+      languagesSpoken: this.languagesSpoken ?? [],
       birthplace: this.birthplace ?? {},
       currentLocation: this.currentLocation ?? {},
-      specialties: this.specialties ?? undefined,
+      specialties: this.specialties ?? [],
       displayName:
         [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") ||
         "Teacher",
@@ -202,8 +202,8 @@ export class Teacher extends BaseEntity {
         .toUpperCase(),
       isActive: this.isActive ? true : false,
       yearsExperience: this.yearsExperience ?? null,
-      levels: undefined,
-      rating: undefined,
+      levels: [],
+      rating: null,
     };
   }
 }

@@ -17,40 +17,17 @@ export const PublicTeacherSchema = z.object({
   birthplace: LocationInputSchema,
   currentLocation: LocationInputSchema,
   displayName: z.string(),
-  bio: z.string().nullable().optional(),
-  avatarUrl: z.string().nullable().optional(),
-  languagesSpoken: z.array(z.string()).optional(),
-  levels: z.array(z.number()).optional(),
-  specialties: z.array(z.string()).optional(),
-  rating: z.number().optional(),
+  bio: z.string().nullable(),
+  avatarUrl: z.string().nullable(),
+  languagesSpoken: z.array(z.string()),
+  levels: z.array(z.number()),
+  specialties: z.array(z.string()),
+  rating: z.number().nullable(),
   isActive: z.boolean(),
   initials: z.string(),
-  yearsExperience: z.number().int().nullable().optional(),
+  yearsExperience: z.number().int().nullable(),
 });
 export type PublicTeacherDto = z.infer<typeof PublicTeacherSchema>;
-
-// API shape used by some endpoints (wordpress/NestJS bridge)
-export const PublicTeacherApiSchema = z.object({
-  teacherId: z.number().int(),
-  userId: z.number().int(),
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-  name: z.string().optional(),
-  bio: z.string().nullable().optional(),
-  avatarUrl: z.string().nullable().optional(),
-  birthplace: z
-    .object({ city: z.string().optional(), country: z.string().optional() })
-    .nullable()
-    .optional(),
-  currentLocation: z
-    .object({ city: z.string().optional(), country: z.string().optional() })
-    .nullable()
-    .optional(),
-  languagesSpoken: z.array(z.string()).optional(),
-  specialties: z.array(z.string()).optional(),
-  yearsExperience: z.number().int().nullable().optional(),
-});
-export type PublicTeacherApiDto = z.infer<typeof PublicTeacherApiSchema>;
 
 // Teacher detail (authenticated)
 export const TeacherDetailSchema = PublicTeacherSchema.extend({
@@ -140,21 +117,21 @@ export type PreviewMyAvailabilityDto = z.infer<
 >;
 
 // Profile types
-export const TeacherProfileSchema = z.object({
-  id: z.number().int(),
-  userId: z.number().int(),
-  headline: z.string().nullable().optional(),
-  bio: z.string().nullable().optional(),
-  avatarUrl: z.string().nullable().optional(),
-  languages: z.array(z.string()).optional(),
-  specialties: z.array(z.string()).optional(),
-  pricing: z
-    .object({ private: z.number().optional(), group: z.number().optional() })
-    .nullable()
-    .optional(),
-  availabilityPreview: GetAvailabilityResponseSchema.nullable().optional(),
-});
-export type TeacherProfileDto = z.infer<typeof TeacherProfileSchema>;
+// export const TeacherProfileSchema = z.object({
+//   id: z.number().int(),
+//   userId: z.number().int(),
+//   headline: z.string().nullable().optional(),
+//   bio: z.string().nullable().optional(),
+//   avatarUrl: z.string().nullable().optional(),
+//   languages: z.array(z.string()).optional(),
+//   specialties: z.array(z.string()).optional(),
+//   pricing: z
+//     .object({ private: z.number().optional(), group: z.number().optional() })
+//     .nullable()
+//     .optional(),
+//   availabilityPreview: GetAvailabilityResponseSchema.nullable().optional(),
+// });
+// export type TeacherProfileDto = z.infer<typeof TeacherProfileSchema>;
 
 // Update profile DTO
 export const UpdateTeacherProfileSchema = z.object({
