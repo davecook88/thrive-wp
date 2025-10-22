@@ -23,6 +23,7 @@ This app will share the WP MySQL db for now but it should be treated as if it we
 - **ALL DATABASE COLUMNS MUST BE SNAKE_CASE** (e.g., `first_name`, `user_id`, `is_active`)
   - Use TypeORM's `@Column({ name: 'column_name' })` to map camelCase properties to snake_case columns
   - This ensures consistency across the database schema and prevents naming conflicts
+- All migrations must be exported from the `src/migrations/index.ts` file for TypeORM CLI compatibility
 
 ## Authentication System
 

@@ -9,9 +9,15 @@ import {
   SessionWithEnrollmentResponse,
   UpdateTeacherProfileDto,
   UserResponseSchema,
+  // waitlist schemas/types
+  JoinWaitlistSchema,
+  WaitlistResponseSchema,
   PaginatedUsersResponseSchema,
   type UserResponse,
   type PaginatedUsersResponse,
+  BookingCancellationResponse,
+  BookingCancellationResponseSchema,
+  WaitlistResponseDto,
 } from "@thrive/shared";
 import {
   PreviewAvailabilityResponseSchema,
@@ -317,6 +323,64 @@ export const thriveClient = {
       data as Record<string, unknown>,
       PublicTeacherSchema,
     );
+  },
+
+  // Booking helpers
+  cancelBooking: async (
+    bookingId: number,
+    reason?: string,
+  ): Promise<BookingCancellationResponse | null> => {
+    const payload = reason ? { reason } : undefined;
+    const result = await apiPost<BookingCancellationResponse>(
+      `/api/bookings/${bookingId}/cancel`,
+      payload as Record<string, unknown> | undefined,
+      // BookingCancellationResponseSchema is exported from @thrive/shared
+      // cast here to satisfy TypeScript
+      BookingCancellationResponseSchema,
+    );
+    return result;
+  },
+
+  // Waitlist methods
+  joinWaitlist: async (
+    sessionId: number,
+  ): Promise<WaitlistResponseDto | null> => {
+    // validate request
+    const payload = JoinWaitlistSchema.parse({ sessionId });
+
+    const result = await apiPost<WaitlistResponseDto>(
+      "/api/waitlists",
+      payload as Record<string, unknown>,
+      WaitlistResponseSchema,
+    );
+
+    return result;
+  },
+
+  // Check whether a booking can be modified (cancel/reschedule)
+  canModifyBooking: async (
+    bookingId: number,
+  ): Promise<{
+    canCancel: boolean;
+    canReschedule: boolean;
+    reason?: string | null;
+    hoursUntilSession: number;
+  } | null> => {
+    const CanModifySchema = z.object({
+      canCancel: z.boolean(),
+      canReschedule: z.boolean(),
+      reason: z.string().nullable().optional(),
+      hoursUntilSession: z.number().int(),
+    });
+
+    const data = await apiGet(`/api/bookings/${bookingId}/can-modify`);
+    if (!data) return null;
+    try {
+      return CanModifySchema.parse(data);
+    } catch (err) {
+      console.error("canModifyBooking: response validation failed", err);
+      return null;
+    }
   },
 
   // User management methods

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
+import { thriveClient } from "../../../shared/thrive";
 import { Modal, Button } from "@wordpress/components";
 
 interface BookingActionsModalProps {
@@ -29,7 +30,7 @@ const BookingActionsModal: React.FC<BookingActionsModalProps> = ({
   onRefresh,
 }) => {
   const [permissions, setPermissions] = useState<BookingPermissions | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
@@ -37,10 +38,9 @@ const BookingActionsModal: React.FC<BookingActionsModalProps> = ({
   useEffect(() => {
     const fetchPermissions = async () => {
       try {
-        const response = await fetch(`/api/bookings/${bookingId}/can-modify`);
-        if (response.ok) {
-          const data = await response.json();
-          setPermissions(data);
+        const data = await thriveClient.canModifyBooking(bookingId);
+        if (data) {
+          setPermissions(data as unknown as BookingPermissions);
         } else {
           console.error("Failed to fetch booking permissions");
         }
@@ -51,13 +51,13 @@ const BookingActionsModal: React.FC<BookingActionsModalProps> = ({
       }
     };
 
-    fetchPermissions();
+    void fetchPermissions();
   }, [bookingId]);
 
   const handleCancel = async () => {
     const confirmed = confirm(
       "Are you sure you want to cancel this booking?\n\n" +
-        "Your credit will be refunded to your package."
+        "Your credit will be refunded to your package.",
     );
 
     if (!confirmed) return;
@@ -67,28 +67,24 @@ const BookingActionsModal: React.FC<BookingActionsModalProps> = ({
 
     setCancelling(true);
     try {
-      const response = await fetch(`/api/bookings/${bookingId}/cancel`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: reason || undefined }),
-      });
+      const result = await thriveClient.cancelBooking(
+        bookingId,
+        reason || undefined,
+      );
 
-      const result = await response.json();
-
-      if (result.success) {
+      if (result && result.success) {
         alert(
           "✅ Booking cancelled successfully!" +
-            (result.creditRefunded ? "\nYour credit has been refunded." : "")
+            (result.creditRefunded ? "\nYour credit has been refunded." : ""),
         );
         onRefresh?.();
         onClose();
       } else {
-        alert(
-          "❌ Failed to cancel booking: " + (result.error || "Unknown error")
-        );
+        alert("❌ Failed to cancel booking: No response or server error");
       }
-    } catch (error: any) {
-      alert("❌ Connection failed: " + error.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      alert("❌ Connection failed: " + message);
     } finally {
       setCancelling(false);
     }
@@ -130,7 +126,7 @@ const BookingActionsModal: React.FC<BookingActionsModalProps> = ({
             <Button
               variant="secondary"
               isDestructive
-              onClick={handleCancel}
+              onClick={() => void handleCancel()}
               disabled={!permissions?.canCancel || cancelling}
               className="w-full"
             >

@@ -80,7 +80,7 @@ export function MediaUpload({
     if (isImage(file) && constraints) {
       const dimensionValidation = await validateImageDimensions(
         file,
-        constraints
+        constraints,
       );
       if (!dimensionValidation.valid) {
         setError(dimensionValidation.error || "Image validation failed");
@@ -125,8 +125,7 @@ export function MediaUpload({
         }
       }
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Upload failed";
+      const errorMessage = err instanceof Error ? err.message : "Upload failed";
       setError(errorMessage);
       if (onUploadError) {
         onUploadError(errorMessage);
@@ -206,114 +205,110 @@ export function MediaUpload({
     .filter(Boolean)
     .join(" ");
 
-  return createElement(
-    "div",
-    { className: containerClasses },
-    [
-      // Hidden file input
-      createElement("input", {
-        key: "file-input",
-        ref: fileInputRef,
-        type: "file",
-        accept,
-        onChange: handleFileInputChange,
-        style: { display: "none" },
-        disabled,
-      }),
+  return createElement("div", { className: containerClasses }, [
+    // Hidden file input
+    createElement("input", {
+      key: "file-input",
+      ref: fileInputRef,
+      type: "file",
+      accept,
+      onChange: handleFileInputChange,
+      style: { display: "none" },
+      disabled,
+    }),
 
-      // Drop zone
+    // Drop zone
+    createElement(
+      "div",
+      {
+        key: "drop-zone",
+        className: "media-upload-dropzone",
+        onClick: handleClick,
+        onDragEnter: handleDragEnter,
+        onDragLeave: handleDragLeave,
+        onDragOver: handleDragOver,
+        onDrop: handleDrop,
+      },
+      [
+        // Preview (if available)
+        showPreview &&
+          previewUrl &&
+          createElement("img", {
+            key: "preview",
+            src: previewUrl,
+            alt: "Preview",
+            className: "media-upload-preview",
+          }),
+
+        // Label
+        !uploading &&
+          createElement(
+            "div",
+            {
+              key: "label",
+              className: "media-upload-label",
+            },
+            [
+              createElement(
+                "span",
+                { key: "label-text", className: "media-upload-label-text" },
+                label,
+              ),
+              selectedFile &&
+                createElement(
+                  "span",
+                  {
+                    key: "file-info",
+                    className: "media-upload-file-info",
+                  },
+                  `${selectedFile.name} (${formatFileSize(selectedFile.size)})`,
+                ),
+            ],
+          ),
+
+        // Progress bar
+        uploading &&
+          createElement(
+            "div",
+            {
+              key: "progress-container",
+              className: "media-upload-progress-container",
+            },
+            [
+              createElement(
+                "div",
+                {
+                  key: "progress-label",
+                  className: "media-upload-progress-label",
+                },
+                `Uploading... ${progress}%`,
+              ),
+              createElement(
+                "div",
+                {
+                  key: "progress-bar-bg",
+                  className: "media-upload-progress-bar-bg",
+                },
+                createElement("div", {
+                  key: "progress-bar",
+                  className: "media-upload-progress-bar",
+                  style: { width: `${progress}%` },
+                }),
+              ),
+            ],
+          ),
+      ],
+    ),
+
+    // Error message
+    error &&
       createElement(
         "div",
         {
-          key: "drop-zone",
-          className: "media-upload-dropzone",
-          onClick: handleClick,
-          onDragEnter: handleDragEnter,
-          onDragLeave: handleDragLeave,
-          onDragOver: handleDragOver,
-          onDrop: handleDrop,
+          key: "error",
+          className: "media-upload-error",
         },
-        [
-          // Preview (if available)
-          showPreview &&
-            previewUrl &&
-            createElement("img", {
-              key: "preview",
-              src: previewUrl,
-              alt: "Preview",
-              className: "media-upload-preview",
-            }),
-
-          // Label
-          !uploading &&
-            createElement(
-              "div",
-              {
-                key: "label",
-                className: "media-upload-label",
-              },
-              [
-                createElement(
-                  "span",
-                  { key: "label-text", className: "media-upload-label-text" },
-                  label
-                ),
-                selectedFile &&
-                  createElement(
-                    "span",
-                    {
-                      key: "file-info",
-                      className: "media-upload-file-info",
-                    },
-                    `${selectedFile.name} (${formatFileSize(selectedFile.size)})`
-                  ),
-              ]
-            ),
-
-          // Progress bar
-          uploading &&
-            createElement(
-              "div",
-              {
-                key: "progress-container",
-                className: "media-upload-progress-container",
-              },
-              [
-                createElement(
-                  "div",
-                  {
-                    key: "progress-label",
-                    className: "media-upload-progress-label",
-                  },
-                  `Uploading... ${progress}%`
-                ),
-                createElement(
-                  "div",
-                  {
-                    key: "progress-bar-bg",
-                    className: "media-upload-progress-bar-bg",
-                  },
-                  createElement("div", {
-                    key: "progress-bar",
-                    className: "media-upload-progress-bar",
-                    style: { width: `${progress}%` },
-                  })
-                ),
-              ]
-            ),
-        ]
+        error,
       ),
-
-      // Error message
-      error &&
-        createElement(
-          "div",
-          {
-            key: "error",
-            className: "media-upload-error",
-          },
-          error
-        ),
-    ]
-  );
+  ]);
 }

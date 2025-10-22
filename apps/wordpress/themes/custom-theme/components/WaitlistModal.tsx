@@ -1,6 +1,7 @@
 import { useState } from "@wordpress/element";
 import { createPortal } from "react-dom";
-import type { JoinWaitlistDto, WaitlistResponseDto } from "@thrive/shared";
+import { thriveClient } from "../../../shared/thrive";
+import { createRoot } from "react-dom/client";
 
 interface WaitlistModalProps {
   sessionId: number;
@@ -28,20 +29,10 @@ export function WaitlistModal({
     setJoining(true);
     setError(null);
     try {
-      const payload: JoinWaitlistDto = { sessionId };
-      const response = await fetch("/api/waitlists", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify(payload),
-      });
+      const result = await thriveClient.joinWaitlist(sessionId);
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to join waitlist");
-      }
+      if (!result) throw new Error("Failed to join waitlist");
 
-      const result: WaitlistResponseDto = await response.json();
       alert(
         `You've been added to the waitlist at position ${result.position}. We'll notify you if a spot opens up!`,
       );
@@ -272,7 +263,7 @@ export function WaitlistModal({
           </button>
           <button
             type="button"
-            onClick={handleJoin}
+            onClick={() => void handleJoin()}
             disabled={joining}
             style={{
               padding: "10px 20px",
@@ -306,9 +297,7 @@ export function showWaitlistModal(props: Omit<WaitlistModalProps, "onClose">) {
     }
   }
 
-  const root = (window as any).wp.element.createRoot
-    ? (window as any).wp.element.createRoot(container)
-    : null;
+  const root = createRoot(container);
 
   if (root) {
     root.render(
