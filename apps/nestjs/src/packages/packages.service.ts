@@ -628,21 +628,18 @@ export class PackagesService {
     const isEnrolledInCourse = false;
 
     // Get student's active packages with uses loaded for balance computation
-    const activePackages =
-      await PackageQueryBuilder.buildActiveStudentPackagesQuery(
-        this.pkgRepo,
-        studentId,
-      ).getMany();
-
-    // Filter to packages with remaining sessions and not expired
-    const now = new Date();
-    const validPackages = activePackages.filter((pkg) => {
-      const remaining = computeRemainingCredits(
-        pkg.totalSessions,
-        pkg.uses || [],
-      );
-      return remaining > 0 && (pkg.expiresAt === null || pkg.expiresAt > now);
-    });
+    const activePackages = await this.pkgRepo
+      .createQueryBuilder("sp")
+      .leftJoinAndSelect("sp.uses", "uses", "uses.deleted_at IS NULL")
+      .leftJoinAndSelect(
+        "sp.allowances",
+        "allowances",
+        "allowances.deleted_at IS NULL",
+      )
+      .where("sp.student_id = :studentId", { studentId })
+      .andWhere("sp.deleted_at IS NULL")
+      .andWhere("(sp.expires_at IS NULL OR sp.expires_at > NOW())")
+      .getMany();
 
     const sessionTier = getSessionTier(session);
 
@@ -650,7 +647,7 @@ export class PackagesService {
     const exactMatch: CompatiblePackage[] = [];
     const higherTier: CompatiblePackageWithWarning[] = [];
 
-    for (const pkg of validPackages) {
+    for (const pkg of activePackages) {
       if (!canUsePackageForSession(pkg, session)) {
         continue; // Skip incompatible packages
       }
@@ -659,12 +656,7 @@ export class PackagesService {
       const label = getPackageDisplayLabel(pkg);
       const creditUnitMinutes = Number(pkg.metadata?.credit_unit_minutes) || 30;
 
-      // Parse allowances from metadata (stored at purchase time)
-      const allowances = pkg.metadata?.allowances
-        ? Array.isArray(pkg.metadata.allowances)
-          ? pkg.metadata.allowances
-          : JSON.parse(pkg.metadata.allowances as string)
-        : [];
+      const allowances = [] as CompatiblePackage["allowances"]; //pkg.allowances;
 
       // Compute remaining sessions from uses
       const remainingSessions = computeRemainingCredits(

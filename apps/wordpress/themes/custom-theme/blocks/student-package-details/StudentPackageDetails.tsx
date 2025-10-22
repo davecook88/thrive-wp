@@ -1,21 +1,27 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import type { StudentPackage } from "@thrive/shared/types/packages";
 
-interface Package {
-  id: number;
-  packageName: string;
-  totalSessions: number;
-  remainingSessions: number;
-  purchasedAt: string;
-  expiresAt: string | null;
-  creditUnitMinutes: number | null;
-  teacherTier: number | null;
+interface PackageBalance {
   serviceType: string;
+  teacherTier: number;
+  creditUnitMinutes: number;
+  totalCredits: number;
+  remainingCredits: number;
 }
 
-interface PackagesResponse {
-  packages: Package[];
+interface StudentPackageWithBalances extends StudentPackage {
+  allowances?: Array<{
+    serviceType: string;
+    teacherTier: number;
+    credits: number;
+    creditUnitMinutes: number;
+  }>;
+  balances?: PackageBalance[];
+}
+
+interface PackagesData {
+  packages: StudentPackageWithBalances[];
   totalRemaining: number;
-  totalRemainingByTime: number;
 }
 
 interface StudentPackageDetailsProps {
@@ -27,7 +33,7 @@ export default function StudentPackageDetails({
   viewMode = "detailed",
   showExpired = false,
 }: StudentPackageDetailsProps) {
-  const [packagesData, setPackagesData] = useState<PackagesResponse | null>(null);
+  const [packagesData, setPackagesData] = useState<PackagesData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,7 +77,8 @@ export default function StudentPackageDetails({
   const isExpiringSoon = (expiresAt: string | null) => {
     if (!expiresAt) return false;
     const daysUntilExpiry = Math.floor(
-      (new Date(expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+      (new Date(expiresAt).getTime() - new Date().getTime()) /
+        (1000 * 60 * 60 * 24),
     );
     return daysUntilExpiry <= 7 && daysUntilExpiry > 0;
   };
@@ -132,24 +139,52 @@ export default function StudentPackageDetails({
             >
               <div className="package-header">
                 <h4 className="package-name">{pkg.packageName}</h4>
-                {viewMode === "detailed" && pkg.creditUnitMinutes && (
-                  <span className="package-type">
-                    {pkg.creditUnitMinutes}min {pkg.serviceType}
-                  </span>
-                )}
               </div>
 
-              <div className="package-progress">
-                <div className="progress-bar-container">
-                  <div
-                    className="progress-bar"
-                    style={{ width: `${progressPercent}%` }}
-                  ></div>
+              {/* Display balances breakdown for bundle packages */}
+              {pkg.balances && pkg.balances.length > 0 ? (
+                <div className="package-balances">
+                  {pkg.balances.map((balance: PackageBalance, idx: number) => {
+                    const usedCredits =
+                      balance.totalCredits - balance.remainingCredits;
+                    const balanceProgress =
+                      (usedCredits / balance.totalCredits) * 100;
+                    return (
+                      <div key={idx} className="balance-item">
+                        <div className="balance-header">
+                          <span className="balance-type">
+                            {balance.serviceType} ({balance.creditUnitMinutes}
+                            min)
+                          </span>
+                          <span className="balance-count">
+                            {balance.remainingCredits} of {balance.totalCredits}{" "}
+                            remaining
+                          </span>
+                        </div>
+                        <div className="progress-bar-container">
+                          <div
+                            className="progress-bar"
+                            style={{ width: `${balanceProgress}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="progress-text">
-                  {pkg.remainingSessions} of {pkg.totalSessions} sessions remaining
+              ) : (
+                <div className="package-progress">
+                  <div className="progress-bar-container">
+                    <div
+                      className="progress-bar"
+                      style={{ width: `${progressPercent}%` }}
+                    ></div>
+                  </div>
+                  <div className="progress-text">
+                    {pkg.remainingSessions} of {pkg.totalSessions} sessions
+                    remaining
+                  </div>
                 </div>
-              </div>
+              )}
 
               {viewMode === "detailed" && (
                 <div className="package-details">
@@ -160,7 +195,9 @@ export default function StudentPackageDetails({
                   {pkg.expiresAt && (
                     <div className="detail-row">
                       <span className="label">Expires:</span>
-                      <span className={`value ${expiringSoon ? "warning" : ""}`}>
+                      <span
+                        className={`value ${expiringSoon ? "warning" : ""}`}
+                      >
                         {formatDate(pkg.expiresAt)}
                         {expiringSoon && " (Soon!)"}
                         {expired && " (Expired)"}

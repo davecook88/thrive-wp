@@ -1,6 +1,6 @@
 import { Entity, Column, ManyToOne, JoinColumn, Index } from "typeorm";
 import { BaseEntity } from "../../common/entities/base.entity.js";
-import { StudentPackage } from "./student-package.entity.js";
+import type { StudentPackage } from "./student-package.entity.js";
 import { ServiceType } from "../../common/types/class-types.js";
 
 @Entity("package_use")
@@ -9,7 +9,7 @@ export class PackageUse extends BaseEntity {
   @Column({ name: "student_package_id", type: "int" })
   studentPackageId: number;
 
-  @ManyToOne(() => StudentPackage, { onDelete: "CASCADE" })
+  @ManyToOne("StudentPackage", { onDelete: "CASCADE" })
   @JoinColumn({ name: "student_package_id" })
   studentPackage: StudentPackage;
 

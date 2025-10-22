@@ -10,10 +10,21 @@ import { PackagesModule } from "../packages/packages.module.js";
 import { WaitlistsModule } from "../waitlists/waitlists.module.js";
 import { BookingsService } from "./bookings.service.js";
 import { BookingsController } from "./bookings.controller.js";
+import { PackageUse } from "../packages/entities/package-use.entity.js";
+import { PackageAllowance } from "../packages/entities/package-allowance.entity.js";
+import { StripeProductMap } from "../payments/entities/stripe-product-map.entity.js";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Booking, Session, Student, StudentPackage]),
+    TypeOrmModule.forFeature([
+      Booking,
+      Session,
+      Student,
+      StudentPackage,
+      PackageUse,
+      PackageAllowance,
+      StripeProductMap,
+    ]),
     PoliciesModule,
     PackagesModule,
     WaitlistsModule,

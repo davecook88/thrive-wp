@@ -3,14 +3,13 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
-  BaseEntity as TypeOrmBaseEntity,
 } from "typeorm";
 
 /**
  * Base entity class with common fields for all entities
  * Provides id, createdAt, updatedAt, and soft delete functionality
  */
-export abstract class BaseEntity extends TypeOrmBaseEntity {
+export abstract class BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 

@@ -15,7 +15,7 @@ const db = appConfig.database;
 
 // Extract migration classes from index exports
 const migrationClasses = Object.values(migrations).filter(
-  (val) => typeof val === "function"
+  (val) => typeof val === "function",
 );
 
 export const AppDataSource = new DataSource({

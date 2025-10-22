@@ -26,6 +26,7 @@ export { GroupClassTeacher } from "./group-classes/entities/group-class-teacher.
 // Packages
 export { StudentPackage } from "./packages/entities/student-package.entity.js";
 export { PackageUse } from "./packages/entities/package-use.entity.js";
+export { PackageAllowance } from "./packages/entities/package-allowance.entity.js";
 
 // Payments & Orders
 export { Booking } from "./payments/entities/booking.entity.js";

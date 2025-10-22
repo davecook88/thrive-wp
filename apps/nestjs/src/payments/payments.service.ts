@@ -458,6 +458,21 @@ export class PaymentsService {
     try {
       // Use a transaction to ensure atomicity and prevent race conditions
       await this.studentRepository.manager.transaction(async (tx) => {
+        // Find the StripeProductMap for this purchase
+        const productMapping = await tx.findOne(StripeProductMap, {
+          where: {
+            stripeProductId: productId,
+            active: true,
+          },
+        });
+
+        if (!productMapping) {
+          this.logger.error(
+            `No active StripeProductMap found for product ${productId}`,
+          );
+          return;
+        }
+
         // Check if package already exists for this payment (idempotency protection)
         const existingPackage = await tx.findOne(StudentPackage, {
           where: { sourcePaymentId: paymentIntent.id },
@@ -478,6 +493,7 @@ export class PaymentsService {
 
           const studentPackage = tx.create(StudentPackage, {
             studentId: student.id,
+            stripeProductMapId: productMapping.id,
             packageName: stripeProduct.name,
             totalSessions: credits,
             purchasedAt: new Date(),

@@ -80,12 +80,12 @@ export class StripeProductMap extends BaseEntity {
    * For multi-service bundles, there can be multiple allowances.
    */
   @OneToMany(
-    () => PackageAllowance,
-    (allowance) => allowance.stripeProductMap,
+    "PackageAllowance",
+    (allowance: PackageAllowance) => allowance.stripeProductMap,
     {
-      eager: true,
+      eager: false,
       cascade: true,
     },
   )
-  allowances: PackageAllowance[] = [];
+  allowances: PackageAllowance[];
 }

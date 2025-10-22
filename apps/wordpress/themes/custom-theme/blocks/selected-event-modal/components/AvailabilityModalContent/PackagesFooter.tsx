@@ -2,7 +2,7 @@ import type {
   AvailabilityEvent,
   Teacher,
 } from "@thrive/shared/calendar";
-import { StudentPackage } from "@thrive/shared/types/packages";
+import type { StudentPackage, PackageAllowance } from "@thrive/shared/types/packages";
 import PackageBookingButton from "./PackageBookingButton";
 
 interface User {
@@ -12,14 +12,28 @@ interface User {
   display_name: string;
 }
 
+interface PackageBalance {
+  serviceType: string;
+  teacherTier: number;
+  creditUnitMinutes: number;
+  totalCredits: number;
+  remainingCredits: number;
+}
+
+interface StudentPackageExtended extends StudentPackage {
+  allowances?: PackageAllowance[];
+  balances?: PackageBalance[];
+}
+
 interface PackagesFooterProps {
-  packages: StudentPackage[];
+  packages: StudentPackageExtended[];
   selectedTeacher: Teacher | null;
   event: AvailabilityEvent & {
     startLocal?: string;
     endLocal?: string;
     user?: User;
     currentUser?: User;
+    serviceType?: string;
   };
   bookingConfirmationUrl: string | null;
   totalRemaining: number;
@@ -76,49 +90,58 @@ export default function PackagesFooter({
               flexWrap: "wrap",
             }}
           >
-            {packages.map((pkg) => (
-              <div
-                key={pkg.id}
-                style={{
-                  background: "var(--wp--preset--color--gray-50)",
-                  borderRadius: 6,
-                  padding: "0.5rem 0.75rem",
-                  border: "1px solid var(--wp--preset--color--gray-200)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.75rem",
-                  fontSize: "0.85rem",
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      fontWeight: 600,
-                      color: "var(--wp--preset--color--foreground)",
-                    }}
-                  >
-                    {pkg.packageName}
+            {packages.map((pkg) => {
+              // Find compatible balance for this event's service type
+              const compatibleBalance = event.serviceType && pkg.balances
+                ? pkg.balances.find((b) => b.serviceType === event.serviceType)
+                : null;
+
+              return (
+                <div
+                  key={pkg.id}
+                  style={{
+                    background: "var(--wp--preset--color--gray-50)",
+                    borderRadius: 6,
+                    padding: "0.5rem 0.75rem",
+                    border: "1px solid var(--wp--preset--color--gray-200)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        color: "var(--wp--preset--color--foreground)",
+                      }}
+                    >
+                      {pkg.packageName}
+                    </div>
+                    <div
+                      style={{
+                        color: "var(--wp--preset--color--gray-600)",
+                        fontSize: "0.8rem",
+                      }}
+                    >
+                      {compatibleBalance
+                        ? `${compatibleBalance.remainingCredits}/${compatibleBalance.totalCredits} ${compatibleBalance.serviceType} (${compatibleBalance.creditUnitMinutes}min)`
+                        : `${pkg.remainingSessions}/${pkg.totalSessions} left`}
+                    </div>
                   </div>
-                  <div
-                    style={{
-                      color: "var(--wp--preset--color--gray-600)",
-                      fontSize: "0.8rem",
-                    }}
-                  >
-                    {pkg.remainingSessions}/{pkg.totalSessions} left
-                  </div>
+                  {selectedTeacher && (
+                    <PackageBookingButton
+                      pkg={pkg}
+                      selectedTeacher={selectedTeacher}
+                      event={event}
+                      bookingUrl={bookingConfirmationUrl}
+                      onBookingSuccess={onBookingSuccess}
+                    />
+                  )}
                 </div>
-                {selectedTeacher && (
-                  <PackageBookingButton
-                    pkg={pkg}
-                    selectedTeacher={selectedTeacher}
-                    event={event}
-                    bookingUrl={bookingConfirmationUrl}
-                    onBookingSuccess={onBookingSuccess}
-                  />
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

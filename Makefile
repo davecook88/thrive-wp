@@ -46,14 +46,16 @@ nest-pnpmi:
 NESTJS?=nestjs
 MIGRATIONS_DIR?=src/migrations
 
+# Run pnpm inside the apps/nestjs directory so workspace package.json scripts
+# are available to the container process.
 migrate-show:
-	docker compose exec $(NESTJS) pnpm run typeorm -- migration:show
+	docker compose exec $(NESTJS) sh -lc "cd apps/nestjs && pnpm run migration:show"
 
 migrate-run:
-	docker compose exec $(NESTJS) pnpm run typeorm -- migration:run
+	docker compose exec $(NESTJS) sh -lc "cd apps/nestjs && pnpm run migration:run"
 
 migrate-revert:
-	docker compose exec $(NESTJS) pnpm run typeorm -- migration:revert
+	docker compose exec $(NESTJS) sh -lc "cd apps/nestjs && pnpm run migration:revert"
 
 watch-wp-themes:
 	cd apps/wordpress/themes/custom-theme && pnpm run start

@@ -1,10 +1,19 @@
-import { Entity, Column, ManyToOne, OneToMany, JoinColumn, Index } from "typeorm";
+import {
+  Entity,
+  Column,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+  Index,
+} from "typeorm";
 import { BaseEntity } from "../../common/entities/base.entity.js";
 import { Student } from "../../students/entities/student.entity.js";
 import { PackageUse } from "./package-use.entity.js";
+import { StripeProductMap } from "../../payments/entities/stripe-product-map.entity.js";
 
 @Entity("student_package")
 @Index(["studentId"])
+@Index(["stripeProductMapId"])
 export class StudentPackage extends BaseEntity {
   @Column({ name: "student_id", type: "int" })
   studentId: number;
@@ -12,6 +21,13 @@ export class StudentPackage extends BaseEntity {
   @ManyToOne(() => Student, { onDelete: "CASCADE" })
   @JoinColumn({ name: "student_id" })
   student: Student;
+
+  @Column({ name: "stripe_product_map_id", type: "int", nullable: false })
+  stripeProductMapId: number;
+
+  @ManyToOne(() => StripeProductMap, { onDelete: "SET NULL" })
+  @JoinColumn({ name: "stripe_product_map_id" })
+  stripeProductMap: StripeProductMap;
 
   @Column({ name: "package_name", type: "varchar", length: 255 })
   packageName: string;

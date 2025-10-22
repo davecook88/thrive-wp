@@ -170,15 +170,31 @@ $wrapper_attributes = get_block_wrapper_attributes([
                                 currency: currency.toUpperCase()
                             }).format(unitAmount / 100);
 
+                            // Build allowances display for bundles
+                            let allowancesHtml = '';
+                            if (pkg.allowances && Array.isArray(pkg.allowances) && pkg.allowances.length > 0) {
+                                allowancesHtml = pkg.allowances.map(allowance => {
+                                    return `<span style="display:inline-block;background:#f3f4f6;padding:4px 8px;border-radius:4px;font-size:12px;margin-right:6px;margin-bottom:4px;">${allowance.credits} ${allowance.serviceType} (${allowance.creditUnitMinutes}min)</span>`;
+                                }).join('');
+                            }
+
                             let detailsHtml = '';
-                            if (showCredits) {
+                            if (showCredits && allowancesHtml) {
+                                detailsHtml += `
+                                <div class="package-detail" style="grid-column:1/-1;">
+                                    <span class="package-detail-label" style="display:block;margin-bottom:6px;">Includes:</span>
+                                    <div>${allowancesHtml}</div>
+                                </div>`;
+                            } else if (showCredits && pkg.credits) {
+                                // Fallback for old single-service packages
                                 detailsHtml += `
                                 <div class="package-detail">
                                     <span class="package-detail-label">Credits:</span>
                                     <span>${pkg.credits}</span>
                                 </div>`;
                             }
-                            if (showDuration) {
+                            if (showDuration && pkg.creditUnitMinutes && !allowancesHtml) {
+                                // Only show if not a bundle (bundles show in allowancesHtml)
                                 detailsHtml += `
                                 <div class="package-detail">
                                     <span class="package-detail-label">Duration:</span>
@@ -200,6 +216,7 @@ $wrapper_attributes = get_block_wrapper_attributes([
                                     <div class="package-name">${pkg.name}</div>
                                     <div class="package-price">${price}</div>
                                 </div>
+                                ${pkg.bundleDescription ? `<div style="font-size:13px;color:#6b7280;margin-bottom:8px;font-style:italic;">${pkg.bundleDescription}</div>` : ''}
                                 <div class="package-details">
                                     ${detailsHtml}
                                 </div>
