@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class GroupClassMultipleLevels1759000000004
+export class GroupClassMultipleLevels1759000000005
   implements MigrationInterface
 {
   public async up(queryRunner: QueryRunner): Promise<void> {

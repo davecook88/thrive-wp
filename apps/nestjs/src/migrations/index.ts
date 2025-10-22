@@ -17,5 +17,6 @@ export { AddPackageFieldsToBooking1759000000001 } from "./1759000000001-AddPacka
 export { AddCancellationPolicies1759000000002 } from "./1759000000002-AddCancellationPolicies.js";
 export { AddGroupClassesTables1759000000003 } from "./1759000000003-AddGroupClassesTables.js";
 export { AddTeacherProfileFields1759000000004 } from "./1759000000004-AddTeacherProfileFields.js";
-export { GroupClassMultipleLevels1759000000004 } from "./1759000000004-GroupClassMultipleLevels.js";
+export { GroupClassMultipleLevels1759000000005 } from "./1759000000005-GroupClassMultipleLevels.js";
 export { AddCourseProgramsTables1760000000000 } from "./1760000000000-AddCourseProgramsTables.js";
+export { AddServiceTypeAndTeacherTierToStripeProductMap1762000000000 } from "./1762000000000-AddServiceTypeAndTeacherTierToStripeProductMap.js";

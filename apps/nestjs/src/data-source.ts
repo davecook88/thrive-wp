@@ -3,6 +3,7 @@ import { DataSource } from "typeorm";
 import configuration from "./config/configuration.js";
 import { fileURLToPath } from "url";
 import path from "path";
+import * as migrations from "./migrations/index.js";
 
 // __dirname isn't available in ESM; reconstruct it for glob patterns used below
 const __filename = fileURLToPath(import.meta.url);
@@ -12,6 +13,11 @@ const __dirname = path.dirname(__filename);
 const appConfig = configuration();
 const db = appConfig.database;
 
+// Extract migration classes from index exports
+const migrationClasses = Object.values(migrations).filter(
+  (val) => typeof val === "function"
+);
+
 export const AppDataSource = new DataSource({
   type: "mysql",
   host: db.host,
@@ -20,7 +26,8 @@ export const AppDataSource = new DataSource({
   password: db.password,
   database: db.database,
   entities: [__dirname + "/**/*.entity{.ts,.js}"],
-  migrations: [__dirname + "/migrations/*{.ts,.js}"],
+  migrations: migrationClasses,
+  migrationsRun: false, // Don't auto-run migrations
   synchronize: false, // Never in migrations context
   logging: db.logging,
   timezone: "Z",

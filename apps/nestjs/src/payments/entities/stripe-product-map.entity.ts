@@ -1,5 +1,6 @@
 import { Entity, Column, Index } from "typeorm";
 import { BaseEntity } from "../../common/entities/base.entity.js";
+import { ServiceType } from "../../common/types/class-types.js";
 
 export enum ScopeType {
   COURSE = "course",
@@ -18,6 +19,8 @@ export enum ScopeType {
 @Index(["stripeProductId"], { unique: true })
 @Index(["active"])
 @Index(["scopeType", "scopeId"])
+@Index(["serviceType"])
+@Index(["teacherTier"])
 export class StripeProductMap extends BaseEntity {
   @Column({
     name: "service_key",
@@ -60,6 +63,23 @@ export class StripeProductMap extends BaseEntity {
     comment: "Optional reference to internal ID",
   })
   scopeId?: number;
+
+  @Column({
+    name: "service_type",
+    type: "enum",
+    enum: ServiceType,
+    default: ServiceType.PRIVATE,
+    comment: "Service type: PRIVATE, GROUP, or COURSE",
+  })
+  serviceType: ServiceType = ServiceType.PRIVATE;
+
+  @Column({
+    name: "teacher_tier",
+    type: "int",
+    default: 0,
+    comment: "Teacher tier for premium teacher pricing",
+  })
+  teacherTier: number = 0;
 
   @Column({
     name: "metadata",

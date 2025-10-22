@@ -92,16 +92,10 @@ export class PackagesService {
         packages.push({
           id: mapping.id,
           name: String(metadata.name) || stripeProduct.name,
-          serviceType: String(metadata.service_type) || "PRIVATE",
+          serviceType: mapping.serviceType || "PRIVATE",
           credits: Number(metadata.credits) || 0,
           creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
-          teacherTier: ((): number | null => {
-            const raw = metadata.teacher_tier;
-            if (raw === undefined || raw === null || raw === "") return null;
-            const n =
-              typeof raw === "string" ? parseInt(raw, 10) : (raw as number);
-            return Number.isFinite(n) ? n : null;
-          })(),
+          teacherTier: mapping.teacherTier && mapping.teacherTier > 0 ? mapping.teacherTier : null,
           expiresInDays: Number(metadata.expires_in_days) || null,
           stripe: {
             productId: stripeProduct.id,
@@ -164,16 +158,10 @@ export class PackagesService {
         packages.push({
           id: mapping.id,
           name: String(metadata.name) || stripeProduct.name,
-          serviceType: String(metadata.service_type) || "PRIVATE",
+          serviceType: mapping.serviceType || "PRIVATE",
           credits: Number(metadata.credits) || 0,
           creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
-          teacherTier: ((): number | null => {
-            const raw = metadata.teacher_tier;
-            if (raw === undefined || raw === null || raw === "") return null;
-            const n =
-              typeof raw === "string" ? parseInt(raw, 10) : (raw as number);
-            return Number.isFinite(n) ? n : null;
-          })(),
+          teacherTier: mapping.teacherTier && mapping.teacherTier > 0 ? mapping.teacherTier : null,
           expiresInDays: Number(metadata.expires_in_days) || null,
           stripe: {
             productId: stripeProduct.id,
@@ -223,24 +211,13 @@ export class PackagesService {
       .where("spm.scope_type = :scopeType", { scopeType: ScopeType.PACKAGE })
       .andWhere("spm.active = :active", { active: true })
       .andWhere("spm.deleted_at IS NULL")
-      .andWhere(
-        "JSON_UNQUOTE(JSON_EXTRACT(spm.metadata, '$.service_type')) = :serviceType",
-        {
-          serviceType: sessionServiceType,
-        },
-      )
-      .andWhere(
-        `
-        (
-          CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(spm.metadata, '$.teacher_tier')), ''), '0') AS SIGNED) +
-          :baseTier
-        ) >= :sessionTier
-        `,
-        {
-          baseTier: SERVICE_TYPE_BASE_TIERS[sessionServiceType] ?? 0,
-          sessionTier,
-        },
-      )
+      .andWhere("spm.service_type = :serviceType", {
+        serviceType: sessionServiceType,
+      })
+      .andWhere("(spm.teacher_tier + :baseTier) >= :sessionTier", {
+        baseTier: SERVICE_TYPE_BASE_TIERS[sessionServiceType] ?? 0,
+        sessionTier,
+      })
       .getMany();
 
     // Build PackageResponseDto objects like other methods
@@ -275,16 +252,10 @@ export class PackagesService {
         packages.push({
           id: mapping.id,
           name: String(metadata.name) || stripeProduct.name,
-          serviceType: String(metadata.service_type) || "PRIVATE",
+          serviceType: mapping.serviceType || "PRIVATE",
           credits: Number(metadata.credits) || 0,
           creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
-          teacherTier: (() => {
-            const raw = metadata.teacher_tier;
-            if (raw === undefined || raw === null || raw === "") return null;
-            const n =
-              typeof raw === "string" ? parseInt(raw, 10) : (raw as number);
-            return Number.isFinite(n) ? n : null;
-          })(),
+          teacherTier: mapping.teacherTier && mapping.teacherTier > 0 ? mapping.teacherTier : null,
           expiresInDays: Number(metadata.expires_in_days) || null,
           stripe: {
             productId: stripeProduct.id,
@@ -339,12 +310,10 @@ export class PackagesService {
       const packageResponse: PackageResponseDto = {
         id: mapping.id,
         name: String(metadata.name) || stripeProduct.name,
-        serviceType: String(metadata.service_type) || "PRIVATE",
+        serviceType: mapping.serviceType || "PRIVATE",
         credits: Number(metadata.credits) || 0,
         creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
-        teacherTier: metadata.teacher_tier
-          ? Number(metadata.teacher_tier)
-          : null,
+        teacherTier: mapping.teacherTier && mapping.teacherTier > 0 ? mapping.teacherTier : null,
         expiresInDays: Number(metadata.expires_in_days) || null,
         stripe: {
           productId: stripeProduct.id,
@@ -457,6 +426,8 @@ export class PackagesService {
         stripeProductId: stripeProduct.id,
         active: true,
         scopeType: ScopeType.PACKAGE,
+        serviceType: createPackageDto.serviceType,
+        teacherTier: createPackageDto.teacherTier ?? 0,
         metadata: {
           name: createPackageDto.name,
           service_type: createPackageDto.serviceType,

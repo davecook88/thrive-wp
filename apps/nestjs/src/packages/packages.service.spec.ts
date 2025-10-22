@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { Repository, EntityManager } from "typeorm";
+import { Repository, EntityManager, DataSource } from "typeorm";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PackagesService } from "./packages.service.js";
@@ -55,6 +55,10 @@ describe("PackagesService", () => {
           useValue: {
             validatePrivateSession: vi.fn(),
           },
+        },
+        {
+          provide: DataSource,
+          useValue: {},
         },
       ],
     }).compile();
