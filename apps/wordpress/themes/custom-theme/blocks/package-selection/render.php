@@ -132,6 +132,10 @@ $wrapper_attributes = get_block_wrapper_attributes([
                 const initialPriceId = <?php echo wp_json_encode($initialPriceId); ?>;
                 const initialPackageName = <?php echo wp_json_encode($initialPackageName); ?>;
 
+                // Get service type from URL if present
+                const urlParams = new URLSearchParams(window.location.search);
+                const serviceType = urlParams.get('serviceType');
+
                 // Selected package storage
                 let selectedPackage = null;
 
@@ -142,12 +146,17 @@ $wrapper_attributes = get_block_wrapper_attributes([
                         return response.json();
                     })
                     .then(packages => {
-                        if (packages.length === 0) {
+                        // Filter packages by service type if specified
+                        const filteredPackages = serviceType
+                            ? packages.filter(pkg => pkg.serviceType === serviceType)
+                            : packages;
+
+                        if (filteredPackages.length === 0) {
                             container.innerHTML = `<div style="text-align:center;padding:20px;color:#6b7280;">${noPackagesMessage}</div>`;
                             return;
                         }
 
-                        container.innerHTML = packages.map(pkg => {
+                        container.innerHTML = filteredPackages.map(pkg => {
                             const currency = pkg.stripe?.currency || 'usd';
                             const unitAmount = pkg.stripe?.unitAmount || 0;
                             const price = new Intl.NumberFormat('en-US', {
@@ -191,7 +200,7 @@ $wrapper_attributes = get_block_wrapper_attributes([
                             </div>`;
                         }).join('');
 
-                        // Add click handlers
+                        // Add click handlers for filtered packages
                         container.querySelectorAll('.package-card').forEach(card => {
                             card.addEventListener('click', () => {
                                 // Remove selection from other cards
