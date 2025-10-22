@@ -13,10 +13,7 @@ import {
 } from "../sessions/entities/session.entity.js";
 import { ServiceType } from "../common/types/class-types.js";
 import { SessionWithEnrollment } from "./dto/session-with-enrollment.dto.js";
-import {
-  PublicTeacherDto,
-  SessionWithEnrollmentResponse,
-} from "@thrive/shared";
+import { SessionWithEnrollmentResponse } from "@thrive/shared";
 import { CreateGroupClassDto } from "./dto/create-group-class.dto.js";
 import { GroupClassListDto } from "./dto/group-class-list.dto.js";
 

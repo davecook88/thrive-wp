@@ -2,7 +2,7 @@
   <div class="thrive-admin-packages">
     <div class="mb-6">
       <h2 class="text-2xl font-semibold text-gray-900 mb-2">Package Management</h2>
-      <p class="text-gray-600">Create and manage credit packages for private sessions</p>
+      <p class="text-gray-600">Create and manage credit packages for private and group sessions</p>
     </div>
 
     <!-- Tabs -->
@@ -103,7 +103,7 @@
       <form @submit.prevent="createPackage" class="space-y-6">
         <div class="bg-white shadow px-6 py-6 rounded-lg">
           <h3 class="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
-          
+
           <div class="grid grid-cols-1 gap-6">
             <div>
               <label for="name" class="block text-sm font-medium text-gray-700">Package Name</label>
@@ -115,6 +115,24 @@
                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 placeholder="e.g., Private 5-Pack"
               />
+            </div>
+
+            <div>
+              <label for="serviceType" class="block text-sm font-medium text-gray-700">Package Type</label>
+              <select
+                id="serviceType"
+                v-model="form.serviceType"
+                required
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Select package type</option>
+                <option value="PRIVATE">Private Session Credits</option>
+                <option value="GROUP">Group Class Credits</option>
+              </select>
+              <p class="mt-1 text-sm text-gray-500">
+                <span v-if="form.serviceType === 'PRIVATE'">Private credits can be used for both private sessions and group classes.</span>
+                <span v-else-if="form.serviceType === 'GROUP'">Group credits can only be used for group classes.</span>
+              </p>
             </div>
 
             <div>
@@ -240,7 +258,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, onMounted } from 'vue';
-import { CreatePackageDto, PackageResponseDto, ServiceType } from '@thrive/shared';
+import { CreatePackageDto, PackageResponseDto } from '@thrive/shared';
 import { thriveClient } from '@wp-shared/thrive';
 
 export default defineComponent({
@@ -257,12 +275,12 @@ export default defineComponent({
       description: '',
       credits: 5,
       creditUnitMinutes: 30,
-      expiresInDays: 90 as number ,
+      expiresInDays: 90 as number,
       currency: 'usd',
       amountMinor: 19900,
       lookupKey: '',
-      serviceType: ServiceType.PRIVATE,
-      scope: ''
+      serviceType: '' as any,
+      scope: 'global'
     });
 
     const loadPackages = async () => {
@@ -283,11 +301,7 @@ export default defineComponent({
       error.value = null;
 
       try {
-        const packageData: CreatePackageDto = {
-          ...form.value,
-          
-          serviceType: ServiceType.PRIVATE
-        };
+        const packageData: CreatePackageDto = form.value as CreatePackageDto;
 
         await thriveClient.createPackage(packageData);
 
@@ -325,7 +339,8 @@ export default defineComponent({
         currency: 'usd',
         amountMinor: 19900,
         lookupKey: '',
-        scope:""
+        serviceType: '' as any,
+        scope: 'global'
       } as CreatePackageDto
     };
 

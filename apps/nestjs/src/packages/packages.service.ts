@@ -27,6 +27,10 @@ import {
 import { Booking, BookingStatus } from "../payments/entities/booking.entity.js";
 import { ServiceType } from "../common/types/class-types.js";
 import { SessionsService } from "../sessions/services/sessions.service.js";
+// import {
+//   getSessionTier,
+//   SERVICE_TYPE_BASE_TIERS,
+// } from "../common/types/credit-tiers.js";
 
 @Injectable()
 export class PackagesService {
@@ -95,7 +99,10 @@ export class PackagesService {
           serviceType: mapping.serviceType || "PRIVATE",
           credits: Number(metadata.credits) || 0,
           creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
-          teacherTier: mapping.teacherTier && mapping.teacherTier > 0 ? mapping.teacherTier : null,
+          teacherTier:
+            mapping.teacherTier && mapping.teacherTier > 0
+              ? mapping.teacherTier
+              : null,
           expiresInDays: Number(metadata.expires_in_days) || null,
           stripe: {
             productId: stripeProduct.id,
@@ -161,7 +168,10 @@ export class PackagesService {
           serviceType: mapping.serviceType || "PRIVATE",
           credits: Number(metadata.credits) || 0,
           creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
-          teacherTier: mapping.teacherTier && mapping.teacherTier > 0 ? mapping.teacherTier : null,
+          teacherTier:
+            mapping.teacherTier && mapping.teacherTier > 0
+              ? mapping.teacherTier
+              : null,
           expiresInDays: Number(metadata.expires_in_days) || null,
           stripe: {
             productId: stripeProduct.id,
@@ -197,12 +207,7 @@ export class PackagesService {
       throw new NotFoundException("Session not found");
     }
 
-    // Import tier calculation functions
-    const { getSessionTier, SERVICE_TYPE_BASE_TIERS } = await import(
-      "../common/types/credit-tiers.js"
-    );
-
-    const sessionTier = getSessionTier(session);
+    // const sessionTier = getSessionTier(session);
     const sessionServiceType = session.type;
 
     // Query compatible mappings directly in SQL with tier filtering
@@ -214,10 +219,10 @@ export class PackagesService {
       .andWhere("spm.service_type = :serviceType", {
         serviceType: sessionServiceType,
       })
-      .andWhere("(spm.teacher_tier + :baseTier) >= :sessionTier", {
-        baseTier: SERVICE_TYPE_BASE_TIERS[sessionServiceType] ?? 0,
-        sessionTier,
-      })
+      // .andWhere("(spm.teacher_tier + :baseTier) >= :sessionTier", {
+      //   baseTier: SERVICE_TYPE_BASE_TIERS[sessionServiceType] ?? 0,
+      //   sessionTier,
+      // })
       .getMany();
 
     // Build PackageResponseDto objects like other methods
@@ -255,7 +260,10 @@ export class PackagesService {
           serviceType: mapping.serviceType || "PRIVATE",
           credits: Number(metadata.credits) || 0,
           creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
-          teacherTier: mapping.teacherTier && mapping.teacherTier > 0 ? mapping.teacherTier : null,
+          teacherTier:
+            mapping.teacherTier && mapping.teacherTier > 0
+              ? mapping.teacherTier
+              : null,
           expiresInDays: Number(metadata.expires_in_days) || null,
           stripe: {
             productId: stripeProduct.id,
@@ -313,7 +321,10 @@ export class PackagesService {
         serviceType: mapping.serviceType || "PRIVATE",
         credits: Number(metadata.credits) || 0,
         creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
-        teacherTier: mapping.teacherTier && mapping.teacherTier > 0 ? mapping.teacherTier : null,
+        teacherTier:
+          mapping.teacherTier && mapping.teacherTier > 0
+            ? mapping.teacherTier
+            : null,
         expiresInDays: Number(metadata.expires_in_days) || null,
         stripe: {
           productId: stripeProduct.id,
