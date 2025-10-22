@@ -32,8 +32,8 @@ describe("Credit Tier System", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
       deletedAt: undefined,
-      user: null,
-    },
+      user: { id: 1, email: "teacher@test.com" } as any,
+    } as any,
   });
 
   // Mock package factory
@@ -46,7 +46,6 @@ describe("Credit Tier System", () => {
     studentId: 1,
     packageName: "Test Package",
     totalSessions: 10,
-    remainingSessions: 5,
     purchasedAt: new Date(),
     expiresAt: new Date("2025-12-31"),
     metadata: {
@@ -94,7 +93,7 @@ describe("Credit Tier System", () => {
       const session = {
         ...createMockSession(ServiceType.PRIVATE, 0),
         teacher: undefined,
-      } as Session;
+      } as unknown as Session;
       expect(getSessionTier(session)).toBe(100);
     });
   });

@@ -1,6 +1,18 @@
 import { ServiceType } from "@thrive/shared";
 import { z } from "zod";
 
+// Re-export ServiceType for convenience
+export { ServiceType };
+
+/**
+ * Zod schema for validating ServiceType enum values.
+ */
+export const ServiceTypeSchema = z.enum([
+  ServiceType.PRIVATE,
+  ServiceType.GROUP,
+  ServiceType.COURSE,
+]);
+
 /**
  * Service key for Stripe product mappings.
  * Maps service types to Stripe products.

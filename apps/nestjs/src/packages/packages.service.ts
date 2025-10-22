@@ -32,7 +32,6 @@ import { Booking, BookingStatus } from "../payments/entities/booking.entity.js";
 import { SessionsService } from "../sessions/services/sessions.service.js";
 import {
   computeRemainingCredits,
-  computeRemainingCreditsByServiceType,
   generateBundleDescription,
   validateAllowances,
 } from "./utils/bundle-helpers.js";
@@ -672,12 +671,7 @@ export class PackagesService {
         expiresAt: pkg.expiresAt?.toISOString() || null,
         creditUnitMinutes,
         tier: packageTier,
-        allowances: allowances.map((a: any) => ({
-          serviceType: a.serviceType,
-          teacherTier: a.teacherTier || 0,
-          credits: a.credits,
-          creditUnitMinutes: a.creditUnitMinutes as 60 | 30 | 15 | 45,
-        })),
+        allowances: allowances,
       };
 
       if (packageTier === sessionTier) {

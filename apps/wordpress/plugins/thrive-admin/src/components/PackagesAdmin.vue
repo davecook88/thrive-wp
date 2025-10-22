@@ -58,15 +58,19 @@
         <ul class="divide-y divide-gray-200">
           <li v-for="pkg in packages" :key="pkg.id" class="px-6 py-4">
             <div class="flex items-center justify-between">
-              <div>
+              <div class="flex-1">
                 <h3 class="text-lg font-medium text-gray-900">{{ pkg.name }}</h3>
-                <p class="text-sm text-gray-500">
-                  {{ pkg.credits }} credits × {{ pkg.creditUnitMinutes }} minutes
+                <p class="text-sm text-gray-500 mt-1">
+                  {{ pkg.bundleDescription }}
                   <span v-if="pkg.expiresInDays"> • Expires in {{ pkg.expiresInDays }} days</span>
                 </p>
-                <div class="mt-2 flex items-center space-x-4">
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    {{ pkg.serviceType }}
+                <div class="mt-3 flex flex-wrap items-center gap-2">
+                  <span
+                    v-for="allowance in pkg.allowances"
+                    :key="`${allowance.serviceType}-${allowance.teacherTier}`"
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                  >
+                    {{ allowance.credits }} {{ allowance.serviceType }} ({{ allowance.creditUnitMinutes }}m)
                   </span>
                   <span :class="[
                     'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
@@ -76,7 +80,7 @@
                   </span>
                 </div>
               </div>
-              <div class="flex items-center space-x-2">
+              <div class="ml-4 flex items-center space-x-2">
                 <a
                   :href="`https://dashboard.stripe.com/products/${pkg.stripe.productId}`"
                   target="_blank"
@@ -99,40 +103,34 @@
     </div>
 
     <!-- Create Tab -->
-    <div v-if="activeTab === 'create'" class="max-w-2xl">
+    <div v-if="activeTab === 'create'" class="max-w-4xl">
       <form @submit.prevent="createPackage" class="space-y-6">
         <div class="bg-white shadow px-6 py-6 rounded-lg">
-          <h3 class="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Bundle Information</h3>
 
           <div class="grid grid-cols-1 gap-6">
             <div>
-              <label for="name" class="block text-sm font-medium text-gray-700">Package Name</label>
+              <label for="name" class="block text-sm font-medium text-gray-700">Bundle Name</label>
               <input
                 id="name"
                 v-model="form.name"
                 type="text"
                 required
                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., Private 5-Pack"
+                placeholder="e.g., Complete Package, Private + Group Combo"
               />
             </div>
 
             <div>
-              <label for="serviceType" class="block text-sm font-medium text-gray-700">Package Type</label>
-              <select
-                id="serviceType"
-                v-model="form.serviceType"
-                required
+              <label for="bundleDescription" class="block text-sm font-medium text-gray-700">Bundle Description (Optional)</label>
+              <input
+                id="bundleDescription"
+                v-model="form.bundleDescription"
+                type="text"
                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Select package type</option>
-                <option value="PRIVATE">Private Session Credits</option>
-                <option value="GROUP">Group Class Credits</option>
-              </select>
-              <p class="mt-1 text-sm text-gray-500">
-                <span v-if="form.serviceType === 'PRIVATE'">Private credits can be used for both private sessions and group classes.</span>
-                <span v-else-if="form.serviceType === 'GROUP'">Group credits can only be used for group classes.</span>
-              </p>
+                placeholder="e.g., 5 Private + 3 Group Credits (auto-generated if blank)"
+              />
+              <p class="mt-1 text-sm text-gray-500">Leave blank to auto-generate from allowances</p>
             </div>
 
             <div>
@@ -140,42 +138,10 @@
               <textarea
                 id="description"
                 v-model="form.description"
-                rows="3"
+                rows="2"
                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Internal notes or public description"
+                placeholder="Internal notes"
               ></textarea>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white shadow px-6 py-6 rounded-lg">
-          <h3 class="text-lg font-medium text-gray-900 mb-4">Credits Configuration</h3>
-          
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div>
-              <label for="credits" class="block text-sm font-medium text-gray-700">Total Credits</label>
-              <input
-                id="credits"
-                v-model.number="form.credits"
-                type="number"
-                min="1"
-                required
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label for="creditUnitMinutes" class="block text-sm font-medium text-gray-700">Credit Unit (Minutes)</label>
-              <select
-                id="creditUnitMinutes"
-                v-model.number="form.creditUnitMinutes"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="15">15 minutes</option>
-                <option value="30">30 minutes</option>
-                <option value="45">45 minutes</option>
-                <option value="60">60 minutes</option>
-              </select>
             </div>
 
             <div>
@@ -188,6 +154,101 @@
                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Leave blank for no expiry"
               />
+            </div>
+          </div>
+        </div>
+
+        <!-- Allowances Section -->
+        <div class="bg-white shadow px-6 py-6 rounded-lg">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-medium text-gray-900">Package Allowances</h3>
+            <button
+              type="button"
+              @click="addAllowance"
+              class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            >
+              + Add Allowance
+            </button>
+          </div>
+
+          <div v-if="form.allowances.length === 0" class="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg">
+            <p class="text-gray-500">No allowances added yet. Click "Add Allowance" to create one.</p>
+          </div>
+
+          <div v-else class="space-y-4">
+            <div
+              v-for="(allowance, index) in form.allowances"
+              :key="index"
+              class="border border-gray-200 rounded-lg p-4 space-y-4"
+            >
+              <div class="flex items-center justify-between">
+                <h4 class="text-sm font-medium text-gray-900">Allowance {{ index + 1 }}</h4>
+                <button
+                  v-if="form.allowances.length > 1"
+                  type="button"
+                  @click="removeAllowance(index)"
+                  class="text-red-600 hover:text-red-800 text-sm font-medium"
+                >
+                  Remove
+                </button>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label :for="`serviceType-${index}`" class="block text-sm font-medium text-gray-700">Service Type</label>
+                  <select
+                    :id="`serviceType-${index}`"
+                    v-model="allowance.serviceType"
+                    required
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select type</option>
+                    <option value="PRIVATE">Private</option>
+                    <option value="GROUP">Group</option>
+                    <option value="COURSE">Course</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label :for="`credits-${index}`" class="block text-sm font-medium text-gray-700">Credits</label>
+                  <input
+                    :id="`credits-${index}`"
+                    v-model.number="allowance.credits"
+                    type="number"
+                    min="1"
+                    required
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label :for="`creditUnitMinutes-${index}`" class="block text-sm font-medium text-gray-700">Credit Unit (Minutes)</label>
+                  <select
+                    :id="`creditUnitMinutes-${index}`"
+                    v-model.number="allowance.creditUnitMinutes"
+                    required
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="15">15 minutes</option>
+                    <option value="30">30 minutes</option>
+                    <option value="45">45 minutes</option>
+                    <option value="60">60 minutes</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label :for="`teacherTier-${index}`" class="block text-sm font-medium text-gray-700">Teacher Tier (Optional)</label>
+                  <input
+                    :id="`teacherTier-${index}`"
+                    v-model.number="allowance.teacherTier"
+                    type="number"
+                    min="0"
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="0 = any tier"
+                  />
+                  <p class="mt-1 text-xs text-gray-500">Leave 0 for all tiers, or specify minimum required tier</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -258,7 +319,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, onMounted } from 'vue';
-import { CreatePackageDto, PackageResponseDto } from '@thrive/shared';
+import { CreatePackageDto, PackageResponseDto, ServiceType } from '@thrive/shared';
 import { thriveClient } from '@wp-shared/thrive';
 
 export default defineComponent({
@@ -273,13 +334,17 @@ export default defineComponent({
     const form = ref<CreatePackageDto>({
       name: '',
       description: '',
-      credits: 5,
-      creditUnitMinutes: 30,
-      expiresInDays: 90 as number,
-      currency: 'usd',
+      bundleDescription: '',
+      allowances: [{
+        serviceType: ServiceType.PRIVATE,
+        credits: 5,
+        creditUnitMinutes: 30,
+        teacherTier: 0
+      }],
+      expiresInDays: 90,
+      currency: 'USD',
       amountMinor: 19900,
       lookupKey: '',
-      serviceType: '' as any,
       scope: 'global'
     });
 
@@ -329,19 +394,41 @@ export default defineComponent({
       }
     };
 
+    const addAllowance = () => {
+      if (!form.value.allowances) {
+        form.value.allowances = [];
+      }
+      form.value.allowances.push({
+        serviceType: ServiceType.PRIVATE,
+        credits: 5,
+        creditUnitMinutes: 30,
+        teacherTier: 0
+      });
+    };
+
+    const removeAllowance = (index: number) => {
+      if (form.value.allowances) {
+        form.value.allowances.splice(index, 1);
+      }
+    };
+
     const resetForm = () => {
       form.value = {
         name: '',
         description: '',
-        credits: 5,
-        creditUnitMinutes: 30,
+        bundleDescription: '',
+        allowances: [{
+          serviceType: ServiceType.PRIVATE,
+          credits: 5,
+          creditUnitMinutes: 30,
+          teacherTier: 0
+        }],
         expiresInDays: 90,
-        currency: 'usd',
+        currency: 'USD',
         amountMinor: 19900,
         lookupKey: '',
-        serviceType: '' as any,
         scope: 'global'
-      } as CreatePackageDto
+      };
     };
 
     onMounted(loadPackages);
@@ -356,7 +443,9 @@ export default defineComponent({
       loadPackages,
       createPackage,
       deactivatePackage,
-      resetForm
+      resetForm,
+      addAllowance,
+      removeAllowance
     };
   }
 });

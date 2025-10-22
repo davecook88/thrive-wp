@@ -69,7 +69,8 @@ export class StripeProductMap extends BaseEntity {
     name: "metadata",
     type: "json",
     nullable: true,
-    comment: "Additional metadata from Stripe, including allowances array for bundles",
+    comment:
+      "Additional metadata from Stripe, including allowances array for bundles",
   })
   metadata?: Record<string, string | number | boolean | undefined> | null;
 
@@ -78,9 +79,13 @@ export class StripeProductMap extends BaseEntity {
    * For single-service products, there's one allowance.
    * For multi-service bundles, there can be multiple allowances.
    */
-  @OneToMany(() => PackageAllowance, (allowance) => allowance.stripeProductMap, {
-    eager: true,
-    cascade: true,
-  })
+  @OneToMany(
+    () => PackageAllowance,
+    (allowance) => allowance.stripeProductMap,
+    {
+      eager: true,
+      cascade: true,
+    },
+  )
   allowances: PackageAllowance[] = [];
 }

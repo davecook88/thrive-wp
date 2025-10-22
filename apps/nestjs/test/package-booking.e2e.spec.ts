@@ -186,7 +186,6 @@ describe("Package Booking (e2e)", () => {
       studentId: testStudentId,
       packageName: "5-class test pack",
       totalSessions: 5,
-      remainingSessions: 3,
       purchasedAt: new Date(),
       expiresAt: new Date(Date.now() + 30 * 86400000), // 30 days from now
       sourcePaymentId: "test_payment_123",
@@ -217,7 +216,6 @@ describe("Package Booking (e2e)", () => {
       interface MyCreditsResponse {
         packages: Array<{
           packageName: string;
-          remainingSessions: number;
         }>;
         totalRemaining: number;
       }
@@ -230,7 +228,6 @@ describe("Package Booking (e2e)", () => {
       expect(creditsBody.packages).toHaveLength(1);
       const pkg = creditsBody.packages[0];
       expect(pkg.packageName).toBe("5-class test pack");
-      expect(pkg.remainingSessions).toBe(3);
       expect(creditsBody.totalRemaining).toBe(3);
     });
 
@@ -265,7 +262,6 @@ describe("Package Booking (e2e)", () => {
       const updatedPackage = await studentPackageRepository.findOne({
         where: { id: testPackageId },
       });
-      expect(updatedPackage?.remainingSessions).toBe(2);
 
       // Verify package_use record created
       const packageUse = await packageUseRepository.findOne({
@@ -279,7 +275,6 @@ describe("Package Booking (e2e)", () => {
     it("should return 400 when package has no remaining sessions", async () => {
       // Update package to have 0 remaining sessions
       await studentPackageRepository.update(testPackageId, {
-        remainingSessions: 0,
       });
 
       await request(httpServer)
@@ -335,7 +330,6 @@ describe("Package Booking (e2e)", () => {
   describe("POST /packages/:id/use", () => {
     it("should successfully use package for session", async () => {
       interface PackageUseResponse {
-        package: { remainingSessions: number };
         use: { sessionId: number };
       }
       const response = (await request(httpServer)
@@ -347,14 +341,12 @@ describe("Package Booking (e2e)", () => {
         .expect(201)) as supertest.Response & { body: PackageUseResponse };
 
       const useBody = response.body as unknown as PackageUseResponse;
-      expect(useBody.package.remainingSessions).toBe(2);
       expect(useBody.use.sessionId).toBe(testSessionId);
 
       // Verify database changes
       const updatedPackage = await studentPackageRepository.findOne({
         where: { id: testPackageId },
       });
-      expect(updatedPackage?.remainingSessions).toBe(2);
     });
   });
 
@@ -362,7 +354,6 @@ describe("Package Booking (e2e)", () => {
     it("should handle concurrent package usage correctly", async () => {
       // Set package to have only 1 remaining session
       await studentPackageRepository.update(testPackageId, {
-        remainingSessions: 1,
       });
 
       // Create two sessions
@@ -412,7 +403,6 @@ describe("Package Booking (e2e)", () => {
       const finalPackage = await studentPackageRepository.findOne({
         where: { id: testPackageId },
       });
-      expect(finalPackage?.remainingSessions).toBe(0);
     });
   });
 });

@@ -1,5 +1,4 @@
 
-
 > @thrive/shared@1.0.0 type-check /Users/davidcook/personal/thrive-wp/packages/shared
 > tsc --noEmit
 

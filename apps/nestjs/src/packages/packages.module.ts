@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { StudentPackage } from "./entities/student-package.entity.js";
 import { PackageUse } from "./entities/package-use.entity.js";
+import { PackageAllowance } from "./entities/package-allowance.entity.js";
 import { StripeProductMap } from "../payments/entities/stripe-product-map.entity.js";
 import { Student } from "../students/entities/student.entity.js";
 import { Session } from "../sessions/entities/session.entity.js";
@@ -18,6 +19,7 @@ import { SessionsModule } from "../sessions/sessions.module.js";
     TypeOrmModule.forFeature([
       StudentPackage,
       PackageUse,
+      PackageAllowance,
       StripeProductMap,
       Student,
       Session,

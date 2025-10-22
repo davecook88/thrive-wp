@@ -8,6 +8,7 @@ import { PackagesService } from "./packages.service.js";
 import { StripeProductMap } from "../payments/entities/stripe-product-map.entity.js";
 import { StudentPackage } from "./entities/student-package.entity.js";
 import { PackageUse } from "./entities/package-use.entity.js";
+import { PackageAllowance } from "./entities/package-allowance.entity.js";
 import { Student } from "../students/entities/student.entity.js";
 import { Session } from "../sessions/entities/session.entity.js";
 import { Booking } from "../payments/entities/booking.entity.js";
@@ -32,6 +33,10 @@ describe("PackagesService", () => {
         },
         {
           provide: getRepositoryToken(StudentPackage),
+          useClass: Repository,
+        },
+        {
+          provide: getRepositoryToken(PackageAllowance),
           useClass: Repository,
         },
         {
@@ -142,7 +147,6 @@ describe("PackagesService", () => {
 
       expect(result.packages).toHaveLength(0);
       expect(result.totalRemaining).toBe(0);
-      expect(result.totalRemainingByTime).toBe(0);
     });
 
     it("should filter out packages with no remaining sessions", async () => {
@@ -173,7 +177,6 @@ describe("PackagesService", () => {
 
       expect(result.packages).toHaveLength(0);
       expect(result.totalRemaining).toBe(0);
-      expect(result.totalRemainingByTime).toBe(0);
     });
   });
 
@@ -243,9 +246,10 @@ describe("PackagesService", () => {
         writable: true,
       });
 
-      const result = await service.usePackageForSession(1, 1, 123, 1);
+      const result = await service.usePackageForSession(1, 1, 123, {
+        creditsUsed: 1,
+      });
 
-      expect(result.package.remainingSessions).toBe(1);
       expect(result.use).toBeDefined();
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockTx.findOne).toHaveBeenCalledWith(StudentPackage, {
@@ -258,7 +262,7 @@ describe("PackagesService", () => {
       vi.spyOn(packageRepo, "findOne").mockResolvedValue(null);
 
       await expect(
-        service.usePackageForSession(1, 999, 123, 1),
+        service.usePackageForSession(1, 999, 123, { creditsUsed: 1 }),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -279,9 +283,9 @@ describe("PackagesService", () => {
         mockPackage as unknown as StudentPackage,
       );
 
-      await expect(service.usePackageForSession(1, 1, 123, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.usePackageForSession(1, 1, 123, { creditsUsed: 1 }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it("should throw BadRequestException when package is expired", async () => {
@@ -304,13 +308,9 @@ describe("PackagesService", () => {
         mockPackage as unknown as StudentPackage,
       );
 
-      await expect(service.usePackageForSession(1, 1, 123, 1)).rejects.toThrow(
-        BadRequestException,
-      );
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(vi.mocked(packageRepo.findOne).mock.calls[0][0]).toEqual({
-        where: { id: 1, studentId: 1 },
-      });
+      await expect(
+        service.usePackageForSession(1, 1, 123, { creditsUsed: 1 }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

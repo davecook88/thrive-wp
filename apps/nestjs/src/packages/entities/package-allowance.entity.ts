@@ -1,7 +1,7 @@
 import { Entity, Column, ManyToOne, JoinColumn, Index } from "typeorm";
 import { BaseEntity } from "../../common/entities/base.entity.js";
 import { StripeProductMap } from "../../payments/entities/stripe-product-map.entity.js";
-import { ServiceType } from "../../common/types/class-types.js";
+import { ServiceType } from "@thrive/shared";
 
 /**
  * PackageAllowance defines what credits are included in a bundle package.

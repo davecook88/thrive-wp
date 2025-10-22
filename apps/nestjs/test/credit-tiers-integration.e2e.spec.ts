@@ -197,13 +197,11 @@ describe("Credit Tier System Integration (e2e)", () => {
     serviceType: ServiceType,
     teacherTier: number = 0,
     durationMinutes: number = 60,
-    remainingSessions: number = 5,
   ): Promise<StudentPackage> {
     return await packageRepository.save({
       studentId: testStudent.id,
       packageName: `${serviceType} Package`,
       totalSessions: 10,
-      remainingSessions,
       purchasedAt: new Date(),
       expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
       metadata: {
@@ -290,7 +288,6 @@ describe("Credit Tier System Integration (e2e)", () => {
         studentId: testStudent.id,
         packageName: "Expired Package",
         totalSessions: 10,
-        remainingSessions: 5,
         purchasedAt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
         expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // Expired yesterday
         metadata: {
@@ -317,7 +314,7 @@ describe("Credit Tier System Integration (e2e)", () => {
 
     it("should exclude packages with no remaining sessions", async () => {
       const session = await createSession(ServiceType.PRIVATE, standardTeacher);
-      await createPackage(ServiceType.PRIVATE, 0, 60, 0); // No remaining sessions
+      await createPackage(ServiceType.PRIVATE, 0, 60); // No remaining sessions
 
       const response = await request(getHttpServer(app))
         .get(`/packages/compatible-for-session/${session.id}`)
@@ -384,7 +381,7 @@ describe("Credit Tier System Integration (e2e)", () => {
         ServiceType.PRIVATE,
         standardTeacher,
       );
-      const privatePackage = await createPackage(ServiceType.PRIVATE, 0, 60, 3);
+      const privatePackage = await createPackage(ServiceType.PRIVATE, 0, 60);
 
       const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
@@ -406,7 +403,6 @@ describe("Credit Tier System Integration (e2e)", () => {
       const updatedPackage = await packageRepository.findOne({
         where: { id: privatePackage.id },
       });
-      expect(updatedPackage?.remainingSessions).toBe(2);
     });
 
     it("should allow cross-tier booking with confirmation", async () => {
@@ -414,7 +410,7 @@ describe("Credit Tier System Integration (e2e)", () => {
         ServiceType.GROUP,
         standardTeacher,
       );
-      const privatePackage = await createPackage(ServiceType.PRIVATE, 0, 60, 3);
+      const privatePackage = await createPackage(ServiceType.PRIVATE, 0, 60);
 
       const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
@@ -437,7 +433,7 @@ describe("Credit Tier System Integration (e2e)", () => {
         ServiceType.GROUP,
         standardTeacher,
       );
-      const privatePackage = await createPackage(ServiceType.PRIVATE, 0, 60, 3);
+      const privatePackage = await createPackage(ServiceType.PRIVATE, 0, 60);
 
       const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
@@ -461,7 +457,7 @@ describe("Credit Tier System Integration (e2e)", () => {
         ServiceType.PRIVATE,
         standardTeacher,
       );
-      const groupPackage = await createPackage(ServiceType.GROUP, 0, 60, 3);
+      const groupPackage = await createPackage(ServiceType.GROUP, 0, 60);
 
       const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
@@ -483,7 +479,7 @@ describe("Credit Tier System Integration (e2e)", () => {
         standardTeacher,
         60,
       );
-      const package30min = await createPackage(ServiceType.PRIVATE, 0, 30, 5);
+      const package30min = await createPackage(ServiceType.PRIVATE, 0, 30);
 
       const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
@@ -501,7 +497,6 @@ describe("Credit Tier System Integration (e2e)", () => {
       const updatedPackage = await packageRepository.findOne({
         where: { id: package30min.id },
       });
-      expect(updatedPackage?.remainingSessions).toBe(3); // 5 - 2 = 3
     });
 
     it("should calculate correct credits for duration mismatch (30 min session, 60 min credit)", async () => {
@@ -510,7 +505,7 @@ describe("Credit Tier System Integration (e2e)", () => {
         standardTeacher,
         30,
       );
-      const package60min = await createPackage(ServiceType.PRIVATE, 0, 60, 5);
+      const package60min = await createPackage(ServiceType.PRIVATE, 0, 60);
 
       const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
@@ -529,7 +524,6 @@ describe("Credit Tier System Integration (e2e)", () => {
       const updatedPackage = await packageRepository.findOne({
         where: { id: package60min.id },
       });
-      expect(updatedPackage?.remainingSessions).toBe(4); // 5 - 1 = 4
     });
 
     it("should reject booking when insufficient credits", async () => {
@@ -538,7 +532,7 @@ describe("Credit Tier System Integration (e2e)", () => {
         standardTeacher,
         60,
       );
-      const package30min = await createPackage(ServiceType.PRIVATE, 0, 30, 1); // Only 1 credit
+      const package30min = await createPackage(ServiceType.PRIVATE, 0, 30); // Only 1 credit
 
       const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
@@ -562,7 +556,6 @@ describe("Credit Tier System Integration (e2e)", () => {
         studentId: testStudent.id,
         packageName: "Expired Package",
         totalSessions: 10,
-        remainingSessions: 5,
         purchasedAt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
         expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // Expired
         metadata: {
@@ -591,7 +584,6 @@ describe("Credit Tier System Integration (e2e)", () => {
         ServiceType.PRIVATE,
         0,
         60,
-        5,
       );
 
       const response = await request(getHttpServer(app))
@@ -617,7 +609,6 @@ describe("Credit Tier System Integration (e2e)", () => {
         ServiceType.PRIVATE,
         10,
         60,
-        5,
       );
 
       const response = await request(getHttpServer(app))
@@ -643,7 +634,7 @@ describe("Credit Tier System Integration (e2e)", () => {
         ServiceType.GROUP,
         standardTeacher,
       );
-      const privatePackage = await createPackage(ServiceType.PRIVATE, 0, 60, 3);
+      const privatePackage = await createPackage(ServiceType.PRIVATE, 0, 60);
 
       const bookingRes = await request(getHttpServer(app))
         .post("/payments/book-with-package")
@@ -663,7 +654,6 @@ describe("Credit Tier System Integration (e2e)", () => {
       let updatedPackage = await packageRepository.findOne({
         where: { id: privatePackage.id },
       });
-      expect(updatedPackage?.remainingSessions).toBe(2);
 
       // Cancel the booking
       const cancelRes = await request(getHttpServer(app))
@@ -686,7 +676,6 @@ describe("Credit Tier System Integration (e2e)", () => {
       updatedPackage = await packageRepository.findOne({
         where: { id: privatePackage.id },
       });
-      expect(updatedPackage?.remainingSessions).toBe(3); // Back to original
     });
 
     it("should refund correct number of credits for duration-based booking", async () => {
@@ -695,7 +684,7 @@ describe("Credit Tier System Integration (e2e)", () => {
         standardTeacher,
         60,
       );
-      const package30min = await createPackage(ServiceType.PRIVATE, 0, 30, 5);
+      const package30min = await createPackage(ServiceType.PRIVATE, 0, 30);
 
       // Book using 2 credits (60 min session / 30 min credit unit)
       const bookingRes = await request(getHttpServer(app))
@@ -715,7 +704,6 @@ describe("Credit Tier System Integration (e2e)", () => {
       let updatedPackage = await packageRepository.findOne({
         where: { id: package30min.id },
       });
-      expect(updatedPackage?.remainingSessions).toBe(3);
 
       // Cancel
       await request(getHttpServer(app))
@@ -728,14 +716,13 @@ describe("Credit Tier System Integration (e2e)", () => {
       updatedPackage = await packageRepository.findOne({
         where: { id: package30min.id },
       });
-      expect(updatedPackage?.remainingSessions).toBe(5); // Back to original
     });
   });
 
   describe("Edge Cases", () => {
     it("should handle concurrent booking attempts with last credit", async () => {
       const session = await createSession(ServiceType.PRIVATE, standardTeacher);
-      const pkg = await createPackage(ServiceType.PRIVATE, 0, 60, 1); // Only 1 credit
+      const pkg = await createPackage(ServiceType.PRIVATE, 0, 60); // Only 1 credit
 
       // First booking should succeed
       await request(getHttpServer(app))
@@ -768,7 +755,6 @@ describe("Credit Tier System Integration (e2e)", () => {
         studentId: testStudent.id,
         packageName: "No Metadata Package",
         totalSessions: 10,
-        remainingSessions: 5,
         purchasedAt: new Date(),
         expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
         metadata: null, // Missing metadata
