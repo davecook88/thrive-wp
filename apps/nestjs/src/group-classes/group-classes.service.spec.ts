@@ -111,7 +111,14 @@ describe("GroupClassesService", () => {
             levelId: 3,
             level: { id: 3, code: "B1", name: "Intermediate B1" },
           },
-          teacher: { id: 1, userId: 1, bio: "" },
+          teacher: {
+            id: 1,
+            userId: 1,
+            bio: "",
+            toPublicDto: function () {
+              return this;
+            },
+          },
         },
         {
           id: 2,
@@ -130,7 +137,13 @@ describe("GroupClassesService", () => {
             levelId: 3,
             level: { id: 3, code: "B1", name: "Intermediate B1" },
           },
-          teacher: { id: 1, name: "Teacher One" },
+          teacher: {
+            id: 1,
+            name: "Teacher One",
+            toPublicDto: function () {
+              return this;
+            },
+          },
         },
       ] as unknown as Session[];
 
@@ -186,7 +199,18 @@ describe("GroupClassesService", () => {
         enrolledCount: 3,
         type: ServiceType.GROUP,
         status: SessionStatus.SCHEDULED,
+        startAt: new Date(),
+        endAt: new Date(),
+        groupClassId: 1,
+        teacherId: 1,
         groupClass: { isActive: true },
+        teacher: {
+          id: 1,
+          name: "Teacher One",
+          toPublicDto: function () {
+            return this;
+          },
+        },
       } as unknown as Session;
 
       mockQueryBuilder.getMany.mockResolvedValue([mockSession]);

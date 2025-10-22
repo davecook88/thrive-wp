@@ -41,6 +41,14 @@ import { PackageQueryBuilder } from "./utils/package-query-builder.js";
 //   SERVICE_TYPE_BASE_TIERS,
 // } from "../common/types/credit-tiers.js";
 
+import {
+  canUsePackageForSession,
+  getPackageTier,
+  getSessionTier,
+  getPackageDisplayLabel,
+  getCrossTierWarningMessage,
+} from "../common/types/credit-tiers.js";
+
 @Injectable()
 export class PackagesService {
   private stripe: Stripe;
@@ -382,15 +390,23 @@ export class PackagesService {
         pkg.totalSessions,
         pkg.uses || [],
       ),
+      creditUnitMinutes: Number(pkg.metadata?.credit_unit_minutes) || 30,
+      teacherTier: pkg.metadata?.teacher_tier || null,
+      serviceType: pkg.metadata?.service_type || null,
     }));
 
-    const totalRemaining = withRemaining.reduce(
+    // Filter out packages with no remaining sessions
+    const activePackages = withRemaining.filter(
+      (pkg) => pkg.remainingSessions > 0,
+    );
+
+    const totalRemaining = activePackages.reduce(
       (sum, pkg) => sum + pkg.remainingSessions,
       0,
     );
 
     return {
-      packages: withRemaining,
+      packages: activePackages,
       totalRemaining,
     };
   }
@@ -594,14 +610,6 @@ export class PackagesService {
     studentId: number,
     sessionId: number,
   ): Promise<CompatiblePackagesForSessionResponseDto> {
-    const {
-      canUsePackageForSession,
-      getPackageTier,
-      getSessionTier,
-      getPackageDisplayLabel,
-      getCrossTierWarningMessage,
-    } = await import("../common/types/credit-tiers.js");
-
     // Load session with teacher relation
     const session = await this.sessionRepo.findOne({
       where: { id: sessionId },

@@ -1,5 +1,8 @@
 import { SelectQueryBuilder, Repository, IsNull } from "typeorm";
-import { StripeProductMap, ScopeType } from "../../payments/entities/stripe-product-map.entity.js";
+import {
+  StripeProductMap,
+  ScopeType,
+} from "../../payments/entities/stripe-product-map.entity.js";
 import { StudentPackage } from "../entities/student-package.entity.js";
 import { PackageUse } from "../entities/package-use.entity.js";
 import { ServiceType } from "../../common/types/class-types.js";
@@ -28,8 +31,10 @@ export class PackageQueryBuilder {
   static buildActivePackageMappingQuery(
     repo: Repository<StripeProductMap>,
   ): SelectQueryBuilder<StripeProductMap> {
-    return this.buildPackageMappingQuery(repo)
-      .andWhere("spm.active = :active", { active: true });
+    return this.buildPackageMappingQuery(repo).andWhere(
+      "spm.active = :active",
+      { active: true },
+    );
   }
 
   /**
@@ -65,9 +70,7 @@ export class PackageQueryBuilder {
       .leftJoinAndSelect("sp.uses", "uses", "uses.deleted_at IS NULL")
       .where("sp.student_id = :studentId", { studentId })
       .andWhere("sp.deleted_at IS NULL")
-      .andWhere(
-        "(sp.expires_at IS NULL OR sp.expires_at > NOW())",
-      );
+      .andWhere("(sp.expires_at IS NULL OR sp.expires_at > NOW())");
   }
 
   /**
