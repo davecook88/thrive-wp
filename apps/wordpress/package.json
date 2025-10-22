@@ -15,7 +15,7 @@
     "@wordpress/element": "^6.28.0",
     "@wordpress/i18n": "^6.1.0",
     "@wordpress/scripts": "^27.9.0",
-    "@wordpress/server-side-render": "^6.4.0"
+    "@wordpress/server-side-render": "^6.8.0"
   },
   "scripts": {
     "build": "pnpm -r --filter './themes/*' --filter './plugins/*' build",
