@@ -15,6 +15,7 @@ import "./student-stats-widget/view";
 import "./teacher-stats-widget/view";
 import "./teacher-info/view";
 import "./teacher-calendar/view";
+import "./package-selection/view";
 // Context-specific logic now lives in ./thrive-calendar-context/view.ts
 import "./hooks/get-context";
 import "./hooks/get-teachers";

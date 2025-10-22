@@ -59,5 +59,7 @@
             "text": true
         }
     },
-    "render": "file:./render.php"
+    "editorScript": "custom-theme-blocks",
+    "render": "file:./render.php",
+    "viewScript": "custom-theme-blocks-view"
 }

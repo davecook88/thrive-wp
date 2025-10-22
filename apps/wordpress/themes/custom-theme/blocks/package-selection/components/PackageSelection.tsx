@@ -35,6 +35,7 @@ export default function PackageSelection({
   useEffect(() => {
     const fetchPackages = async () => {
       try {
+        console.log("Fetching packages for session:", sessionId);
         const data = await thriveClient.fetchAvailablePackages(sessionId);
         setPackages(data);
 
