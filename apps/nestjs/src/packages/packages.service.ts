@@ -91,12 +91,7 @@ export class PackagesService {
     stripePrice: Stripe.Price,
   ): PackageResponseDto {
     const metadata = mapping.metadata || {};
-    const allowances = (mapping.allowances || []).map((a) => ({
-      serviceType: a.serviceType,
-      teacherTier: a.teacherTier,
-      credits: a.credits,
-      creditUnitMinutes: a.creditUnitMinutes as 60 | 30 | 15 | 45,
-    }));
+    const allowances = mapping.allowances || [];
     const bundleDescription =
       String(metadata.bundle_description) ||
       generateBundleDescription(allowances);
@@ -631,8 +626,10 @@ export class PackagesService {
     const activePackages = await this.pkgRepo
       .createQueryBuilder("sp")
       .leftJoinAndSelect("sp.uses", "uses", "uses.deleted_at IS NULL")
+      // allowances are owned by StripeProductMap; join via the stripeProductMap relation
+      .leftJoinAndSelect("sp.stripeProductMap", "spm")
       .leftJoinAndSelect(
-        "sp.allowances",
+        "spm.allowances",
         "allowances",
         "allowances.deleted_at IS NULL",
       )
@@ -656,7 +653,7 @@ export class PackagesService {
       const label = getPackageDisplayLabel(pkg);
       const creditUnitMinutes = Number(pkg.metadata?.credit_unit_minutes) || 30;
 
-      const allowances = [] as CompatiblePackage["allowances"]; //pkg.allowances;
+      const allowances = pkg.stripeProductMap.allowances;
 
       // Compute remaining sessions from uses
       const remainingSessions = computeRemainingCredits(

@@ -69,7 +69,7 @@ export class StudentsController {
     // Validate outgoing shape with shared schema to ensure consistency
     try {
       return UpcomingSessionsResponseSchema.parse(sessions);
-    } catch (err) {
+    } catch {
       // If validation fails, still return raw sessions
       return sessions;
     }

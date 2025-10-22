@@ -59,5 +59,5 @@ export class PackageAllowance extends BaseEntity {
     type: "int",
     comment: "Duration per credit: 15, 30, 45, or 60",
   })
-  creditUnitMinutes: number;
+  creditUnitMinutes: 15 | 30 | 45 | 60;
 }
