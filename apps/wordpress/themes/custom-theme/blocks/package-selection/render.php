@@ -135,12 +135,18 @@ $wrapper_attributes = get_block_wrapper_attributes([
                 // Get service type from URL if present
                 const urlParams = new URLSearchParams(window.location.search);
                 const serviceType = urlParams.get('serviceType');
+                const sessionId = urlParams.get('sessionId');
 
                 // Selected package storage
                 let selectedPackage = null;
 
+                const url = new URL("/api/packages", window.location.origin);
+                if (sessionId) {
+                    url.searchParams.append('sessionId', sessionId);
+                }
+
                 // Fetch packages from public API
-                fetch('/api/packages')
+                fetch(url.toString())
                     .then(response => {
                         if (!response.ok) throw new Error('Failed to fetch packages');
                         return response.json();

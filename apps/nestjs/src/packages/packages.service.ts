@@ -5,8 +5,8 @@ import {
 } from "@nestjs/common";
 import type { CreatePackageDto } from "@thrive/shared";
 import { ConfigService } from "@nestjs/config";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, IsNull } from "typeorm";
+import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
+import { Repository, IsNull, DataSource } from "typeorm";
 import Stripe from "stripe";
 import {
   PackageResponseDto,
@@ -47,6 +47,7 @@ export class PackagesService {
     @InjectRepository(Booking)
     private readonly bookingRepo: Repository<Booking>,
     private readonly sessionsService: SessionsService,
+    @InjectDataSource() private readonly dataSource: DataSource,
   ) {
     const secretKey = this.configService.get<string>("stripe.secretKey");
     if (!secretKey) {
@@ -167,6 +168,117 @@ export class PackagesService {
           credits: Number(metadata.credits) || 0,
           creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
           teacherTier: ((): number | null => {
+            const raw = metadata.teacher_tier;
+            if (raw === undefined || raw === null || raw === "") return null;
+            const n =
+              typeof raw === "string" ? parseInt(raw, 10) : (raw as number);
+            return Number.isFinite(n) ? n : null;
+          })(),
+          expiresInDays: Number(metadata.expires_in_days) || null,
+          stripe: {
+            productId: stripeProduct.id,
+            priceId: stripePrice.id,
+            lookupKey: stripePrice.lookup_key || mapping.serviceKey,
+            unitAmount: stripePrice.unit_amount || 0,
+            currency: stripePrice.currency || "usd",
+          },
+          active: mapping.active && stripeProduct.active,
+        });
+      } catch (error) {
+        console.warn(
+          `Failed to fetch Stripe data for mapping ${mapping.id}:`,
+          error instanceof Error ? error.message : "Unknown error",
+        );
+        // Continue with other packages
+      }
+    }
+
+    return packages;
+  }
+
+  async getValidPackagesForSession(
+    sessionId: number,
+  ): Promise<PackageResponseDto[]> {
+    // Load session with teacher relation to get tier information
+    const session = await this.sessionRepo.findOne({
+      where: { id: sessionId },
+      relations: ["teacher"],
+    });
+
+    if (!session) {
+      throw new NotFoundException("Session not found");
+    }
+
+    // Import tier calculation functions
+    const { getSessionTier, SERVICE_TYPE_BASE_TIERS } = await import(
+      "../common/types/credit-tiers.js"
+    );
+
+    const sessionTier = getSessionTier(session);
+    const sessionServiceType = session.type;
+
+    // Query compatible mappings directly in SQL with tier filtering
+    const compatibleMappings = await this.stripeProductMapRepository
+      .createQueryBuilder("spm")
+      .where("spm.scope_type = :scopeType", { scopeType: ScopeType.PACKAGE })
+      .andWhere("spm.active = :active", { active: true })
+      .andWhere("spm.deleted_at IS NULL")
+      .andWhere(
+        "JSON_UNQUOTE(JSON_EXTRACT(spm.metadata, '$.service_type')) = :serviceType",
+        {
+          serviceType: sessionServiceType,
+        },
+      )
+      .andWhere(
+        `
+        (
+          CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(spm.metadata, '$.teacher_tier')), ''), '0') AS SIGNED) +
+          :baseTier
+        ) >= :sessionTier
+        `,
+        {
+          baseTier: SERVICE_TYPE_BASE_TIERS[sessionServiceType] ?? 0,
+          sessionTier,
+        },
+      )
+      .getMany();
+
+    // Build PackageResponseDto objects like other methods
+    const packages: PackageResponseDto[] = [];
+
+    for (const mapping of compatibleMappings) {
+      try {
+        // Get fresh data from Stripe
+        const stripeProduct = await this.stripe.products.retrieve(
+          mapping.stripeProductId,
+        );
+
+        // Skip if product is not active in Stripe
+        if (!stripeProduct.active) {
+          continue;
+        }
+
+        // Get the first price for this product
+        const prices = await this.stripe.prices.list({
+          product: mapping.stripeProductId,
+          active: true,
+          limit: 1,
+        });
+
+        if (prices.data.length === 0) {
+          continue; // Skip if no active prices
+        }
+
+        const stripePrice = prices.data[0];
+        const metadata = mapping.metadata || {};
+
+        packages.push({
+          id: mapping.id,
+          name: String(metadata.name) || stripeProduct.name,
+          serviceType: String(metadata.service_type) || "PRIVATE",
+          credits: Number(metadata.credits) || 0,
+          creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
+          teacherTier: (() => {
             const raw = metadata.teacher_tier;
             if (raw === undefined || raw === null || raw === "") return null;
             const n =

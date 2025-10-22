@@ -5,6 +5,7 @@ import {
   Param,
   Body,
   Req,
+  Query,
   ParseIntPipe,
   UnauthorizedException,
   NotFoundException,
@@ -48,8 +49,17 @@ export class PackagesController {
   ) {}
 
   @Get()
-  async getAvailablePackages() {
-    // Return available packages that can be purchased from the catalog
+  async getAvailablePackages(@Query("sessionId") sessionId?: string) {
+    // If sessionId provided, return packages compatible with that session
+    if (sessionId) {
+      const sessionIdNum = parseInt(sessionId, 10);
+      if (!Number.isFinite(sessionIdNum)) {
+        throw new BadRequestException("sessionId must be a valid number");
+      }
+      return this.packagesService.getValidPackagesForSession(sessionIdNum);
+    }
+
+    // Return all available packages
     return this.packagesService.getActivePackages();
   }
 
