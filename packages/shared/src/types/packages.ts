@@ -1,23 +1,13 @@
 import { z } from "zod";
 import { ServiceType } from "./class-types.js";
 
-export type StudentPackageMyCreditsResponse = {
-  packages: StudentPackage[];
-  totalRemaining: 4;
-};
-export type StudentPackage = {
-  id: number;
-  packageName: string;
-  totalSessions: number;
-  remainingSessions: number;
-  purchasedAt: string; // ISO date string
-  expiresAt: string | null; // ISO date string or null
-};
-
-export const CreatePackageSchema = z.object({
-  name: z.string().min(1).max(200),
-  description: z.string().optional(),
-  serviceType: z.nativeEnum(ServiceType),
+/**
+ * PackageAllowance describes one service type's allocation within a bundle.
+ * Example: "5 PRIVATE credits @ 30 min each"
+ */
+export const PackageAllowanceSchema = z.object({
+  serviceType: z.enum(ServiceType),
+  teacherTier: z.number().int().nonnegative().default(0),
   credits: z.number().int().positive(),
   creditUnitMinutes: z.union([
     z.literal(15),
@@ -25,8 +15,24 @@ export const CreatePackageSchema = z.object({
     z.literal(45),
     z.literal(60),
   ]),
-  /** Optional teacher tier restriction (e.g. 10, 20, 30). If omitted, package applies to any tier. */
-  teacherTier: z.number().int().positive().nullable().optional(),
+});
+
+export type PackageAllowance = z.infer<typeof PackageAllowanceSchema>;
+
+/**
+ * Create bundle packages with multiple service type allowances.
+ * A bundle can contain PRIVATE, GROUP, and/or COURSE credits.
+ */
+export const CreatePackageSchema = z.object({
+  name: z.string().min(1).max(200),
+  description: z.string().optional(),
+
+  // NEW: Array of allowances instead of single serviceType
+  allowances: z.array(PackageAllowanceSchema).min(1),
+
+  // Optional custom bundle description; auto-generated if not provided
+  bundleDescription: z.string().optional(),
+
   expiresInDays: z.number().int().positive().nullable().optional(),
   currency: z.string().length(3).default("USD"),
   amountMinor: z.number().int().positive(),
@@ -36,13 +42,14 @@ export const CreatePackageSchema = z.object({
 
 export type CreatePackageDto = z.infer<typeof CreatePackageSchema>;
 
+/**
+ * Package response includes all allowances and bundle details.
+ */
 export const PackageResponseSchema = z.object({
   id: z.number(),
   name: z.string(),
-  serviceType: z.string(),
-  credits: z.number(),
-  creditUnitMinutes: z.number(),
-  teacherTier: z.number().nullable().optional(),
+  bundleDescription: z.string(),
+  allowances: z.array(PackageAllowanceSchema),
   expiresInDays: z.number().nullable().optional(),
   stripe: z.object({
     productId: z.string(),
@@ -56,13 +63,35 @@ export const PackageResponseSchema = z.object({
 
 export type PackageResponseDto = z.infer<typeof PackageResponseSchema>;
 
+/**
+ * Backward-compatible StudentPackage with computed balances.
+ * remainingSessions is computed from PackageUse records.
+ */
+export type StudentPackageMyCreditsResponse = {
+  packages: StudentPackage[];
+  totalRemaining: number;
+};
+
+export type StudentPackage = {
+  id: number;
+  packageName: string;
+  totalSessions: number;
+  remainingSessions: number; // Computed: totalSessions - SUM(creditsUsed from PackageUse)
+  purchasedAt: string; // ISO date string
+  expiresAt: string | null; // ISO date string or null
+};
+
+/**
+ * Compatible package for a session, with computed remaining credits.
+ */
 export const CompatiblePackageSchema = z.object({
   id: z.number(),
   label: z.string(),
-  remainingSessions: z.number(),
+  remainingSessions: z.number(), // Computed from PackageUse for the requested service type
   expiresAt: z.string().nullable(),
   creditUnitMinutes: z.number(),
   tier: z.number(),
+  allowances: z.array(PackageAllowanceSchema),
 });
 
 export type CompatiblePackage = z.infer<typeof CompatiblePackageSchema>;

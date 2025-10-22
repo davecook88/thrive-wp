@@ -6,11 +6,14 @@ import {
 import type { CreatePackageDto } from "@thrive/shared";
 import { ConfigService } from "@nestjs/config";
 import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
-import { Repository, IsNull, DataSource } from "typeorm";
+import { Repository, DataSource } from "typeorm";
 import Stripe from "stripe";
 import {
   PackageResponseDto,
   CompatiblePackagesForSessionResponseDto,
+  CompatiblePackage,
+  CompatiblePackageWithWarning,
+  ServiceType,
 } from "@thrive/shared";
 import {
   StripeProductMap,
@@ -18,6 +21,7 @@ import {
 } from "../payments/entities/stripe-product-map.entity.js";
 import { StudentPackage } from "./entities/student-package.entity.js";
 import { PackageUse } from "./entities/package-use.entity.js";
+import { PackageAllowance } from "./entities/package-allowance.entity.js";
 import { Student } from "../students/entities/student.entity.js";
 import {
   Session,
@@ -25,8 +29,14 @@ import {
   SessionVisibility,
 } from "../sessions/entities/session.entity.js";
 import { Booking, BookingStatus } from "../payments/entities/booking.entity.js";
-import { ServiceType } from "../common/types/class-types.js";
 import { SessionsService } from "../sessions/services/sessions.service.js";
+import {
+  computeRemainingCredits,
+  computeRemainingCreditsByServiceType,
+  generateBundleDescription,
+  validateAllowances,
+} from "./utils/bundle-helpers.js";
+import { PackageQueryBuilder } from "./utils/package-query-builder.js";
 // import {
 //   getSessionTier,
 //   SERVICE_TYPE_BASE_TIERS,
@@ -44,6 +54,8 @@ export class PackagesService {
     private readonly pkgRepo: Repository<StudentPackage>,
     @InjectRepository(PackageUse)
     private readonly useRepo: Repository<PackageUse>,
+    @InjectRepository(PackageAllowance)
+    private readonly allowanceRepo: Repository<PackageAllowance>,
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
     @InjectRepository(Session)
@@ -62,142 +74,110 @@ export class PackagesService {
     });
   }
 
-  async getPackages(): Promise<PackageResponseDto[]> {
-    const mappings = await this.stripeProductMapRepository.find({
-      where: {
-        scopeType: ScopeType.PACKAGE,
-      },
-      order: { createdAt: "DESC" },
-    });
+  /**
+   * Build a PackageResponseDto from StripeProductMap and Stripe API data.
+   * Handles both singular fetch and batch processing.
+   */
+  private buildPackageResponse(
+    mapping: StripeProductMap,
+    stripeProduct: Stripe.Product,
+    stripePrice: Stripe.Price,
+  ): PackageResponseDto {
+    const metadata = mapping.metadata || {};
+    const allowances = (mapping.allowances || []).map((a) => ({
+      serviceType: a.serviceType,
+      teacherTier: a.teacherTier,
+      credits: a.credits,
+      creditUnitMinutes: a.creditUnitMinutes as 60 | 30 | 15 | 45,
+    }));
+    const bundleDescription =
+      String(metadata.bundle_description) ||
+      generateBundleDescription(allowances);
 
+    return {
+      id: mapping.id,
+      name: String(metadata.name) || stripeProduct.name,
+      bundleDescription,
+      allowances,
+      expiresInDays: metadata.expires_in_days
+        ? Number(metadata.expires_in_days)
+        : null,
+      stripe: {
+        productId: stripeProduct.id,
+        priceId: stripePrice.id,
+        lookupKey: stripePrice.lookup_key || mapping.serviceKey,
+        unitAmount: stripePrice.unit_amount || 0,
+        currency: stripePrice.currency || "usd",
+      },
+      active: mapping.active && stripeProduct.active,
+    };
+  }
+
+  /**
+   * Build multiple package responses. Reuses Stripe fetches.
+   */
+  private async buildPackageResponses(
+    mappings: StripeProductMap[],
+  ): Promise<PackageResponseDto[]> {
     const packages: PackageResponseDto[] = [];
 
     for (const mapping of mappings) {
       try {
-        // Get fresh data from Stripe
         const stripeProduct = await this.stripe.products.retrieve(
           mapping.stripeProductId,
         );
 
-        // Get the first price for this product
+        if (!stripeProduct.active) continue;
+
         const prices = await this.stripe.prices.list({
           product: mapping.stripeProductId,
           active: true,
           limit: 1,
         });
 
-        if (prices.data.length === 0) {
-          continue; // Skip if no active prices
-        }
+        if (prices.data.length === 0) continue;
 
         const stripePrice = prices.data[0];
-        const metadata = mapping.metadata || {};
-
-        packages.push({
-          id: mapping.id,
-          name: String(metadata.name) || stripeProduct.name,
-          serviceType: mapping.serviceType || "PRIVATE",
-          credits: Number(metadata.credits) || 0,
-          creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
-          teacherTier:
-            mapping.teacherTier && mapping.teacherTier > 0
-              ? mapping.teacherTier
-              : null,
-          expiresInDays: Number(metadata.expires_in_days) || null,
-          stripe: {
-            productId: stripeProduct.id,
-            priceId: stripePrice.id,
-            lookupKey: stripePrice.lookup_key || mapping.serviceKey,
-            unitAmount: stripePrice.unit_amount || 0,
-            currency: stripePrice.currency || "usd",
-          },
-          active: mapping.active && stripeProduct.active,
-        });
+        const response = this.buildPackageResponse(
+          mapping,
+          stripeProduct,
+          stripePrice,
+        );
+        packages.push(response);
       } catch (error) {
         console.warn(
           `Failed to fetch Stripe data for mapping ${mapping.id}:`,
           error instanceof Error ? error.message : "Unknown error",
         );
-        // Continue with other packages
       }
     }
 
     return packages;
   }
 
+  async getPackages(): Promise<PackageResponseDto[]> {
+    const mappings = await PackageQueryBuilder.buildPackageMappingQuery(
+      this.stripeProductMapRepository,
+    )
+      .orderBy("spm.created_at", "DESC")
+      .getMany();
+
+    return this.buildPackageResponses(mappings);
+  }
+
   async getActivePackages(): Promise<PackageResponseDto[]> {
-    const mappings = await this.stripeProductMapRepository.find({
-      where: {
-        scopeType: ScopeType.PACKAGE,
-        active: true,
-      },
-      order: { createdAt: "DESC" },
-    });
+    const mappings = await PackageQueryBuilder.buildActivePackageMappingQuery(
+      this.stripeProductMapRepository,
+    )
+      .orderBy("spm.created_at", "DESC")
+      .getMany();
 
-    const packages: PackageResponseDto[] = [];
-
-    for (const mapping of mappings) {
-      try {
-        // Get fresh data from Stripe
-        const stripeProduct = await this.stripe.products.retrieve(
-          mapping.stripeProductId,
-        );
-
-        // Skip if product is not active in Stripe
-        if (!stripeProduct.active) {
-          continue;
-        }
-
-        // Get the first price for this product
-        const prices = await this.stripe.prices.list({
-          product: mapping.stripeProductId,
-          active: true,
-          limit: 1,
-        });
-
-        if (prices.data.length === 0) {
-          continue; // Skip if no active prices
-        }
-
-        const stripePrice = prices.data[0];
-        const metadata = mapping.metadata || {};
-
-        packages.push({
-          id: mapping.id,
-          name: String(metadata.name) || stripeProduct.name,
-          serviceType: mapping.serviceType || "PRIVATE",
-          credits: Number(metadata.credits) || 0,
-          creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
-          teacherTier:
-            mapping.teacherTier && mapping.teacherTier > 0
-              ? mapping.teacherTier
-              : null,
-          expiresInDays: Number(metadata.expires_in_days) || null,
-          stripe: {
-            productId: stripeProduct.id,
-            priceId: stripePrice.id,
-            lookupKey: stripePrice.lookup_key || mapping.serviceKey,
-            unitAmount: stripePrice.unit_amount || 0,
-            currency: stripePrice.currency || "usd",
-          },
-          active: mapping.active && stripeProduct.active,
-        });
-      } catch (error) {
-        console.warn(
-          `Failed to fetch Stripe data for mapping ${mapping.id}:`,
-          error instanceof Error ? error.message : "Unknown error",
-        );
-        // Continue with other packages
-      }
-    }
-
-    return packages;
+    return this.buildPackageResponses(mappings);
   }
 
   async getValidPackagesForSession(
     sessionId: number,
   ): Promise<PackageResponseDto[]> {
-    // Load session with teacher relation to get tier information
     const session = await this.sessionRepo.findOne({
       where: { id: sessionId },
       relations: ["teacher"],
@@ -207,83 +187,21 @@ export class PackagesService {
       throw new NotFoundException("Session not found");
     }
 
-    // const sessionTier = getSessionTier(session);
-    const sessionServiceType = session.type;
+    // Query packages with allowances matching the session type
+    const validMappings =
+      await PackageQueryBuilder.buildPackagesForSessionTypeQuery(
+        this.stripeProductMapRepository,
+        session.type,
+      )
+        .orderBy("spm.created_at", "DESC")
+        .getMany();
 
-    // Query compatible mappings directly in SQL with tier filtering
-    const compatibleMappings = await this.stripeProductMapRepository
-      .createQueryBuilder("spm")
-      .where("spm.scope_type = :scopeType", { scopeType: ScopeType.PACKAGE })
-      .andWhere("spm.active = :active", { active: true })
-      .andWhere("spm.deleted_at IS NULL")
-      .andWhere("spm.service_type = :serviceType", {
-        serviceType: sessionServiceType,
-      })
-      // .andWhere("(spm.teacher_tier + :baseTier) >= :sessionTier", {
-      //   baseTier: SERVICE_TYPE_BASE_TIERS[sessionServiceType] ?? 0,
-      //   sessionTier,
-      // })
-      .getMany();
+    // Remove duplicates (one row per allowance)
+    const uniqueMappings = Array.from(
+      new Map(validMappings.map((m) => [m.id, m])).values(),
+    );
 
-    // Build PackageResponseDto objects like other methods
-    const packages: PackageResponseDto[] = [];
-
-    for (const mapping of compatibleMappings) {
-      try {
-        // Get fresh data from Stripe
-        const stripeProduct = await this.stripe.products.retrieve(
-          mapping.stripeProductId,
-        );
-
-        // Skip if product is not active in Stripe
-        if (!stripeProduct.active) {
-          continue;
-        }
-
-        // Get the first price for this product
-        const prices = await this.stripe.prices.list({
-          product: mapping.stripeProductId,
-          active: true,
-          limit: 1,
-        });
-
-        if (prices.data.length === 0) {
-          continue; // Skip if no active prices
-        }
-
-        const stripePrice = prices.data[0];
-        const metadata = mapping.metadata || {};
-
-        packages.push({
-          id: mapping.id,
-          name: String(metadata.name) || stripeProduct.name,
-          serviceType: mapping.serviceType || "PRIVATE",
-          credits: Number(metadata.credits) || 0,
-          creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
-          teacherTier:
-            mapping.teacherTier && mapping.teacherTier > 0
-              ? mapping.teacherTier
-              : null,
-          expiresInDays: Number(metadata.expires_in_days) || null,
-          stripe: {
-            productId: stripeProduct.id,
-            priceId: stripePrice.id,
-            lookupKey: stripePrice.lookup_key || mapping.serviceKey,
-            unitAmount: stripePrice.unit_amount || 0,
-            currency: stripePrice.currency || "usd",
-          },
-          active: mapping.active && stripeProduct.active,
-        });
-      } catch (error) {
-        console.warn(
-          `Failed to fetch Stripe data for mapping ${mapping.id}:`,
-          error instanceof Error ? error.message : "Unknown error",
-        );
-        // Continue with other packages
-      }
-    }
-
-    return packages;
+    return this.buildPackageResponses(uniqueMappings);
   }
 
   async getPackage(id: number): Promise<PackageResponseDto> {
@@ -292,6 +210,7 @@ export class PackagesService {
         id,
         scopeType: ScopeType.PACKAGE,
       },
+      relations: ["allowances"],
     });
 
     if (!mapping) {
@@ -312,31 +231,7 @@ export class PackagesService {
         throw new NotFoundException("No active price found for package");
       }
 
-      const stripePrice = prices.data[0];
-      const metadata = mapping.metadata || {};
-
-      const packageResponse: PackageResponseDto = {
-        id: mapping.id,
-        name: String(metadata.name) || stripeProduct.name,
-        serviceType: mapping.serviceType || "PRIVATE",
-        credits: Number(metadata.credits) || 0,
-        creditUnitMinutes: Number(metadata.credit_unit_minutes) || 30,
-        teacherTier:
-          mapping.teacherTier && mapping.teacherTier > 0
-            ? mapping.teacherTier
-            : null,
-        expiresInDays: Number(metadata.expires_in_days) || null,
-        stripe: {
-          productId: stripeProduct.id,
-          priceId: stripePrice.id,
-          lookupKey: stripePrice.lookup_key || mapping.serviceKey,
-          unitAmount: stripePrice.unit_amount || 0,
-          currency: stripePrice.currency || "usd",
-        },
-        active: mapping.active && stripeProduct.active,
-      };
-
-      return packageResponse;
+      return this.buildPackageResponse(mapping, stripeProduct, prices.data[0]);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -369,115 +264,100 @@ export class PackagesService {
   /**
    * Generate a lookup key for Stripe prices if one is not provided.
    */
-  generateLookupKey(dto: CreatePackageDto) {
-    const sanitizedName = dto.name
-      .toUpperCase()
-      .replace(/[^A-Z0-9\s]/g, "")
-      .replace(/\s+/g, "_")
-      .substring(0, 30);
-    return `${dto.serviceType}_CREDITS_${dto.credits}_${dto.creditUnitMinutes}MIN_${sanitizedName}_${dto.currency.toUpperCase()}`;
+  generateLookupKey(dto: CreatePackageDto): string {
+    // Use bundle description to generate key
+    const bundleDesc = generateBundleDescription(dto.allowances)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "");
+
+    return `pkg_${bundleDesc}_${Date.now()}`;
   }
 
   /**
    * Create a new package: create Stripe product & price, then local mapping.
    */
-  async createPackage(createPackageDto: CreatePackageDto) {
+  async createPackage(dto: CreatePackageDto): Promise<PackageResponseDto> {
     try {
-      // Generate lookup key if not provided
-      const lookupKey =
-        createPackageDto.lookupKey || this.generateLookupKey(createPackageDto);
+      // Validate allowances
+      const validation = validateAllowances(dto.allowances);
+      if (!validation.valid) {
+        throw new BadRequestException(validation.errors.join(", "));
+      }
 
-      // Check if lookup key already exists
-      const existingMapping = await this.stripeProductMapRepository.findOne({
+      const lookupKey = dto.lookupKey || this.generateLookupKey(dto);
+
+      // Check uniqueness
+      const existing = await this.stripeProductMapRepository.findOne({
         where: { serviceKey: lookupKey },
       });
-      if (existingMapping) {
+      if (existing) {
         throw new BadRequestException(
           `Lookup key "${lookupKey}" already exists`,
         );
       }
 
-      // Create Stripe Product
+      // Create Stripe product for entire bundle
       const stripeProduct = await this.stripe.products.create({
-        name: createPackageDto.name,
-        description:
-          (createPackageDto.description || createPackageDto.name) ?? "N/A",
+        name: dto.name,
+        description: dto.description,
         type: "service",
         metadata: {
-          offering_type: "PACKAGE",
-          service_type: createPackageDto.serviceType,
-          credits: createPackageDto.credits.toString(),
-          credit_unit_minutes: createPackageDto.creditUnitMinutes.toString(),
-          expires_in_days: createPackageDto.expiresInDays?.toString() || "",
-          scope: createPackageDto.scope,
-          teacher_tier: createPackageDto.teacherTier?.toString() || "",
+          name: dto.name,
+          allowances: JSON.stringify(dto.allowances),
+          expires_in_days: dto.expiresInDays || "",
+          scope: dto.scope,
         },
       });
 
-      // Create Stripe Price
+      // Create Stripe price
       const stripePrice = await this.stripe.prices.create({
-        unit_amount: createPackageDto.amountMinor,
-        currency: createPackageDto.currency.toLowerCase(),
         product: stripeProduct.id,
+        unit_amount: dto.amountMinor,
+        currency: dto.currency.toLowerCase(),
         lookup_key: lookupKey,
         metadata: {
-          offering_type: "PACKAGE",
-          service_type: createPackageDto.serviceType,
-          credits: createPackageDto.credits.toString(),
-          credit_unit_minutes: createPackageDto.creditUnitMinutes.toString(),
-          expires_in_days: createPackageDto.expiresInDays?.toString() || "",
-          scope: createPackageDto.scope,
-          teacher_tier: createPackageDto.teacherTier?.toString() || "",
+          allowances: JSON.stringify(dto.allowances),
         },
       });
 
       // Create local mapping
-      const productMapping = this.stripeProductMapRepository.create({
+      const mapping = this.stripeProductMapRepository.create({
         serviceKey: lookupKey,
         stripeProductId: stripeProduct.id,
         active: true,
         scopeType: ScopeType.PACKAGE,
-        serviceType: createPackageDto.serviceType,
-        teacherTier: createPackageDto.teacherTier ?? 0,
         metadata: {
-          name: createPackageDto.name,
-          service_type: createPackageDto.serviceType,
-          credits: createPackageDto.credits,
-          credit_unit_minutes: createPackageDto.creditUnitMinutes,
-          expires_in_days: createPackageDto.expiresInDays ?? undefined,
-          scope: createPackageDto.scope,
-          stripe_price_id: stripePrice.id,
-          lookup_key: lookupKey ?? "",
-          teacher_tier: createPackageDto.teacherTier ?? undefined,
+          name: dto.name,
+          bundle_description:
+            dto.bundleDescription || generateBundleDescription(dto.allowances),
         },
       });
 
-      const savedMapping =
-        await this.stripeProductMapRepository.save(productMapping);
+      const savedMapping = await this.stripeProductMapRepository.save(mapping);
 
-      return {
-        id: savedMapping.id,
-        name: createPackageDto.name,
-        serviceType: createPackageDto.serviceType,
-        credits: createPackageDto.credits,
-        creditUnitMinutes: createPackageDto.creditUnitMinutes,
-        expiresInDays: createPackageDto.expiresInDays || null,
-        teacherTier: createPackageDto.teacherTier ?? null,
-        stripe: {
-          productId: stripeProduct.id,
-          priceId: stripePrice.id,
-          lookupKey: lookupKey,
-          unitAmount: stripePrice.unit_amount || 0,
-          currency: stripePrice.currency || "usd",
-        },
-        active: true,
-      };
+      // Create PackageAllowance rows
+      const allowances = dto.allowances.map((a) =>
+        this.allowanceRepo.create({
+          stripeProductMapId: savedMapping.id,
+          ...a,
+        }),
+      );
+      await this.allowanceRepo.save(allowances);
+
+      // Reload with allowances
+      savedMapping.allowances = allowances;
+
+      return this.buildPackageResponse(
+        savedMapping,
+        stripeProduct,
+        stripePrice,
+      );
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
       }
       // Handle Stripe errors
-      // Use Stripe's runtime error type when available
       if (error instanceof Stripe.errors.StripeError) {
         throw new BadRequestException(`Stripe error: ${error.message}`);
       }
@@ -489,49 +369,30 @@ export class PackagesService {
 
   // NEW CREDIT-BASED METHODS (added alongside)
   async getActivePackagesForStudent(studentId: number) {
-    const pkgs = await this.pkgRepo.find({
-      where: { studentId, deletedAt: IsNull() },
-      order: { createdAt: "DESC" },
-    });
+    const packages = await PackageQueryBuilder.buildActiveStudentPackagesQuery(
+      this.pkgRepo,
+      studentId,
+    )
+      .orderBy("sp.created_at", "DESC")
+      .getMany();
 
-    // Filter active packages (not expired and has remaining sessions)
-    const now = new Date();
-    const activePackages = pkgs.filter(
-      (pkg) =>
-        pkg.remainingSessions > 0 &&
-        (pkg.expiresAt === null || pkg.expiresAt > now),
+    // Compute remaining for each package
+    const withRemaining = packages.map((pkg) => ({
+      ...pkg,
+      remainingSessions: computeRemainingCredits(
+        pkg.totalSessions,
+        pkg.uses || [],
+      ),
+    }));
+
+    const totalRemaining = withRemaining.reduce(
+      (sum, pkg) => sum + pkg.remainingSessions,
+      0,
     );
 
     return {
-      packages: activePackages.map((pkg) => ({
-        id: pkg.id,
-        packageName: pkg.packageName,
-        totalSessions: pkg.totalSessions,
-        remainingSessions: pkg.remainingSessions,
-        purchasedAt: pkg.purchasedAt.toISOString(),
-        expiresAt: pkg.expiresAt?.toISOString() || null,
-        creditUnitMinutes: Number(pkg.metadata?.credit_unit_minutes) || null,
-        teacherTier: ((): number | null => {
-          const raw = pkg.metadata?.teacher_tier;
-          const n =
-            typeof raw === "string"
-              ? parseInt(raw, 10)
-              : (raw as number | undefined);
-          return Number.isFinite(n) ? (n as number) : null;
-        })(),
-        serviceType: (pkg.metadata?.service_type as string) || "PRIVATE",
-      })),
-      totalRemaining: activePackages.reduce(
-        (sum, pkg) => sum + pkg.remainingSessions,
-        0,
-      ),
-      totalRemainingByTime: activePackages.reduce(
-        (sum, pkg) =>
-          sum +
-          pkg.remainingSessions *
-            (Number(pkg.metadata?.credit_unit_minutes) || 0),
-        0,
-      ),
+      packages: withRemaining,
+      totalRemaining,
     };
   }
 
@@ -539,48 +400,62 @@ export class PackagesService {
     studentId: number,
     packageId: number,
     sessionId: number,
-    usedBy?: number,
-    creditsCost: number = 1,
-  ) {
-    const pkg = await this.pkgRepo.findOne({
-      where: { id: packageId, studentId },
-    });
-    if (!pkg) throw new NotFoundException("Package not found");
-    if (pkg.remainingSessions < creditsCost)
-      throw new BadRequestException(
-        `Insufficient credits. Required: ${creditsCost}, Available: ${pkg.remainingSessions}`,
-      );
+    options?: {
+      serviceType?: ServiceType;
+      creditsUsed?: number;
+      usedBy?: number;
+    },
+  ): Promise<{ package: StudentPackage; use: PackageUse }> {
+    const { serviceType, creditsUsed = 1, usedBy } = options || {};
 
-    // Check if package is expired
-    if (pkg.expiresAt && pkg.expiresAt <= new Date()) {
+    // Load with uses for balance computation (pessimistic lock)
+    const pkg = await PackageQueryBuilder.buildStudentPackageWithUsesQuery(
+      this.pkgRepo,
+      studentId,
+      packageId,
+    )
+      .setLock("pessimistic_write")
+      .getOne();
+
+    if (!pkg) {
+      throw new NotFoundException("Package not found");
+    }
+
+    // Compute remaining credits
+    const remaining = computeRemainingCredits(
+      pkg.totalSessions,
+      pkg.uses || [],
+    );
+
+    if (remaining < creditsUsed) {
+      throw new BadRequestException("Insufficient credits");
+    }
+
+    // Check expiration
+    if (pkg.expiresAt && new Date(pkg.expiresAt) < new Date()) {
       throw new BadRequestException("Package has expired");
     }
 
-    return await this.pkgRepo.manager.transaction(async (tx) => {
-      // Lock and re-fetch inside transaction with pessimistic lock
-      const locked = await tx.findOne(StudentPackage, {
-        where: { id: packageId },
-        lock: { mode: "pessimistic_write" },
-      });
-      if (!locked) throw new NotFoundException("Package not found");
-      if (locked.remainingSessions < creditsCost)
-        throw new BadRequestException(
-          `Insufficient credits. Required: ${creditsCost}, Available: ${locked.remainingSessions}`,
-        );
-
-      locked.remainingSessions = locked.remainingSessions - creditsCost;
-      await tx.save(StudentPackage, locked);
-
-      const use = tx.create(PackageUse, {
-        studentPackageId: packageId,
-        sessionId,
-        usedAt: new Date(),
-        usedBy: usedBy || studentId,
-      });
-      await tx.save(PackageUse, use);
-
-      return { package: locked, use };
+    // Create use record
+    const use = this.useRepo.create({
+      studentPackageId: packageId,
+      sessionId,
+      serviceType,
+      creditsUsed,
+      usedAt: new Date(),
+      usedBy,
     });
+
+    await this.useRepo.save(use);
+
+    // Reload to verify
+    const updated = await PackageQueryBuilder.buildStudentPackageWithUsesQuery(
+      this.pkgRepo,
+      studentId,
+      packageId,
+    ).getOne();
+
+    return { package: updated!, use };
   }
 
   async linkUseToBooking(useId: number, bookingId: number) {
@@ -606,13 +481,24 @@ export class PackagesService {
     if (!student) throw new NotFoundException("Student not found");
 
     // Validate the package exists and has credits
-    const pkg = await this.pkgRepo.findOne({
-      where: { id: packageId, studentId: student.id },
-    });
-    if (!pkg) throw new NotFoundException("Package not found");
-    if (pkg.remainingSessions <= 0)
+    const pkgWithUses =
+      await PackageQueryBuilder.buildStudentPackageWithUsesQuery(
+        this.pkgRepo,
+        student.id,
+        packageId,
+      ).getOne();
+
+    if (!pkgWithUses) throw new NotFoundException("Package not found");
+
+    // Compute remaining credits (total across all service types)
+    const remainingCredits = computeRemainingCredits(
+      pkgWithUses.totalSessions,
+      pkgWithUses.uses || [],
+    );
+
+    if (remainingCredits <= 0)
       throw new BadRequestException("No remaining credits");
-    if (pkg.expiresAt && pkg.expiresAt <= new Date()) {
+    if (pkgWithUses.expiresAt && pkgWithUses.expiresAt <= new Date()) {
       throw new BadRequestException("Package has expired");
     }
 
@@ -640,22 +526,30 @@ export class PackagesService {
       });
       const savedSession = await tx.save(Session, session);
 
-      // Lock and decrement the package
+      // Lock the package for validation
       const lockedPkg = await tx.findOne(StudentPackage, {
         where: { id: packageId },
         lock: { mode: "pessimistic_write" },
       });
       if (!lockedPkg) throw new NotFoundException("Package not found");
-      if (lockedPkg.remainingSessions <= 0)
+
+      // Load uses and recompute remaining credits within transaction
+      const uses = await tx.find(PackageUse, {
+        where: { studentPackageId: packageId },
+      });
+      const remainingInTx = computeRemainingCredits(
+        lockedPkg.totalSessions,
+        uses,
+      );
+      if (remainingInTx <= 0)
         throw new BadRequestException("No remaining credits");
 
-      lockedPkg.remainingSessions = lockedPkg.remainingSessions - 1;
-      await tx.save(StudentPackage, lockedPkg);
-
-      // Create package use record
+      // Create package use record instead of decrementing a column
       const packageUse = tx.create(PackageUse, {
         studentPackageId: packageId,
         sessionId: savedSession.id,
+        serviceType: ServiceType.PRIVATE,
+        creditsUsed: 1,
         usedAt: new Date(),
         usedBy: student.id,
       });
@@ -679,7 +573,11 @@ export class PackagesService {
       return {
         session: savedSession,
         booking: savedBooking,
-        package: lockedPkg,
+        package: {
+          ...lockedPkg,
+          // Compute final remaining for response
+          remainingSessions: remainingInTx - 1,
+        },
         packageUse: savedPackageUse,
       };
     });
@@ -722,41 +620,28 @@ export class PackagesService {
     // TODO: Check actual enrollment when course system is fully implemented
     const isEnrolledInCourse = false;
 
-    // Get student's active packages
-    const activePackages = await this.pkgRepo.find({
-      where: {
+    // Get student's active packages with uses loaded for balance computation
+    const activePackages =
+      await PackageQueryBuilder.buildActiveStudentPackagesQuery(
+        this.pkgRepo,
         studentId,
-        deletedAt: IsNull(),
-      },
-      order: { createdAt: "DESC" },
-    });
+      ).getMany();
 
     // Filter to packages with remaining sessions and not expired
     const now = new Date();
-    const validPackages = activePackages.filter(
-      (pkg) =>
-        pkg.remainingSessions > 0 &&
-        (pkg.expiresAt === null || pkg.expiresAt > now),
-    );
+    const validPackages = activePackages.filter((pkg) => {
+      const remaining = computeRemainingCredits(
+        pkg.totalSessions,
+        pkg.uses || [],
+      );
+      return remaining > 0 && (pkg.expiresAt === null || pkg.expiresAt > now);
+    });
 
     const sessionTier = getSessionTier(session);
-    const exactMatch: Array<{
-      id: number;
-      label: string;
-      remainingSessions: number;
-      expiresAt: string | null;
-      creditUnitMinutes: number;
-      tier: number;
-    }> = [];
-    const higherTier: Array<{
-      id: number;
-      label: string;
-      remainingSessions: number;
-      expiresAt: string | null;
-      creditUnitMinutes: number;
-      tier: number;
-      warningMessage: string;
-    }> = [];
+
+    // Use shared DTO types from packages/shared
+    const exactMatch: CompatiblePackage[] = [];
+    const higherTier: CompatiblePackageWithWarning[] = [];
 
     for (const pkg of validPackages) {
       if (!canUsePackageForSession(pkg, session)) {
@@ -767,23 +652,43 @@ export class PackagesService {
       const label = getPackageDisplayLabel(pkg);
       const creditUnitMinutes = Number(pkg.metadata?.credit_unit_minutes) || 30;
 
-      const baseInfo = {
+      // Parse allowances from metadata (stored at purchase time)
+      const allowances = pkg.metadata?.allowances
+        ? Array.isArray(pkg.metadata.allowances)
+          ? pkg.metadata.allowances
+          : JSON.parse(pkg.metadata.allowances as string)
+        : [];
+
+      // Compute remaining sessions from uses
+      const remainingSessions = computeRemainingCredits(
+        pkg.totalSessions,
+        pkg.uses || [],
+      );
+
+      const baseInfo: CompatiblePackage = {
         id: pkg.id,
         label,
-        remainingSessions: pkg.remainingSessions,
+        remainingSessions,
         expiresAt: pkg.expiresAt?.toISOString() || null,
         creditUnitMinutes,
         tier: packageTier,
+        allowances: allowances.map((a: any) => ({
+          serviceType: a.serviceType,
+          teacherTier: a.teacherTier || 0,
+          credits: a.credits,
+          creditUnitMinutes: a.creditUnitMinutes as 60 | 30 | 15 | 45,
+        })),
       };
 
       if (packageTier === sessionTier) {
         exactMatch.push(baseInfo);
       } else if (packageTier > sessionTier) {
         const warningMessage = getCrossTierWarningMessage(pkg, session) || "";
-        higherTier.push({
+        const packageWithWarning: CompatiblePackageWithWarning = {
           ...baseInfo,
           warningMessage,
-        });
+        };
+        higherTier.push(packageWithWarning);
       }
     }
 

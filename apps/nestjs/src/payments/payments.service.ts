@@ -134,14 +134,17 @@ export class PaymentsService {
       creditUnitMinutes,
     );
 
-    // Use package (decrement + create package_use) with calculated credits
+    // Use package (create package_use) with calculated credits
     const { package: updatedPkg, use } =
       await this.packagesService.usePackageForSession(
         student.id,
         packageId,
         sessionId,
-        student.id,
-        creditsCost,
+        {
+          usedBy: student.id,
+          creditsUsed: creditsCost,
+          serviceType: session.type,
+        },
       );
 
     // Create booking referencing package
@@ -477,7 +480,6 @@ export class PaymentsService {
             studentId: student.id,
             packageName: stripeProduct.name,
             totalSessions: credits,
-            remainingSessions: credits,
             purchasedAt: new Date(),
             expiresAt,
             sourcePaymentId: paymentIntent.id,
@@ -523,16 +525,13 @@ export class PaymentsService {
             return;
           }
 
-          // Decrement the package credits manually within the same transaction
-          savedPackage.remainingSessions = savedPackage.remainingSessions - 1;
-          await tx.save(StudentPackage, savedPackage);
-
-          // Create package use record
+          // Create package use record (remaining balance is computed from these records)
           const packageUse = tx.create(PackageUse, {
             studentPackageId: savedPackage.id,
             sessionId,
             usedAt: new Date(),
             usedBy: student.id,
+            creditsUsed: 1,
           });
           const savedPackageUse = await tx.save(PackageUse, packageUse);
 

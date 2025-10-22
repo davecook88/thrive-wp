@@ -1,6 +1,7 @@
 import { Entity, Column, ManyToOne, JoinColumn, Index } from "typeorm";
 import { BaseEntity } from "../../common/entities/base.entity.js";
 import { StudentPackage } from "./student-package.entity.js";
+import { ServiceType } from "../../common/types/class-types.js";
 
 @Entity("package_use")
 @Index(["studentPackageId"])
@@ -17,6 +18,23 @@ export class PackageUse extends BaseEntity {
 
   @Column({ name: "session_id", type: "int", nullable: true })
   sessionId: number | null;
+
+  @Column({
+    name: "service_type",
+    type: "enum",
+    enum: ServiceType,
+    nullable: true,
+    comment: "Which service type balance was used (PRIVATE, GROUP, COURSE)",
+  })
+  serviceType?: ServiceType | null;
+
+  @Column({
+    name: "credits_used",
+    type: "int",
+    default: 1,
+    comment: "How many credits were consumed (typically 1, but can be higher)",
+  })
+  creditsUsed: number = 1;
 
   @Column({ name: "used_at", type: "datetime", precision: 3 })
   usedAt: Date;

@@ -10,6 +10,7 @@ import { Booking, BookingStatus } from "../payments/entities/booking.entity.js";
 import { Session, SessionStatus } from "../sessions/entities/session.entity.js";
 import { Student } from "../students/entities/student.entity.js";
 import { StudentPackage } from "../packages/entities/student-package.entity.js";
+import { PackageUse } from "../packages/entities/package-use.entity.js";
 import { PoliciesService } from "../policies/policies.service.js";
 import { ServiceType } from "../common/types/class-types.js";
 import { WaitlistsService } from "../waitlists/waitlists.service.js";
@@ -20,6 +21,8 @@ import {
   getCrossTierWarningMessage,
 } from "../common/types/credit-tiers.js";
 import { CancelBookingDto } from "@thrive/shared";
+import { computeRemainingCredits } from "../packages/utils/bundle-helpers.js";
+import { PackageQueryBuilder } from "../packages/utils/package-query-builder.js";
 
 export interface BookingModificationCheck {
   canCancel: boolean;
@@ -53,6 +56,8 @@ export class BookingsService {
     private readonly studentRepository: Repository<Student>,
     @InjectRepository(StudentPackage)
     private readonly studentPackageRepository: Repository<StudentPackage>,
+    @InjectRepository(PackageUse)
+    private readonly packageUseRepository: Repository<PackageUse>,
     private readonly policiesService: PoliciesService,
     private readonly waitlistsService: WaitlistsService,
   ) {}
@@ -132,17 +137,39 @@ export class BookingsService {
         creditUnitMinutes,
       );
 
+      // Load package with uses to compute remaining credits
+      const pkgWithUses = await PackageQueryBuilder
+        .buildStudentPackageWithUsesQuery(
+          this.studentPackageRepository,
+          studentId,
+          studentPackage.id,
+        )
+        .getOne();
+
+      if (!pkgWithUses) {
+        throw new NotFoundException("Student package not found");
+      }
+
+      // Compute remaining credits
+      const remaining = computeRemainingCredits(
+        pkgWithUses.totalSessions,
+        pkgWithUses.uses || [],
+      );
+
       // Check if package has enough credits
-      if (studentPackage.remainingSessions < creditsCost) {
+      if (remaining < creditsCost) {
         throw new BadRequestException(
-          `Insufficient credits. Required: ${creditsCost}, Available: ${studentPackage.remainingSessions}`,
+          `Insufficient credits. Required: ${creditsCost}, Available: ${remaining}`,
         );
       }
 
       // Check if package is still valid (not expired)
-      if (studentPackage.expiresAt && studentPackage.expiresAt < new Date()) {
+      if (pkgWithUses.expiresAt && pkgWithUses.expiresAt < new Date()) {
         throw new BadRequestException("Package has expired");
       }
+
+      // Update studentPackage reference
+      studentPackage = pkgWithUses;
     }
 
     const booking = new Booking();
@@ -153,8 +180,19 @@ export class BookingsService {
     if (studentPackage) {
       booking.studentPackageId = studentPackage.id;
       booking.creditsCost = creditsCost;
-      studentPackage.remainingSessions -= creditsCost;
-      await this.studentPackageRepository.save(studentPackage);
+
+      // Create PackageUse record instead of decrementing a column
+      const use = this.packageUseRepository.create({
+        studentPackageId: studentPackage.id,
+        sessionId,
+        creditsUsed: creditsCost,
+        usedAt: new Date(),
+        usedBy: studentId,
+      });
+      await this.packageUseRepository.save(use);
+
+      // Link the use to the booking
+      booking.packageUseId = use.id;
     }
 
     return this.bookingRepository.save(booking);

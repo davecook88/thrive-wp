@@ -1,6 +1,6 @@
-import { Entity, Column, Index } from "typeorm";
+import { Entity, Column, OneToMany, Index } from "typeorm";
 import { BaseEntity } from "../../common/entities/base.entity.js";
-import { ServiceType } from "../../common/types/class-types.js";
+import { PackageAllowance } from "../../packages/entities/package-allowance.entity.js";
 
 export enum ScopeType {
   COURSE = "course",
@@ -13,21 +13,22 @@ export enum ScopeType {
  * Maps service keys to Stripe products.
  * Serves as the minimal local mapping between human-readable keys and Stripe products.
  * Prices are fetched dynamically from Stripe when needed.
+ *
+ * For bundle packages, this maps to a single Stripe product that contains multiple
+ * allowances (one per service type). Allowances define the contents of the bundle.
  */
 @Entity("stripe_product_map")
 @Index(["serviceKey"], { unique: true })
 @Index(["stripeProductId"], { unique: true })
 @Index(["active"])
 @Index(["scopeType", "scopeId"])
-@Index(["serviceType"])
-@Index(["teacherTier"])
 export class StripeProductMap extends BaseEntity {
   @Column({
     name: "service_key",
     type: "varchar",
     length: 120,
     comment:
-      "Human-readable key like PRIVATE_CLASS, GROUP_CLASS, COURSE_CLASS, or COURSE:123",
+      "Human-readable key like PRIVATE_CLASS, GROUP_CLASS, COURSE_CLASS, BUNDLE_PREMIUM, or COURSE:123",
   })
   serviceKey: string;
 
@@ -65,27 +66,21 @@ export class StripeProductMap extends BaseEntity {
   scopeId?: number;
 
   @Column({
-    name: "service_type",
-    type: "enum",
-    enum: ServiceType,
-    default: ServiceType.PRIVATE,
-    comment: "Service type: PRIVATE, GROUP, or COURSE",
-  })
-  serviceType: ServiceType = ServiceType.PRIVATE;
-
-  @Column({
-    name: "teacher_tier",
-    type: "int",
-    default: 0,
-    comment: "Teacher tier for premium teacher pricing",
-  })
-  teacherTier: number = 0;
-
-  @Column({
     name: "metadata",
     type: "json",
     nullable: true,
-    comment: "Additional metadata from Stripe",
+    comment: "Additional metadata from Stripe, including allowances array for bundles",
   })
   metadata?: Record<string, string | number | boolean | undefined> | null;
+
+  /**
+   * Package allowances define what's included in this bundle.
+   * For single-service products, there's one allowance.
+   * For multi-service bundles, there can be multiple allowances.
+   */
+  @OneToMany(() => PackageAllowance, (allowance) => allowance.stripeProductMap, {
+    eager: true,
+    cascade: true,
+  })
+  allowances: PackageAllowance[] = [];
 }

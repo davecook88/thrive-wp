@@ -1,19 +1,5 @@
+import { ServiceType } from "@thrive/shared";
 import { z } from "zod";
-
-/**
- * Enumeration of class/session types.
- * Supports private, group, and course sessions.
- */
-export enum ServiceType {
-  PRIVATE = "PRIVATE", // One-to-one individual sessions
-  GROUP = "GROUP", // Group classes with enrollment limits
-  COURSE = "COURSE", // Multi-session programs with curriculum
-}
-
-/**
- * Zod schema for validating ServiceType enum values.
- */
-export const ServiceTypeSchema = z.enum(ServiceType);
 
 /**
  * Service key for Stripe product mappings.

@@ -14,6 +14,7 @@ import {
 import { ZodValidationPipe } from "nestjs-zod";
 import { z } from "zod";
 import { Request } from "express";
+import { ServiceType } from "@thrive/shared";
 import { PackagesService } from "./packages.service.js";
 import { StudentsService } from "../students/students.service.js";
 
@@ -27,6 +28,8 @@ const UsePackageSchema = z
   .object({
     sessionId: z.number().optional(),
     bookingData: BookingDataSchema.optional(),
+    creditsUsed: z.number().int().positive().optional(),
+    serviceType: z.nativeEnum(ServiceType).optional(),
   })
   .refine(
     (data) => data.sessionId !== undefined || data.bookingData !== undefined,
@@ -123,7 +126,11 @@ export class PackagesController {
         userIdNum,
         packageId,
         body.sessionId,
-        userIdNum,
+        {
+          usedBy: userIdNum,
+          creditsUsed: body.creditsUsed || 1,
+          serviceType: body.serviceType,
+        },
       );
     }
 

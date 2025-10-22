@@ -119,6 +119,14 @@ export class Booking extends BaseEntity {
   studentPackageId: number | null;
 
   @Column({
+    name: "package_use_id",
+    type: "int",
+    nullable: true,
+    comment: "FK to package_use.id - tracks which specific package use record this booking created",
+  })
+  packageUseId: number | null;
+
+  @Column({
     name: "credits_cost",
     type: "int",
     nullable: true,

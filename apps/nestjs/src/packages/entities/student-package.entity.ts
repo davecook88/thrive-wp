@@ -1,6 +1,7 @@
-import { Entity, Column, ManyToOne, JoinColumn, Index } from "typeorm";
+import { Entity, Column, ManyToOne, OneToMany, JoinColumn, Index } from "typeorm";
 import { BaseEntity } from "../../common/entities/base.entity.js";
 import { Student } from "../../students/entities/student.entity.js";
+import { PackageUse } from "./package-use.entity.js";
 
 @Entity("student_package")
 @Index(["studentId"])
@@ -17,9 +18,6 @@ export class StudentPackage extends BaseEntity {
 
   @Column({ name: "total_sessions", type: "int", default: 0 })
   totalSessions: number;
-
-  @Column({ name: "remaining_sessions", type: "int", default: 0 })
-  remainingSessions: number;
 
   @Column({ name: "purchased_at", type: "datetime", precision: 3 })
   purchasedAt: Date;
@@ -41,5 +39,16 @@ export class StudentPackage extends BaseEntity {
   sourcePaymentId: string | null;
 
   @Column({ name: "metadata", type: "json", nullable: true })
-  metadata: Record<string, string | number | boolean> | null;
+  metadata: Record<string, string | number | boolean | undefined> | null;
+
+  /**
+   * PackageUse records track how this package's credits have been consumed.
+   * This relation is used to compute remaining credits.
+   * Single source of truth: balances are computed from these uses.
+   */
+  @OneToMany(() => PackageUse, (use) => use.studentPackage, {
+    eager: false,
+    cascade: false,
+  })
+  uses?: PackageUse[];
 }
