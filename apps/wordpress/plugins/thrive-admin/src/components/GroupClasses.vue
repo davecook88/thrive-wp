@@ -43,8 +43,8 @@
             class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">All Teachers</option>
-            <option v-for="teacher in teachers" :key="teacher.teacherId" :value="teacher.teacherId">
-              {{ teacher.name }}
+            <option v-for="teacher in teachers" :key="teacher.id" :value="teacher.id">
+              {{ teacher.displayName }}
             </option>
           </select>
         </div>
@@ -223,7 +223,8 @@ import { defineComponent, ref, onMounted } from 'vue';
 import GroupClassModal from './GroupClassModal.vue';
 import GroupClassSessionsModal from './GroupClassSessionsModal.vue';
 import { thriveClient } from '../lib';
-import type { Teacher, Level, TeacherLocation } from '../lib/types/calendar';
+import type { LevelDto } from '@thrive/shared/types/level';
+import type { PublicTeacherDto } from '@thrive/shared/types/teachers';
 
 interface GroupClassTeacher {
   teacherId: number;
@@ -236,7 +237,7 @@ export interface GroupClass {
   id: number;
   title: string;
   description: string | null;
-  levels: Level[];
+  levels: LevelDto[];
   capacityMax: number;
   rrule: string | null;
   startDate: string | null;
@@ -254,8 +255,8 @@ export default defineComponent({
   },
   setup() {
     const groupClasses = ref<GroupClass[]>([]);
-    const levels = ref<Level[]>([]);
-    const teachers = ref<Teacher[]>([]);
+    const levels = ref<LevelDto[]>([]);
+    const teachers = ref<PublicTeacherDto[]>([]);
     const loading = ref(false);
     const error = ref<string | null>(null);
 

@@ -6,9 +6,13 @@ import {
   UseGuards,
   Request,
 } from "@nestjs/common";
+import { ZodValidationPipe } from "nestjs-zod";
 import { TeachersService } from "./teachers.service.js";
 import { TeacherGuard } from "../auth/teacher.guard.js";
-import { UpdateTeacherProfileDto } from "./dto/update-teacher-profile.dto.js";
+import {
+  UpdateTeacherProfileSchema,
+  type UpdateTeacherProfileDto,
+} from "./dto/update-teacher-profile.dto.js";
 import type { Request as ExpressRequest } from "express";
 
 type AuthenticatedRequest = ExpressRequest & {
@@ -29,7 +33,8 @@ export class TeachersProfileController {
   @Patch()
   async updateMyProfile(
     @Request() req: AuthenticatedRequest,
-    @Body() dto: UpdateTeacherProfileDto,
+    @Body(new ZodValidationPipe(UpdateTeacherProfileSchema))
+    dto: UpdateTeacherProfileDto,
   ) {
     const userId = req.user.id;
     return this.teachersService.updateMyProfile(userId, dto);

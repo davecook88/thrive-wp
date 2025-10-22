@@ -1,0 +1,94 @@
+
+
+> @thrive/api@0.0.1 lint /Users/davidcook/personal/thrive-wp/apps/nestjs
+> eslint "{src,apps,libs,test}/**/*.ts" --fix
+
+[0m[0m
+[0m[4m/Users/davidcook/personal/thrive-wp/apps/nestjs/src/auth/auth.service.ts[24m[0m
+[0m  [2m137:11[22m  [31merror[39m    Unsafe assignment of an `any` value                                     [2m@typescript-eslint/no-unsafe-assignment[22m[0m
+[0m  [2m150:18[22m  [33mwarning[39m  Unsafe argument of type `any` assigned to a parameter of type `string`  [2m@typescript-eslint/no-unsafe-argument[22m[0m
+[0m  [2m150:22[22m  [31merror[39m    Unsafe member access .role on an `any` value                            [2m@typescript-eslint/no-unsafe-member-access[22m[0m
+[0m[0m
+[0m[4m/Users/davidcook/personal/thrive-wp/apps/nestjs/src/group-classes/group-classes.service.ts[24m[0m
+[0m   [2m22:10[22m  [31merror[39m  'AvailableSession' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m402:17[22m  [31merror[39m  Unsafe assignment of an `any` value           [2m@typescript-eslint/no-unsafe-assignment[22m[0m
+[0m  [2m403:28[22m  [31merror[39m  Unexpected any. Specify a different type      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/davidcook/personal/thrive-wp/apps/nestjs/src/payments/dto/stripe-metadata.dto.ts[24m[0m
+[0m  [2m100:50[22m  [31merror[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m117:21[22m  [31merror[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m118:34[22m  [31merror[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/davidcook/personal/thrive-wp/apps/nestjs/src/payments/entities/order-item.entity.ts[24m[0m
+[0m  [2m89:14[22m  [31merror[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/davidcook/personal/thrive-wp/apps/nestjs/src/payments/payments.service.ts[24m[0m
+[0m  [2m206:9[22m   [31merror[39m  The two values in this comparison do not have a shared enum type  [2m@typescript-eslint/no-unsafe-enum-comparison[22m[0m
+[0m  [2m714:68[22m  [31merror[39m  Invalid type "unknown" of template literal expression             [2m@typescript-eslint/restrict-template-expressions[22m[0m
+[0m  [2m855:44[22m  [31merror[39m  Invalid type "unknown" of template literal expression             [2m@typescript-eslint/restrict-template-expressions[22m[0m
+[0m[0m
+[0m[4m/Users/davidcook/personal/thrive-wp/apps/nestjs/src/payments/webhooks.controller.ts[24m[0m
+[0m  [2m37:21[22m  [31merror[39m  Unexpected `await` of a non-Promise (non-"Thenable") value  [2m@typescript-eslint/await-thenable[22m[0m
+[0m[0m
+[0m[4m/Users/davidcook/personal/thrive-wp/apps/nestjs/src/students/students.controller.ts[24m[0m
+[0m  [2m72:14[22m  [31merror[39m  'err' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4m/Users/davidcook/personal/thrive-wp/apps/nestjs/src/teachers/entities/teacher-availability.entity.ts[24m[0m
+[0m  [2m6:3[22m  [31merror[39m  'OneToMany' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4m/Users/davidcook/personal/thrive-wp/apps/nestjs/src/teachers/entities/teacher.entity.spec.ts[24m[0m
+[0m   [2m4:1[22m   [31merror[39m  Unsafe call of a(n) `error` type typed value                     [2m@typescript-eslint/no-unsafe-call[22m[0m
+[0m   [2m5:3[22m   [31merror[39m  Unsafe call of a(n) `error` type typed value                     [2m@typescript-eslint/no-unsafe-call[22m[0m
+[0m   [2m9:5[22m   [31merror[39m  Unsafe call of a(n) `error` type typed value                     [2m@typescript-eslint/no-unsafe-call[22m[0m
+[0m   [2m9:5[22m   [31merror[39m  Unsafe call of a(n) `error` type typed value                     [2m@typescript-eslint/no-unsafe-call[22m[0m
+[0m   [2m9:20[22m  [31merror[39m  Unsafe member access .toBeDefined on an `error` typed value      [2m@typescript-eslint/no-unsafe-member-access[22m[0m
+[0m  [2m10:5[22m   [31merror[39m  Unsafe call of a(n) `error` type typed value                     [2m@typescript-eslint/no-unsafe-call[22m[0m
+[0m  [2m10:5[22m   [31merror[39m  Unsafe call of a(n) `error` type typed value                     [2m@typescript-eslint/no-unsafe-call[22m[0m
+[0m  [2m10:26[22m  [31merror[39m  Unsafe member access .toBe on an `error` typed value             [2m@typescript-eslint/no-unsafe-member-access[22m[0m
+[0m  [2m13:3[22m   [31merror[39m  Unsafe call of a(n) `error` type typed value                     [2m@typescript-eslint/no-unsafe-call[22m[0m
+[0m  [2m15:36[22m  [31merror[39m  Unexpected any. Specify a different type                         [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m16:22[22m  [31merror[39m  Unexpected any. Specify a different type                         [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m17:11[22m  [31merror[39m  Unsafe assignment of an `any` value                              [2m@typescript-eslint/no-unsafe-assignment[22m[0m
+[0m  [2m24:9[22m   [31merror[39m  Unsafe assignment of an `any` value                              [2m@typescript-eslint/no-unsafe-assignment[22m[0m
+[0m  [2m27:7[22m   [31merror[39m  Unsafe return of a value of type `any[]`                         [2m@typescript-eslint/no-unsafe-return[22m[0m
+[0m  [2m31:44[22m  [31merror[39m  Unsafe return of a value of type `any`                           [2m@typescript-eslint/no-unsafe-return[22m[0m
+[0m  [2m31:46[22m  [31merror[39m  Unsafe member access .propertyName on an `any` value             [2m@typescript-eslint/no-unsafe-member-access[22m[0m
+[0m  [2m32:5[22m   [31merror[39m  Unsafe call of a(n) `error` type typed value                     [2m@typescript-eslint/no-unsafe-call[22m[0m
+[0m  [2m32:5[22m   [31merror[39m  Unsafe call of a(n) `error` type typed value                     [2m@typescript-eslint/no-unsafe-call[22m[0m
+[0m  [2m32:25[22m  [31merror[39m  Unsafe member access .toEqual on an `error` typed value          [2m@typescript-eslint/no-unsafe-member-access[22m[0m
+[0m  [2m33:7[22m   [31merror[39m  Unsafe call of a(n) `error` type typed value                     [2m@typescript-eslint/no-unsafe-call[22m[0m
+[0m  [2m33:14[22m  [31merror[39m  Unsafe member access .arrayContaining on an `error` typed value  [2m@typescript-eslint/no-unsafe-member-access[22m[0m
+[0m  [2m46:3[22m   [31merror[39m  Unsafe call of a(n) `error` type typed value                     [2m@typescript-eslint/no-unsafe-call[22m[0m
+[0m  [2m58:5[22m   [31merror[39m  Unsafe call of a(n) `error` type typed value                     [2m@typescript-eslint/no-unsafe-call[22m[0m
+[0m  [2m58:5[22m   [31merror[39m  Unsafe call of a(n) `error` type typed value                     [2m@typescript-eslint/no-unsafe-call[22m[0m
+[0m  [2m58:25[22m  [31merror[39m  Unsafe member access .toBeDefined on an `error` typed value      [2m@typescript-eslint/no-unsafe-member-access[22m[0m
+[0m  [2m61:3[22m   [31merror[39m  Unsafe call of a(n) `error` type typed value                     [2m@typescript-eslint/no-unsafe-call[22m[0m
+[0m  [2m66:5[22m   [31merror[39m  Unsafe call of a(n) `error` type typed value                     [2m@typescript-eslint/no-unsafe-call[22m[0m
+[0m  [2m66:5[22m   [31merror[39m  Unsafe call of a(n) `error` type typed value                     [2m@typescript-eslint/no-unsafe-call[22m[0m
+[0m  [2m66:21[22m  [31merror[39m  Unsafe member access .toBeDefined on an `error` typed value      [2m@typescript-eslint/no-unsafe-member-access[22m[0m
+[0m[0m
+[0m[4m/Users/davidcook/personal/thrive-wp/apps/nestjs/src/teachers/teachers.service.spec.ts[24m[0m
+[0m  [2m444:58[22m  [33mwarning[39m  Unsafe argument of type `any` assigned to a parameter of type `Teacher | null`           [2m@typescript-eslint/no-unsafe-argument[22m[0m
+[0m  [2m445:60[22m  [33mwarning[39m  Unsafe argument of type `any[]` assigned to a parameter of type `TeacherAvailability[]`  [2m@typescript-eslint/no-unsafe-argument[22m[0m
+[0m  [2m492:58[22m  [33mwarning[39m  Unsafe argument of type `any` assigned to a parameter of type `Teacher | null`           [2m@typescript-eslint/no-unsafe-argument[22m[0m
+[0m  [2m493:60[22m  [33mwarning[39m  Unsafe argument of type `any[]` assigned to a parameter of type `TeacherAvailability[]`  [2m@typescript-eslint/no-unsafe-argument[22m[0m
+[0m  [2m589:58[22m  [33mwarning[39m  Unsafe argument of type `any` assigned to a parameter of type `Teacher | null`           [2m@typescript-eslint/no-unsafe-argument[22m[0m
+[0m[0m
+[0m[4m/Users/davidcook/personal/thrive-wp/apps/nestjs/src/waitlists/waitlists.service.ts[24m[0m
+[0m   [2m46:11[22m  [31merror[39m  Unsafe assignment of an `any` value                  [2m@typescript-eslint/no-unsafe-assignment[22m[0m
+[0m   [2m52:11[22m  [31merror[39m  Unsafe assignment of an `any` value                  [2m@typescript-eslint/no-unsafe-assignment[22m[0m
+[0m   [2m52:38[22m  [31merror[39m  Unsafe member access .maxPosition on an `any` value  [2m@typescript-eslint/no-unsafe-member-access[22m[0m
+[0m   [2m57:7[22m   [31merror[39m  Unsafe assignment of an `any` value                  [2m@typescript-eslint/no-unsafe-assignment[22m[0m
+[0m  [2m163:11[22m  [31merror[39m  'usedPackage' is assigned a value but never used     [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4m/Users/davidcook/personal/thrive-wp/apps/nestjs/test/app.e2e.spec.ts[24m[0m
+[0m  [2m25:20[22m  [33mwarning[39m  Unsafe argument of type error typed assigned to a parameter of type `App`  [2m@typescript-eslint/no-unsafe-argument[22m[0m
+[0m  [2m25:20[22m  [31merror[39m    Unsafe call of a(n) `error` type typed value                               [2m@typescript-eslint/no-unsafe-call[22m[0m
+[0m[0m
+[0m[4m/Users/davidcook/personal/thrive-wp/apps/nestjs/test/students-api.e2e.spec.ts[24m[0m
+[0m    [2m4:8[22m   [31merror[39m  'UpcomingSessionsResponseDto' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m213:13[22m  [31merror[39m  'otherStudentId' is assigned a value but never used      [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[31m[1m✖ 59 problems (52 errors, 7 warnings)[22m[39m[0m
+[0m[31m[1m[22m[39m[0m
+[41m[30m ELIFECYCLE [39m[49m [31mCommand failed with exit code 1.[39m

@@ -11,13 +11,14 @@ import type { User } from "../../users/entities/user.entity.js";
 import { Session } from "../../sessions/entities/session.entity.js";
 import type { CourseTeacher } from "../../course-teachers/entities/course-teacher.entity.js";
 import { TeacherAvailability } from "./teacher-availability.entity.js";
+import type { PublicTeacherDto } from "@thrive/shared";
 
 /**
  * Location information for teacher (birthplace or current location)
  */
 export interface TeacherLocation {
-  city: string;
-  country: string;
+  city?: string;
+  country?: string;
   lat?: number;
   lng?: number;
 }
@@ -87,7 +88,7 @@ export class Teacher extends BaseEntity {
       from: (value: string | null) => {
         if (!value) return null;
         try {
-          return JSON.parse(value);
+          return JSON.parse(value) as TeacherLocation;
         } catch {
           return null;
         }
@@ -107,7 +108,7 @@ export class Teacher extends BaseEntity {
       from: (value: string | null) => {
         if (!value) return null;
         try {
-          return JSON.parse(value);
+          return JSON.parse(value) as TeacherLocation;
         } catch {
           return null;
         }
@@ -126,7 +127,7 @@ export class Teacher extends BaseEntity {
       from: (value: string | null) => {
         if (!value) return null;
         try {
-          return JSON.parse(value);
+          return JSON.parse(value) as string[];
         } catch {
           return null;
         }
@@ -154,7 +155,7 @@ export class Teacher extends BaseEntity {
       from: (value: string | null) => {
         if (!value) return null;
         try {
-          return JSON.parse(value);
+          return JSON.parse(value) as string[];
         } catch {
           return null;
         }
@@ -174,4 +175,35 @@ export class Teacher extends BaseEntity {
 
   @OneToMany("CourseTeacher", "teacher")
   courseTeachers: CourseTeacher[];
+
+  /**
+   * Convert Teacher entity to PublicTeacherDto
+   * This is the single source of truth for teacher DTO transformation
+   */
+  toPublicDto(): PublicTeacherDto {
+    const firstName = this.user?.firstName ?? "";
+    const lastName = this.user?.lastName ?? "";
+
+    return {
+      id: this.id,
+      userId: this.userId,
+      bio: this.bio ?? undefined,
+      avatarUrl: this.avatarUrl ?? undefined,
+      languagesSpoken: this.languagesSpoken ?? undefined,
+      birthplace: this.birthplace ?? {},
+      currentLocation: this.currentLocation ?? {},
+      specialties: this.specialties ?? undefined,
+      displayName:
+        [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") ||
+        "Teacher",
+      initials: [firstName.charAt(0), lastName.charAt(0)]
+        .filter(Boolean)
+        .join("")
+        .toUpperCase(),
+      isActive: this.isActive ? true : false,
+      yearsExperience: this.yearsExperience ?? null,
+      levels: undefined,
+      rating: undefined,
+    };
+  }
 }

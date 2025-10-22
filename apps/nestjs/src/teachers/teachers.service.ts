@@ -16,12 +16,10 @@ import {
   AvailabilityRuleDto,
   PreviewMyAvailabilityDto,
 } from "./dto/availability.dto.js";
-import { Session } from "../sessions/entities/session.entity.js";
 import type {
   GetAvailabilityResponse,
   PreviewAvailabilityResponse,
   PublicTeacherDto,
-  TeacherProfileDto,
 } from "@thrive/shared";
 
 // (local transient shapes are replaced by shared types)
@@ -33,8 +31,7 @@ export class TeachersService {
     private teacherRepository: Repository<Teacher>,
     @InjectRepository(TeacherAvailability)
     private availabilityRepository: Repository<TeacherAvailability>,
-    @InjectRepository(Session)
-    private sessionRepository: Repository<Session>,
+
     private dataSource: DataSource,
   ) {}
 
@@ -257,6 +254,7 @@ export class TeachersService {
       end: w.end,
       available: true,
       reason: undefined,
+      teacherIds: w.teacherIds,
     }));
     return { windows: converted };
   }
@@ -271,29 +269,10 @@ export class TeachersService {
     if (!t) {
       throw new NotFoundException("Teacher not found");
     }
-    const teacher: PublicTeacherDto = {
-      id: t.id,
-      userId: t.userId,
-      displayName:
-        [(t.user?.firstName ?? "").trim(), (t.user?.lastName ?? "").trim()]
-          .filter(Boolean)
-          .join(" ") || "Teacher",
-      bio: t.bio ?? undefined,
-      avatarUrl: t.avatarUrl ?? undefined,
-      languages: t.languagesSpoken ?? undefined,
-      specialties: t.specialties ?? undefined,
-      levels: undefined,
-      rating: undefined,
-      isActive: t.isActive ? true : false,
-      initials: [t.user?.firstName?.charAt(0), t.user?.lastName?.charAt(0)]
-        .filter(Boolean)
-        .join("")
-        .toUpperCase(),
-    };
-    return teacher;
+    return t.toPublicDto();
   }
 
-  async getMyProfile(userId: number): Promise<TeacherProfileDto> {
+  async getMyProfile(userId: number): Promise<PublicTeacherDto> {
     const t = await this.teacherRepository
       .createQueryBuilder("t")
       .leftJoinAndSelect("t.user", "u")
@@ -302,17 +281,7 @@ export class TeachersService {
     if (!t) {
       throw new NotFoundException("Teacher profile not found");
     }
-    return {
-      id: t.id,
-      userId: t.userId,
-      headline: undefined,
-      bio: t.bio ?? undefined,
-      avatarUrl: t.avatarUrl ?? undefined,
-      languages: t.languagesSpoken ?? undefined,
-      specialties: t.specialties ?? undefined,
-      pricing: undefined,
-      availabilityPreview: undefined,
-    };
+    return t.toPublicDto();
   }
 
   async updateMyProfile(
@@ -321,14 +290,14 @@ export class TeachersService {
       bio?: string | null;
       avatarUrl?: string | null;
       birthplace?: {
-        city: string;
-        country: string;
+        city?: string;
+        country?: string;
         lat?: number;
         lng?: number;
       };
       currentLocation?: {
-        city: string;
-        country: string;
+        city?: string;
+        country?: string;
         lat?: number;
         lng?: number;
       };

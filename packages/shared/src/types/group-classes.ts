@@ -1,4 +1,35 @@
 import { z } from "zod";
+import { PublicTeacherSchema } from "./teachers.js";
+import { LevelSchema } from "./level.js";
+
+// Session with Enrollment Response Schema
+export const SessionWithEnrollmentResponseSchema = z.object({
+  id: z.number().int().positive(),
+  type: z.string(),
+  startAt: z.string().datetime(),
+  endAt: z.string().datetime(),
+  capacityMax: z.number().int().positive(),
+  status: z.string(),
+  meetingUrl: z.string().nullable(),
+  teacherId: z.number().int().positive(),
+  groupClassId: z.number().int().positive().nullable(),
+  groupClass: z
+    .object({
+      id: z.number().int().positive(),
+      title: z.string(),
+      level: LevelSchema,
+    })
+    .nullable(),
+  enrolledCount: z.number().int().nonnegative(),
+  availableSpots: z.number().int().nonnegative(),
+  isFull: z.boolean(),
+  canJoinWaitlist: z.boolean(),
+  teacher: PublicTeacherSchema.nullable(),
+});
+
+export type SessionWithEnrollmentResponse = z.infer<
+  typeof SessionWithEnrollmentResponseSchema
+>;
 
 // Group Class Creation Response Schema
 export const CreateGroupClassResponseSchema = z.object({

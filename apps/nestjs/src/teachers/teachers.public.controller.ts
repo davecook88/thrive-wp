@@ -32,28 +32,7 @@ export class TeachersPublicController {
       .addOrderBy("u.last_name", "ASC")
       .getMany();
 
-    return teachers.map((t) => ({
-      userId: t.userId,
-      id: t.id,
-      displayName:
-        [(t.user?.firstName ?? "").trim(), (t.user?.lastName ?? "").trim()]
-          .filter(Boolean)
-          .join(" ") || "Teacher",
-      bio: t.bio ?? null,
-      avatarUrl: t.avatarUrl ?? null,
-      birthplace: t.birthplace ?? null,
-      currentLocation: t.currentLocation ?? null,
-      specialties: t.specialties ?? undefined,
-      yearsExperience: t.yearsExperience ?? null,
-      languagesSpoken: t.languagesSpoken ?? undefined,
-      initials: [t.user?.firstName?.charAt(0), t.user?.lastName?.charAt(0)]
-        .filter(Boolean)
-        .join("")
-        .toUpperCase(),
-      // The following fields are not available in this query, set to undefined
-      languages: t.languagesSpoken ?? undefined,
-      isActive: t.isActive ? true : false,
-    }));
+    return teachers.map((t) => t.toPublicDto());
   }
 
   @Get(":id")

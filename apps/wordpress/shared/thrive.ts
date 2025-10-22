@@ -7,6 +7,8 @@ import {
   StudentPackageMyCreditsResponse,
   UpcomingSessionDto,
   UpcomingSessionsResponseSchema,
+  SessionWithEnrollmentResponse,
+  UpdateTeacherProfileDto,
 } from "@thrive/shared";
 import {
   PreviewAvailabilityResponseSchema,
@@ -21,28 +23,6 @@ import {
   CreatePackageDto,
   PackageResponseDto,
 } from "@thrive/shared";
-
-interface SessionWithEnrollmentResponse {
-  id: number;
-  type: string;
-  startAt: string;
-  endAt: string;
-  capacityMax: number;
-  status: string;
-  meetingUrl: string | null;
-  teacherId: number;
-  groupClassId: number | null;
-  groupClass: {
-    id: number;
-    title: string;
-    level: LevelDto;
-  } | null;
-  enrolledCount: number;
-  availableSpots: number;
-  isFull: boolean;
-  canJoinWaitlist: boolean;
-  teacher: PublicTeacherDto | null;
-}
 
 const options: Partial<RequestInit> = {
   headers: { "Content-Type": "application/json" },
@@ -81,6 +61,39 @@ const apiPost = async <T>(
   const body = data ? JSON.stringify(data) : undefined;
   return apiRequest<T>(url, { method: "POST", body }, schema);
 };
+
+const apiPatch = async <T>(
+  url: string,
+  data: Record<string, unknown> | undefined,
+  schema?: z.ZodSchema<T>,
+): Promise<T | null> => {
+  const body = data ? JSON.stringify(data) : undefined;
+  return apiRequest<T>(url, { method: "PATCH", body }, schema);
+};
+
+export interface TeacherLocation {
+  city: string;
+  country: string;
+  lat?: number;
+  lng?: number;
+}
+
+export interface TeacherProfile {
+  userId: number;
+  teacherId: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  bio: string | null;
+  avatarUrl: string | null;
+  birthplace: TeacherLocation | null;
+  currentLocation: TeacherLocation | null;
+  specialties: string[] | null;
+  yearsExperience: number | null;
+  languagesSpoken: string[] | null;
+  tier: number;
+  isActive: boolean;
+}
 
 export const thriveClient = {
   fetchAvailabilityPreview: async (
@@ -132,7 +145,7 @@ export const thriveClient = {
       startUtc: w.start,
       endUtc: w.end,
       type: "availability",
-      teacherIds: [],
+      teacherIds: w.teacherIds,
     }));
   },
 
@@ -140,7 +153,6 @@ export const thriveClient = {
     start: Date,
     end: Date,
   ): Promise<BookingEvent[]> => {
-    console.trace("Fetching student calendar events:", { start, end });
     const data = await apiGet<BookingEvent[]>(
       `/api/students/me/sessions?start=${encodeURIComponent(
         start.toISOString(),
@@ -222,21 +234,19 @@ export const thriveClient = {
     if (!Array.isArray(data)) return [];
 
     // Map to CalendarEvent format
-    return data.map((s) => {
-      // Transform teacher object to include name from user relation
-      const teacher = s.teacher;
-
-      return {
+    return data
+      .filter((s) => s.groupClass !== null)
+      .map((s) => ({
         id: `group-session-${s.id}`,
         type: "class" as const,
         serviceType: "GROUP" as const,
-        title: s.groupClass.title,
+        title: s.groupClass?.title ?? "",
         startUtc: s.startAt,
         endUtc: s.endAt,
         sessionId: String(s.id),
-        groupClassId: s.groupClass.id,
-        level: s.groupClass.level,
-        teacher,
+        groupClassId: s.groupClass?.id,
+        level: s.groupClass?.level,
+        teacher: s.teacher || undefined,
         capacityMax: s.capacityMax,
         enrolledCount: s.enrolledCount,
         availableSpots: s.availableSpots,
@@ -244,8 +254,7 @@ export const thriveClient = {
         canJoinWaitlist: s.canJoinWaitlist,
         meetingUrl: s.meetingUrl || undefined,
         status: "SCHEDULED" as const,
-      };
-    });
+      }));
   },
   fetchLevels: async (): Promise<LevelDto[]> => {
     const data = await apiGet<LevelDto[]>("/api/levels");
@@ -269,13 +278,8 @@ export const thriveClient = {
     );
   },
 
-  getPackages: async (): Promise<
-    import("@thrive/shared").PackageResponseDto[]
-  > => {
-    const data =
-      await apiGet<import("@thrive/shared").PackageResponseDto[]>(
-        "/admin/packages",
-      );
+  getPackages: async (): Promise<PackageResponseDto[]> => {
+    const data = await apiGet<PackageResponseDto[]>("/admin/packages");
     if (!Array.isArray(data)) {
       throw new Error("Invalid packages data");
     }
@@ -284,8 +288,8 @@ export const thriveClient = {
 
   createPackage: async (
     data: CreatePackageDto,
-  ): Promise<import("@thrive/shared").PackageResponseDto> => {
-    const result = await apiPost<import("@thrive/shared").PackageResponseDto>(
+  ): Promise<PackageResponseDto> => {
+    const result = await apiPost<PackageResponseDto>(
       "/admin/packages",
       data,
       PackageResponseSchema,
@@ -297,5 +301,22 @@ export const thriveClient = {
   deactivatePackage: async (id: number): Promise<void> => {
     const result = await apiPost(`/admin/packages/${id}/deactivate`, undefined);
     if (!result) throw new Error("Failed to deactivate package");
+  },
+
+  fetchTeacherProfile: async (): Promise<PublicTeacherDto | null> => {
+    return await apiGet<PublicTeacherDto>(
+      "/api/teachers/me/profile",
+      PublicTeacherSchema,
+    );
+  },
+
+  updateTeacherProfile: async (
+    data: UpdateTeacherProfileDto,
+  ): Promise<PublicTeacherDto | null> => {
+    return await apiPatch<PublicTeacherDto>(
+      "/api/teachers/me/profile",
+      data as Record<string, unknown>,
+      PublicTeacherSchema,
+    );
   },
 } as const;

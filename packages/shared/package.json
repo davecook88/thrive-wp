@@ -17,6 +17,10 @@
         "./clients/*": {
             "types": "./dist/clients/*.d.ts",
             "import": "./dist/clients/*.js"
+        },
+        "./calendar": {
+            "types": "./dist/types/events.d.ts",
+            "import": "./dist/types/events.js"
         }
     },
     "scripts": {

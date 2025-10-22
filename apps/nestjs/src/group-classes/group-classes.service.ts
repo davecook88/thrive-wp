@@ -16,6 +16,7 @@ import {
   SessionWithEnrollment,
   SessionWithEnrollmentResponse,
 } from "./dto/session-with-enrollment.dto.js";
+import { PublicTeacherDto } from "@thrive/shared";
 import { CreateGroupClassDto } from "./dto/create-group-class.dto.js";
 import { GroupClassListDto } from "./dto/group-class-list.dto.js";
 import { AvailableSession } from "@thrive/shared";
@@ -344,7 +345,7 @@ export class GroupClassesService {
     teacherId?: number;
     startDate?: Date;
     endDate?: Date;
-  }): Promise<AvailableSession[]> {
+  }): Promise<SessionWithEnrollmentResponse[]> {
     const qb = this.sessionsRepository
       .createQueryBuilder("session")
       .leftJoinAndSelect("session.groupClass", "groupClass")
@@ -385,12 +386,43 @@ export class GroupClassesService {
     return sessions.map(
       (session) =>
         ({
-          ...session,
-          sessionId: session.id,
+          id: session.id,
+          type: session.type,
+          startAt: session.startAt.toISOString(),
+          endAt: session.endAt.toISOString(),
+          capacityMax: session.capacityMax,
+          status: session.status,
+          meetingUrl: session.meetingUrl || null,
+          teacherId: session.teacherId,
+          groupClassId: session.groupClassId || null,
+          groupClass: session.groupClass
+            ? {
+                id: session.groupClass.id,
+                title: session.groupClass.title,
+                level: (session.groupClass.groupClassLevels?.[0]?.level ??
+                  null) as any,
+              }
+            : null,
+          enrolledCount: session.enrolledCount,
           availableSpots: session.capacityMax - session.enrolledCount,
           isFull: session.enrolledCount >= session.capacityMax,
           canJoinWaitlist: session.enrolledCount >= session.capacityMax,
-        }) as AvailableSession,
+          teacher: session.teacher
+            ? ({
+                id: session.teacher.id,
+                userId: session.teacher.userId,
+                displayName:
+                  `${session.teacher.user?.firstName || ""} ${session.teacher.user?.lastName || ""}`.trim() ||
+                  "Teacher",
+                bio: session.teacher.bio || null,
+                avatarUrl: session.teacher.avatarUrl || null,
+                isActive: session.teacher.isActive,
+                initials:
+                  (session.teacher.user?.firstName?.[0] || "T") +
+                  (session.teacher.user?.lastName?.[0] || ""),
+              } as PublicTeacherDto)
+            : null,
+        }) as SessionWithEnrollmentResponse,
     );
   }
 }

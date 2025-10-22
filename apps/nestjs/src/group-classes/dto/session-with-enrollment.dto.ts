@@ -1,5 +1,4 @@
 import { Session } from "../../sessions/entities/session.entity.js";
-import { GroupClass } from "../entities/group-class.entity.js";
 
 /**
  * DTO representing a Session with dynamically loaded enrollment count.
@@ -10,21 +9,7 @@ export type SessionWithEnrollment = Session & {
 };
 
 /**
- * Response DTO for available group class sessions with enrollment details.
+ * Use the shared SessionWithEnrollmentResponse type from @thrive/shared
+ * Re-exported here for backwards compatibility with NestJS code
  */
-export interface SessionWithEnrollmentResponse {
-  id: number;
-  type: string;
-  startAt: Date;
-  endAt: Date;
-  capacityMax: number;
-  status: string;
-  meetingUrl: string | null;
-  teacherId: number;
-  groupClassId: number | null;
-  groupClass: GroupClass | null;
-  enrolledCount: number;
-  availableSpots: number;
-  isFull: boolean;
-  canJoinWaitlist: boolean;
-}
+export type { SessionWithEnrollmentResponse } from "@thrive/shared";

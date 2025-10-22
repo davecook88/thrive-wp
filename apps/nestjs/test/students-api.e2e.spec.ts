@@ -1,8 +1,5 @@
 import { describe, beforeAll, afterAll, it, expect } from "vitest";
-import {
-  UpcomingSessionsResponseSchema,
-  type UpcomingSessionsResponseDto,
-} from "@thrive/shared";
+import { UpcomingSessionsResponseSchema } from "@thrive/shared";
 import { Test, TestingModule } from "@nestjs/testing";
 import { INestApplication } from "@nestjs/common";
 import { DataSource } from "typeorm";
@@ -210,7 +207,6 @@ describe("Students API (e2e)", () => {
           "Expected other student record to be created by DB trigger",
         );
       }
-      const otherStudentId = otherRows[0].id;
 
       const otherPayload = {
         sub: otherStudentUserId.toString(),

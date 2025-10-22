@@ -12,7 +12,6 @@ import { ZodValidationPipe } from "nestjs-zod";
 import { BookingsService } from "./bookings.service.js";
 import type { Request as ExpressRequest } from "express";
 import {
-  AvailableSessionsResponseSchema,
   CreateBookingRequestSchema,
   type CreateBookingRequest,
   CancelBookingSchema,

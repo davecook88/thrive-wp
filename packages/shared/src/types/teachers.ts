@@ -1,19 +1,31 @@
 import { z } from "zod";
 import { ServiceType } from "./class-types.js";
 
+// Location DTO for updates
+export const LocationInputSchema = z.object({
+  city: z.string().optional(),
+  country: z.string().optional(),
+  lat: z.number().optional(),
+  lng: z.number().optional(),
+});
+export type LocationInputDto = z.infer<typeof LocationInputSchema>;
+
 // Public teacher DTO
 export const PublicTeacherSchema = z.object({
   id: z.number().int(),
   userId: z.number().int(),
+  birthplace: LocationInputSchema,
+  currentLocation: LocationInputSchema,
   displayName: z.string(),
   bio: z.string().nullable().optional(),
   avatarUrl: z.string().nullable().optional(),
-  languages: z.array(z.string()).optional(),
+  languagesSpoken: z.array(z.string()).optional(),
   levels: z.array(z.number()).optional(),
   specialties: z.array(z.string()).optional(),
   rating: z.number().optional(),
   isActive: z.boolean(),
   initials: z.string(),
+  yearsExperience: z.number().int().nullable().optional(),
 });
 export type PublicTeacherDto = z.infer<typeof PublicTeacherSchema>;
 
@@ -95,6 +107,7 @@ export const AvailabilityWindowSchema = z.object({
   end: z.string().datetime(),
   available: z.boolean(),
   reason: z.string().optional(),
+  teacherIds: z.array(z.number().int()),
 });
 
 export const PreviewAvailabilityResponseSchema = z.object({
@@ -109,10 +122,10 @@ export type PreviewAvailabilityResponse = z.infer<
 export const PreviewAvailabilitySchema = z.object({
   teacherId: z.number().int().optional(),
   teacherIds: z.array(z.number().int()).optional(),
-  start: z.string().datetime(),
-  end: z.string().datetime(),
+  start: z.iso.datetime(),
+  end: z.iso.datetime(),
   timezone: z.string().optional(),
-  serviceType: z.nativeEnum(ServiceType).optional(),
+  serviceType: z.enum(ServiceType).optional(),
 });
 export type PreviewAvailabilityDto = z.infer<typeof PreviewAvailabilitySchema>;
 
@@ -145,15 +158,20 @@ export type TeacherProfileDto = z.infer<typeof TeacherProfileSchema>;
 
 // Update profile DTO
 export const UpdateTeacherProfileSchema = z.object({
-  headline: z.string().nullable().optional(),
   bio: z.string().nullable().optional(),
-  avatarUrl: z.string().nullable().optional(),
-  languages: z.array(z.string()).optional(),
-  specialties: z.array(z.string()).optional(),
-  pricing: z
-    .object({ private: z.number().optional(), group: z.number().optional() })
+  avatarUrl: z
+    .string()
+    .refine(
+      (url) => !url || /^https?:\/\/.+/.test(url),
+      "avatarUrl must be a valid URL starting with http:// or https://",
+    )
     .nullable()
     .optional(),
+  birthplace: LocationInputSchema.optional(),
+  currentLocation: LocationInputSchema.optional(),
+  specialties: z.array(z.string()).optional(),
+  yearsExperience: z.number().int().min(0).max(100).optional(),
+  languagesSpoken: z.array(z.string()).optional(),
 });
 export type UpdateTeacherProfileDto = z.infer<
   typeof UpdateTeacherProfileSchema
