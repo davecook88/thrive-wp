@@ -18,7 +18,7 @@
       "@/*": ["src/*"],
       "@thrive/shared": ["../../../../../packages/shared/src"],
       "@thrive/shared/*": ["../../../../../packages/shared/src/*"],
-      "@thrive/shared/thrive": ["../../shared/thrive"]
+      "@wp-shared/thrive": ["../../shared/thrive.ts"]
     }
   },
   "references": [{ "path": "../../../../packages/shared" }],

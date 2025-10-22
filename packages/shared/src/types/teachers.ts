@@ -116,23 +116,6 @@ export type PreviewMyAvailabilityDto = z.infer<
   typeof PreviewMyAvailabilitySchema
 >;
 
-// Profile types
-// export const TeacherProfileSchema = z.object({
-//   id: z.number().int(),
-//   userId: z.number().int(),
-//   headline: z.string().nullable().optional(),
-//   bio: z.string().nullable().optional(),
-//   avatarUrl: z.string().nullable().optional(),
-//   languages: z.array(z.string()).optional(),
-//   specialties: z.array(z.string()).optional(),
-//   pricing: z
-//     .object({ private: z.number().optional(), group: z.number().optional() })
-//     .nullable()
-//     .optional(),
-//   availabilityPreview: GetAvailabilityResponseSchema.nullable().optional(),
-// });
-// export type TeacherProfileDto = z.infer<typeof TeacherProfileSchema>;
-
 // Update profile DTO
 export const UpdateTeacherProfileSchema = z.object({
   bio: z.string().nullable().optional(),

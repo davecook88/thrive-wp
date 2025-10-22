@@ -1,10 +1,6 @@
 import { ref, computed, reactive } from "vue";
-import {
-  UsersApiService,
-  UserUtils,
-  type UserResponse,
-  type UsersQueryParams,
-} from "../index";
+import { UserUtils, type UserResponse } from "../index";
+import { thriveClient } from "@wp-shared/thrive";
 
 export interface UseUsersOptions {
   initialPage?: number;
@@ -30,7 +26,10 @@ export function useUsers(options: UseUsersOptions = {}) {
   const error = ref<string | null>(null);
 
   // Filters
-  const filters = reactive<UsersQueryParams>({
+  const filters = reactive<{
+    search: string;
+    role: string;
+  }>({
     search: initialSearch,
     role: initialRole,
   });
@@ -51,28 +50,26 @@ export function useUsers(options: UseUsersOptions = {}) {
     error.value = null;
 
     try {
-      const queryParams: UsersQueryParams = {
-        page: currentPage.value,
-        limit: pageSize,
-        search: filters.search || undefined,
-        role: filters.role || undefined,
-      };
+      const data = await thriveClient.getUsers(
+        currentPage.value,
+        pageSize,
+        filters.search,
+        filters.role,
+      );
 
-      const response = await UsersApiService.getUsers(queryParams);
-
-      if (response) {
-        users.value = response.users;
-        total.value = response.total;
-        totalPages.value = response.totalPages;
+      if (data) {
+        users.value = data.users;
+        total.value = data.total;
+        totalPages.value = data.totalPages;
       } else {
         error.value = "Failed to load users";
         users.value = [];
         total.value = 0;
         totalPages.value = 0;
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error loading users:", err);
-      error.value = err.message || "Failed to load users";
+      error.value = "An error occurred while loading users";
       users.value = [];
       total.value = 0;
       totalPages.value = 0;
@@ -83,20 +80,22 @@ export function useUsers(options: UseUsersOptions = {}) {
 
   const handleFilter = () => {
     currentPage.value = 1;
-    loadUsers();
+    loadUsers().catch((err) => {
+      console.error("Error applying filters:", err);
+    });
   };
 
   const clearFilters = () => {
     filters.search = "";
     filters.role = "";
     currentPage.value = 1;
-    loadUsers();
+    void loadUsers();
   };
 
   const changePage = (page: number) => {
     if (page >= 1 && page <= totalPages.value) {
       currentPage.value = page;
-      loadUsers();
+      void loadUsers();
     }
   };
 
@@ -105,9 +104,9 @@ export function useUsers(options: UseUsersOptions = {}) {
   // User management methods
   const promoteToAdmin = async (userId: number) => {
     try {
-      await UsersApiService.promoteToAdmin(userId);
+      await thriveClient.promoteToAdmin(userId);
       await refresh(); // Refresh the list to show updated roles
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error promoting user to admin:", err);
       throw err;
     }
@@ -115,9 +114,9 @@ export function useUsers(options: UseUsersOptions = {}) {
 
   const demoteFromAdmin = async (userId: number) => {
     try {
-      await UsersApiService.demoteFromAdmin(userId);
+      await thriveClient.demoteFromAdmin(userId);
       await refresh(); // Refresh the list to show updated roles
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error demoting user from admin:", err);
       throw err;
     }
@@ -125,9 +124,9 @@ export function useUsers(options: UseUsersOptions = {}) {
 
   const promoteToTeacher = async (userId: number, tier: number = 10) => {
     try {
-      await UsersApiService.promoteToTeacher(userId, tier);
+      await thriveClient.promoteToTeacher(userId, tier);
       await refresh(); // Refresh the list to show updated roles
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error promoting user to teacher:", err);
       throw err;
     }
@@ -135,9 +134,9 @@ export function useUsers(options: UseUsersOptions = {}) {
 
   const updateTeacherTier = async (userId: number, tier: number) => {
     try {
-      await UsersApiService.updateTeacherTier(userId, tier);
+      await thriveClient.updateTeacherTier(userId, tier);
       await refresh(); // Refresh the list to show updated roles
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error updating teacher tier:", err);
       throw err;
     }

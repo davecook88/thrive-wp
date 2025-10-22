@@ -1,62 +1,12 @@
-// Shared types based on backend DTOs
-// These should match the structure in nestjs/src/users/dto/user-response.dto.ts
-
-export interface AdminResponse {
-  id: number;
-  role: string;
-  isActive: boolean | number; // API returns number (0/1), but we transform to boolean
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface TeacherLocation {
-  city: string;
-  country: string;
-  lat?: number;
-  lng?: number;
-}
-
-export interface TeacherResponse {
-  id: number;
-  tier: number;
-  bio: string | null;
-  isActive: boolean | number; // API returns number (0/1), but we transform to boolean
-  avatarUrl: string | null;
-  birthplace: TeacherLocation | null;
-  currentLocation: TeacherLocation | null;
-  specialties: string[] | null;
-  yearsExperience: number | null;
-  languagesSpoken: string[] | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface UserResponse {
-  id: number;
-  email: string;
-  firstName: string;
-  lastName: string;
-  createdAt: string;
-  updatedAt: string;
-  admin?: AdminResponse;
-  teacher?: TeacherResponse;
-}
-
-export interface PaginatedUsersResponse {
-  users: UserResponse[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
-
-// API Request types
-export interface UsersQueryParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  role?: string;
-}
+// Re-export shared types to maintain local compatibility
+export type {
+  AdminResponse,
+  TeacherLocation,
+  TeacherResponse,
+  UserResponse,
+  PaginatedUsersResponse,
+  UsersQueryParams,
+} from "@thrive/shared";
 
 // Generic API Response wrapper
 export interface ApiResponse<T> {

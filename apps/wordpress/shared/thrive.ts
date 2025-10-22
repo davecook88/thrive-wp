@@ -8,6 +8,10 @@ import {
   UpcomingSessionsResponseSchema,
   SessionWithEnrollmentResponse,
   UpdateTeacherProfileDto,
+  UserResponseSchema,
+  PaginatedUsersResponseSchema,
+  type UserResponse,
+  type PaginatedUsersResponse,
 } from "@thrive/shared";
 import {
   PreviewAvailabilityResponseSchema,
@@ -67,6 +71,15 @@ const apiPatch = async <T>(
 ): Promise<T | null> => {
   const body = data ? JSON.stringify(data) : undefined;
   return apiRequest<T>(url, { method: "PATCH", body }, schema);
+};
+
+const apiPut = async <T>(
+  url: string,
+  data: Record<string, unknown> | undefined,
+  schema?: z.ZodSchema<T>,
+): Promise<T | null> => {
+  const body = data ? JSON.stringify(data) : undefined;
+  return apiRequest<T>(url, { method: "PUT", body }, schema);
 };
 
 export interface TeacherLocation {
@@ -262,7 +275,7 @@ export const thriveClient = {
   },
 
   getPackages: async (): Promise<PackageResponseDto[]> => {
-    const data = await apiGet<PackageResponseDto[]>("/admin/packages");
+    const data = await apiGet<PackageResponseDto[]>("/api/admin/packages");
     if (!Array.isArray(data)) {
       throw new Error("Invalid packages data");
     }
@@ -273,7 +286,7 @@ export const thriveClient = {
     data: CreatePackageDto,
   ): Promise<PackageResponseDto> => {
     const result = await apiPost<PackageResponseDto>(
-      "/admin/packages",
+      "/api/admin/packages",
       data,
       PackageResponseSchema,
     );
@@ -282,7 +295,10 @@ export const thriveClient = {
   },
 
   deactivatePackage: async (id: number): Promise<void> => {
-    const result = await apiPost(`/admin/packages/${id}/deactivate`, undefined);
+    const result = await apiPost(
+      `/api/admin/packages/${id}/deactivate`,
+      undefined,
+    );
     if (!result) throw new Error("Failed to deactivate package");
   },
 
@@ -300,6 +316,63 @@ export const thriveClient = {
       "/api/teachers/me/profile",
       data as Record<string, unknown>,
       PublicTeacherSchema,
+    );
+  },
+
+  // User management methods
+  getUsers: async (
+    page: number = 1,
+    limit: number = 20,
+    search?: string,
+    role?: string,
+  ): Promise<PaginatedUsersResponse | null> => {
+    const params = new URLSearchParams();
+    params.append("page", String(page));
+    params.append("limit", String(limit));
+    if (search) params.append("search", search);
+    if (role) params.append("role", role);
+
+    return await apiGet<PaginatedUsersResponse>(
+      `/api/users?${params.toString()}`,
+      PaginatedUsersResponseSchema,
+    );
+  },
+
+  promoteToAdmin: async (userId: number): Promise<UserResponse | null> => {
+    return await apiPost<UserResponse>(
+      `/api/users/${userId}/promote/admin`,
+      undefined,
+      UserResponseSchema,
+    );
+  },
+
+  demoteFromAdmin: async (userId: number): Promise<UserResponse | null> => {
+    return await apiPost<UserResponse>(
+      `/api/users/${userId}/demote/admin`,
+      undefined,
+      UserResponseSchema,
+    );
+  },
+
+  promoteToTeacher: async (
+    userId: number,
+    tier: number = 10,
+  ): Promise<UserResponse | null> => {
+    return await apiPost<UserResponse>(
+      "/api/users/make-teacher",
+      { userId, tier },
+      UserResponseSchema,
+    );
+  },
+
+  updateTeacherTier: async (
+    userId: number,
+    tier: number,
+  ): Promise<UserResponse | null> => {
+    return await apiPut<UserResponse>(
+      `/api/users/${userId}/teacher/tier`,
+      { tier },
+      UserResponseSchema,
     );
   },
 } as const;

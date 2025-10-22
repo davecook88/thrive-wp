@@ -1,6 +1,10 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import liveReload from "vite-plugin-live-reload";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [
@@ -13,9 +17,31 @@ export default defineConfig({
   ],
   root: ".",
   resolve: {
-    alias: {
-      "@shared/*": "../../shared/*",
-    },
+    alias: [
+      {
+        find: "@",
+        replacement: path.resolve(__dirname, "./src"),
+      },
+      {
+        find: /^@thrive\/shared$/,
+        replacement: path.resolve(
+          __dirname,
+          "../../../../packages/shared/src/index.ts",
+        ),
+      },
+      {
+        find: /^@thrive\/shared\/(.+)$/,
+        replacement: path.resolve(
+          __dirname,
+          "../../../../packages/shared/src/$1.ts",
+        ),
+      },
+      {
+        find: /^@wp-shared\/(.+)$/,
+        replacement: path.resolve(__dirname, "../../shared/$1.ts"),
+      },
+    ],
+    extensions: [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json"],
   },
   build: {
     outDir: "./dist",

@@ -222,9 +222,8 @@
 import { defineComponent, ref, onMounted } from 'vue';
 import GroupClassModal from './GroupClassModal.vue';
 import GroupClassSessionsModal from './GroupClassSessionsModal.vue';
-import { thriveClient } from '../lib';
-import type { LevelDto } from '@thrive/shared/types/level';
-import type { PublicTeacherDto } from '@thrive/shared/types/teachers';
+import { type LevelDto, type PublicTeacherDto } from '@thrive/shared';
+import { thriveClient } from '@wp-shared/thrive';
 
 interface GroupClassTeacher {
   teacherId: number;

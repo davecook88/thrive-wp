@@ -240,8 +240,8 @@
 
 <script lang="ts">
 import { defineComponent, ref, onMounted } from 'vue';
-import { thriveClient } from '../lib';
 import { CreatePackageDto, PackageResponseDto, ServiceType } from '@thrive/shared';
+import { thriveClient } from '@wp-shared/thrive';
 
 export default defineComponent({
   name: 'PackagesAdmin',
