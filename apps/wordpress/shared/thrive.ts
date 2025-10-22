@@ -263,9 +263,14 @@ export const thriveClient = {
     if (!Array.isArray(data)) return [];
     return data.map((level) => LevelSchema.parse(level));
   },
-  fetchAvailablePackages: async (): Promise<PackageResponseDto[]> => {
+  fetchAvailablePackages: async (
+    sessionId?: string,
+  ): Promise<PackageResponseDto[]> => {
+    const url = sessionId
+      ? `/api/packages?sessionId=${encodeURIComponent(sessionId)}`
+      : "/api/packages";
     const data = await apiGet<PackageResponseDto[]>(
-      "/api/packages",
+      url,
       z.array(PackageResponseSchema),
     );
     if (!Array.isArray(data)) return [];

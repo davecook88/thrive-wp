@@ -121,5 +121,5 @@ registerBlockType<PackageSelectionAttributes>(
       // This block is rendered server-side, so return null
       return null;
     },
-  }
+  },
 );

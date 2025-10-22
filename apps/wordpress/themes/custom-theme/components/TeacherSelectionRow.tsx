@@ -61,6 +61,11 @@ export default function TeacherSelectionRow({
     );
   }
 
+  // select first teacher by default if none selected
+  if (!selectedTeacher && teachers.length > 0) {
+    onTeacherSelect(teachers[0]);
+  }
+
   return (
     <div
       style={{

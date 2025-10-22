@@ -13,12 +13,6 @@ interface BookingSessionDetailsComponentProps {
   attributes: BookingSessionDetailsAttributes;
 }
 
-declare global {
-  interface Window {
-    __AUTH__?: any;
-  }
-}
-
 const BookingSessionDetailsComponent: React.FC<
   BookingSessionDetailsComponentProps
 > = ({ attributes }) => {
@@ -34,13 +28,8 @@ const BookingSessionDetailsComponent: React.FC<
     teacher: "",
   });
   const [errors, setErrors] = useState<string[]>([]);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  const {
-    teachers,
-    loading: teachersLoading,
-    getTeacherById,
-  } = useGetTeachers();
+  const { getTeacherById } = useGetTeachers();
   const [teacherName, setTeacherName] = useState<string>("");
 
   useEffect(() => {
@@ -63,19 +52,14 @@ const BookingSessionDetailsComponent: React.FC<
       newErrors.push("Invalid or missing teacher.");
 
     setErrors(newErrors);
-
-    // Check login
-    setIsLoggedIn(!!window.__AUTH__ && Object.keys(window.__AUTH__).length > 0);
   }, []);
 
   useEffect(() => {
     if (queryParams.teacher && !errors.length) {
       const teacherId = parseInt(queryParams.teacher, 10);
-      getTeacherById(teacherId).then((teacher) => {
+      void getTeacherById(teacherId).then((teacher) => {
         if (teacher) {
-          setTeacherName(teacher.name || `Teacher #${teacherId}`);
-        } else {
-          setTeacherName(`Teacher #${teacherId}`);
+          setTeacherName(teacher.displayName ?? "");
         }
       });
     }
