@@ -6,8 +6,8 @@ import { LevelSchema } from "./level.js";
 export const SessionWithEnrollmentResponseSchema = z.object({
   id: z.number().int().positive(),
   type: z.string(),
-  startAt: z.string().datetime(),
-  endAt: z.string().datetime(),
+  startAt: z.iso.datetime(),
+  endAt: z.iso.datetime(),
   capacityMax: z.number().int().positive(),
   status: z.string(),
   meetingUrl: z.string().nullable(),

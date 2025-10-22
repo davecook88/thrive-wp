@@ -6,6 +6,8 @@ import {
   Query,
   Body,
   UseGuards,
+  HttpException,
+  HttpStatus,
 } from "@nestjs/common";
 import { ZodValidationPipe } from "nestjs-zod";
 import { GroupClassesService } from "./group-classes.service.js";
@@ -37,7 +39,14 @@ export class GroupClassesController {
       endDate?: Date;
     },
   ) {
-    return this.groupClassesService.getAvailableSessions(filters);
+    try {
+      return this.groupClassesService.getAvailableSessions(filters);
+    } catch (error) {
+      throw new HttpException(
+        error instanceof Error ? error.message : "",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Get(":id")

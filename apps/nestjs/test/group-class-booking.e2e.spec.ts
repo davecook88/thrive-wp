@@ -12,19 +12,14 @@ import { Teacher } from "../src/teachers/entities/teacher.entity.js";
 import { Booking } from "../src/payments/entities/booking.entity.js";
 import { Level } from "../src/levels/entities/level.entity.js";
 import { runMigrations } from "./setup.js";
+import * as z from "zod";
 
 import {
-  AvailableSession,
-  AvailableSessionsResponseSchema,
   CreateBookingResponseSchema,
   CreateGroupClassResponseSchema,
+  SessionWithEnrollmentResponseSchema,
 } from "@thrive/shared";
 import { getHttpServer } from "./utils/get-httpserver.js";
-
-// Helper: normalize API response which may return an array or an object { sessions: [...] }
-function parseAvailableSessions(body: unknown) {
-  return AvailableSessionsResponseSchema.safeParse(body);
-}
 
 describe("Group Class Booking (e2e)", () => {
   let app: INestApplication;
@@ -170,12 +165,18 @@ describe("Group Class Booking (e2e)", () => {
       .expect(201);
 
     // Check if sessions are available
-    const response = await request(getHttpServer(app))
-      .get("/group-classes/available")
-      .expect(200);
+    const response = await request(getHttpServer(app)).get(
+      "/group-classes/available",
+    );
 
+    if (!response.ok) {
+      console.log("Error response:", response.status, response.body);
+      throw new Error("Failed to fetch available sessions");
+    }
     // Validate response with zod schema
-    const availableSessionsParse = parseAvailableSessions(response.body);
+    const availableSessionsParse = z
+      .array(SessionWithEnrollmentResponseSchema)
+      .safeParse(response.body);
     if (!availableSessionsParse.success) {
       throw new Error(
         `Invalid AvailableSessionsResponse: ${availableSessionsParse.error.message}`,
@@ -231,17 +232,15 @@ describe("Group Class Booking (e2e)", () => {
       console.log("Available Sessions Response:", availableSessionsRes.body);
 
       // Validate response with zod schema
-      const availableSessionsParse = AvailableSessionsResponseSchema.safeParse(
-        availableSessionsRes.body,
-      );
+      const availableSessionsParse = z
+        .array(SessionWithEnrollmentResponseSchema)
+        .safeParse(availableSessionsRes.body);
       if (!availableSessionsParse.success) {
         throw new Error(
           `Invalid AvailableSessionsResponse: ${availableSessionsParse.error.message}`,
         );
       }
-      const availableSessionsData: AvailableSession[] = Array.isArray(
-        availableSessionsParse.data,
-      )
+      const availableSessionsData = Array.isArray(availableSessionsParse.data)
         ? availableSessionsParse.data
         : [];
       const sessionToBook = availableSessionsData.length
@@ -257,7 +256,7 @@ describe("Group Class Booking (e2e)", () => {
         .post("/bookings")
         .set("x-auth-user-id", testUser.id.toString())
         .send({
-          sessionId: sessionToBook.sessionId,
+          sessionId: sessionToBook.id,
           // No payment intent or package, assuming free for now
         })
         .expect(201);
@@ -282,23 +281,23 @@ describe("Group Class Booking (e2e)", () => {
       });
       expect(booking).not.toBeNull();
       expect(booking!.studentId).toEqual(testStudent!.id);
-      expect(booking!.sessionId).toEqual(sessionToBook.sessionId);
+      expect(booking!.sessionId).toEqual(sessionToBook.id);
 
       // 6. Verify enrollment count updates
       const updatedSessionsRes = await request(getHttpServer(app))
         .get("/group-classes/available")
         .expect(200);
-      const updatedSessionsParse = parseAvailableSessions(
-        updatedSessionsRes.body,
-      );
+      const updatedSessionsParse = z
+        .array(SessionWithEnrollmentResponseSchema)
+        .safeParse(updatedSessionsRes.body);
       if (!updatedSessionsParse.success) {
         throw new Error(
           `Invalid AvailableSessionsResponse: ${updatedSessionsParse.error.message}`,
         );
       }
-      const updatedSessionsData: AvailableSession[] = updatedSessionsParse.data;
+      const updatedSessionsData = updatedSessionsParse.data;
       const updatedSession = updatedSessionsData.find(
-        (s) => s.sessionId === sessionToBook.sessionId,
+        (s) => s.id === sessionToBook.id,
       );
 
       expect(updatedSession).toBeDefined();
@@ -337,9 +336,9 @@ describe("Group Class Booking (e2e)", () => {
       const availableSessionsRes = await request(getHttpServer(app))
         .get("/group-classes/available")
         .expect(200);
-      const availableSessionsParse = parseAvailableSessions(
-        availableSessionsRes.body,
-      );
+      const availableSessionsParse = z
+        .array(SessionWithEnrollmentResponseSchema)
+        .safeParse(availableSessionsRes.body);
       if (!availableSessionsParse.success) {
         throw new Error(
           `Invalid AvailableSessionsResponse: ${availableSessionsParse.error.message}`,
@@ -352,7 +351,7 @@ describe("Group Class Booking (e2e)", () => {
       await request(getHttpServer(app))
         .post("/bookings")
         .set("x-auth-user-id", testUser.id.toString())
-        .send({ sessionId: sessionToBook.sessionId })
+        .send({ sessionId: sessionToBook.id })
         .expect(201);
 
       // Second student tries to book
@@ -365,7 +364,7 @@ describe("Group Class Booking (e2e)", () => {
       await request(getHttpServer(app))
         .post("/bookings")
         .set("x-auth-user-id", secondUser.id.toString())
-        .send({ sessionId: sessionToBook.sessionId })
+        .send({ sessionId: sessionToBook.id })
         .expect(400); // Expect a bad request because class is full
     });
   });
