@@ -1,8 +1,6 @@
+import { PublicTeacherDto } from "@thrive/shared";
 import { usePackageBooking } from "../../../hooks/use-package-booking";
-import type {
-  Teacher,
-  AvailabilityEvent,
-} from "@thrive/shared/calendar";
+import type { AvailabilityEvent } from "@thrive/shared/calendar";
 import { StudentPackage } from "@thrive/shared/types/packages";
 
 export default function PackageBookingButton({
@@ -13,7 +11,7 @@ export default function PackageBookingButton({
   onBookingSuccess,
 }: {
   pkg: StudentPackage;
-  selectedTeacher: Teacher | null;
+  selectedTeacher: PublicTeacherDto | null;
   event: AvailabilityEvent;
   bookingUrl: string | null;
   onBookingSuccess?: () => Promise<void>;
@@ -43,7 +41,7 @@ export default function PackageBookingButton({
     // For availability events, we need to create the session first
     // Send booking details instead of sessionId
     const result = await bookWithPackage(pkg.id, {
-      teacherId: selectedTeacher.teacherId,
+      teacherId: selectedTeacher.id,
       startAt: event.startUtc,
       endAt: event.endUtc,
     });

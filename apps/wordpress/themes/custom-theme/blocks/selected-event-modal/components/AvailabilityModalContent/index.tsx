@@ -9,6 +9,7 @@ import TeacherSelectionPanel from "./TeacherSelectionPanel";
 import TeacherInfoPanel from "./TeacherInfoPanel";
 import PackagesFooter from "./PackagesFooter";
 import { PublicTeacherDto } from "@thrive/shared";
+import BookNowFooter from "./BookNowFooter";
 
 interface User {
   ID: number;
@@ -17,7 +18,7 @@ interface User {
   display_name: string;
 }
 
-type ModalAvailabilityEvent = AvailabilityEvent & {
+export type ModalAvailabilityEvent = AvailabilityEvent & {
   startLocal?: string;
   endLocal?: string;
   user?: User;
@@ -61,7 +62,8 @@ export default function AvailabilityModalContent({
             teacherId: selectedTeacher.id,
             serviceType: event.type === "availability" ? "PRIVATE" : event.type,
           });
-        } catch {
+        } catch (error) {
+          console.log("Error building booking URL", error);
           return null;
         }
       })()
@@ -83,7 +85,7 @@ export default function AvailabilityModalContent({
       }}
     >
       {/* Fixed Header with Booking Information */}
-      <Header event={event} selectedTeacher={selectedTeacher} />
+      <Header event={event} />
 
       {/* Main Content Area with Side-by-Side Layout */}
       <div
@@ -107,7 +109,7 @@ export default function AvailabilityModalContent({
       </div>
 
       {/* Fixed Footer - Your Packages */}
-      {hasPackages && (
+      {hasPackages ? (
         <PackagesFooter
           packages={packages}
           selectedTeacher={selectedTeacher}
@@ -116,6 +118,8 @@ export default function AvailabilityModalContent({
           totalRemaining={totalRemaining}
           onBookingSuccess={refetchCredits as () => Promise<void>}
         />
+      ) : (
+        <BookNowFooter bookingConfirmationUrl={bookingConfirmationUrl} />
       )}
     </div>
   );

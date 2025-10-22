@@ -1,14 +1,6 @@
-import { useMemo } from "@wordpress/element";
-import { buildBookingUrl } from "../../../../utils/booking";
-import type { Teacher } from "../../../../types/calendar";
+import { ModalAvailabilityEvent } from ".";
 
-export default function Header({
-  event,
-  selectedTeacher,
-}: {
-  event: any;
-  selectedTeacher: Teacher | null;
-}) {
+export default function Header({ event }: { event: ModalAvailabilityEvent }) {
   return (
     <header
       style={{

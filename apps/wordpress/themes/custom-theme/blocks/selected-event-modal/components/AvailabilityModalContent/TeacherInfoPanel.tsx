@@ -1,9 +1,9 @@
-import type { Teacher } from "../../../../types/calendar";
+import { PublicTeacherDto } from "@thrive/shared/types/teachers";
 import TeacherInfo from "../../../teacher-info/components/TeacherInfo";
 import EmptyTeacherState from "./EmptyTeacherState";
 
 interface TeacherInfoPanelProps {
-  selectedTeacher: Teacher | null;
+  selectedTeacher: PublicTeacherDto | null;
 }
 
 export default function TeacherInfoPanel({
