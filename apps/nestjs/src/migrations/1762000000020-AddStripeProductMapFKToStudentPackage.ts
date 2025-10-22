@@ -1,4 +1,10 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import {
+  MigrationInterface,
+  QueryRunner,
+  TableColumn,
+  TableIndex,
+  TableForeignKey,
+} from "typeorm";
 
 /**
  * Add Stripe Product Map Foreign Key to Student Package
@@ -20,27 +26,57 @@ export class AddStripeProductMapFKToStudentPackage1762000000020
   name = "AddStripeProductMapFKToStudentPackage1762000000020";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Add the column
-    await queryRunner.query(`
-      ALTER TABLE student_package
-      ADD COLUMN stripe_product_map_id INT NULL
-        COMMENT 'FK to stripe_product_map.id - the package that was purchased'
-    `);
+    // Ensure we don't try to add the column/index/fk if they already exist
+    const table = await queryRunner.getTable("student_package");
 
-    // Add index
-    await queryRunner.query(`
-      ALTER TABLE student_package
-      ADD INDEX IDX_student_package_stripe_product_map (stripe_product_map_id)
-    `);
+    if (!table) {
+      throw new Error("student_package table not found");
+    }
 
-    // Add foreign key constraint
-    await queryRunner.query(`
-      ALTER TABLE student_package
-      ADD CONSTRAINT fk_student_package_stripe_product_map
-        FOREIGN KEY (stripe_product_map_id)
-        REFERENCES stripe_product_map(id)
-        ON DELETE SET NULL
-    `);
+    const hasColumn = table.findColumnByName("stripe_product_map_id");
+    if (!hasColumn) {
+      await queryRunner.addColumn(
+        "student_package",
+        new TableColumn({
+          name: "stripe_product_map_id",
+          type: "int",
+          isNullable: true,
+          comment:
+            "FK to stripe_product_map.id - the package that was purchased",
+        }),
+      );
+    }
+
+    // Add index if missing
+    const hasIndex = table.indices.some((idx) =>
+      idx.columnNames.includes("stripe_product_map_id"),
+    );
+    if (!hasIndex) {
+      await queryRunner.createIndex(
+        "student_package",
+        new TableIndex({
+          name: "IDX_student_package_stripe_product_map",
+          columnNames: ["stripe_product_map_id"],
+        }),
+      );
+    }
+
+    // Add foreign key if missing
+    const hasFk = table.foreignKeys.some((fk) =>
+      fk.columnNames.includes("stripe_product_map_id"),
+    );
+    if (!hasFk) {
+      await queryRunner.createForeignKey(
+        "student_package",
+        new TableForeignKey({
+          name: "fk_student_package_stripe_product_map",
+          columnNames: ["stripe_product_map_id"],
+          referencedTableName: "stripe_product_map",
+          referencedColumnNames: ["id"],
+          onDelete: "SET NULL",
+        }),
+      );
+    }
 
     // Migrate existing data based on metadata
     // This tries to match existing student_package records to stripe_product_map
@@ -48,7 +84,7 @@ export class AddStripeProductMapFKToStudentPackage1762000000020
     await queryRunner.query(`
       UPDATE student_package sp
       JOIN stripe_product_map spm ON (
-        sp.metadata->>'$.stripeProductId' = spm.stripe_product_id
+        JSON_UNQUOTE(JSON_EXTRACT(sp.metadata, '$.stripeProductId')) = spm.stripe_product_id
         AND spm.deleted_at IS NULL
         AND spm.active = TRUE
       )

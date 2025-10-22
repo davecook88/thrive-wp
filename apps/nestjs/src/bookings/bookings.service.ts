@@ -138,13 +138,12 @@ export class BookingsService {
       );
 
       // Load package with uses to compute remaining credits
-      const pkgWithUses = await PackageQueryBuilder
-        .buildStudentPackageWithUsesQuery(
+      const pkgWithUses =
+        await PackageQueryBuilder.buildStudentPackageWithUsesQuery(
           this.studentPackageRepository,
           studentId,
           studentPackage.id,
-        )
-        .getOne();
+        ).getOne();
 
       if (!pkgWithUses) {
         throw new NotFoundException("Student package not found");

@@ -499,6 +499,7 @@ export class PaymentsService {
             purchasedAt: new Date(),
             expiresAt,
             sourcePaymentId: paymentIntent.id,
+            stripeProductMap: productMapping,
             metadata: {
               stripeProductId: stripeProduct.id,
               stripePriceId: stripePrice.id,

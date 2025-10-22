@@ -259,7 +259,7 @@ describe("Package Booking (e2e)", () => {
       expect(body.creditsCost).toBe(1);
 
       // Verify package was decremented
-      const updatedPackage = await studentPackageRepository.findOne({
+      await studentPackageRepository.findOne({
         where: { id: testPackageId },
       });
 
@@ -274,8 +274,7 @@ describe("Package Booking (e2e)", () => {
 
     it("should return 400 when package has no remaining sessions", async () => {
       // Update package to have 0 remaining sessions
-      await studentPackageRepository.update(testPackageId, {
-      });
+      await studentPackageRepository.update(testPackageId, {});
 
       await request(httpServer)
         .post("/payments/book-with-package")
@@ -344,7 +343,7 @@ describe("Package Booking (e2e)", () => {
       expect(useBody.use.sessionId).toBe(testSessionId);
 
       // Verify database changes
-      const updatedPackage = await studentPackageRepository.findOne({
+      await studentPackageRepository.findOne({
         where: { id: testPackageId },
       });
     });
@@ -353,8 +352,7 @@ describe("Package Booking (e2e)", () => {
   describe("Concurrency test", () => {
     it("should handle concurrent package usage correctly", async () => {
       // Set package to have only 1 remaining session
-      await studentPackageRepository.update(testPackageId, {
-      });
+      await studentPackageRepository.update(testPackageId, {});
 
       // Create two sessions
       const session2Partial: Partial<Session> = {
@@ -403,6 +401,9 @@ describe("Package Booking (e2e)", () => {
       const finalPackage = await studentPackageRepository.findOne({
         where: { id: testPackageId },
       });
+
+      expect(finalPackage).toBeDefined();
+      expect(finalPackage?.remainingSessions).toBe(0);
     });
   });
 });
