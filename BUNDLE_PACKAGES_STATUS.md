@@ -1,7 +1,7 @@
 # Bundle Packages Implementation Status
 
-**Last Updated**: 2025-10-22 (Phase 4 Complete)
-**Overall Progress**: ~50% Complete (Phases 1-4 Done, Core Backend Complete)
+**Last Updated**: 2025-10-22 (Phase 5-6 Complete)
+**Overall Progress**: ~60% Complete (Phases 1-6 Done, Admin-Facing Features Complete)
 
 ## Summary
 
@@ -105,6 +105,8 @@ This eliminates denormalization and allows for materialized views later if perfo
 
 ### ✅ Phase 4: Service Layer - PackagesService Methods (100%)
 
+### ✅ Phase 5: API Controllers (100%)
+
 **Status**: COMPLETE - All methods refactored and working
 
 **Completed**:
@@ -130,17 +132,20 @@ This eliminates denormalization and allows for materialized views later if perfo
 
 ---
 
+### ✅ Phase 6: WordPress Admin UI (100%)
+
+**Status**: COMPLETE - Admin form fully supports bundle creation
+
+**Completed**:
+- ✅ Updated PackagesAdmin.vue package list to show allowances
+- ✅ Converted create form to multi-allowance bundle form
+- ✅ Implemented allowances repeater (add/remove functionality)
+- ✅ Fixed TypeScript: removed all `as any` casts, proper enum usage
+- ✅ Bundle description field (optional, auto-generated if blank)
+- ✅ Allowance configuration: service type, credits, unit minutes, tier
+- ✅ Form validation and state management
+
 ## Upcoming Work
-
-### ⏳ Phase 5: API Controllers
-- Update `packages.controller.ts` responses with new DTOs
-- Update `admin-packages.controller.ts` for bundle creation
-- Handle allowances in request/response payloads
-
-### ⏳ Phase 6: WordPress Admin UI
-- Update `PackagesAdmin.vue` form for bundle creation
-- Add allowances repeater interface
-- Show bundle descriptions and allowance summaries
 
 ### ⏳ Phase 7: WordPress Frontend Blocks
 - Update package selection block to display allowances
