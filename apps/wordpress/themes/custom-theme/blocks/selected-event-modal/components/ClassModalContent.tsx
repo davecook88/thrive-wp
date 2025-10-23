@@ -17,8 +17,6 @@ export default function ClassModalContent({ event }: { event: any }) {
   const isFull = event?.isFull ?? false;
   const sessionId = event?.sessionId;
 
-  console.log("ClassModalContent: isGroupClass", isGroupClass);
-
   // State for credit selection modal
   const [showCreditModal, setShowCreditModal] = useState(false);
 
@@ -44,25 +42,31 @@ export default function ClassModalContent({ event }: { event: any }) {
       ? Math.round(
           (new Date(event.endUtc).getTime() -
             new Date(event.startUtc).getTime()) /
-            60000
+            60000,
         )
       : 60; // default to 60 minutes if not available
 
   const handleBookClick = () => {
+    // If no compatible credits available, go straight to payment
+    if (!hasCompatibleCredits) {
+      handlePayWithoutCredits();
+      return;
+    }
+
     // Show credit selection modal
     setShowCreditModal(true);
   };
 
   const handleSelectPackage = (
     packageId: number,
-    requiresConfirmation: boolean
+    requiresConfirmation: boolean,
   ) => {
     // If requires confirmation (cross-tier), show confirmation
     if (requiresConfirmation && compatible) {
       const pkg = compatible.higherTier.find((p) => p.id === packageId);
       if (pkg) {
         const confirmed = window.confirm(
-          `${pkg.warningMessage}\n\nAre you sure you want to continue?`
+          `${pkg.warningMessage}\n\nAre you sure you want to continue?`,
         );
         if (!confirmed) {
           return;
@@ -282,8 +286,8 @@ export default function ClassModalContent({ event }: { event: any }) {
             {loadingCompatible
               ? "Loading credits..."
               : hasCompatibleCredits
-              ? `Book with Credits (${totalRemaining} remaining)`
-              : "Book This Class"}
+                ? `Book with Credits (${totalRemaining} remaining)`
+                : "Book Now"}
           </button>
         ) : (
           // Join link for already booked classes

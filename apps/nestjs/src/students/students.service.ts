@@ -111,7 +111,7 @@ export class StudentsService {
         s.created_at,
         s.updated_at,
         s.deleted_at,
-        u.first_name || ' ' || u.last_name as teacher_name,
+        concat(first_name,' ',last_name) as teacher_name,
         CASE
           WHEN s.type = 'PRIVATE' THEN 'private'
           WHEN s.type = 'GROUP' THEN 'group'
@@ -177,7 +177,7 @@ export class StudentsService {
         s.teacher_id,
         s.course_id,
         s.meeting_url,
-        u.first_name || ' ' || u.last_name as teacher_name
+        concat(u.first_name,' ',u.last_name) as teacher_name
       FROM session s
       JOIN booking b ON b.session_id = s.id
       JOIN teacher t ON t.id = s.teacher_id

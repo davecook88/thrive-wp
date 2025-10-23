@@ -22,7 +22,7 @@ export default function CreditSelectionModal({
 }: CreditSelectionModalProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [selectedPackageId, setSelectedPackageId] = useState<number | null>(
-    compatible.recommended
+    compatible.recommended,
   );
 
   const hasExactMatch = compatible.exactMatch.length > 0;
@@ -40,20 +40,6 @@ export default function CreditSelectionModal({
   function handleConfirm() {
     if (!selectedPackageId) return;
     onSelectPackage(selectedPackageId, isHigherTier);
-  }
-
-  function calculateCreditsNeeded(creditUnitMinutes: number): number {
-    return Math.ceil(sessionDuration / creditUnitMinutes);
-  }
-
-  function formatExpiryDate(expiresAt: string | null): string {
-    if (!expiresAt) return "No expiration";
-    const date = new Date(expiresAt);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
   }
 
   return (
@@ -130,7 +116,9 @@ export default function CreditSelectionModal({
               >
                 Recommended
               </h4>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+              >
                 {compatible.exactMatch.map((pkg) => (
                   <PackageOption
                     key={pkg.id}
@@ -191,7 +179,9 @@ export default function CreditSelectionModal({
                       package={pkg}
                       sessionDuration={sessionDuration}
                       isSelected={selectedPackageId === pkg.id}
-                      isRecommended={!hasExactMatch && pkg.id === compatible.recommended}
+                      isRecommended={
+                        !hasExactMatch && pkg.id === compatible.recommended
+                      }
                       onSelect={() => setSelectedPackageId(pkg.id)}
                       warningMessage={pkg.warningMessage}
                     />
@@ -397,11 +387,14 @@ function PackageOption({
             )}
           </div>
           <div style={{ fontSize: "13px", color: "#6b7280", marginTop: "4px" }}>
-            {pkg.remainingSessions} credit{pkg.remainingSessions !== 1 ? "s" : ""}{" "}
-            remaining • {pkg.creditUnitMinutes} min each
+            {pkg.remainingSessions} credit
+            {pkg.remainingSessions !== 1 ? "s" : ""} remaining •{" "}
+            {pkg.creditUnitMinutes} min each
           </div>
           {pkg.expiresAt && (
-            <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "2px" }}>
+            <div
+              style={{ fontSize: "12px", color: "#9ca3af", marginTop: "2px" }}
+            >
               Expires:{" "}
               {new Date(pkg.expiresAt).toLocaleDateString("en-US", {
                 month: "short",

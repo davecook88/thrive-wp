@@ -12,6 +12,7 @@ import {
   PaymentsService,
   CreatePaymentIntentResponse,
 } from "./payments.service.js";
+import { GroupClassBookingService } from "./services/group-class-booking.service.js";
 import {
   BookingResponseSchema,
   BookWithPackagePayloadSchema,
@@ -26,7 +27,10 @@ import type { Request as ExpressRequest } from "express";
 
 @Controller("payments")
 export class PaymentsController {
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(
+    private readonly paymentsService: PaymentsService,
+    private readonly groupClassBookingService: GroupClassBookingService,
+  ) {}
 
   @Get("stripe-key")
   getStripeKey(): { publishableKey: string } {
@@ -46,11 +50,26 @@ export class PaymentsController {
       throw new UnauthorizedException("Authentication required");
     }
 
-    return this.paymentsService.createPaymentSession(
-      body.priceId,
-      body.bookingData,
-      parseInt(userId, 10),
-    );
+    // Handle based on booking type
+    if (
+      "sessionId" in body.bookingData &&
+      "serviceType" in body.bookingData &&
+      body.bookingData.serviceType === "GROUP"
+    ) {
+      // This is a group class booking
+      return this.groupClassBookingService.createGroupClassBookingSession(
+        body.priceId,
+        body.bookingData.sessionId as number,
+        parseInt(userId, 10),
+      );
+    } else {
+      // This is a private session booking (legacy flow)
+      return this.paymentsService.createPaymentSession(
+        body.priceId,
+        body.bookingData,
+        parseInt(userId, 10),
+      );
+    }
   }
 
   @Post("book-with-package")

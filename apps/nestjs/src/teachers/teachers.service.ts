@@ -672,7 +672,7 @@ export class TeachersService {
         b.student_id,
         s.course_id,
         s.meeting_url,
-        u.first_name || ' ' || u.last_name as student_name
+        concat(first_name,' ',last_name) as student_name
       FROM session s
       JOIN booking b ON b.session_id = s.id
       JOIN student st ON st.id = b.student_id
@@ -779,7 +779,7 @@ export class TeachersService {
         b.student_id,
         s.course_id,
         s.meeting_url,
-        u.first_name || ' ' || u.last_name as student_name
+        concat(first_name,' ',last_name) as student_name
       FROM session s
       JOIN booking b ON b.session_id = s.id
       JOIN student st ON st.id = b.student_id

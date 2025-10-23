@@ -1,22 +1,9 @@
 import React, { useEffect, useState } from "react";
-
-interface NextSession {
-  id: number;
-  classType: string;
-  startAt: string;
-  endAt: string;
-  teacherId: number;
-  teacherName: string;
-  courseId: number | null;
-  meetingUrl: string | null;
-}
-
-interface StudentStats {
-  nextSession: NextSession | null;
-  totalCompleted: number;
-  totalScheduled: number;
-  activeCourses: number;
-}
+import {
+  thriveClient,
+  StudentStatsResponseDto,
+  ThriveApiError,
+} from "@thrive/shared";
 
 interface StudentStatsWidgetProps {
   showNextSession?: boolean;
@@ -31,25 +18,21 @@ export default function StudentStatsWidget({
   showScheduledSessions = true,
   showActiveCourses = true,
 }: StudentStatsWidgetProps) {
-  const [stats, setStats] = useState<StudentStats | null>(null);
+  const [stats, setStats] = useState<StudentStatsResponseDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch("/api/students/me/stats", {
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch stats");
-        }
-
-        const data = await response.json();
+        const data = await thriveClient.getStudentStats();
         setStats(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
+        if (err instanceof ThriveApiError) {
+          setError(err.message);
+        } else {
+          setError(err instanceof Error ? err.message : "Unknown error");
+        }
       } finally {
         setLoading(false);
       }

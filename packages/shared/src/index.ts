@@ -11,3 +11,5 @@ export * from "./types/student-upcoming.js";
 export * from "./types/group-classes.js";
 export * from "./types/waitlists.js";
 export * from "./types/users.js";
+export * from "./types/student-stats.js";
+export * from "./clients/thriveclient.js";

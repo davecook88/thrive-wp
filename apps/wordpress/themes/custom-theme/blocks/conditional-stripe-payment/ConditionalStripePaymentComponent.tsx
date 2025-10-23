@@ -54,18 +54,14 @@ const ConditionalStripePaymentComponent: React.FC<
   const [message, setMessage] = useState<string>("");
 
   // Get booking data from context or URL params
+  const urlParams = new URLSearchParams(window.location.search);
+  const sessionId = urlParams.get("sessionId") || "";
+  const serviceType = urlParams.get("serviceType") || "";
   const start =
-    context["custom-theme/bookingStart"] ||
-    new URLSearchParams(window.location.search).get("start") ||
-    "";
-  const end =
-    context["custom-theme/bookingEnd"] ||
-    new URLSearchParams(window.location.search).get("end") ||
-    "";
+    context["custom-theme/bookingStart"] || urlParams.get("start") || "";
+  const end = context["custom-theme/bookingEnd"] || urlParams.get("end") || "";
   const teacher =
-    context["custom-theme/teacherId"] ||
-    new URLSearchParams(window.location.search).get("teacher") ||
-    "";
+    context["custom-theme/teacherId"] || urlParams.get("teacher") || "";
 
   // Handle package selection
   useEffect(() => {
@@ -98,11 +94,22 @@ const ConditionalStripePaymentComponent: React.FC<
           },
           body: JSON.stringify({
             priceId: pkg.priceId,
-            bookingData: {
-              start,
-              end,
-              teacherId: Number(teacher),
-            },
+            bookingData:
+              sessionId && serviceType === "GROUP"
+                ? {
+                    // Group class booking - we already have the session
+                    type: "group",
+                    sessionId: Number(sessionId),
+                    serviceType: "GROUP",
+                  }
+                : {
+                    // Private session booking - we need to create a new session
+                    type: "private",
+                    teacherId: Number(teacher),
+                    start,
+                    end,
+                    serviceType: "PRIVATE", // Default to PRIVATE for legacy URLs
+                  },
           }),
         });
 
@@ -182,13 +189,9 @@ const ConditionalStripePaymentComponent: React.FC<
     const { error } = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        return_url: `${
-          window.location.origin
-        }/booking-success?session_start=${encodeURIComponent(
-          start,
-        )}&session_end=${encodeURIComponent(end)}&teacher=${encodeURIComponent(
-          teacher,
-        )}`,
+        return_url: sessionId
+          ? `${window.location.origin}/booking-success?sessionId=${encodeURIComponent(sessionId)}&serviceType=${encodeURIComponent(serviceType)}`
+          : `${window.location.origin}/booking-success?session_start=${encodeURIComponent(start)}&session_end=${encodeURIComponent(end)}&teacher=${encodeURIComponent(teacher)}&serviceType=${encodeURIComponent("PRIVATE")}`,
       },
     });
 
