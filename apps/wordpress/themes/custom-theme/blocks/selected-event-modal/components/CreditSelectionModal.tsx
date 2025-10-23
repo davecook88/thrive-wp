@@ -1,4 +1,4 @@
-import { createElement, useState } from "@wordpress/element";
+import { useState } from "@wordpress/element";
 import type {
   CompatibleCreditsResponse,
   CompatiblePackage,
@@ -20,6 +20,7 @@ export default function CreditSelectionModal({
   onPayWithoutCredits,
   onCancel,
 }: CreditSelectionModalProps) {
+  console.log("CreditSelectionModal: compatible", compatible);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [selectedPackageId, setSelectedPackageId] = useState<number | null>(
     compatible.recommended,

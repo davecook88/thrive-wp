@@ -1,28 +1,16 @@
 import { useState, useEffect } from "@wordpress/element";
+import { thriveClient } from "../../../../shared/thrive";
+import type {
+  CompatiblePackage as SharedCompatiblePackage,
+  CompatiblePackageWithWarning as SharedCompatiblePackageWithWarning,
+  CompatiblePackagesForSessionResponseDto,
+} from "@thrive/shared/types/packages";
 
-/**
- * Compatible packages response from the API
- */
-export interface CompatiblePackage {
-  id: number;
-  label: string;
-  remainingSessions: number;
-  expiresAt: string | null;
-  creditUnitMinutes: number;
-  tier: number;
-}
+// Re-export local-friendly type names while using canonical shared types
+export type CompatiblePackage = SharedCompatiblePackage;
+export type HigherTierPackage = SharedCompatiblePackageWithWarning;
 
-export interface HigherTierPackage extends CompatiblePackage {
-  warningMessage: string;
-}
-
-export interface CompatibleCreditsResponse {
-  exactMatch: CompatiblePackage[];
-  higherTier: HigherTierPackage[];
-  recommended: number | null;
-  requiresCourseEnrollment: boolean;
-  isEnrolledInCourse: boolean;
-}
+export type CompatibleCreditsResponse = CompatiblePackagesForSessionResponseDto;
 
 export interface UseCompatibleCreditsResult {
   compatible: CompatibleCreditsResponse | null;
@@ -78,30 +66,13 @@ export function useCompatibleCredits(
       setError(null);
 
       try {
-        const response = await fetch(
-          `/api/packages/compatible-for-session/${sessionId}`,
-          {
-            method: "GET",
-            credentials: "include", // Include cookies for auth
-            headers: {
-              "Content-Type": "application/json",
-            },
-          },
+        const data = await thriveClient.fetchCompatiblePackagesForSession(
+          sessionId as number,
         );
 
-        if (!response.ok) {
-          if (response.status === 401) {
-            throw new Error("You must be logged in to view available credits");
-          } else if (response.status === 404) {
-            throw new Error("Session not found");
-          } else {
-            throw new Error(
-              `Failed to fetch compatible credits: ${response.statusText}`,
-            );
-          }
+        if (!data) {
+          throw new Error("Failed to fetch compatible credits");
         }
-
-        const data = await response.json();
 
         if (!isCancelled) {
           setCompatible(data);
