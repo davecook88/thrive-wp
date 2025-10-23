@@ -22,3 +22,4 @@ export { AddCourseProgramsTables1760000000000 } from "./1760000000000-AddCourseP
 export { AddServiceTypeAndTeacherTierToStripeProductMap1762000000000 } from "./1762000000000-AddServiceTypeAndTeacherTierToStripeProductMap.js";
 export { BundlePackagesMigration1762000000010 } from "./1762000000010-BundlePackagesMigration.js";
 export { AddStripeProductMapFKToStudentPackage1762000000020 } from "./1762000000020-AddStripeProductMapFKToStudentPackage.js";
+export { AddPackageUseIdToBooking1762000000030 } from "./1762000000030-AddPackageUseIdToBooking.js";

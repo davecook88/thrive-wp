@@ -50,6 +50,7 @@ export class SessionsService {
       ) {
         throw error;
       }
+      console.log("Error validating session:", error);
       throw new BadRequestException(
         "Failed to validate session due to a database error.",
       );
