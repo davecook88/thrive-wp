@@ -1,4 +1,4 @@
-import { createElement, useState } from "@wordpress/element";
+import { useState } from "@wordpress/element";
 import { useStudentCredits } from "../../hooks/use-student-credits";
 import {
   useCompatibleCredits,
@@ -6,26 +6,22 @@ import {
 } from "../../hooks/use-compatible-credits";
 import { buildBookingUrl } from "../../../utils/booking";
 import CreditSelectionModal from "./CreditSelectionModal";
+import { ClassEvent, prettyDate } from "@thrive/shared";
 
-export default function ClassModalContent({ event }: { event: any }) {
-  const teacher = event?.teacher ?? event?.instructor ?? null;
-  const isGroupClass = event?.serviceType === "GROUP";
+export default function ClassModalContent({ event }: { event: ClassEvent }) {
+  const teacher = event?.teacher;
   const level = event?.level;
   const capacityMax = event?.capacityMax;
   const enrolledCount = event?.enrolledCount ?? 0;
   const availableSpots = event?.availableSpots ?? capacityMax;
   const isFull = event?.isFull ?? false;
-  const sessionId = event?.sessionId;
+  const sessionId = Number(event?.sessionId);
 
   // State for credit selection modal
   const [showCreditModal, setShowCreditModal] = useState(false);
 
   // Legacy credit hook (for general info)
-  const {
-    packagesResponse,
-    totalRemaining,
-    refetch: refetchCredits,
-  } = useStudentCredits();
+  const { totalRemaining } = useStudentCredits();
 
   // New tier-aware credit hook
   const {
@@ -126,11 +122,11 @@ export default function ClassModalContent({ event }: { event: any }) {
             color: "#111827",
           }}
         >
-          {event?.title || event?.name || "Class"}
+          {event?.title}
         </h3>
 
         {/* Badges for group classes */}
-        {isGroupClass && (
+        {
           <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
             {level && (
               <span
@@ -162,7 +158,7 @@ export default function ClassModalContent({ event }: { event: any }) {
               Group Class
             </span>
           </div>
-        )}
+        }
       </div>
 
       {/* Details Box */}
@@ -186,11 +182,11 @@ export default function ClassModalContent({ event }: { event: any }) {
             <div>
               <div style={{ fontSize: "12px", color: "#6b7280" }}>When</div>
               <div style={{ fontSize: "14px", fontWeight: 600 }}>
-                {event?.startLocal}
+                {prettyDate(event?.startUtc)}
               </div>
-              {event?.endLocal && (
+              {event?.endUtc && (
                 <div style={{ fontSize: "13px", color: "#6b7280" }}>
-                  Until {event.endLocal}
+                  Until {prettyDate(event.endUtc)}
                 </div>
               )}
             </div>
@@ -204,16 +200,13 @@ export default function ClassModalContent({ event }: { event: any }) {
                   Teacher
                 </div>
                 <div style={{ fontSize: "14px", fontWeight: 600 }}>
-                  {typeof teacher === "string"
-                    ? teacher
-                    : teacher?.name ||
-                      `Teacher #${teacher?.userId || teacher?.id || ""}`}
+                  {teacher.displayName}
                 </div>
               </div>
             </div>
           )}
 
-          {isGroupClass && capacityMax && (
+          {capacityMax && (
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <span style={{ fontSize: "20px" }}>👥</span>
               <div>
@@ -263,7 +256,7 @@ export default function ClassModalContent({ event }: { event: any }) {
 
       {/* Action Button */}
       <div style={{ marginTop: "auto" }}>
-        {isGroupClass && !isFull ? (
+        {!isFull && (
           // Booking button for group sessions
           <button
             onClick={handleBookClick}
@@ -289,33 +282,11 @@ export default function ClassModalContent({ event }: { event: any }) {
                 ? `Book with Credits (${totalRemaining} remaining)`
                 : "Book Now"}
           </button>
-        ) : (
-          // Join link for already booked classes
-          event?.joinUrl && (
-            <a
-              href={event.joinUrl}
-              style={{
-                display: "block",
-                width: "100%",
-                padding: "14px 24px",
-                backgroundColor: "var(--wp--preset--color--accent, #3b82f6)",
-                color: "white",
-                textDecoration: "none",
-                textAlign: "center",
-                borderRadius: "8px",
-                fontSize: "16px",
-                fontWeight: 600,
-                transition: "all 150ms ease",
-              }}
-            >
-              Join Class
-            </a>
-          )
         )}
       </div>
 
       {/* Credits info - only show warning if error occurred */}
-      {isGroupClass && !isFull && compatibleError && !loadingCompatible && (
+      {!isFull && compatibleError && !loadingCompatible && (
         <div
           style={{
             marginTop: "16px",

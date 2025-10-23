@@ -2,7 +2,6 @@ import {
   createElement,
   Fragment,
   useEffect,
-  useMemo,
   useState,
 } from "@wordpress/element";
 import { createRoot } from "react-dom/client";
@@ -11,62 +10,48 @@ import ClassModalContent from "./components/ClassModalContent";
 import AvailabilityModalContent from "./components/AvailabilityModalContent";
 import CourseModalContent from "./components/CourseModalContent";
 import DefaultModalContent from "./components/DefaultModalContent";
+import {
+  CalendarEvent,
+  EventType,
+  isAvailabilityEvent,
+  isClassEvent,
+  isCourseClassEvent,
+} from "@thrive/shared";
 
 type EventDetail = {
-  event?: any;
+  event?: CalendarEvent;
   contextId?: string;
 };
 
-type ModalType = "availability" | "class" | "course" | "default" | string;
+type ModalType = "availability" | "class" | "course" | "default";
 
 function SelectedEventModalContent({
   event,
   modalType,
 }: {
-  event: any;
+  event: CalendarEvent;
   modalType: ModalType;
 }) {
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Precompute friendly local time strings once per event
-  const derived = useMemo(() => {
-    const start = event?.startUtc ? new Date(event.startUtc) : undefined;
-    const end = event?.endUtc ? new Date(event.endUtc) : undefined;
-    const startLocal = start
-      ? start.toLocaleString(undefined, {
-          dateStyle: "medium",
-          timeStyle: "short",
-        })
-      : "";
-    const endLocal = end
-      ? end.toLocaleString(undefined, {
-          dateStyle: "medium",
-          timeStyle: "short",
-        })
-      : "";
-    return { startLocal, endLocal };
-  }, [event?.startUtc, event?.endUtc]);
-
   useEffect(() => {
     // small UX delay to avoid flash when opening modal very quickly
-    let tid = setTimeout(() => setLoading(false), 50);
+    const tid = setTimeout(() => setLoading(false), 50);
     return () => clearTimeout(tid);
   }, [event, modalType]);
 
   if (loading) return <div>Loading…</div>;
 
-  const props = { event: { ...event, ...derived } };
+  const props = { event: { ...event } };
 
-  switch ((modalType || "").toString().toLowerCase()) {
-    case "class":
-      return <ClassModalContent {...props} />;
-    case "availability":
-      return <AvailabilityModalContent {...props} />;
-    case "course":
-      return <CourseModalContent {...props} />;
-    default:
-      return <DefaultModalContent {...props} />;
+  if (isAvailabilityEvent(event)) {
+    return <AvailabilityModalContent event={event} />;
+  } else if (isClassEvent(event)) {
+    return <ClassModalContent event={event} />;
+  } else if (isCourseClassEvent(event)) {
+    return <CourseModalContent event={event} />;
   }
+  return <DefaultModalContent {...props} />;
 }
 
 function ModalPortal({
@@ -76,7 +61,7 @@ function ModalPortal({
   onClose,
 }: {
   title?: string;
-  event: any;
+  event: CalendarEvent;
   modalType: ModalType;
   onClose: () => void;
 }) {
@@ -127,7 +112,11 @@ function ModalPortal({
   );
 }
 
-function mountModal(event: any, modalType: ModalType, title?: string) {
+function mountModal(
+  event: CalendarEvent,
+  modalType: ModalType,
+  title?: string,
+) {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
@@ -144,9 +133,10 @@ function mountModal(event: any, modalType: ModalType, title?: string) {
 }
 
 // Determine the modal type based on event payload
-function pickModalType(event: any): ModalType {
-  const t = (event?.type || event?.kind || "").toString().toLowerCase();
-  if (t === "availability" || t === "class" || t === "course") return t;
+function pickModalType(event: CalendarEvent | undefined): ModalType {
+  const t = event?.type;
+  const eventTypes: EventType[] = ["availability", "class"];
+  if (t && eventTypes.includes(t)) return t as ModalType;
   return "default";
 }
 
@@ -160,13 +150,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.addEventListener(
     "thrive-calendar:selectedEvent",
-    async (e: Event) => {
+    (e: Event) => {
       const detail = (e as CustomEvent<EventDetail>).detail;
-      const event = detail?.event;
-      if (!event) return;
-
+      const event: CalendarEvent | undefined = detail?.event;
+      if (!event) {
+        return;
+      }
       const modalType = pickModalType(event);
-      const title = event?.title || event?.name || undefined;
+
+      // Safely derive a title string if available
+      let title: string | undefined;
+      if (
+        typeof (event as { title?: unknown }).title === "string" &&
+        (event as { title?: string }).title!.trim() !== ""
+      ) {
+        title = (event as { title?: string }).title;
+      } else if (
+        "name" in event &&
+        typeof (event as { name?: unknown }).name === "string" &&
+        (event as { name?: string }).name!.trim() !== ""
+      ) {
+        title = (event as { name?: string }).name;
+      } else {
+        title = undefined;
+      }
+
       mountModal(event, modalType, title);
     },
     false,

@@ -653,6 +653,11 @@ export class PackagesService {
       .andWhere("(sp.expires_at IS NULL OR sp.expires_at > NOW())")
       .getMany();
 
+    console.log(
+      `Found ${activePackages.length} active packages for student ${studentId}`,
+    );
+    console.log(activePackages);
+
     const sessionTier = getSessionTier(session);
 
     // Use shared DTO types from packages/shared
@@ -661,6 +666,10 @@ export class PackagesService {
 
     for (const pkg of activePackages) {
       if (!canUsePackageForSession(pkg, session)) {
+        console.log(
+          `Package ${pkg.id} cannot be used for session ${session.id}`,
+        );
+        console.log(pkg);
         continue; // Skip incompatible packages
       }
 

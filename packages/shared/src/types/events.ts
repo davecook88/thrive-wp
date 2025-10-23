@@ -1,3 +1,4 @@
+import { ServiceType } from "./class-types.js";
 import { LevelDto as Level } from "./level.js";
 import { PublicTeacherDto } from "./teachers.js";
 
@@ -17,7 +18,7 @@ export interface BaseCalendarEvent {
 
 export interface ClassEvent extends BaseCalendarEvent {
   type: "class";
-  serviceType: "PRIVATE" | "GROUP" | "COURSE";
+  serviceType: ServiceType;
   capacityMax: number;
   enrolledCount?: number;
   status: "SCHEDULED" | "CANCELLED" | "COMPLETED";
@@ -42,7 +43,7 @@ export interface BookingEvent extends BaseCalendarEvent {
   // Additional properties from API
   teacherId?: number;
   teacherName?: string;
-  classType?: "PRIVATE" | "GROUP" | "COURSE";
+  classType?: ServiceType;
   bookingId?: number;
 }
 
@@ -86,17 +87,17 @@ export function isBlackoutEvent(event: CalendarEvent): event is BlackoutEvent {
 export function isPrivateClassEvent(
   event: CalendarEvent,
 ): event is ClassEvent & { serviceType: "PRIVATE" } {
-  return isClassEvent(event) && event.serviceType === "PRIVATE";
+  return isClassEvent(event) && event.serviceType === ServiceType.PRIVATE;
 }
 
 export function isGroupClassEvent(
   event: CalendarEvent,
 ): event is ClassEvent & { serviceType: "GROUP" } {
-  return isClassEvent(event) && event.serviceType === "GROUP";
+  return isClassEvent(event) && event.serviceType === ServiceType.GROUP;
 }
 
 export function isCourseClassEvent(
   event: CalendarEvent,
 ): event is ClassEvent & { serviceType: "COURSE" } {
-  return isClassEvent(event) && event.serviceType === "COURSE";
+  return isClassEvent(event) && event.serviceType === ServiceType.COURSE;
 }

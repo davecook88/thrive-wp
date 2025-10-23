@@ -11,24 +11,10 @@ import PackagesFooter from "./PackagesFooter";
 import { PublicTeacherDto } from "@thrive/shared";
 import BookNowFooter from "./BookNowFooter";
 
-interface User {
-  ID: number;
-  user_login: string;
-  user_email: string;
-  display_name: string;
-}
-
-export type ModalAvailabilityEvent = AvailabilityEvent & {
-  startLocal?: string;
-  endLocal?: string;
-  user?: User;
-  currentUser?: User;
-};
-
 export default function AvailabilityModalContent({
   event,
 }: {
-  event: ModalAvailabilityEvent;
+  event: AvailabilityEvent;
 }) {
   const { loading: loadingTeachers, teachers } = useGetTeachers();
   console.log("useGetTeachers", { loadingTeachers, teachers });
