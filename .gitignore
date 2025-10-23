@@ -8,3 +8,4 @@ wordpress/vendor
 _logs_nginx
 _logs_wp
 .playwright-mcp
+.turbo

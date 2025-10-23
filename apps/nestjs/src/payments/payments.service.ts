@@ -560,9 +560,60 @@ export class PaymentsService {
             return;
           }
 
+          // Check if this is for an EXISTING booking (group/course sessions)
+          const bookingId = metadata.booking_id
+            ? parseInt(String(metadata.booking_id), 10)
+            : null;
+
+          if (bookingId) {
+            // EXISTING BOOKING PATH: For group/course sessions with pre-created bookings
+            const existingBooking = await tx.findOne(Booking, {
+              where: {
+                id: bookingId,
+                sessionId,
+                studentId: student.id,
+              },
+            });
+
+            if (
+              existingBooking &&
+              existingBooking.status === BookingStatus.PENDING
+            ) {
+              // Promote PENDING → CONFIRMED for existing booking
+              existingBooking.status = BookingStatus.CONFIRMED;
+              existingBooking.acceptedAt = new Date();
+              existingBooking.studentPackageId = savedPackage.id;
+              existingBooking.creditsCost = 1;
+              await tx.save(Booking, existingBooking);
+
+              // Create package use record to deduct credits
+              const packageUse = tx.create(PackageUse, {
+                studentPackageId: savedPackage.id,
+                bookingId: existingBooking.id,
+                sessionId,
+                usedAt: new Date(),
+                usedBy: student.id,
+                creditsUsed: 1,
+              });
+              await tx.save(PackageUse, packageUse);
+
+              // Update session status if it's DRAFT
+              if (session.status === SessionStatus.DRAFT) {
+                session.status = SessionStatus.SCHEDULED;
+                await tx.save(Session, session);
+              }
+
+              this.logger.log(
+                `Promoted existing booking ${bookingId} to CONFIRMED using package and deducted 1 credit`,
+              );
+              return;
+            }
+          }
+
+          // DRAFT SESSION PATH: For private sessions
           if (session.status !== SessionStatus.DRAFT) {
             this.logger.warn(
-              `Session ${sessionId} is not in DRAFT status, cannot book with package`,
+              `Session ${sessionId} is not in DRAFT status and no existing booking found`,
             );
             return;
           }

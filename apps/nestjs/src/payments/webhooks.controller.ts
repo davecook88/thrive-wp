@@ -34,7 +34,7 @@ export class WebhooksController {
 
     try {
       // Verify and construct the event
-      const event = await this.paymentsService.constructStripeEvent(
+      const event = this.paymentsService.constructStripeEvent(
         rawBody,
         signature,
       );
