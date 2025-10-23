@@ -4,7 +4,6 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { PaymentsController } from "./payments.controller.js";
 import { WebhooksController } from "./webhooks.controller.js";
 import { PaymentsService } from "./payments.service.js";
-import { GroupClassBookingService } from "./services/group-class-booking.service.js";
 import { StripeProductMap } from "./entities/stripe-product-map.entity.js";
 import { Student } from "../students/entities/student.entity.js";
 import { Session } from "../sessions/entities/session.entity.js";
@@ -31,7 +30,7 @@ import { PackagesModule } from "../packages/packages.module.js";
     PackagesModule,
   ],
   controllers: [PaymentsController, WebhooksController],
-  providers: [PaymentsService, GroupClassBookingService],
-  exports: [PaymentsService, GroupClassBookingService],
+  providers: [PaymentsService],
+  exports: [PaymentsService],
 })
 export class PaymentsModule {}

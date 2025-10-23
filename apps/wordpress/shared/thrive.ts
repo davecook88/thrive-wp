@@ -372,6 +372,41 @@ export const thriveClient = {
     return result;
   },
 
+  // Payments helpers
+  getStripeKey: async (): Promise<
+    import("@thrive/shared/types/payments").StripeKeyResponse | null
+  > => {
+    try {
+      const res = await apiGet(`/api/payments/stripe-key`);
+      if (!res) return null;
+      const parsed = (
+        await import("@thrive/shared/types/payments")
+      ).StripeKeyResponseSchema.parse(res);
+      return parsed;
+    } catch (err) {
+      console.error("getStripeKey failed", err);
+      return null;
+    }
+  },
+
+  createPaymentSession: async (
+    payload: import("@thrive/shared/types/payments").CreateSessionDto,
+  ): Promise<
+    import("@thrive/shared/types/payments").CreateSessionResponse | null
+  > => {
+    try {
+      const res = await apiPost(`/api/payments/create-session`, payload);
+      if (!res) return null;
+      const parsed = (
+        await import("@thrive/shared/types/payments")
+      ).CreateSessionResponseSchema.parse(res);
+      return parsed;
+    } catch (err) {
+      console.error("createPaymentSession failed", err);
+      return null;
+    }
+  },
+
   // Check whether a booking can be modified (cancel/reschedule)
   canModifyBooking: async (
     bookingId: number,

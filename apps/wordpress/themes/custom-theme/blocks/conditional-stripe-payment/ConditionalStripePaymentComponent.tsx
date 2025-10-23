@@ -3,7 +3,10 @@ import { z } from "zod";
 import {
   StripeKeyResponseSchema,
   CreateSessionResponseSchema,
+  GroupSessionBookingData,
+  PrivateSessionBookingData,
 } from "@thrive/shared/types/payments";
+import { thriveClient } from "../../../../shared/thrive";
 
 interface ConditionalStripePaymentAttributes {
   heading: string;
@@ -72,58 +75,43 @@ const ConditionalStripePaymentComponent: React.FC<
       setIsLoading(true);
 
       try {
-        // Initialize Stripe if not already done
+        // Initialize Stripe if not already done via shared client
         let stripeInstance = stripe;
         if (!stripeInstance) {
-          const response = await fetch("/api/payments/stripe-key");
-          const json = await response.json();
-          const parsed = StripeKeyResponseSchema.safeParse(json);
-          if (!parsed.success) {
-            throw new Error("Invalid stripe key response");
-          }
-          const { publishableKey } = parsed.data;
+          const key = await thriveClient.getStripeKey();
+          if (!key) throw new Error("Invalid stripe key response");
+          const { publishableKey } = key;
           stripeInstance = window.Stripe(publishableKey);
           setStripe(stripeInstance);
         }
 
-        // Create payment session
-        const sessionResponse = await fetch("/api/payments/create-session", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            priceId: pkg.priceId,
-            bookingData:
-              sessionId && serviceType === "GROUP"
-                ? {
-                    // Group class booking - we already have the session
-                    type: "group",
-                    sessionId: Number(sessionId),
-                    serviceType: "GROUP",
-                  }
-                : {
-                    // Private session booking - we need to create a new session
-                    type: "private",
-                    teacherId: Number(teacher),
-                    start,
-                    end,
-                    serviceType: "PRIVATE", // Default to PRIVATE for legacy URLs
-                  },
-          }),
-        });
+        // Create payment session using shared client
+        const sessionPayload = {
+          priceId: pkg.priceId,
+          bookingData:
+            sessionId && serviceType === "GROUP"
+              ? ({
+                  // Group class booking - we already have the session
+                  sessionId: Number(sessionId),
+                  serviceType: "GROUP",
+                } as GroupSessionBookingData)
+              : ({
+                  // Private session booking - we need to create a new session
+                  teacherId: Number(teacher),
+                  start,
+                  end,
+                  serviceType: "PRIVATE", // Default to PRIVATE for legacy URLs
+                } as PrivateSessionBookingData),
+        };
 
-        if (!sessionResponse.ok) {
+        const sessionResult =
+          await thriveClient.createPaymentSession(sessionPayload);
+
+        if (!sessionResult) {
           throw new Error("Failed to create payment session");
         }
 
-        const sessionJson = await sessionResponse.json();
-        const sessionParsed =
-          CreateSessionResponseSchema.safeParse(sessionJson);
-        if (!sessionParsed.success) {
-          throw new Error("Invalid session response");
-        }
-        const { clientSecret } = sessionParsed.data;
+        const { clientSecret } = sessionResult;
 
         // Create elements instance with clientSecret
         const elementsInstance = stripeInstance.elements({

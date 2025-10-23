@@ -48,10 +48,8 @@ interface CourseEnrollmentResult {
   status: string;
   enrolled_at: Date;
   course_id: number;
-  course_name: string;
+  course_title: string;
   description: string;
-  start_date: Date;
-  end_date: Date;
   total_sessions: string;
   completed_sessions: string;
   next_session_at: Date | null;
@@ -335,10 +333,8 @@ export class StudentsService {
         ce.status,
         ce.enrolled_at,
         c.id as course_id,
-        c.name as course_name,
+        c.title as course_title,
         c.description,
-        c.start_date,
-        c.end_date,
         (SELECT COUNT(*) FROM session s
          WHERE s.course_id = c.id
          AND s.deleted_at IS NULL
@@ -371,12 +367,11 @@ export class StudentsService {
     return enrollments.map((enrollment) => ({
       enrollmentId: enrollment.enrollment_id,
       courseId: enrollment.course_id,
-      courseName: enrollment.course_name,
+      courseName: enrollment.course_title,
       description: enrollment.description,
       status: enrollment.status,
       enrolledAt: enrollment.enrolled_at,
-      startDate: enrollment.start_date,
-      endDate: enrollment.end_date,
+
       totalSessions: parseInt(enrollment.total_sessions || "0", 10),
       completedSessions: parseInt(enrollment.completed_sessions || "0", 10),
       nextSessionAt: enrollment.next_session_at,

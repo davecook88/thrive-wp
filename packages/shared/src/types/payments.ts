@@ -14,7 +14,6 @@ export type CreatePaymentIntentDto = z.infer<typeof CreatePaymentIntentSchema>;
 
 // Legacy booking data schema for private sessions
 export const PrivateSessionBookingDataSchema = z.object({
-  type: z.literal("private"),
   teacherId: z.number().int().positive(),
   start: z.iso.datetime(),
   end: z.iso.datetime(),
@@ -26,13 +25,12 @@ export const PrivateSessionBookingDataSchema = z.object({
 
 // Group class booking data schema with sessionId
 export const GroupSessionBookingDataSchema = z.object({
-  type: z.literal("group"),
   sessionId: z.number().int().positive(),
   serviceType: z.literal(ServiceType.GROUP),
 });
 
 // Union type for either booking method
-export const CreateSessionBookingDataSchema = z.discriminatedUnion("type", [
+export const CreateSessionBookingDataSchema = z.union([
   PrivateSessionBookingDataSchema,
   GroupSessionBookingDataSchema,
 ]);

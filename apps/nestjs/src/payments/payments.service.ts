@@ -38,6 +38,10 @@ import {
   calculateCreditsRequired,
   getCrossTierWarningMessage,
 } from "../common/types/credit-tiers.js";
+import {
+  PrivateSessionBookingData,
+  GroupSessionBookingData,
+} from "@thrive/shared";
 
 export interface CreatePaymentIntentResponse {
   clientSecret: string;
@@ -76,6 +80,50 @@ export class PaymentsService {
       apiVersion: "2025-08-27.basil",
     });
   }
+
+  private get stripePublishableKey(): string {
+    const publishableKey = this.configService.get<string>(
+      "stripe.publishableKey",
+    );
+    if (!publishableKey) {
+      throw new Error("Stripe publishable key is not configured");
+    }
+    return publishableKey;
+  }
+
+  private getOrCreateStripeCustomerId = async (
+    userId: number,
+    studentId: number,
+  ): Promise<string> => {
+    const student = await this.studentRepository.findOne({
+      where: { id: studentId, userId },
+    });
+
+    if (!student) {
+      throw new NotFoundException(
+        `Student record not found for user ${userId}`,
+      );
+    }
+
+    if (student.stripeCustomerId) {
+      return student.stripeCustomerId;
+    }
+
+    const customerMetadata = StripeMetadataUtils.createCustomerMetadata({
+      userId,
+      studentId: student.id,
+    });
+
+    const customer = await this.stripe.customers.create({
+      metadata: StripeMetadataUtils.toStripeFormat(customerMetadata),
+    });
+
+    // Update student with Stripe customer ID
+    student.stripeCustomerId = customer.id;
+    await this.studentRepository.save(student);
+
+    return customer.id;
+  };
 
   /**
    * Create a booking using an existing student package credit (no Stripe/payment)
@@ -237,22 +285,9 @@ export class PaymentsService {
     const totalMinor = subtotalMinor; // Phase 1: no discounts or tax
 
     // Create or get Stripe customer
-    let stripeCustomerId = student.stripeCustomerId;
-    if (!stripeCustomerId) {
-      const customerMetadata = StripeMetadataUtils.createCustomerMetadata({
-        userId,
-        studentId: student.id,
-      });
-
-      const customer = await this.stripe.customers.create({
-        metadata: StripeMetadataUtils.toStripeFormat(customerMetadata),
-      });
-      stripeCustomerId = customer.id;
-
-      // Update student with Stripe customer ID
-      student.stripeCustomerId = stripeCustomerId;
-      await this.studentRepository.save(student);
-    }
+    const stripeCustomerId =
+      student.stripeCustomerId ??
+      (await this.getOrCreateStripeCustomerId(userId, student.id));
 
     // Create Stripe PaymentIntent
     const paymentIntentMetadata =
@@ -275,19 +310,9 @@ export class PaymentsService {
       metadata: StripeMetadataUtils.toStripeFormat(paymentIntentMetadata),
     });
 
-    const publishableKey =
-      this.configService.get<string>("stripe.publishableKey") ||
-      "pk_test_placeholder";
-
-    if (!publishableKey || publishableKey === "pk_test_placeholder") {
-      console.warn(
-        "STRIPE_PUBLISHABLE_KEY environment variable not set. Please configure it for production.",
-      );
-    }
-
     return {
       clientSecret: paymentIntent.client_secret as string,
-      publishableKey,
+      publishableKey: this.stripePublishableKey,
       amountMinor: totalMinor,
       currency,
     };
@@ -817,60 +842,21 @@ export class PaymentsService {
     return { publishableKey: this.cachedPublishableKey };
   }
 
-  async createPaymentSession(
-    priceId: string,
-    bookingData: CreateSessionDto["bookingData"],
-    userId: number,
-  ): Promise<{ clientSecret: string }> {
-    // Get the student record
-    const student = await this.studentRepository.findOne({
-      where: { userId },
+  /**
+   * Create draft PRIVATE session and pending booking for a student.
+   * Returns the created draft session and booking ids.
+   */
+  private async createDraftPrivateSessionAndBooking(
+    student: Student,
+    bookingData: PrivateSessionBookingData,
+  ): Promise<{ sessionId: number; bookingId: number }> {
+    // Validate availability before creating draft
+    await this.sessionsService.validatePrivateSession({
+      teacherId: bookingData.teacherId || 0,
+      startAt: bookingData.start,
+      endAt: bookingData.end,
+      studentId: student.id,
     });
-
-    if (!student) {
-      throw new NotFoundException(
-        `Student record not found for user ${userId}`,
-      );
-    }
-
-    // Create or get Stripe customer
-    let stripeCustomerId = student.stripeCustomerId;
-    if (!stripeCustomerId) {
-      const customerMetadata = StripeMetadataUtils.createCustomerMetadata({
-        userId,
-        studentId: student.id,
-      });
-
-      const customer = await this.stripe.customers.create({
-        metadata: StripeMetadataUtils.toStripeFormat(customerMetadata),
-      });
-      stripeCustomerId = customer.id;
-
-      // Update student with Stripe customer ID
-      student.stripeCustomerId = stripeCustomerId;
-      await this.studentRepository.save(student);
-    }
-
-    // Get the price details from Stripe
-    const stripePrice = await this.stripe.prices.retrieve(priceId);
-
-    if (!stripePrice.active) {
-      throw new BadRequestException("Selected package is no longer available");
-    }
-
-    // Validate availability before creating draft (private sessions only for now)
-    try {
-      await this.sessionsService.validatePrivateSession({
-        teacherId: bookingData.teacherId || 0,
-        startAt: bookingData.start,
-        endAt: bookingData.end,
-        studentId: student.id,
-      });
-    } catch (e) {
-      throw new BadRequestException(
-        `Availability validation failed: ${e instanceof Error ? e.message : e}`,
-      );
-    }
 
     // Create draft session + pending booking inside a transaction
     const { sessionId, bookingId } =
@@ -899,20 +885,65 @@ export class PaymentsService {
         return { sessionId: savedSession.id, bookingId: savedBooking.id };
       });
 
+    return { sessionId, bookingId };
+  }
+
+  /**
+   * Create a payment session for either a private or group booking
+   * @param priceId Stripe price ID
+   * @param bookingData Data for either private or group session booking
+   * @param userId User making the booking
+   * @returns Payment session client secret
+   */
+  async createPaymentSession(
+    priceId: string,
+    bookingData: PrivateSessionBookingData | GroupSessionBookingData,
+    userId: number,
+  ): Promise<{ clientSecret: string }> {
+    // Get the student record and validate
+    const student = await this.studentRepository.findOne({
+      where: { userId },
+    });
+
+    if (!student) {
+      throw new NotFoundException(
+        `Student record not found for user ${userId}`,
+      );
+    }
+
+    // Create or get Stripe customer
+    const stripeCustomerId =
+      student.stripeCustomerId ??
+      (await this.getOrCreateStripeCustomerId(userId, student.id));
+
+    // Get the price details from Stripe
+    const stripePrice = await this.stripe.prices.retrieve(priceId);
+
+    if (!stripePrice.active) {
+      throw new BadRequestException("Selected package is no longer available");
+    }
+
+    // Handle booking creation based on type (using type guard for proper narrowing)
+    const { sessionId, bookingId, metadata } = await this.processBookingByType(
+      bookingData,
+      student,
+    );
+
     // Create PaymentIntent referencing draft records
     const paymentIntentMetadata =
       StripeMetadataUtils.createPaymentIntentMetadata({
         studentId: student.id,
         userId,
-        serviceType: ServiceType.PRIVATE, // All treated as packages
-        teacherId: bookingData.teacherId || 0,
-        startAt: bookingData.start || "",
-        endAt: bookingData.end || "",
+        serviceType: metadata.serviceType,
+        teacherId: metadata.teacherId,
+        startAt: metadata.startAt,
+        endAt: metadata.endAt,
         productId: stripePrice.product as string,
         priceId: stripePrice.id,
         notes: `Package purchase - ${JSON.stringify(bookingData)}`,
         source: "booking-confirmation",
       });
+
     // Inject draft IDs
     paymentIntentMetadata.session_id = sessionId.toString();
     paymentIntentMetadata.booking_id = bookingId.toString();
@@ -930,5 +961,126 @@ export class PaymentsService {
     }
 
     return { clientSecret: paymentIntent.client_secret };
+  }
+
+  /**
+   * Type guard to check if booking data is for a group session
+   */
+  private isGroupSessionBookingData(
+    bookingData: PrivateSessionBookingData | GroupSessionBookingData,
+  ): bookingData is GroupSessionBookingData {
+    return "sessionId" in bookingData;
+  }
+
+  /**
+   * Process booking creation based on type (Group or Private)
+   * @returns Session ID, Booking ID, and metadata for the payment intent
+   */
+  private async processBookingByType(
+    bookingData: PrivateSessionBookingData | GroupSessionBookingData,
+    student: Student,
+  ): Promise<{
+    sessionId: number;
+    bookingId: number;
+    metadata: {
+      serviceType: ServiceType;
+      teacherId: number;
+      startAt: string;
+      endAt: string;
+    };
+  }> {
+    // Use type guard for proper type narrowing
+    if (this.isGroupSessionBookingData(bookingData)) {
+      return this.processGroupSessionBooking(bookingData, student);
+    } else {
+      return this.processPrivateSessionBooking(bookingData, student);
+    }
+  }
+
+  /**
+   * Process group session booking
+   */
+  private async processGroupSessionBooking(
+    bookingData: GroupSessionBookingData,
+    student: Student,
+  ) {
+    // Verify session exists and is the correct type
+    const existingSession = await this.sessionRepository.findOne({
+      where: { id: bookingData.sessionId },
+    });
+
+    if (!existingSession) {
+      throw new NotFoundException(`Session ${bookingData.sessionId} not found`);
+    }
+
+    if (existingSession.type !== ServiceType.GROUP) {
+      throw new BadRequestException(
+        `Session ${bookingData.sessionId} is not a group session`,
+      );
+    }
+
+    // Prevent duplicate booking for the same student/session
+    const existingBooking = await this.bookingRepository.findOne({
+      where: { sessionId: bookingData.sessionId, studentId: student.id },
+    });
+
+    if (existingBooking) {
+      throw new BadRequestException(
+        `Student already has a booking for session ${bookingData.sessionId}`,
+      );
+    }
+
+    // Create pending booking for existing session (promoted on successful payment)
+    const saved = await this.sessionRepository.manager.transaction(
+      async (tx) => {
+        const booking = tx.create(Booking, {
+          sessionId: bookingData.sessionId,
+          studentId: student.id,
+          status: BookingStatus.PENDING,
+          invitedAt: new Date(),
+        });
+        return tx.save(Booking, booking);
+      },
+    );
+
+    return {
+      sessionId: bookingData.sessionId,
+      bookingId: saved.id,
+      metadata: {
+        serviceType: ServiceType.GROUP,
+        teacherId: 0, // Not needed for group bookings
+        startAt: "", // Not needed for group bookings
+        endAt: "", // Not needed for group bookings
+      },
+    };
+  }
+
+  /**
+   * Process private session booking
+   */
+  private async processPrivateSessionBooking(
+    bookingData: PrivateSessionBookingData,
+    student: Student,
+  ) {
+    try {
+      const { sessionId, bookingId } =
+        await this.createDraftPrivateSessionAndBooking(student, bookingData);
+
+      return {
+        sessionId,
+        bookingId,
+        metadata: {
+          serviceType:
+            (bookingData.serviceType as ServiceType) || ServiceType.PRIVATE,
+          teacherId: bookingData.teacherId || 0,
+          startAt: bookingData.start || "",
+          endAt: bookingData.end || "",
+        },
+      };
+    } catch (e) {
+      throw new BadRequestException(
+        `Availability validation failed: ${e instanceof Error ? e.message : e}`,
+      );
+    }
   }
 }

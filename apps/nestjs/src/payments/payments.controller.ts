@@ -12,25 +12,24 @@ import {
   PaymentsService,
   CreatePaymentIntentResponse,
 } from "./payments.service.js";
-import { GroupClassBookingService } from "./services/group-class-booking.service.js";
 import {
   BookingResponseSchema,
   BookWithPackagePayloadSchema,
   CreatePaymentIntentSchema,
   CreateSessionSchema,
+  GroupSessionBookingDataSchema,
 } from "@thrive/shared";
 import type {
   BookWithPackagePayloadDto,
   CreatePaymentIntentDto,
+  GroupSessionBookingData,
 } from "@thrive/shared";
 import type { Request as ExpressRequest } from "express";
+import { CreateGroupClassSchema } from "@/group-classes/dto/create-group-class.dto.js";
 
 @Controller("payments")
 export class PaymentsController {
-  constructor(
-    private readonly paymentsService: PaymentsService,
-    private readonly groupClassBookingService: GroupClassBookingService,
-  ) {}
+  constructor(private readonly paymentsService: PaymentsService) {}
 
   @Get("stripe-key")
   getStripeKey(): { publishableKey: string } {
@@ -50,26 +49,12 @@ export class PaymentsController {
       throw new UnauthorizedException("Authentication required");
     }
 
-    // Handle based on booking type
-    if (
-      "sessionId" in body.bookingData &&
-      "serviceType" in body.bookingData &&
-      body.bookingData.serviceType === "GROUP"
-    ) {
-      // This is a group class booking
-      return this.groupClassBookingService.createGroupClassBookingSession(
-        body.priceId,
-        body.bookingData.sessionId as number,
-        parseInt(userId, 10),
-      );
-    } else {
-      // This is a private session booking (legacy flow)
-      return this.paymentsService.createPaymentSession(
-        body.priceId,
-        body.bookingData,
-        parseInt(userId, 10),
-      );
-    }
+    // This is a private session booking (legacy flow)
+    return this.paymentsService.createPaymentSession(
+      body.priceId,
+      body.bookingData,
+      parseInt(userId, 10),
+    );
   }
 
   @Post("book-with-package")
