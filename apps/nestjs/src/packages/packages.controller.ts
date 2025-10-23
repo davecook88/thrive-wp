@@ -52,7 +52,10 @@ export class PackagesController {
   ) {}
 
   @Get()
-  async getAvailablePackages(@Query("sessionId") sessionId?: string) {
+  async getAvailablePackages(
+    @Query("sessionId") sessionId?: string,
+    @Query("serviceType") serviceType?: ServiceType,
+  ) {
     // If sessionId provided, return packages compatible with that session
     if (sessionId) {
       const sessionIdNum = parseInt(sessionId, 10);
@@ -60,6 +63,10 @@ export class PackagesController {
         throw new BadRequestException("sessionId must be a valid number");
       }
       return this.packagesService.getValidPackagesForSession(sessionIdNum);
+    }
+
+    if (serviceType) {
+      return this.packagesService.getPackagesByServiceType(serviceType);
     }
 
     // Return all available packages

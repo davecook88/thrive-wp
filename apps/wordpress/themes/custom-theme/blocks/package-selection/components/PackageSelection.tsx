@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { thriveClient } from "../../../../../shared/thrive";
-import type { PackageResponseDto } from "@thrive/shared";
+import type { PackageResponseDto, ServiceType } from "@thrive/shared";
 
 interface PackageSelectionProps {
   showCredits?: boolean;
@@ -11,6 +11,7 @@ interface PackageSelectionProps {
   initialPackageId?: string;
   initialPriceId?: string;
   sessionId?: string;
+  serviceType?: ServiceType;
 }
 
 export default function PackageSelection({
@@ -22,6 +23,7 @@ export default function PackageSelection({
   initialPackageId,
   initialPriceId,
   sessionId,
+  serviceType,
 }: PackageSelectionProps) {
   const [packages, setPackages] = useState<PackageResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +38,10 @@ export default function PackageSelection({
     const fetchPackages = async () => {
       try {
         console.log("Fetching packages for session:", sessionId);
-        const data = await thriveClient.fetchAvailablePackages(sessionId);
+        const data = await thriveClient.fetchAvailablePackages(
+          sessionId,
+          serviceType,
+        );
         setPackages(data);
 
         // Set initial selection if provided

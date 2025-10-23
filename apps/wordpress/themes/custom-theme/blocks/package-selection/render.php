@@ -19,6 +19,7 @@ $loading_message = isset($block_attributes['loadingMessage']) ? $block_attribute
 $error_message = isset($block_attributes['errorMessage']) ? $block_attributes['errorMessage'] : 'Unable to load packages at this time. Please refresh and try again.';
 $no_packages_message = isset($block_attributes['noPackagesMessage']) ? $block_attributes['noPackagesMessage'] : 'No packages are currently available.';
 
+
 // Check if user is logged in
 $is_logged_in = function_exists('thrive_is_logged_in') && thrive_is_logged_in();
 
@@ -37,13 +38,12 @@ if (isset($block) && is_object($block)) {
 
 // Check URL for sessionId parameter
 $session_id_param = isset($_GET['sessionId']) ? sanitize_text_field($_GET['sessionId']) : '';
+$service_type = isset($_GET['serviceType']) ? sanitize_text_field($_GET['serviceType']) : '';
 
 ?>
 <div <?php echo get_block_wrapper_attributes(['class' => 'package-selection-block']); ?>>
     <?php if ($is_logged_in): ?>
-        <div
-            id="package-selection-root"
-            data-show-credits="<?php echo esc_attr($show_credits ? '1' : '0'); ?>"
+        <div id="package-selection-root" data-show-credits="<?php echo esc_attr($show_credits ? '1' : '0'); ?>"
             data-show-expiry="<?php echo esc_attr($show_expiry ? '1' : '0'); ?>"
             data-loading-message="<?php echo esc_attr($loading_message); ?>"
             data-error-message="<?php echo esc_attr($error_message); ?>"
@@ -51,7 +51,7 @@ $session_id_param = isset($_GET['sessionId']) ? sanitize_text_field($_GET['sessi
             data-initial-package-id="<?php echo esc_attr($initial_package_id); ?>"
             data-initial-price-id="<?php echo esc_attr($initial_price_id); ?>"
             data-session-id="<?php echo esc_attr($session_id_param); ?>"
-        ></div>
+            data-service-type="<?php echo esc_attr($service_type); ?>"></div>
     <?php else: ?>
         <div style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:12px;padding:16px 18px;">
             <p style="margin:0;">Please sign in to view available packages.</p>

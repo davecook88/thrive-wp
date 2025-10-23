@@ -177,6 +177,31 @@ export class PackagesService {
     return this.buildPackageResponses(mappings);
   }
 
+  async getPackagesByServiceType(
+    serviceType: ServiceType,
+  ): Promise<PackageResponseDto[]> {
+    const mappings = await this.stripeProductMapRepository
+      .createQueryBuilder("spm")
+      .leftJoinAndSelect(
+        "spm.allowances",
+        "allowances",
+        "allowances.deleted_at IS NULL",
+      )
+      .where("spm.scope_type = :scopeType", { scopeType: ScopeType.PACKAGE })
+      .andWhere("spm.deleted_at IS NULL")
+      .andWhere("spm.active = 1")
+      .andWhere("allowances.service_type = :serviceType", { serviceType })
+      .orderBy("spm.created_at", "DESC")
+      .getMany();
+
+    // Remove duplicates that may result from the join
+    const uniqueMappings = Array.from(
+      new Map(mappings.map((m) => [m.id, m])).values(),
+    );
+
+    return this.buildPackageResponses(uniqueMappings);
+  }
+
   async getValidPackagesForSession(
     sessionId: number,
   ): Promise<PackageResponseDto[]> {

@@ -2,6 +2,7 @@ import { createElement } from "@wordpress/element";
 import { createRoot } from "react-dom/client";
 
 import PackageSelection from "./components/PackageSelection";
+import { ServiceType } from "@thrive/shared/types/class-types";
 
 // Mount the React component when the DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
@@ -26,6 +27,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const initialPriceId =
     container.getAttribute("data-initial-price-id") || undefined;
   const sessionId = container.getAttribute("data-session-id") || undefined;
+  const serviceType = container.getAttribute("data-service-type") as
+    | ServiceType
+    | undefined;
 
   // Render the React component
   root.render(
@@ -38,6 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
       initialPackageId,
       initialPriceId,
       sessionId,
+      serviceType,
     }),
   );
 });

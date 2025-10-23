@@ -18,6 +18,7 @@ import {
   BookingCancellationResponse,
   BookingCancellationResponseSchema,
   WaitlistResponseDto,
+  ServiceType,
 } from "@thrive/shared";
 import {
   PreviewAvailabilityResponseSchema,
@@ -265,10 +266,19 @@ export const thriveClient = {
   },
   fetchAvailablePackages: async (
     sessionId?: string,
+    serviceType?: ServiceType,
   ): Promise<PackageResponseDto[]> => {
-    const url = sessionId
-      ? `/api/packages?sessionId=${encodeURIComponent(sessionId)}`
-      : "/api/packages";
+    const urlQueryParams = new URLSearchParams();
+    if (serviceType) {
+      urlQueryParams.append("serviceType", serviceType);
+    }
+    if (sessionId) {
+      urlQueryParams.append("sessionId", sessionId);
+    }
+    const url =
+      urlQueryParams.toString().length > 0
+        ? `/api/packages?${urlQueryParams.toString()}`
+        : "/api/packages";
     const data = await apiGet<PackageResponseDto[]>(
       url,
       z.array(PackageResponseSchema),
