@@ -4,12 +4,14 @@ import { ServiceType } from "./class-types.js";
 /**
  * PackageAllowance describes one service type's allocation within a bundle.
  * Example: "5 PRIVATE credits @ 30 min each"
+ * remainingCredits is only included in StudentPackageMyCreditsResponse, computed for each student.
  */
 export const PackageAllowanceSchema = z.object({
   id: z.number().int().positive(),
   serviceType: z.enum(ServiceType),
   teacherTier: z.number().int().nonnegative().default(0),
   credits: z.number().int().positive(),
+  remainingCredits: z.number().int().nonnegative().optional(),
   creditUnitMinutes: z.union([
     z.literal(15),
     z.literal(30),
@@ -65,22 +67,33 @@ export const PackageResponseSchema = z.object({
 export type PackageResponseDto = z.infer<typeof PackageResponseSchema>;
 
 /**
- * Backward-compatible StudentPackage with computed balances.
+ * Student Package schema includes allowances from the purchased package bundle.
  * remainingSessions is computed from PackageUse records.
  */
-export type StudentPackageMyCreditsResponse = {
-  packages: StudentPackage[];
-  totalRemaining: number;
-};
+export const StudentPackageSchema = z.object({
+  id: z.number().int().positive(),
+  packageName: z.string(),
+  totalSessions: z.number().int().nonnegative(),
+  remainingSessions: z.number().int().nonnegative(), // Computed: totalSessions - SUM(creditsUsed from PackageUse)
+  purchasedAt: z.string().datetime(),
+  expiresAt: z.string().datetime().nullable(),
+  allowances: z.array(PackageAllowanceSchema), // Allowances from the purchased package bundle
+});
 
-export type StudentPackage = {
-  id: number;
-  packageName: string;
-  totalSessions: number;
-  remainingSessions: number; // Computed: totalSessions - SUM(creditsUsed from PackageUse)
-  purchasedAt: string; // ISO date string
-  expiresAt: string | null; // ISO date string or null
-};
+export type StudentPackage = z.infer<typeof StudentPackageSchema>;
+
+/**
+ * Backward-compatible StudentPackageMyCreditsResponse with allowances.
+ * remainingSessions is computed from PackageUse records.
+ */
+export const StudentPackageMyCreditsResponseSchema = z.object({
+  packages: z.array(StudentPackageSchema),
+  totalRemaining: z.number().int().nonnegative(),
+});
+
+export type StudentPackageMyCreditsResponse = z.infer<
+  typeof StudentPackageMyCreditsResponseSchema
+>;
 
 /**
  * Compatible package for a session, with computed remaining credits.
