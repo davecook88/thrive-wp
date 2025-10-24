@@ -8,10 +8,15 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { ZodValidationPipe } from "nestjs-zod";
+import {
+  PaginatedUsersResponse,
+  UserResponse,
+  MakeAdminSchema,
+  MakeTeacherSchema,
+  type MakeAdminDto,
+  type MakeTeacherDto,
+} from "@thrive/shared";
 import { AdminGuard } from "../auth/admin.guard.js";
-import { PaginatedUsersResponseDto } from "./dto/user-response.dto.js";
-import { MakeAdminSchema, MakeTeacherSchema } from "./dto/admin-actions.dto.js";
-import type { MakeAdminDto, MakeTeacherDto } from "./dto/admin-actions.dto.js";
 import { UsersService } from "./users.service.js";
 
 @Controller("users")
@@ -25,7 +30,7 @@ export class UsersController {
     @Query("limit") limit?: string,
     @Query("search") search?: string,
     @Query("role") role?: string,
-  ): Promise<PaginatedUsersResponseDto> {
+  ): Promise<PaginatedUsersResponse> {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
 
@@ -51,14 +56,14 @@ export class UsersController {
   @Post("make-admin")
   async makeUserAdmin(
     @Body(new ZodValidationPipe(MakeAdminSchema)) dto: MakeAdminDto,
-  ) {
+  ): Promise<UserResponse> {
     return this.usersService.makeUserAdmin(dto.userId);
   }
 
   @Post("make-teacher")
   async makeUserTeacher(
     @Body(new ZodValidationPipe(MakeTeacherSchema)) dto: MakeTeacherDto,
-  ) {
+  ): Promise<UserResponse> {
     return this.usersService.makeUserTeacher(dto.userId);
   }
 }

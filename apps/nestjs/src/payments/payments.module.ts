@@ -13,6 +13,7 @@ import { PackageUse } from "../packages/entities/package-use.entity.js";
 import { PackageAllowance } from "../packages/entities/package-allowance.entity.js";
 import { SessionsModule } from "../sessions/sessions.module.js";
 import { PackagesModule } from "../packages/packages.module.js";
+import { CourseProgramsModule } from "../course-programs/course-programs.module.js";
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { PackagesModule } from "../packages/packages.module.js";
     ]),
     SessionsModule,
     PackagesModule,
+    CourseProgramsModule,
   ],
   controllers: [PaymentsController, WebhooksController],
   providers: [PaymentsService],

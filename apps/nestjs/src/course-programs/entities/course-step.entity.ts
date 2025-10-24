@@ -9,7 +9,7 @@ import {
 import { BaseEntity } from "../../common/entities/base.entity.js";
 import { CourseProgram } from "./course-program.entity.js";
 import type { CourseStepOption } from "./course-step-option.entity.js";
-import type { StudentCourseProgress } from "./student-course-progress.entity.js";
+import type { StudentCourseStepProgress } from "./student-course-step-progress.entity.js";
 
 /**
  * CourseStep entity represents an ordered step within a course program.
@@ -74,6 +74,6 @@ export class CourseStep extends BaseEntity {
   @OneToMany("CourseStepOption", "courseStep")
   options: CourseStepOption[];
 
-  @OneToMany("StudentCourseProgress", "courseStep")
-  progressRecords: StudentCourseProgress[];
+  @OneToMany("StudentCourseStepProgress", "courseStep")
+  progressRecords: StudentCourseStepProgress[];
 }

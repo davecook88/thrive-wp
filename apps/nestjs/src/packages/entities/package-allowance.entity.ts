@@ -12,15 +12,17 @@ import { ServiceType } from "@thrive/shared";
  * - Number of credits
  * - Credit duration (15, 30, 45, or 60 minutes)
  * - Teacher tier restriction (0 = any tier)
+ * - Course program ID (for COURSE allowances only)
  *
  * Example: A bundle package might include:
  * - 5 PRIVATE credits @ 30 min each
  * - 3 GROUP credits @ 60 min each
- * - 2 COURSE credits @ no time restriction
+ * - 1 COURSE allowance pointing to a specific course program
  */
 @Entity("package_allowance")
 @Index(["stripeProductMapId"])
 @Index(["serviceType"])
+@Index(["courseProgramId"])
 export class PackageAllowance extends BaseEntity {
   @Column({ name: "stripe_product_map_id", type: "int" })
   stripeProductMapId: number;
@@ -60,4 +62,15 @@ export class PackageAllowance extends BaseEntity {
     comment: "Duration per credit: 15, 30, 45, or 60",
   })
   creditUnitMinutes: 15 | 30 | 45 | 60;
+
+  @Column({
+    name: "course_program_id",
+    type: "int",
+    nullable: true,
+    comment: "FK to course_program (only for COURSE service type)",
+  })
+  courseProgramId?: number;
+
+  // Note: CourseProgram relation is intentionally not typed to avoid circular dependency
+  // The relation is defined in the migration and can be queried via TypeORM when needed
 }

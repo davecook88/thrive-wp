@@ -1,12 +1,14 @@
 import { Entity, Column, Index, OneToMany } from "typeorm";
 import { BaseEntity } from "../../common/entities/base.entity.js";
 import type { CourseStep } from "./course-step.entity.js";
-import type { CourseBundleComponent } from "./course-bundle-component.entity.js";
-import type { StudentCourseEnrollment } from "./student-course-enrollment.entity.js";
 
 /**
- * CourseProgram entity represents a structured course program with steps and bundled components.
- * Sold as Stripe products with enrollment tracking.
+ * CourseProgram entity represents a structured course program with sequential steps.
+ *
+ * Simplified architecture:
+ * - Stripe product info now stored in StripeProductMap (not here)
+ * - Enrollments tracked via StudentPackage (not separate enrollment table)
+ * - Course purchases grant PackageAllowances that reference this entity
  */
 @Entity("course_program")
 @Index(["code"], { unique: true })
@@ -54,30 +56,6 @@ export class CourseProgram extends BaseEntity {
   })
   isActive: boolean;
 
-  @Column({
-    name: "stripe_product_id",
-    type: "varchar",
-    length: 255,
-    nullable: true,
-    comment: "Stripe product ID",
-  })
-  stripeProductId: string | null;
-
-  @Column({
-    name: "stripe_price_id",
-    type: "varchar",
-    length: 255,
-    nullable: true,
-    comment: "Stripe price ID",
-  })
-  stripePriceId: string | null;
-
   @OneToMany("CourseStep", "courseProgram")
   steps: CourseStep[];
-
-  @OneToMany("CourseBundleComponent", "courseProgram")
-  bundleComponents: CourseBundleComponent[];
-
-  @OneToMany("StudentCourseEnrollment", "courseProgram")
-  enrollments: StudentCourseEnrollment[];
 }

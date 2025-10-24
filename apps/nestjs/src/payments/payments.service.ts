@@ -8,7 +8,7 @@ import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import Stripe from "stripe";
-import type { CreatePaymentIntentDto, CreateSessionDto } from "@thrive/shared";
+import type { CreatePaymentIntentDto } from "@thrive/shared";
 import { Student } from "../students/entities/student.entity.js";
 import {
   ScopeType,
@@ -30,6 +30,7 @@ import {
 } from "./dto/stripe-metadata.dto.js";
 import { SessionsService } from "../sessions/services/sessions.service.js";
 import { PackagesService } from "../packages/packages.service.js";
+import { CourseStepProgressService } from "../course-programs/services/course-step-progress.service.js";
 import { StudentPackage } from "../packages/entities/student-package.entity.js";
 import { PackageUse } from "../packages/entities/package-use.entity.js";
 import {
@@ -71,6 +72,7 @@ export class PaymentsService {
     private configService: ConfigService,
     private sessionsService: SessionsService,
     private packagesService: PackagesService,
+    private courseStepProgressService: CourseStepProgressService,
   ) {
     const secretKey = this.configService.get<string>("stripe.secretKey");
     if (!secretKey) {
@@ -501,6 +503,7 @@ export class PaymentsService {
             stripeProductId: productId,
             active: true,
           },
+          relations: ["allowances"],
         });
 
         if (!productMapping) {
@@ -555,6 +558,36 @@ export class PaymentsService {
           this.logger.log(
             `Created student package ${savedPackage.id} with ${credits} credits`,
           );
+
+          // Seed course progress for COURSE allowances
+          if (
+            productMapping.allowances &&
+            productMapping.allowances.length > 0
+          ) {
+            const courseAllowances = productMapping.allowances.filter(
+              (allowance) =>
+                allowance.serviceType === ServiceType.COURSE &&
+                allowance.courseProgramId,
+            );
+
+            for (const allowance of courseAllowances) {
+              try {
+                await this.courseStepProgressService.seedProgressForCourse(
+                  savedPackage.id,
+                  allowance.courseProgramId!,
+                );
+                this.logger.log(
+                  `Seeded course progress for package ${savedPackage.id}, course ${allowance.courseProgramId}`,
+                );
+              } catch (error) {
+                this.logger.error(
+                  `Failed to seed course progress for package ${savedPackage.id}, course ${allowance.courseProgramId}:`,
+                  error as Error,
+                );
+                // Don't throw - continue processing other courses
+              }
+            }
+          }
         }
 
         // 2. If there's a session to book, use the package credit immediately
@@ -814,8 +847,9 @@ export class PaymentsService {
             studentId,
           });
         } catch (error) {
+          const msg = error instanceof Error ? error.message : String(error);
           this.logger.warn(
-            `Availability validation failed for PRIVATE session: ${error instanceof Error ? error.message : error}`,
+            `Availability validation failed for PRIVATE session: ${msg}`,
           );
           return;
         }
@@ -1141,9 +1175,11 @@ export class PaymentsService {
         },
       };
     } catch (e) {
-      throw new BadRequestException(
-        `Availability validation failed: ${e instanceof Error ? e.message : e}`,
+      const msg = e instanceof Error ? e.message : String(e);
+      this.logger.warn(
+        `Failed to create draft private session/booking: ${msg}`,
       );
+      throw new BadRequestException(`Availability validation failed: ${msg}`);
     }
   }
 }

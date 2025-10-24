@@ -17,6 +17,7 @@ import { BookingsModule } from "./bookings/bookings.module.js";
 import { LevelsModule } from "./levels/levels.module.js";
 import { GroupClassesModule } from "./group-classes/group-classes.module.js";
 import { WaitlistsModule } from "./waitlists/waitlists.module.js";
+import { CourseProgramsModule } from "./course-programs/course-programs.module.js";
 import { AppController } from "./app.controller.js";
 import { AppService } from "./app.service.js";
 
@@ -72,6 +73,7 @@ import { AppService } from "./app.service.js";
     LevelsModule,
     GroupClassesModule,
     WaitlistsModule,
+    CourseProgramsModule,
   ],
   controllers: [AppController],
   providers: [

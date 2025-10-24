@@ -1,210 +1,386 @@
-# Course Programs Database ERD
+# Course Programs Database ERD (Simplified Architecture)
 
 ## Overview
-This ERD defines the database schema for the course programs feature, which allows selling structured multi-step courses as Stripe products. The schema extends the existing platform while maintaining compatibility.
+This ERD defines the simplified database schema for the course programs feature, which leverages the existing package-allowance system instead of creating parallel infrastructure.
 
-## Key Entities & Relationships
+**Key Design Decision**: Courses are treated as a special type of `PackageAllowance` within the existing package system, with lightweight progress tracking for individual steps.
 
-### 1. course_program
-High-level course program definition with marketing metadata and Stripe product linkage.
+---
 
-**Columns:**
-- `id` int PK AUTO_INCREMENT
-- `code` varchar(50) NOT NULL UNIQUE - Human-readable code (e.g., "SFZ", "ADV-TECH")
-- `title` varchar(255) NOT NULL - Course title
-- `description` text NULL - Marketing description
-- `timezone` varchar(64) DEFAULT 'America/New_York' - Default timezone for scheduling
-- `is_active` tinyint(1) NOT NULL DEFAULT 1 - Whether course is available for purchase
-- `stripe_product_id` varchar(255) NULL - Stripe product ID
-- `stripe_price_id` varchar(255) NULL - Stripe price ID
-- `created_at`, `updated_at`, `deleted_at` (from BaseEntity)
+## Entity Changes Summary
 
-**Indexes:**
-- UNIQUE KEY `IDX_course_program_code` (`code`)
-- KEY `IDX_course_program_active` (`is_active`)
+### Reuse Existing Tables
+- ✅ `stripe_product_map` - Represents Stripe products (including courses)
+- ✅ `package_allowance` - Grants access to services (PRIVATE, GROUP, or COURSE)
+- ✅ `student_package` - Student purchase records (works for all package types)
+- ✅ `package_use` - Credit consumption tracking (PRIVATE/GROUP only)
 
-**Relationships:**
-- 1:N → course_step
-- 1:N → course_bundle_component
-- 1:N → student_course_enrollment
+### New Tables
+- ✅ `course_program` - Course metadata (code, title, description)
+- ✅ `course_step` - Sequential steps within a course
+- ✅ `course_step_option` - Links steps to group_class options
+- ✅ `student_course_step_progress` - Tracks which steps student has booked/completed
 
-### 2. course_step
-Ordered steps within a course program with content and sequencing info.
+### Deleted Tables (from original plan)
+- ❌ `course_bundle_component` - Replaced by PackageAllowance
+- ❌ `student_course_enrollment` - Replaced by StudentPackage
+- ❌ `student_course_progress` - Replaced by StudentCourseStepProgress
 
-**Columns:**
-- `id` int PK AUTO_INCREMENT
-- `course_program_id` int NOT NULL - FK to course_program.id
-- `step_order` smallint unsigned NOT NULL - Ordering within course (1, 2, 3...)
-- `label` varchar(100) NOT NULL - Step label (e.g., "SFZ-1", "Foundation")
-- `title` varchar(255) NOT NULL - Step title
-- `description` text NULL - Step content/overview
-- `is_required` tinyint(1) NOT NULL DEFAULT 1 - Whether step must be completed
-- `created_at`, `updated_at`, `deleted_at` (from BaseEntity)
+---
 
-**Indexes:**
-- KEY `IDX_course_step_program_order` (`course_program_id`, `step_order`)
-- UNIQUE KEY `IDX_course_step_program_label` (`course_program_id`, `label`)
+## Modified Entity: package_allowance
 
-**Relationships:**
-- N:1 → course_program
-- 1:N → course_step_option
+**New column**:
+```sql
+course_program_id INT NULL  -- FK to course_program.id (only for COURSE service type)
+```
 
-### 3. course_step_option
-Links course steps to available group class options (many-to-many relationship).
+**Purpose**: When `serviceType = 'COURSE'`, this links the allowance to the course program it grants access to.
 
-**Columns:**
-- `id` int PK AUTO_INCREMENT
-- `course_step_id` int NOT NULL - FK to course_step.id
-- `group_class_id` int NOT NULL - FK to group_class.id
-- `is_active` tinyint(1) NOT NULL DEFAULT 1 - Whether this option is available
-- `created_at`, `updated_at`, `deleted_at` (from BaseEntity)
+**Schema**:
+```sql
+CREATE TABLE package_allowance (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  stripe_product_map_id INT NOT NULL,
+  service_type ENUM('PRIVATE','GROUP','COURSE') NOT NULL,
+  teacher_tier SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  credits SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+  credit_unit_minutes TINYINT UNSIGNED NULL,  -- 15, 30, 45, 60 (NULL for COURSE)
+  course_program_id INT NULL,                 -- ✅ NEW: Only set for COURSE allowances
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  deleted_at DATETIME(3) NULL,
 
-**Indexes:**
-- UNIQUE KEY `IDX_course_step_option_unique` (`course_step_id`, `group_class_id`)
-- KEY `IDX_course_step_option_step` (`course_step_id`)
-- KEY `IDX_course_step_option_class` (`group_class_id`)
+  FOREIGN KEY (stripe_product_map_id) REFERENCES stripe_product_map(id),
+  FOREIGN KEY (course_program_id) REFERENCES course_program(id),
 
-**Relationships:**
-- N:1 → course_step
-- N:1 → group_class
+  KEY IDX_package_allowance_product (stripe_product_map_id),
+  KEY IDX_package_allowance_course (course_program_id)
+);
+```
 
-### 4. course_bundle_component
-Defines bundled extras included with course purchase (private credits, additional groups).
+---
 
-**Columns:**
-- `id` int PK AUTO_INCREMENT
-- `course_program_id` int NOT NULL - FK to course_program.id
-- `component_type` enum('PRIVATE_CREDIT','GROUP_CREDIT') NOT NULL - Type of bundled component
-- `quantity` smallint unsigned NOT NULL DEFAULT 1 - Number of credits/items
-- `description` varchar(255) NULL - Human-readable description
-- `metadata` json NULL - Additional configuration (package IDs, etc.)
-- `created_at`, `updated_at`, `deleted_at` (from BaseEntity)
+## New Entity: course_program
 
-**Indexes:**
-- KEY `IDX_course_bundle_program` (`course_program_id`)
+**Purpose**: High-level course definition with marketing metadata.
 
-**Relationships:**
-- N:1 → course_program
+**Schema**:
+```sql
+CREATE TABLE course_program (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  code VARCHAR(50) NOT NULL UNIQUE,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NULL,
+  timezone VARCHAR(64) NOT NULL DEFAULT 'America/New_York',
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  deleted_at DATETIME(3) NULL,
 
-### 5. student_course_enrollment
-Student purchase records for course programs with Stripe fulfillment tracking.
+  UNIQUE KEY IDX_course_program_code (code),
+  KEY IDX_course_program_active (is_active)
+);
+```
 
-**Columns:**
-- `id` int PK AUTO_INCREMENT
-- `course_program_id` int NOT NULL - FK to course_program.id
-- `student_id` int NOT NULL - FK to student.id
-- `stripe_payment_intent_id` varchar(255) NOT NULL - Stripe payment intent ID
-- `stripe_product_id` varchar(255) NOT NULL - Stripe product ID at time of purchase
-- `stripe_price_id` varchar(255) NOT NULL - Stripe price ID at time of purchase
-- `status` enum('ACTIVE','CANCELLED','REFUNDED') NOT NULL DEFAULT 'ACTIVE'
-- `purchased_at` datetime(3) NOT NULL - Purchase timestamp
-- `cancelled_at` datetime(3) NULL - Cancellation timestamp
-- `refunded_at` datetime(3) NULL - Refund timestamp
-- `metadata` json NULL - Additional fulfillment data
-- `created_at`, `updated_at`, `deleted_at` (from BaseEntity)
+**Note**: Unlike the original plan, `stripe_product_id` and `stripe_price_id` are NOT stored here. They live in `stripe_product_map` where all Stripe mappings belong.
 
-**Indexes:**
-- UNIQUE KEY `IDX_student_course_enrollment_unique` (`course_program_id`, `student_id`)
-- KEY `IDX_student_course_enrollment_student` (`student_id`)
-- KEY `IDX_student_course_enrollment_payment` (`stripe_payment_intent_id`)
+---
 
-**Relationships:**
-- N:1 → course_program
-- N:1 → student
-- 1:N → student_course_progress
+## New Entity: course_step
 
-### 6. student_course_progress
-Tracks student progress through course steps and credit consumption.
+**Purpose**: Ordered steps within a course program.
 
-**Columns:**
-- `id` int PK AUTO_INCREMENT
-- `student_course_enrollment_id` int NOT NULL - FK to student_course_enrollment.id
-- `course_step_id` int NOT NULL - FK to course_step.id
-- `selected_option_id` int NULL - FK to course_step_option.id (chosen class option)
-- `status` enum('UNBOOKED','BOOKED','COMPLETED','MISSED','CANCELLED') NOT NULL DEFAULT 'UNBOOKED'
-- `booked_at` datetime(3) NULL - When student booked this step
-- `completed_at` datetime(3) NULL - When step was completed
-- `cancelled_at` datetime(3) NULL - When booking was cancelled
-- `session_id` int NULL - FK to session.id (actual booked session)
-- `credit_consumed` tinyint(1) NOT NULL DEFAULT 0 - Whether course entitlement was used
-- `created_at`, `updated_at`, `deleted_at` (from BaseEntity)
+**Schema**:
+```sql
+CREATE TABLE course_step (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  course_program_id INT NOT NULL,
+  step_order SMALLINT UNSIGNED NOT NULL,
+  label VARCHAR(100) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NULL,
+  is_required TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  deleted_at DATETIME(3) NULL,
 
-**Indexes:**
-- UNIQUE KEY `IDX_student_course_progress_unique` (`student_course_enrollment_id`, `course_step_id`)
-- KEY `IDX_student_course_progress_enrollment` (`student_course_enrollment_id`)
-- KEY `IDX_student_course_progress_step` (`course_step_id`)
-- KEY `IDX_student_course_progress_session` (`session_id`)
+  FOREIGN KEY (course_program_id) REFERENCES course_program(id),
 
-**Relationships:**
-- N:1 → student_course_enrollment
-- N:1 → course_step
-- N:1 → course_step_option (selected_option_id)
-- N:1 → session
+  UNIQUE KEY IDX_course_step_program_label (course_program_id, label),
+  KEY IDX_course_step_program_order (course_program_id, step_order)
+);
+```
+
+---
+
+## New Entity: course_step_option
+
+**Purpose**: Links course steps to available group class options (many-to-many).
+
+**Schema**:
+```sql
+CREATE TABLE course_step_option (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  course_step_id INT NOT NULL,
+  group_class_id INT NOT NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  deleted_at DATETIME(3) NULL,
+
+  FOREIGN KEY (course_step_id) REFERENCES course_step(id),
+  FOREIGN KEY (group_class_id) REFERENCES group_class(id),
+
+  UNIQUE KEY IDX_course_step_option_unique (course_step_id, group_class_id),
+  KEY IDX_course_step_option_step (course_step_id),
+  KEY IDX_course_step_option_class (group_class_id)
+);
+```
+
+---
+
+## New Entity: student_course_step_progress
+
+**Purpose**: Tracks student progress through course steps (enrollment-based, not credit-based).
+
+**Schema**:
+```sql
+CREATE TABLE student_course_step_progress (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  student_package_id INT NOT NULL,
+  course_step_id INT NOT NULL,
+  status ENUM('UNBOOKED','BOOKED','COMPLETED','MISSED','CANCELLED') NOT NULL DEFAULT 'UNBOOKED',
+  session_id INT NULL,
+  booked_at DATETIME(3) NULL,
+  completed_at DATETIME(3) NULL,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+
+  FOREIGN KEY (student_package_id) REFERENCES student_package(id),
+  FOREIGN KEY (course_step_id) REFERENCES course_step(id),
+  FOREIGN KEY (session_id) REFERENCES session(id),
+
+  UNIQUE KEY IDX_student_course_step_progress_unique (student_package_id, course_step_id),
+  KEY IDX_student_course_step_progress_package (student_package_id),
+  KEY IDX_student_course_step_progress_step (course_step_id),
+  KEY IDX_student_course_step_progress_session (session_id)
+);
+```
+
+**Key Difference from PackageUse**:
+- `PackageUse` tracks credit **consumption** (PRIVATE/GROUP allowances)
+- `StudentCourseStepProgress` tracks enrollment **progress** (COURSE allowances)
+- No `deletedAt` column - progress records are never soft-deleted
+
+---
 
 ## Entity Relationship Diagram
 
 ```
-course_program (1) ──── (N) course_step
-    │                           │
-    │                           │
-    └─ (N) course_bundle_component  │
-                                    │
-                                    │
-                                    └─ (N) course_step_option (N) ─── group_class
-                                        │
-                                        │
-                                        │
-student (1) ─── (N) student_course_enrollment (1) ─── (N) student_course_progress
-                                                            │
-                                                            │
-                                                            └─ (N:1) course_step
+stripe_product_map (1) ──── (N) package_allowance
+                                  │
+                                  │ if serviceType = COURSE
+                                  ▼
+                             course_program (1) ──── (N) course_step
+                                                          │
+                                                          │
+                                                          └─ (N) course_step_option (N) ─── group_class
+
+student (1) ─── (N) student_package ────┬──── (N) package_use (for PRIVATE/GROUP)
+                                         │
+                                         └──── (N) student_course_step_progress (for COURSE)
 ```
+
+**Data Flow**:
+1. Admin creates `CourseProgram` with `CourseStep` entities
+2. Admin creates Stripe product → `StripeProductMap` with `PackageAllowances`:
+   - 1x COURSE allowance (links to CourseProgram)
+   - Optional PRIVATE/GROUP allowances (bonus credits)
+3. Student purchases → `StudentPackage` created
+4. Webhook seeds `StudentCourseStepProgress` rows (one per step)
+5. Student books step → Update progress.status (NOT PackageUse)
+6. Student uses bonus credit → Create `PackageUse` record
+
+---
 
 ## Migration Strategy
 
-### Phase 1: Core Tables
-Create tables in this order to satisfy FK dependencies:
-1. `course_program` (no dependencies)
-2. `course_step` (depends on course_program)
-3. `course_bundle_component` (depends on course_program)
-4. `course_step_option` (depends on course_step, references existing `group_class`)
-5. `student_course_enrollment` (depends on course_program, references existing `student`)
-6. `student_course_progress` (depends on student_course_enrollment, course_step, course_step_option, references existing `session`)
+### Step 1: Add course_program_id to package_allowance
+```sql
+ALTER TABLE package_allowance
+  ADD COLUMN course_program_id INT NULL AFTER credit_unit_minutes,
+  ADD CONSTRAINT FK_package_allowance_course_program
+    FOREIGN KEY (course_program_id) REFERENCES course_program(id);
+```
 
-### Phase 2: Backfill Strategy
-**No backfill required for existing data:**
-- Existing `group_class` records remain independent and can be linked to course steps via `course_step_option` during admin setup
-- Existing `student` records will be referenced by new `student_course_enrollment` records when students purchase courses
-- Existing `session` records will be referenced by `student_course_progress` when students book course sessions
-- Course programs start empty and are populated through the admin interface
+### Step 2: Create new course tables
+```sql
+CREATE TABLE course_program (...);
+CREATE TABLE course_step (...);
+CREATE TABLE course_step_option (...);
+CREATE TABLE student_course_step_progress (...);
+```
 
-**Migration Safety:**
-- All new tables use soft deletes (`deleted_at`) consistent with existing schema
-- Foreign key constraints use appropriate CASCADE/RESTRICT rules
-- No existing data modifications required
-- Rollback possible by dropping new tables in reverse order
+### Step 3: Drop old course tables (if they exist)
+```sql
+DROP TABLE IF EXISTS course_bundle_component;
+DROP TABLE IF EXISTS student_course_progress;
+DROP TABLE IF EXISTS student_course_enrollment;
+```
 
-### Phase 3: Indexes & Constraints
-Add all indexes and constraints as specified in the ERD after table creation to ensure optimal performance from the start.
+### Step 4: Remove Stripe IDs from course_program (if they exist)
+```sql
+ALTER TABLE course_program
+  DROP COLUMN IF EXISTS stripe_product_id,
+  DROP COLUMN IF EXISTS stripe_price_id;
+```
 
-## Naming Convention Validation
-
-✅ **Consistent with existing schema:**
-- Snake_case column names
-- Singular table names
-- Standard BaseEntity fields (created_at, updated_at, deleted_at)
-- Enum types for status fields
-- Proper FK naming (`{table}_{column}`)
-
-✅ **No conflicts with existing tables:**
-- `course_program` vs existing `course` (different concepts)
-- `student_course_*` prefix for course-specific student data
-- Reuses existing `group_class`, `student`, `session` tables
+---
 
 ## Data Integrity Rules
 
-1. **Step Ordering**: `course_step.step_order` must be unique within each course_program
-2. **Step Labels**: `course_step.label` must be unique within each course_program
-3. **Single Active Option**: Student can only have one active booking per course step
-4. **Credit Consumption**: Once `credit_consumed = 1`, progress status cannot change
-5. **Enrollment Status**: Cancelled enrollments prevent new bookings but preserve history
+1. **One COURSE allowance per StripeProductMap**: A package can only grant access to one course program
+2. **courseProgramId validation**: If `serviceType = 'COURSE'`, `courseProgramId` must be set; otherwise NULL
+3. **Step ordering**: `course_step.step_order` must be unique within each course_program
+4. **Step labels**: `course_step.label` must be unique within each course_program
+5. **Single progress per step**: Student can only have one progress record per (package, step) combination
+6. **No PackageUse for courses**: Course bookings update `StudentCourseStepProgress`, not `PackageUse`
+
+---
+
+## Example Data
+
+### Course Bundle Package
+
+**StripeProductMap**:
+```
+{
+  id: 123,
+  serviceKey: "course_sfz_foundation",
+  stripeProductId: "prod_SFZ",
+  scopeType: "COURSE",
+  scopeId: 42
+}
+```
+
+**PackageAllowances** (linked to above):
+```
+[
+  { id: 1, serviceType: 'COURSE', courseProgramId: 42, credits: 1 },
+  { id: 2, serviceType: 'PRIVATE', credits: 2, creditUnitMinutes: 30, teacherTier: 0 },
+  { id: 3, serviceType: 'GROUP', credits: 3, creditUnitMinutes: 60, teacherTier: 0 }
+]
+```
+
+**CourseProgram**:
+```
+{
+  id: 42,
+  code: "SFZ",
+  title: "SFZ Foundation Course",
+  steps: [
+    { id: 101, stepOrder: 1, label: "SFZ-1" },
+    { id: 102, stepOrder: 2, label: "SFZ-2" },
+    { id: 103, stepOrder: 3, label: "SFZ-3" },
+    { id: 104, stepOrder: 4, label: "SFZ-4" }
+  ]
+}
+```
+
+**After student purchases**:
+```sql
+-- StudentPackage created
+INSERT INTO student_package (student_id, stripe_product_map_id, package_name, total_sessions)
+VALUES (789, 123, 'SFZ Foundation Course', 6);  -- 1 course + 2 private + 3 group
+
+-- Progress rows seeded (one per step)
+INSERT INTO student_course_step_progress (student_package_id, course_step_id, status)
+VALUES
+  (456, 101, 'UNBOOKED'),
+  (456, 102, 'UNBOOKED'),
+  (456, 103, 'UNBOOKED'),
+  (456, 104, 'UNBOOKED');
+```
+
+**When student books step 1**:
+```sql
+-- Update progress (NO PackageUse created)
+UPDATE student_course_step_progress
+SET status = 'BOOKED', session_id = 5555, booked_at = NOW()
+WHERE student_package_id = 456 AND course_step_id = 101;
+```
+
+**When student uses bonus private credit**:
+```sql
+-- Create PackageUse (standard credit consumption)
+INSERT INTO package_use (student_package_id, allowance_id, session_id, credits_used)
+VALUES (456, 2, 6666, 1);  -- allowanceId = 2 (PRIVATE allowance)
+```
+
+---
+
+## Comparison: Old vs New Architecture
+
+### Old (Original Plan)
+```
+student_course_enrollment (stores stripe IDs, status)
+  ├─ student_course_progress (tracks step booking)
+  └─ course_bundle_component (defines bundled extras)
+```
+
+**Problems**:
+- Duplicate purchase tracking (StudentCourseEnrollment vs StudentPackage)
+- Duplicate credit tracking (CourseBundleComponent vs PackageAllowance)
+- Duplicate progress tracking (StudentCourseProgress vs PackageUse)
+- Can't easily bundle courses with other service types
+- Different Stripe webhook handlers for courses vs packages
+
+### New (Simplified)
+```
+student_package (works for all purchases)
+  ├─ package_allowance.courseProgramId (grants course access)
+  └─ student_course_step_progress (lightweight step tracking)
+```
+
+**Benefits**:
+- Single purchase system (StudentPackage)
+- Single allowance system (PackageAllowance)
+- Unified Stripe webhook (all purchases)
+- Can easily bundle courses with private/group credits
+- Reuses existing balance computation logic
+
+---
+
+## Future Enhancements
+
+These can be added without schema changes:
+
+1. **Course expiration**: Use `student_package.expiresAt` (already exists)
+2. **Multi-seat gifting**: Create multiple StudentPackages from one Stripe purchase
+3. **Course materials**: Add `course_step.materialUrl` or JSON metadata field
+4. **Prerequisites**: Add `course_step.prerequisiteStepId` self-referencing FK
+5. **Certificates**: Track completion in `student_course_step_progress.completedAt`
+
+---
+
+## Validation Checklist
+
+Before considering migration complete:
+
+- [ ] `package_allowance.course_program_id` column added with FK
+- [ ] All 4 new course tables created with correct constraints
+- [ ] Old course tables dropped (if they existed)
+- [ ] Existing StudentPackage webhook works for COURSE allowances
+- [ ] Course step progress seeded on purchase
+- [ ] Course booking updates StudentCourseStepProgress (not PackageUse)
+- [ ] Bundle packages can mix COURSE + PRIVATE + GROUP allowances
+- [ ] Admin UI creates courses as StripeProductMap with COURSE allowance
+
+---
+
+## Summary
+
+This simplified architecture treats courses as **first-class citizens in the package system** rather than special snowflakes requiring parallel infrastructure. The only new complexity is `StudentCourseStepProgress`, which is necessary because courses use enrollment-based access (not credit consumption).
+
+**Core principle**: Courses are just another type of allowance that happens to unlock access to a structured curriculum rather than consuming credits.

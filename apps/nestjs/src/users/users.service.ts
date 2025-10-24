@@ -5,13 +5,10 @@ import {
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, IsNull } from "typeorm";
+import { UserResponse, PaginatedUsersResponse } from "@thrive/shared";
 import { User } from "./entities/user.entity.js";
 import { Admin } from "./entities/admin.entity.js";
 import { Teacher } from "../teachers/entities/teacher.entity.js";
-import {
-  UserResponseDto,
-  PaginatedUsersResponseDto,
-} from "./dto/user-response.dto.js";
 
 export interface GetUsersOptions {
   page: number;
@@ -33,7 +30,7 @@ export class UsersService {
 
   async getUsersPaginated(
     options: GetUsersOptions,
-  ): Promise<PaginatedUsersResponseDto> {
+  ): Promise<PaginatedUsersResponse> {
     const { page, limit, search, role } = options;
     const offset = (page - 1) * limit;
 
@@ -68,10 +65,32 @@ export class UsersService {
     }
 
     // Get paginated results
-    const [users, total] = await queryBuilder.getManyAndCount();
+    const [_users, total] = await queryBuilder.getManyAndCount();
+
+    const users: UserResponse[] = _users.map((u) => ({
+      id: u.id,
+      email: u.email,
+      firstName: u.firstName,
+      lastName: u.lastName,
+      createdAt: u.createdAt.toISOString(),
+      updatedAt: u.updatedAt.toISOString(),
+      admin: u.admin
+        ? {
+            id: u.admin.id,
+            role: u.admin.role,
+            isActive:
+              typeof u.admin.isActive === "number"
+                ? Boolean(u.admin.isActive)
+                : u.admin.isActive,
+            createdAt: u.admin.createdAt.toISOString(),
+            updatedAt: u.admin.updatedAt.toISOString(),
+          }
+        : undefined,
+      teacher: u.teacher ? u.teacher.toPublicDto() : undefined,
+    }));
 
     return {
-      users: users.map((user) => UserResponseDto.fromEntity(user)),
+      users,
       total,
       page,
       limit,
@@ -79,7 +98,7 @@ export class UsersService {
     };
   }
 
-  async makeUserAdmin(userId: number): Promise<UserResponseDto> {
+  async makeUserAdmin(userId: number): Promise<UserResponse> {
     // Find the user
     const user = await this.usersRepo.findOne({
       where: { id: userId, deletedAt: IsNull() },
@@ -114,10 +133,32 @@ export class UsersService {
       throw new NotFoundException("User not found after update");
     }
 
-    return UserResponseDto.fromEntity(updatedUser);
+    return {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      createdAt: updatedUser.createdAt.toISOString(),
+      updatedAt: updatedUser.updatedAt.toISOString(),
+      admin: updatedUser.admin
+        ? {
+            id: updatedUser.admin.id,
+            role: updatedUser.admin.role,
+            isActive:
+              typeof updatedUser.admin.isActive === "number"
+                ? Boolean(updatedUser.admin.isActive)
+                : updatedUser.admin.isActive,
+            createdAt: updatedUser.admin.createdAt.toISOString(),
+            updatedAt: updatedUser.admin.updatedAt.toISOString(),
+          }
+        : undefined,
+      teacher: updatedUser.teacher
+        ? updatedUser.teacher.toPublicDto()
+        : undefined,
+    };
   }
 
-  async makeUserTeacher(userId: number): Promise<UserResponseDto> {
+  async makeUserTeacher(userId: number): Promise<UserResponse> {
     // Find the user
     const user = await this.usersRepo.findOne({
       where: { id: userId, deletedAt: IsNull() },
@@ -153,6 +194,28 @@ export class UsersService {
       throw new NotFoundException("User not found after update");
     }
 
-    return UserResponseDto.fromEntity(updatedUser);
+    return {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      createdAt: updatedUser.createdAt.toISOString(),
+      updatedAt: updatedUser.updatedAt.toISOString(),
+      admin: updatedUser.admin
+        ? {
+            id: updatedUser.admin.id,
+            role: updatedUser.admin.role,
+            isActive:
+              typeof updatedUser.admin.isActive === "number"
+                ? Boolean(updatedUser.admin.isActive)
+                : updatedUser.admin.isActive,
+            createdAt: updatedUser.admin.createdAt.toISOString(),
+            updatedAt: updatedUser.admin.updatedAt.toISOString(),
+          }
+        : undefined,
+      teacher: updatedUser.teacher
+        ? updatedUser.teacher.toPublicDto()
+        : undefined,
+    };
   }
 }

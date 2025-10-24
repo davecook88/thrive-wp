@@ -38,9 +38,7 @@ export { CancellationPolicy } from "./policies/entities/cancellation-policy.enti
 export { CourseProgram } from "./course-programs/entities/course-program.entity.js";
 export { CourseStep } from "./course-programs/entities/course-step.entity.js";
 export { CourseStepOption } from "./course-programs/entities/course-step-option.entity.js";
-export { CourseBundleComponent } from "./course-programs/entities/course-bundle-component.entity.js";
-export { StudentCourseEnrollment } from "./course-programs/entities/student-course-enrollment.entity.js";
-export { StudentCourseProgress } from "./course-programs/entities/student-course-progress.entity.js";
+export { StudentCourseStepProgress } from "./course-programs/entities/student-course-step-progress.entity.js";
 
 // Levels
 export { Level } from "./levels/entities/level.entity.js";

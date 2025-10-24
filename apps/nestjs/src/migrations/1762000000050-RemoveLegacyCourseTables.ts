@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class RemoveLegacyCourseTables1762000000050 implements MigrationInterface {
+export class RemoveLegacyCourseTables1762000000050
+  implements MigrationInterface
+{
   name = "RemoveLegacyCourseTables1762000000050";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -11,15 +13,15 @@ export class RemoveLegacyCourseTables1762000000050 implements MigrationInterface
       const courseIdColumn = sessionTable.findColumnByName("course_id");
       if (courseIdColumn) {
         // Drop the foreign key first
-        const foreignKey = sessionTable.foreignKeys.find(
-          (fk) => fk.columnNames.includes("course_id")
+        const foreignKey = sessionTable.foreignKeys.find((fk) =>
+          fk.columnNames.includes("course_id"),
         );
         if (foreignKey) {
           await queryRunner.dropForeignKey("session", foreignKey);
         }
         // Drop the index
-        const index = sessionTable.indices.find(
-          (idx) => idx.columnNames.includes("course_id")
+        const index = sessionTable.indices.find((idx) =>
+          idx.columnNames.includes("course_id"),
         );
         if (index) {
           await queryRunner.dropIndex("session", index);
