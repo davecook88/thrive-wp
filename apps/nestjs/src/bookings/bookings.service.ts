@@ -7,7 +7,11 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Booking, BookingStatus } from "../payments/entities/booking.entity.js";
-import { Session, SessionStatus } from "../sessions/entities/session.entity.js";
+import {
+  Session,
+  SessionStatus,
+  SessionVisibility,
+} from "../sessions/entities/session.entity.js";
 import { Student } from "../students/entities/student.entity.js";
 import { StudentPackage } from "../packages/entities/student-package.entity.js";
 import { PackageUse } from "../packages/entities/package-use.entity.js";
@@ -62,16 +66,35 @@ export class BookingsService {
     private readonly waitlistsService: WaitlistsService,
   ) {}
 
-  async createBooking(
-    studentId: number,
-    sessionId: number,
-    studentPackageId?: number,
-    confirmed?: boolean,
-  ): Promise<Booking> {
+  /**
+   * Resolve or create a session based on input parameters
+   */
+  private async resolveSession(
+    sessionId?: number,
+    bookingData?: { teacherId: number; startAt: string; endAt: string },
+  ): Promise<Session> {
+    if (sessionId !== undefined) {
+      return this.getExistingSession(sessionId);
+    }
+
+    if (bookingData) {
+      return this.createPrivateSession(bookingData);
+    }
+
+    throw new BadRequestException(
+      "Either sessionId or bookingData must be provided",
+    );
+  }
+
+  /**
+   * Get an existing session and validate it's bookable
+   */
+  private async getExistingSession(sessionId: number): Promise<Session> {
     const session = await this.sessionRepository.findOne({
       where: { id: sessionId },
       relations: ["teacher"],
     });
+
     if (!session) {
       throw new NotFoundException("Session not found");
     }
@@ -80,119 +103,248 @@ export class BookingsService {
       throw new BadRequestException("Session is not scheduled");
     }
 
+    return session;
+  }
+
+  /**
+   * Create a new private session from booking data
+   */
+  private async createPrivateSession(bookingData: {
+    teacherId: number;
+    startAt: string;
+    endAt: string;
+  }): Promise<Session> {
+    const newSession = this.sessionRepository.create({
+      type: ServiceType.PRIVATE,
+      teacherId: bookingData.teacherId,
+      startAt: new Date(bookingData.startAt),
+      endAt: new Date(bookingData.endAt),
+      capacityMax: 1,
+      status: SessionStatus.SCHEDULED,
+      visibility: SessionVisibility.PRIVATE,
+      requiresEnrollment: false,
+      sourceTimezone: "UTC",
+    });
+
+    return this.sessionRepository.save(newSession);
+  }
+
+  /**
+   * Validate session has available capacity
+   */
+  private async validateSessionCapacity(
+    sessionId: number,
+    capacityMax: number,
+  ): Promise<void> {
+    const enrolledCount = await this.bookingRepository.count({
+      where: { sessionId, status: BookingStatus.CONFIRMED },
+    });
+
+    if (enrolledCount >= capacityMax) {
+      throw new BadRequestException("Session is full");
+    }
+  }
+
+  /**
+   * Validate and prepare package for booking
+   */
+  private async validatePackageForBooking({
+    studentPackageId,
+    studentId,
+    session,
+    confirmed,
+    allowanceId,
+  }: {
+    studentPackageId: number;
+    studentId: number;
+    session: Session;
+    confirmed: boolean;
+    allowanceId?: number;
+  }): Promise<{
+    studentPackage: StudentPackage;
+    creditsCost: number;
+    allowanceId: number;
+  }> {
+    const studentPackage = await this.studentPackageRepository.findOne({
+      where: { id: studentPackageId, studentId },
+      loadEagerRelations: true,
+      relations: ["stripeProductMap", "stripeProductMap.allowances"],
+    });
+
+    if (!studentPackage) {
+      throw new NotFoundException("Student package not found");
+    }
+
+    // Tier validation - returns the allowance to use
+    const { canUse, allowance } = canUsePackageForSession({
+      pkg: studentPackage,
+      session,
+      allowanceId,
+    });
+
+    if (!canUse || !allowance) {
+      throw new BadRequestException(
+        "This package cannot be used for this session type",
+      );
+    }
+
+    // Cross-tier validation
+    const { isCrossTier } = isCrossTierBooking(
+      studentPackage,
+      session,
+      allowance.id,
+    );
+    if (isCrossTier && !confirmed) {
+      const warningMessage = getCrossTierWarningMessage(
+        studentPackage,
+        session,
+        allowance.id,
+      );
+      throw new BadRequestException(
+        `Cross-tier booking requires confirmation. ${warningMessage}`,
+      );
+    }
+
+    // Calculate credits required using the allowance's credit unit
+    const sessionDurationMinutes = Math.round(
+      (session.endAt.getTime() - session.startAt.getTime()) / 60000,
+    );
+    const creditsCost = calculateCreditsRequired(
+      sessionDurationMinutes,
+      allowance.creditUnitMinutes,
+    );
+
+    // Load package with uses and validate remaining credits
+    const pkgWithUses =
+      await PackageQueryBuilder.buildStudentPackageWithUsesQuery(
+        this.studentPackageRepository,
+        studentId,
+        studentPackage.id,
+      ).getOne();
+
+    if (!pkgWithUses) {
+      throw new NotFoundException("Student package not found");
+    }
+
+    const remaining = computeRemainingCredits(
+      pkgWithUses.totalSessions,
+      pkgWithUses.uses || [],
+    );
+
+    if (remaining < creditsCost) {
+      throw new BadRequestException(
+        `Insufficient credits. Required: ${creditsCost}, Available: ${remaining}`,
+      );
+    }
+
+    if (pkgWithUses.expiresAt && pkgWithUses.expiresAt < new Date()) {
+      throw new BadRequestException("Package has expired");
+    }
+
+    return {
+      studentPackage: pkgWithUses,
+      creditsCost,
+      allowanceId: allowance.id,
+    };
+  }
+
+  /**
+   * Create package use record and link to booking
+   */
+  private async createPackageUse(
+    studentPackageId: number,
+    sessionId: number,
+    creditsCost: number,
+    studentId: number,
+    allowanceId: number,
+  ): Promise<number> {
+    const use = this.packageUseRepository.create({
+      studentPackageId,
+      sessionId,
+      creditsUsed: creditsCost,
+      usedAt: new Date(),
+      usedBy: studentId,
+      allowanceId,
+    });
+
+    const savedUse = await this.packageUseRepository
+      .save(use)
+      .catch((error) => {
+        throw new BadRequestException(`Failed to create package use: ${error}`);
+      });
+    if (!savedUse || !savedUse.id) {
+      throw new BadRequestException(
+        `Failed to create package use: Unknown error`,
+      );
+    }
+    return savedUse.id;
+  }
+
+  async createBooking({
+    userId,
+    sessionId,
+    bookingData,
+    studentPackageId,
+    confirmed,
+    allowanceId,
+  }: {
+    userId: number;
+    sessionId?: number;
+    bookingData?: { teacherId: number; startAt: string; endAt: string };
+    studentPackageId: number;
+    confirmed?: boolean;
+    allowanceId: number;
+  }): Promise<Booking> {
+    // Resolve student
     const student = await this.studentRepository.findOne({
-      where: { id: studentId },
+      where: { userId },
     });
     if (!student) {
       throw new NotFoundException("Student not found");
     }
 
-    // Check capacity
-    const enrolledCount = await this.bookingRepository.count({
-      where: { sessionId, status: BookingStatus.CONFIRMED },
-    });
-    if (enrolledCount >= session.capacityMax) {
-      throw new BadRequestException("Session is full");
-    }
+    // Resolve or create session
+    const session = await this.resolveSession(sessionId, bookingData);
 
-    let studentPackage: StudentPackage | null = null;
-    let creditsCost = 1; // Default to 1 credit
+    // Validate capacity
+    await this.validateSessionCapacity(session.id, session.capacityMax);
+
+    // Validate package and calculate credits
+    let creditsCost = 1;
+    let packageUseId: number | undefined;
+    let selectedAllowanceId: number | undefined;
 
     if (studentPackageId) {
-      studentPackage = await this.studentPackageRepository.findOne({
-        where: { id: studentPackageId, studentId },
+      const packageValidation = await this.validatePackageForBooking({
+        studentPackageId,
+        studentId: student.id,
+        session,
+        confirmed: confirmed ?? false,
+        allowanceId,
       });
-      if (!studentPackage) {
-        throw new NotFoundException("Student package not found");
-      }
 
-      // Tier validation: Check if package can be used for this session
-      if (!canUsePackageForSession(studentPackage, session)) {
-        throw new BadRequestException(
-          "This package cannot be used for this session type",
-        );
-      }
+      creditsCost = packageValidation.creditsCost;
+      selectedAllowanceId = packageValidation.allowanceId;
 
-      // Cross-tier validation: Require confirmation for higher-tier credits
-      if (isCrossTierBooking(studentPackage, session)) {
-        if (!confirmed) {
-          const warningMessage = getCrossTierWarningMessage(
-            studentPackage,
-            session,
-          );
-          throw new BadRequestException(
-            `Cross-tier booking requires confirmation. ${warningMessage}`,
-          );
-        }
-      }
-
-      // Calculate credits required based on session duration
-      const sessionDurationMinutes = Math.round(
-        (session.endAt.getTime() - session.startAt.getTime()) / 60000,
+      // Create package use record
+      packageUseId = await this.createPackageUse(
+        studentPackageId,
+        session.id,
+        creditsCost,
+        student.id,
+        selectedAllowanceId,
       );
-      const creditUnitMinutes =
-        parseInt(String(studentPackage.metadata?.duration_minutes), 10) || 60;
-      creditsCost = calculateCreditsRequired(
-        sessionDurationMinutes,
-        creditUnitMinutes,
-      );
-
-      // Load package with uses to compute remaining credits
-      const pkgWithUses =
-        await PackageQueryBuilder.buildStudentPackageWithUsesQuery(
-          this.studentPackageRepository,
-          studentId,
-          studentPackage.id,
-        ).getOne();
-
-      if (!pkgWithUses) {
-        throw new NotFoundException("Student package not found");
-      }
-
-      // Compute remaining credits
-      const remaining = computeRemainingCredits(
-        pkgWithUses.totalSessions,
-        pkgWithUses.uses || [],
-      );
-
-      // Check if package has enough credits
-      if (remaining < creditsCost) {
-        throw new BadRequestException(
-          `Insufficient credits. Required: ${creditsCost}, Available: ${remaining}`,
-        );
-      }
-
-      // Check if package is still valid (not expired)
-      if (pkgWithUses.expiresAt && pkgWithUses.expiresAt < new Date()) {
-        throw new BadRequestException("Package has expired");
-      }
-
-      // Update studentPackage reference
-      studentPackage = pkgWithUses;
     }
 
-    const booking = new Booking();
-    booking.sessionId = sessionId;
-    booking.studentId = studentId;
-    booking.status = BookingStatus.CONFIRMED;
-
-    if (studentPackage) {
-      booking.studentPackageId = studentPackage.id;
-      booking.creditsCost = creditsCost;
-
-      // Create PackageUse record instead of decrementing a column
-      const use = this.packageUseRepository.create({
-        studentPackageId: studentPackage.id,
-        sessionId,
-        creditsUsed: creditsCost,
-        usedAt: new Date(),
-        usedBy: studentId,
-      });
-      await this.packageUseRepository.save(use);
-
-      // Link the use to the booking
-      booking.packageUseId = use.id;
-    }
+    // Create and save booking
+    const booking = this.bookingRepository.create({
+      sessionId: session.id,
+      studentId: student.id,
+      status: BookingStatus.CONFIRMED,
+      studentPackageId: studentPackageId || undefined,
+      creditsCost,
+      packageUseId,
+    });
 
     return this.bookingRepository.save(booking);
   }

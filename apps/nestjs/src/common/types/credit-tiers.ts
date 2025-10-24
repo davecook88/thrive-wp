@@ -13,6 +13,7 @@
 import { ServiceType } from "./class-types.js";
 import type { Session } from "../../sessions/entities/session.entity.js";
 import type { StudentPackage } from "../../packages/entities/student-package.entity.js";
+import type { PackageAllowance } from "../../packages/entities/package-allowance.entity.js";
 
 /**
  * Base tier values for each service type.
@@ -39,127 +40,194 @@ export function getSessionTier(session: Session): number {
 }
 
 /**
- * Calculate the tier of a package based on its metadata.
- * Package tier = Base service tier + package teacher tier requirement
+ * Calculate the tier of a package.
+ * Now that packages contain multiple allowances, this finds the tier of a specific allowance
+ * OR the highest allowance tier if no allowanceId is provided.
  *
- * @param pkg - StudentPackage entity with metadata
+ * @param pkg - StudentPackage entity with stripeProductMap.allowances relation loaded
+ * @param allowanceId - Optional specific allowance ID to check
  * @returns Numeric tier value
  */
-export function getPackageTier(pkg: StudentPackage): number {
-  const serviceType =
-    (pkg.metadata?.service_type as ServiceType) || ServiceType.PRIVATE;
-  const baseServiceTier = SERVICE_TYPE_BASE_TIERS[serviceType] ?? 0;
+export function getPackageTier(
+  pkg: StudentPackage,
+  allowanceId?: number,
+): number {
+  const allowances = pkg.stripeProductMap?.allowances;
+  if (!allowances || allowances.length === 0) {
+    return 0; // No allowances, no tier
+  }
 
-  // Parse teacher tier from metadata (stored as string in Stripe metadata)
-  const teacherTierRaw = pkg.metadata?.teacher_tier;
-  const teacherTier = teacherTierRaw
-    ? typeof teacherTierRaw === "string"
-      ? parseInt(teacherTierRaw, 10)
-      : (teacherTierRaw as number)
-    : 0;
+  // If specific allowance requested, return its tier
+  if (allowanceId !== undefined) {
+    const allowance = allowances.find((a) => a.id === allowanceId);
+    if (!allowance) {
+      throw new Error(
+        `Allowance ${allowanceId} not found in package ${pkg.id}`,
+      );
+    }
+    return getAllowanceTier(allowance);
+  }
 
-  return baseServiceTier + (Number.isFinite(teacherTier) ? teacherTier : 0);
+  // Otherwise return the highest tier allowance
+  return Math.max(...allowances.map((a) => getAllowanceTier(a)));
 }
 
 /**
- * Determine if a package can be used to book a session based on tier comparison.
+ * Determine if a package contains an allowance that can be used to book a session.
  *
  * Rules:
  * - COURSE sessions cannot use package credits (use enrollment instead)
- * - Package tier must be >= session tier
+ * - If allowanceId provided, check only that allowance
+ * - Otherwise, check if ANY allowance in the package can be used
+ * - Service types must match
+ * - Allowance tier must be >= session tier
  *
- * @param pkg - StudentPackage entity
+ * @param pkg - StudentPackage entity with stripeProductMap.allowances relation loaded
  * @param session - Session entity with teacher relation loaded
- * @returns true if package can be used for session
+ * @param allowanceId - Optional specific allowance ID to check
+ * @returns Object with canUse boolean and the matching allowance (if found)
  */
-export function canUsePackageForSession(
-  pkg: StudentPackage,
-  session: Session,
-): boolean {
+export function canUsePackageForSession({
+  pkg,
+  session,
+  allowanceId,
+}: {
+  pkg: StudentPackage;
+  session: Session;
+  allowanceId?: number;
+}): { canUse: boolean; allowance: PackageAllowance | null } {
   // Course sessions require enrollment, not package credits
   if (session.type === ServiceType.COURSE) {
-    return false;
+    return { canUse: false, allowance: null };
   }
 
-  const packageTier = getPackageTier(pkg);
-  const sessionTier = getSessionTier(session);
+  const allowances = pkg.stripeProductMap?.allowances;
+  if (!allowances || allowances.length === 0) {
+    return { canUse: false, allowance: null };
+  }
 
-  // Can use equal or higher tier credit
-  return packageTier >= sessionTier;
+  // If specific allowance requested, check only that one
+  if (allowanceId !== undefined) {
+    const allowance = allowances.find((a) => a.id === allowanceId);
+    if (!allowance) {
+      return { canUse: false, allowance: null };
+    }
+    const canUse = canUseAllowanceForSession(allowance, session);
+    return { canUse, allowance: canUse ? allowance : null };
+  }
+
+  // Otherwise, find the best matching allowance
+  // Prefer same service type with sufficient tier
+  const compatibleAllowances = allowances.filter((a) =>
+    canUseAllowanceForSession(a, session),
+  );
+
+  if (compatibleAllowances.length === 0) {
+    return { canUse: false, allowance: null };
+  }
+
+  // Return the first compatible allowance (could be enhanced to prefer closest tier match)
+  return { canUse: true, allowance: compatibleAllowances[0] };
 }
 
 /**
  * Get user-facing display label for a package.
- * Labels are friendly strings like "Private Credit" or "Premium Group Credit".
+ * For bundle packages with multiple allowances, this returns a generic label.
+ * For specific allowance labels, use getAllowanceDisplayLabel().
  *
- * @param pkg - StudentPackage entity with metadata
+ * @param pkg - StudentPackage entity with stripeProductMap.allowances relation loaded
+ * @param allowanceId - Optional specific allowance ID to get label for
  * @returns User-friendly label string
  */
-export function getPackageDisplayLabel(pkg: StudentPackage): string {
-  const serviceType =
-    (pkg.metadata?.service_type as ServiceType) || ServiceType.PRIVATE;
+export function getPackageDisplayLabel(
+  pkg: StudentPackage,
+  allowanceId?: number,
+): string {
+  const allowances = pkg.stripeProductMap?.allowances;
 
-  // Parse teacher tier from metadata
-  const teacherTierRaw = pkg.metadata?.teacher_tier;
-  const teacherTier = teacherTierRaw
-    ? typeof teacherTierRaw === "string"
-      ? parseInt(teacherTierRaw, 10)
-      : (teacherTierRaw as number)
-    : 0;
-
-  const isPremium = Number.isFinite(teacherTier) && teacherTier > 0;
-
-  if (serviceType === ServiceType.PRIVATE) {
-    return isPremium ? "Premium Private Credit" : "Private Credit";
-  } else if (serviceType === ServiceType.GROUP) {
-    return isPremium ? "Premium Group Credit" : "Group Credit";
+  // If no allowances, use package name as fallback
+  if (!allowances || allowances.length === 0) {
+    return pkg.packageName || "Package Credit";
   }
 
-  return "Course Credit";
+  // If specific allowance requested, return its label
+  if (allowanceId !== undefined) {
+    const allowance = allowances.find((a) => a.id === allowanceId);
+    if (allowance) {
+      return getAllowanceDisplayLabel(allowance);
+    }
+  }
+
+  // For bundle packages with multiple allowances, return bundle label
+  if (allowances.length > 1) {
+    return `${pkg.packageName} Bundle`;
+  }
+
+  // For single-allowance packages, use the allowance label
+  return getAllowanceDisplayLabel(allowances[0]);
 }
 
 /**
  * Determine if a booking is "cross-tier" (using higher-tier credit for lower-tier session).
  * This is used to determine if user confirmation is required.
  *
- * @param pkg - StudentPackage entity
+ * @param pkg - StudentPackage entity with stripeProductMap.allowances relation loaded
  * @param session - Session entity with teacher relation loaded
- * @returns true if this is a cross-tier booking requiring confirmation
+ * @param allowanceId - Optional specific allowance ID to check
+ * @returns Object with isCrossTier boolean and the allowance being used (if applicable)
  */
 export function isCrossTierBooking(
   pkg: StudentPackage,
   session: Session,
-): boolean {
-  if (!canUsePackageForSession(pkg, session)) {
-    return false; // Not valid at all
+  allowanceId?: number,
+): { isCrossTier: boolean; allowance: PackageAllowance | null } {
+  const { canUse, allowance } = canUsePackageForSession({
+    pkg,
+    session,
+    allowanceId,
+  });
+
+  if (!canUse || !allowance) {
+    return { isCrossTier: false, allowance: null };
   }
 
-  const packageTier = getPackageTier(pkg);
+  const allowanceTier = getAllowanceTier(allowance);
   const sessionTier = getSessionTier(session);
 
-  return packageTier > sessionTier;
+  return {
+    isCrossTier: allowanceTier > sessionTier,
+    allowance,
+  };
 }
 
 /**
  * Get a warning message for cross-tier bookings.
  *
- * @param pkg - StudentPackage entity
+ * @param pkg - StudentPackage entity with stripeProductMap.allowances relation loaded
  * @param session - Session entity
+ * @param allowanceId - Optional specific allowance ID to check
  * @returns Warning message string or null if not cross-tier
  */
 export function getCrossTierWarningMessage(
   pkg: StudentPackage,
   session: Session,
+  allowanceId?: number,
 ): string | null {
-  if (!isCrossTierBooking(pkg, session)) {
+  const { isCrossTier, allowance } = isCrossTierBooking(
+    pkg,
+    session,
+    allowanceId,
+  );
+
+  if (!isCrossTier || !allowance) {
     return null;
   }
 
-  const packageLabel = getPackageDisplayLabel(pkg);
+  const allowanceLabel = getAllowanceDisplayLabel(allowance);
   const sessionTypeLabel =
     session.type === ServiceType.PRIVATE ? "private class" : "group class";
 
-  return `This will use a ${packageLabel} for a ${sessionTypeLabel}`;
+  return `This will use a ${allowanceLabel} for a ${sessionTypeLabel}`;
 }
 
 /**
@@ -218,4 +286,119 @@ export function getDurationMismatchWarning(
   } else {
     return `This session requires ${creditsRequired} of your ${creditUnitMinutes}-minute credits (total: ${sessionDurationMinutes} minutes)`;
   }
+}
+
+// ============================================================================
+// ALLOWANCE-LEVEL FUNCTIONS
+// ============================================================================
+
+/**
+ * Calculate the tier of a specific allowance.
+ * Allowance tier = Base service tier + allowance teacher tier
+ *
+ * @param allowance - PackageAllowance entity
+ * @returns Numeric tier value
+ */
+export function getAllowanceTier(allowance: PackageAllowance): number {
+  const baseServiceTier = SERVICE_TYPE_BASE_TIERS[allowance.serviceType] ?? 0;
+  const teacherTier = allowance.teacherTier ?? 0;
+
+  return baseServiceTier + teacherTier;
+}
+
+/**
+ * Determine if a specific allowance can be used to book a session.
+ *
+ * Rules:
+ * - COURSE sessions cannot use package credits (use enrollment instead)
+ * - Service types must match
+ * - Allowance tier must be >= session tier
+ *
+ * @param allowance - PackageAllowance entity
+ * @param session - Session entity with teacher relation loaded
+ * @returns true if allowance can be used for session
+ */
+export function canUseAllowanceForSession(
+  allowance: PackageAllowance,
+  session: Session,
+): boolean {
+  // Course sessions require enrollment, not package credits
+  if (session.type === ServiceType.COURSE) {
+    return false;
+  }
+
+  // Service types must match
+  if (allowance.serviceType !== session.type) {
+    return false;
+  }
+
+  const allowanceTier = getAllowanceTier(allowance);
+  const sessionTier = getSessionTier(session);
+
+  // Can use equal or higher tier credit
+  return allowanceTier >= sessionTier;
+}
+
+/**
+ * Get user-facing display label for a specific allowance.
+ * Labels are friendly strings like "Private Credit" or "Premium Group Credit".
+ *
+ * @param allowance - PackageAllowance entity
+ * @returns User-friendly label string
+ */
+export function getAllowanceDisplayLabel(allowance: PackageAllowance): string {
+  const isPremium =
+    Number.isFinite(allowance.teacherTier) && allowance.teacherTier > 0;
+
+  if (allowance.serviceType === ServiceType.PRIVATE) {
+    return isPremium ? "Premium Private Credit" : "Private Credit";
+  } else if (allowance.serviceType === ServiceType.GROUP) {
+    return isPremium ? "Premium Group Credit" : "Group Credit";
+  }
+
+  return "Course Credit";
+}
+
+/**
+ * Determine if using an allowance for a session is "cross-tier" (using higher-tier credit for lower-tier session).
+ * This is used to determine if user confirmation is required.
+ *
+ * @param allowance - PackageAllowance entity
+ * @param session - Session entity with teacher relation loaded
+ * @returns true if this is a cross-tier booking requiring confirmation
+ */
+export function isAllowanceCrossTierBooking(
+  allowance: PackageAllowance,
+  session: Session,
+): boolean {
+  if (!canUseAllowanceForSession(allowance, session)) {
+    return false; // Not valid at all
+  }
+
+  const allowanceTier = getAllowanceTier(allowance);
+  const sessionTier = getSessionTier(session);
+
+  return allowanceTier > sessionTier;
+}
+
+/**
+ * Get a warning message for cross-tier bookings using a specific allowance.
+ *
+ * @param allowance - PackageAllowance entity
+ * @param session - Session entity
+ * @returns Warning message string or null if not cross-tier
+ */
+export function getAllowanceCrossTierWarningMessage(
+  allowance: PackageAllowance,
+  session: Session,
+): string | null {
+  if (!isAllowanceCrossTierBooking(allowance, session)) {
+    return null;
+  }
+
+  const allowanceLabel = getAllowanceDisplayLabel(allowance);
+  const sessionTypeLabel =
+    session.type === ServiceType.PRIVATE ? "private class" : "group class";
+
+  return `This will use a ${allowanceLabel} for a ${sessionTypeLabel}`;
 }

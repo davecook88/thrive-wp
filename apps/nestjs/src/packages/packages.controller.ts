@@ -1,9 +1,7 @@
 import {
   Controller,
   Get,
-  Post,
   Param,
-  Body,
   Req,
   Query,
   ParseIntPipe,
@@ -11,32 +9,10 @@ import {
   NotFoundException,
   BadRequestException,
 } from "@nestjs/common";
-import { ZodValidationPipe } from "nestjs-zod";
-import { z } from "zod";
 import { Request } from "express";
 import { ServiceType } from "@thrive/shared";
 import { PackagesService } from "./packages.service.js";
 import { StudentsService } from "../students/students.service.js";
-
-const BookingDataSchema = z.object({
-  teacherId: z.number(),
-  startAt: z.string(),
-  endAt: z.string(),
-});
-
-const UsePackageSchema = z
-  .object({
-    sessionId: z.number().optional(),
-    bookingData: BookingDataSchema.optional(),
-    creditsUsed: z.number().int().positive().optional(),
-    serviceType: z.nativeEnum(ServiceType).optional(),
-  })
-  .refine(
-    (data) => data.sessionId !== undefined || data.bookingData !== undefined,
-    { message: "Either sessionId or bookingData must be provided" },
-  );
-
-type UsePackageDto = z.infer<typeof UsePackageSchema>;
 
 interface AuthenticatedRequest extends Request {
   headers: Request["headers"] & {
@@ -112,46 +88,6 @@ export class PackagesController {
     return this.packagesService.getCompatiblePackagesForSession(
       student.id,
       sessionId,
-    );
-  }
-
-  @Post(":id/use")
-  async usePackage(
-    @Param("id", ParseIntPipe) packageId: number,
-    @Body(new ZodValidationPipe(UsePackageSchema)) body: UsePackageDto,
-    @Req() req: AuthenticatedRequest,
-  ) {
-    const userId = req.headers["x-auth-user-id"];
-    if (!userId) {
-      throw new UnauthorizedException("User ID not found in auth headers");
-    }
-    const userIdNum = parseInt(userId, 10);
-
-    // If sessionId provided, use existing session flow
-    if (body.sessionId !== undefined) {
-      return this.packagesService.usePackageForSession(
-        userIdNum,
-        packageId,
-        body.sessionId,
-        {
-          usedBy: userIdNum,
-          creditsUsed: body.creditsUsed || 1,
-          serviceType: body.serviceType,
-        },
-      );
-    }
-
-    // Otherwise, create session from booking data and book it
-    if (body.bookingData) {
-      return this.packagesService.createAndBookSession(
-        userIdNum,
-        packageId,
-        body.bookingData,
-      );
-    }
-
-    throw new BadRequestException(
-      "Either sessionId or bookingData must be provided",
     );
   }
 }

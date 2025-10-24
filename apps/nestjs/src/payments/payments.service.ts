@@ -134,6 +134,7 @@ export class PaymentsService {
     packageId: number,
     sessionId: number,
     confirmed?: boolean,
+    allowanceId?: number,
   ) {
     // Resolve student.id from userId
     const student = await this.studentRepository.findOne({
@@ -151,35 +152,45 @@ export class PaymentsService {
     // Fetch package for tier validation
     const pkg = await this.studentPackageRepository.findOne({
       where: { id: packageId, studentId: student.id },
+      relations: ["stripeProductMap", "stripeProductMap.allowances"],
     });
     if (!pkg) throw new NotFoundException("Package not found");
 
-    // Tier validation: Check if package can be used for this session
-    if (!canUsePackageForSession(pkg, session)) {
+    // Tier validation: Check if package contains a compatible allowance
+    const { canUse, allowance } = canUsePackageForSession({
+      pkg,
+      session,
+      allowanceId,
+    });
+
+    if (!canUse || !allowance) {
       throw new BadRequestException(
         "This package cannot be used for this session type",
       );
     }
 
     // Cross-tier validation: Require confirmation for higher-tier credits
-    if (isCrossTierBooking(pkg, session)) {
+    const { isCrossTier } = isCrossTierBooking(pkg, session, allowance.id);
+    if (isCrossTier) {
       if (!confirmed) {
-        const warningMessage = getCrossTierWarningMessage(pkg, session);
+        const warningMessage = getCrossTierWarningMessage(
+          pkg,
+          session,
+          allowance.id,
+        );
         throw new BadRequestException(
           `Cross-tier booking requires confirmation. ${warningMessage}`,
         );
       }
     }
 
-    // Calculate credits required based on session duration
+    // Calculate credits required based on session duration using the allowance's credit unit
     const sessionDurationMinutes = Math.round(
       (session.endAt.getTime() - session.startAt.getTime()) / 60000,
     );
-    const creditUnitMinutes =
-      parseInt(String(pkg.metadata?.duration_minutes), 10) || 60;
     const creditsCost = calculateCreditsRequired(
       sessionDurationMinutes,
-      creditUnitMinutes,
+      allowance.creditUnitMinutes,
     );
 
     // Use package (create package_use) with calculated credits
@@ -192,6 +203,7 @@ export class PaymentsService {
           usedBy: student.id,
           creditsUsed: creditsCost,
           serviceType: session.type,
+          allowanceId: allowance.id,
         },
       );
 

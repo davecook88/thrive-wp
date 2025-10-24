@@ -19,6 +19,10 @@ import {
   BookingCancellationResponseSchema,
   WaitlistResponseDto,
   ServiceType,
+  StripeKeyResponse,
+  CreateSessionResponse,
+  CreateSessionDto,
+  StripeKeyResponseSchema,
 } from "@thrive/shared";
 import {
   PreviewAvailabilityResponseSchema,
@@ -31,6 +35,13 @@ import {
   PackageResponseSchema,
   CreatePackageDto,
   PackageResponseDto,
+} from "@thrive/shared";
+import {
+  BookingResponseSchema,
+  type BookingResponse,
+  CreateBookingResponseSchema,
+  type CreateBookingRequest,
+  type CreateBookingResponse,
 } from "@thrive/shared";
 
 const options: Partial<RequestInit> = {
@@ -242,7 +253,7 @@ export const thriveClient = {
       .map((s) => ({
         id: `group-session-${s.id}`,
         type: "class" as const,
-        serviceType: "GROUP" as const,
+        serviceType: ServiceType.GROUP,
         title: s.groupClass?.title ?? "",
         startUtc: s.startAt,
         endUtc: s.endAt,
@@ -341,6 +352,17 @@ export const thriveClient = {
   },
 
   // Booking helpers
+  createBooking: async (
+    data: CreateBookingRequest,
+  ): Promise<CreateBookingResponse | null> => {
+    const result = await apiPost<CreateBookingResponse>(
+      "/api/bookings",
+      data as Record<string, unknown>,
+      CreateBookingResponseSchema,
+    );
+    return result;
+  },
+
   cancelBooking: async (
     bookingId: number,
     reason?: string,
@@ -354,6 +376,30 @@ export const thriveClient = {
       BookingCancellationResponseSchema,
     );
     return result;
+  },
+
+  // Create a new private session from bookingData and book it with package credits
+  // Note: For booking existing sessions, use createBooking() instead
+  usePackage: async (
+    packageId: number,
+    payload: Record<string, unknown>,
+  ): Promise<BookingResponse | null> => {
+    try {
+      const res = await apiPost(
+        `/api/packages/${encodeURIComponent(String(packageId))}/use`,
+        payload,
+      );
+      if (!res) return null;
+      try {
+        return BookingResponseSchema.parse(res);
+      } catch (err) {
+        console.error("usePackage: response validation failed", err);
+        return null;
+      }
+    } catch (err) {
+      console.error("usePackage failed", err);
+      return null;
+    }
   },
 
   // Waitlist methods
@@ -373,15 +419,11 @@ export const thriveClient = {
   },
 
   // Payments helpers
-  getStripeKey: async (): Promise<
-    import("@thrive/shared/types/payments").StripeKeyResponse | null
-  > => {
+  getStripeKey: async (): Promise<StripeKeyResponse | null> => {
     try {
       const res = await apiGet(`/api/payments/stripe-key`);
       if (!res) return null;
-      const parsed = (
-        await import("@thrive/shared/types/payments")
-      ).StripeKeyResponseSchema.parse(res);
+      const parsed = StripeKeyResponseSchema.parse(res);
       return parsed;
     } catch (err) {
       console.error("getStripeKey failed", err);
@@ -390,10 +432,8 @@ export const thriveClient = {
   },
 
   createPaymentSession: async (
-    payload: import("@thrive/shared/types/payments").CreateSessionDto,
-  ): Promise<
-    import("@thrive/shared/types/payments").CreateSessionResponse | null
-  > => {
+    payload: CreateSessionDto,
+  ): Promise<CreateSessionResponse | null> => {
     try {
       const res = await apiPost(`/api/payments/create-session`, payload);
       if (!res) return null;

@@ -1,10 +1,12 @@
 import { Entity, Column, ManyToOne, JoinColumn, Index } from "typeorm";
 import { BaseEntity } from "../../common/entities/base.entity.js";
 import type { StudentPackage } from "./student-package.entity.js";
+import type { PackageAllowance } from "./package-allowance.entity.js";
 import { ServiceType } from "../../common/types/class-types.js";
 
 @Entity("package_use")
 @Index(["studentPackageId"])
+@Index(["allowanceId"])
 export class PackageUse extends BaseEntity {
   @Column({ name: "student_package_id", type: "int" })
   studentPackageId: number;
@@ -12,6 +14,18 @@ export class PackageUse extends BaseEntity {
   @ManyToOne("StudentPackage", { onDelete: "CASCADE" })
   @JoinColumn({ name: "student_package_id" })
   studentPackage: StudentPackage;
+
+  @Column({
+    name: "allowance_id",
+    type: "int",
+    nullable: true,
+    comment: "Which specific allowance within the package was used",
+  })
+  allowanceId: number | null;
+
+  @ManyToOne("PackageAllowance", { onDelete: "CASCADE" })
+  @JoinColumn({ name: "allowance_id" })
+  allowance: PackageAllowance | null;
 
   @Column({ name: "booking_id", type: "int", nullable: true })
   bookingId: number | null;

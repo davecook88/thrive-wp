@@ -5,8 +5,8 @@ import {
 } from "@nestjs/common";
 import type { CreatePackageDto } from "@thrive/shared";
 import { ConfigService } from "@nestjs/config";
-import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
-import { Repository, DataSource } from "typeorm";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 import Stripe from "stripe";
 import {
   PackageResponseDto,
@@ -34,6 +34,7 @@ import {
   computeRemainingCredits,
   generateBundleDescription,
   validateAllowances,
+  computeRemainingCreditsForAllowance,
 } from "./utils/bundle-helpers.js";
 import { PackageQueryBuilder } from "./utils/package-query-builder.js";
 // import {
@@ -42,11 +43,11 @@ import { PackageQueryBuilder } from "./utils/package-query-builder.js";
 // } from "../common/types/credit-tiers.js";
 
 import {
-  canUsePackageForSession,
-  getPackageTier,
   getSessionTier,
-  getPackageDisplayLabel,
-  getCrossTierWarningMessage,
+  canUseAllowanceForSession,
+  getAllowanceTier,
+  getAllowanceDisplayLabel,
+  getAllowanceCrossTierWarningMessage,
 } from "../common/types/credit-tiers.js";
 
 @Injectable()
@@ -67,10 +68,8 @@ export class PackagesService {
     private readonly studentRepo: Repository<Student>,
     @InjectRepository(Session)
     private readonly sessionRepo: Repository<Session>,
-    @InjectRepository(Booking)
-    private readonly bookingRepo: Repository<Booking>,
+
     private readonly sessionsService: SessionsService,
-    @InjectDataSource() private readonly dataSource: DataSource,
   ) {
     const secretKey = this.configService.get<string>("stripe.secretKey");
     if (!secretKey) {
@@ -390,6 +389,12 @@ export class PackagesService {
       this.pkgRepo,
       studentId,
     )
+      .leftJoinAndSelect("sp.stripeProductMap", "spm")
+      .leftJoinAndSelect(
+        "spm.allowances",
+        "allowances",
+        "allowances.deleted_at IS NULL",
+      )
       .orderBy("sp.created_at", "DESC")
       .getMany();
 
@@ -429,9 +434,10 @@ export class PackagesService {
       serviceType?: ServiceType;
       creditsUsed?: number;
       usedBy?: number;
+      allowanceId?: number;
     },
   ): Promise<{ package: StudentPackage; use: PackageUse }> {
-    const { serviceType, creditsUsed = 1, usedBy } = options || {};
+    const { serviceType, creditsUsed = 1, usedBy, allowanceId } = options || {};
 
     // Load with uses for balance computation (pessimistic lock)
     const pkg = await PackageQueryBuilder.buildStudentPackageWithUsesQuery(
@@ -439,6 +445,8 @@ export class PackagesService {
       studentId,
       packageId,
     )
+      .leftJoinAndSelect("sp.stripeProductMap", "spm")
+      .leftJoinAndSelect("spm.allowances", "allowances")
       .setLock("pessimistic_write")
       .getOne();
 
@@ -446,14 +454,39 @@ export class PackagesService {
       throw new NotFoundException("Package not found");
     }
 
-    // Compute remaining credits
-    const remaining = computeRemainingCredits(
-      pkg.totalSessions,
-      pkg.uses || [],
-    );
+    // Validate allowance if provided
+    let validatedAllowance: PackageAllowance | undefined;
+    if (allowanceId) {
+      const allowances = pkg.stripeProductMap?.allowances || [];
+      validatedAllowance = allowances.find((a) => a.id === allowanceId);
 
-    if (remaining < creditsUsed) {
-      throw new BadRequestException("Insufficient credits");
+      if (!validatedAllowance) {
+        throw new BadRequestException(
+          `Allowance ${allowanceId} not found in package ${packageId}`,
+        );
+      }
+
+      // Check remaining credits for this specific allowance
+      const allowanceRemaining = computeRemainingCreditsForAllowance(
+        validatedAllowance,
+        pkg.uses || [],
+      );
+
+      if (allowanceRemaining < creditsUsed) {
+        throw new BadRequestException(
+          `Insufficient credits for this allowance (${allowanceRemaining} remaining)`,
+        );
+      }
+    } else {
+      // Fallback: check total package credits if no allowanceId specified
+      const remaining = computeRemainingCredits(
+        pkg.totalSessions,
+        pkg.uses || [],
+      );
+
+      if (remaining < creditsUsed) {
+        throw new BadRequestException("Insufficient credits");
+      }
     }
 
     // Check expiration
@@ -469,6 +502,7 @@ export class PackagesService {
       creditsUsed,
       usedAt: new Date(),
       usedBy,
+      allowanceId: allowanceId || null,
     });
 
     await this.useRepo.save(use);
@@ -498,6 +532,7 @@ export class PackagesService {
     userId: number,
     packageId: number,
     bookingData: { teacherId: number; startAt: string; endAt: string },
+    allowanceId: number,
   ) {
     // Resolve student.id from userId
     const student = await this.studentRepo.findOne({
@@ -511,18 +546,31 @@ export class PackagesService {
         this.pkgRepo,
         student.id,
         packageId,
-      ).getOne();
+      )
+        .leftJoinAndSelect("sp.stripeProductMap", "spm")
+        .leftJoinAndSelect("spm.allowances", "allowances")
+        .getOne();
 
     if (!pkgWithUses) throw new NotFoundException("Package not found");
 
-    // Compute remaining credits (total across all service types)
-    const remainingCredits = computeRemainingCredits(
-      pkgWithUses.totalSessions,
+    // Validate allowance
+    const allowances = pkgWithUses.stripeProductMap?.allowances || [];
+    const allowance = allowances.find((a) => a.id === allowanceId);
+
+    if (!allowance) {
+      throw new BadRequestException(
+        `Allowance ${allowanceId} not found in package ${packageId}`,
+      );
+    }
+
+    // Compute remaining credits for this specific allowance
+    const remainingCredits = computeRemainingCreditsForAllowance(
+      allowance,
       pkgWithUses.uses || [],
     );
 
     if (remainingCredits <= 0)
-      throw new BadRequestException("No remaining credits");
+      throw new BadRequestException("No remaining credits for this allowance");
     if (pkgWithUses.expiresAt && pkgWithUses.expiresAt <= new Date()) {
       throw new BadRequestException("Package has expired");
     }
@@ -577,6 +625,7 @@ export class PackagesService {
         creditsUsed: 1,
         usedAt: new Date(),
         usedBy: student.id,
+        allowanceId: allowanceId,
       });
       const savedPackageUse = await tx.save(PackageUse, packageUse);
 
@@ -610,11 +659,11 @@ export class PackagesService {
 
   /**
    * Get packages compatible with a specific session, separated by tier match.
-   * Returns exact matches (same tier) and higher-tier packages that can be used.
+   * Returns allowance-level options (each allowance within each package is a separate option).
    *
    * @param studentId - Student's ID
    * @param sessionId - Session to check compatibility for
-   * @returns Compatible packages grouped by tier match with recommendation
+   * @returns Compatible allowances grouped by tier match with recommendation
    */
   async getCompatiblePackagesForSession(
     studentId: number,
@@ -656,58 +705,79 @@ export class PackagesService {
     console.log(
       `Found ${activePackages.length} active packages for student ${studentId}`,
     );
-    console.log(activePackages);
 
     const sessionTier = getSessionTier(session);
+    console.log(`Session ${session.id} has tier ${sessionTier}`);
 
     // Use shared DTO types from packages/shared
     const exactMatch: CompatiblePackage[] = [];
     const higherTier: CompatiblePackageWithWarning[] = [];
 
+    // Iterate through each package and each allowance within it
     for (const pkg of activePackages) {
-      if (!canUsePackageForSession(pkg, session)) {
-        console.log(
-          `Package ${pkg.id} cannot be used for session ${session.id}`,
+      const allowances = pkg.stripeProductMap?.allowances || [];
+      const packageName =
+        (pkg.metadata?.name as string) ||
+        String(pkg.stripeProductMap?.metadata?.name || "Package");
+
+      for (const allowance of allowances) {
+        // Check if this specific allowance is compatible with the session
+        if (!canUseAllowanceForSession(allowance, session)) {
+          console.log(
+            `Allowance ${allowance.id} (${allowance.serviceType}) in package ${pkg.id} cannot be used for session ${session.id}`,
+          );
+          continue;
+        }
+
+        // Compute remaining credits for this specific allowance
+        const remainingSessions = computeRemainingCreditsForAllowance(
+          allowance,
+          pkg.uses || [],
         );
-        console.log(pkg);
-        continue; // Skip incompatible packages
-      }
 
-      const packageTier = getPackageTier(pkg);
-      const label = getPackageDisplayLabel(pkg);
-      const creditUnitMinutes = Number(pkg.metadata?.credit_unit_minutes) || 30;
+        // Skip if no credits remaining for this allowance
+        if (remainingSessions <= 0) {
+          console.log(
+            `Allowance ${allowance.id} in package ${pkg.id} has no remaining credits`,
+          );
+          continue;
+        }
 
-      const allowances = pkg.stripeProductMap.allowances;
+        const allowanceTier = getAllowanceTier(allowance);
+        const label = getAllowanceDisplayLabel(allowance);
 
-      // Compute remaining sessions from uses
-      const remainingSessions = computeRemainingCredits(
-        pkg.totalSessions,
-        pkg.uses || [],
-      );
-
-      const baseInfo: CompatiblePackage = {
-        id: pkg.id,
-        label,
-        remainingSessions,
-        expiresAt: pkg.expiresAt?.toISOString() || null,
-        creditUnitMinutes,
-        tier: packageTier,
-        allowances: allowances,
-      };
-
-      if (packageTier === sessionTier) {
-        exactMatch.push(baseInfo);
-      } else if (packageTier > sessionTier) {
-        const warningMessage = getCrossTierWarningMessage(pkg, session) || "";
-        const packageWithWarning: CompatiblePackageWithWarning = {
-          ...baseInfo,
-          warningMessage,
+        const baseInfo: CompatiblePackage = {
+          id: pkg.id, // Student package ID
+          allowanceId: allowance.id,
+          packageName: String(packageName || "Package"),
+          label,
+          remainingSessions,
+          expiresAt: pkg.expiresAt?.toISOString() || null,
+          creditUnitMinutes: allowance.creditUnitMinutes,
+          tier: allowanceTier,
+          serviceType: allowance.serviceType,
+          teacherTier: allowance.teacherTier,
         };
-        higherTier.push(packageWithWarning);
+
+        console.log(
+          `Allowance ${allowance.id} in package ${pkg.id} has tier ${allowanceTier}`,
+        );
+
+        if (allowanceTier === sessionTier) {
+          exactMatch.push(baseInfo);
+        } else if (allowanceTier > sessionTier) {
+          const warningMessage =
+            getAllowanceCrossTierWarningMessage(allowance, session) || "";
+          const allowanceWithWarning: CompatiblePackageWithWarning = {
+            ...baseInfo,
+            warningMessage,
+          };
+          higherTier.push(allowanceWithWarning);
+        }
       }
     }
 
-    // Select recommended package: prefer exact matches, then closest to expiration
+    // Select recommended allowance: prefer exact matches, then closest to expiration
     const recommended = this.selectRecommendedPackage(exactMatch, higherTier);
 
     return {
@@ -720,20 +790,23 @@ export class PackagesService {
   }
 
   /**
-   * Select the recommended package from available options.
+   * Select the recommended allowance option from available options.
    * Prefers exact matches, then sorts by expiration (soonest first), then FIFO.
+   * Returns the student package ID (not allowance ID) since that's what the UI expects.
    *
-   * @param exactMatch - Packages with exact tier match
-   * @param higherTier - Packages with higher tier
-   * @returns Recommended package ID or null
+   * @param exactMatch - Allowances with exact tier match
+   * @param higherTier - Allowances with higher tier
+   * @returns Recommended student package ID or null
    */
   private selectRecommendedPackage(
     exactMatch: Array<{
       id: number;
+      allowanceId: number;
       expiresAt: string | null;
     }>,
     higherTier: Array<{
       id: number;
+      allowanceId: number;
       expiresAt: string | null;
     }>,
   ): number | null {
@@ -753,6 +826,7 @@ export class PackagesService {
       return new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime();
     });
 
+    // Return the package ID of the first (recommended) option
     return sorted[0].id;
   }
 }

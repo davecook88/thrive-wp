@@ -1,30 +1,27 @@
 import { PublicTeacherDto } from "@thrive/shared";
 import { usePackageBooking } from "../../../hooks/use-package-booking";
 import type { AvailabilityEvent } from "@thrive/shared/calendar";
-import { StudentPackage } from "@thrive/shared/types/packages";
+import {
+  StudentPackage,
+  PackageAllowance,
+} from "@thrive/shared/types/packages";
 
 export default function PackageBookingButton({
   pkg,
+  allowance,
   selectedTeacher,
   event,
   bookingUrl,
   onBookingSuccess,
 }: {
   pkg: StudentPackage;
+  allowance: PackageAllowance;
   selectedTeacher: PublicTeacherDto | null;
   event: AvailabilityEvent;
   bookingUrl: string | null;
   onBookingSuccess?: () => Promise<void>;
 }) {
-  const { bookWithPackage, loading, success, error } = usePackageBooking() as {
-    bookWithPackage: (
-      packageId: number | string,
-      bookingInfo: unknown,
-    ) => Promise<{ ok: boolean; data?: unknown; error?: string }>;
-    loading: boolean;
-    success: unknown;
-    error: string | null;
-  };
+  const { bookWithPackage, loading, success, error } = usePackageBooking();
 
   console.log({ pkg, selectedTeacher, event, bookingUrl });
 
@@ -38,12 +35,14 @@ export default function PackageBookingButton({
 
   const onClick = async () => {
     if (!selectedTeacher) return;
-    // For availability events, we need to create the session first
-    // Send booking details instead of sessionId
-    const result = await bookWithPackage(pkg.id, {
-      teacherId: selectedTeacher.id,
-      startAt: event.startUtc,
-      endAt: event.endUtc,
+    const result = await bookWithPackage({
+      studentPackageId: pkg.id,
+      allowanceId: allowance.id,
+      bookingData: {
+        teacherId: selectedTeacher.id,
+        endAt: event.endUtc,
+        startAt: event.startUtc,
+      },
     });
 
     // If successful, trigger refetch callbacks

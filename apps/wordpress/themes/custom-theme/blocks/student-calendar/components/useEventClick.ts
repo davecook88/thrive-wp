@@ -4,7 +4,7 @@ import type {
   CalendarEventClickEvent,
   CalendarRangeChangeEvent,
 } from "../../../../../shared/calendar";
-import { isBookingEvent, isGroupClassEvent } from "@thrive/shared";
+import { isBookingEvent } from "@thrive/shared";
 
 interface UseEventClickArgs {
   calendarRef: { current: ThriveCalendarElement | null };
@@ -43,15 +43,15 @@ export function useEventClick({
       // For group classes in booking mode we fire a waitlist event so the
       // caller can show a modal if needed; otherwise the selected-event modal
       // is opened.
-      if (isGroupClassEvent(event) && mode === "book") {
-        if (event.isFull && event.canJoinWaitlist) {
-          const waitlistEvent = new CustomEvent("thrive:show-waitlist", {
-            detail: { event },
-          });
-          document.dispatchEvent(waitlistEvent);
-          return;
-        }
-      }
+      // if (isGroupClassEvent(event) && mode === "book") {
+      //   if (event.isFull && event.canJoinWaitlist) {
+      //     const waitlistEvent = new CustomEvent("thrive:show-waitlist", {
+      //       detail: { event },
+      //     });
+      //     document.dispatchEvent(waitlistEvent);
+      //     return;
+      //   }
+      // }
 
       // Default: notify selected-event-modal runtime
       document.dispatchEvent(

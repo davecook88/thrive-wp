@@ -122,7 +122,8 @@ export class Booking extends BaseEntity {
     name: "package_use_id",
     type: "int",
     nullable: true,
-    comment: "FK to package_use.id - tracks which specific package use record this booking created",
+    comment:
+      "FK to package_use.id - tracks which specific package use record this booking created",
   })
   packageUseId: number | null;
 

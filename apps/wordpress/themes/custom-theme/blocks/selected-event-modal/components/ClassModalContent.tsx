@@ -4,7 +4,7 @@ import {
   useCompatibleCredits,
   hasAnyCredits,
 } from "../../hooks/use-compatible-credits";
-import { buildBookingUrl } from "../../../utils/booking";
+import { usePackageBooking } from "../../hooks/use-package-booking";
 import CreditSelectionModal from "./CreditSelectionModal";
 import { ClassEvent, prettyDate } from "@thrive/shared";
 
@@ -21,7 +21,7 @@ export default function ClassModalContent({ event }: { event: ClassEvent }) {
   const [showCreditModal, setShowCreditModal] = useState(false);
 
   // Legacy credit hook (for general info)
-  const { totalRemaining } = useStudentCredits();
+  const { totalRemaining, refetch: refetchCredits } = useStudentCredits();
 
   // New tier-aware credit hook
   const {
@@ -29,6 +29,14 @@ export default function ClassModalContent({ event }: { event: ClassEvent }) {
     loading: loadingCompatible,
     error: compatibleError,
   } = useCompatibleCredits(sessionId);
+
+  // Package booking hook
+  const {
+    bookWithPackage,
+    loading: bookingLoading,
+    success: bookingSuccess,
+    error: bookingError,
+  } = usePackageBooking();
 
   const hasCompatibleCredits = hasAnyCredits(compatible);
 
@@ -55,6 +63,7 @@ export default function ClassModalContent({ event }: { event: ClassEvent }) {
 
   const handleSelectPackage = (
     packageId: number,
+    allowanceId: number,
     requiresConfirmation: boolean,
   ) => {
     // If requires confirmation (cross-tier), show confirmation
@@ -70,30 +79,42 @@ export default function ClassModalContent({ event }: { event: ClassEvent }) {
       }
     }
 
-    // Close modal and proceed to booking
-    setShowCreditModal(false);
-
-    // Build booking URL with package ID
-    const bookingUrl = buildBookingUrl({
-      sessionId: event.sessionId,
-      serviceType: "GROUP",
-      packageId,
-    });
-
-    window.location.href = bookingUrl;
+    // Book with package credits (async, but don't return promise to modal)
+    bookWithPackage({
+      sessionId,
+      studentPackageId: packageId,
+      allowanceId,
+      confirmed: requiresConfirmation, // Pass confirmation flag for cross-tier bookings
+    })
+      .then((result) => {
+        if (result.ok) {
+          // Close modal on success
+          setShowCreditModal(false);
+          // Refetch credits to update UI
+          if (refetchCredits) {
+            refetchCredits().catch(console.error);
+          }
+          // Dispatch event to refresh calendar data
+          document.dispatchEvent(
+            new CustomEvent("thrive:refresh-calendar-data"),
+          );
+        }
+        // Errors are handled by the hook's error state
+      })
+      .catch((err) => {
+        console.error("Booking error:", err);
+      });
   };
 
   const handlePayWithoutCredits = () => {
-    // Close modal
+    // Close modal and redirect to payment flow
     setShowCreditModal(false);
 
-    // Build booking URL without package ID (payment flow)
-    const bookingUrl = buildBookingUrl({
-      sessionId: event.sessionId,
-      serviceType: "GROUP",
-    });
-
-    window.location.href = bookingUrl;
+    // For now, redirect to a payment page (you can implement this later)
+    // This could be a Stripe checkout or other payment flow
+    alert(
+      "Payment flow not yet implemented. This would redirect to Stripe checkout.",
+    );
   };
 
   return (
@@ -254,36 +275,74 @@ export default function ClassModalContent({ event }: { event: ClassEvent }) {
         </div>
       )}
 
+      {/* Success Message */}
+      {bookingSuccess && (
+        <div
+          style={{
+            marginTop: "16px",
+            padding: "16px",
+            backgroundColor: "#d1fae5",
+            borderRadius: "8px",
+            fontSize: "14px",
+            color: "#065f46",
+            fontWeight: 600,
+            textAlign: "center",
+          }}
+        >
+          ✓ Booking confirmed! The calendar will refresh shortly.
+        </div>
+      )}
+
       {/* Action Button */}
       <div style={{ marginTop: "auto" }}>
-        {!isFull && (
+        {!isFull && !bookingSuccess && (
           // Booking button for group sessions
           <button
             onClick={handleBookClick}
-            disabled={loadingCompatible}
+            disabled={loadingCompatible || bookingLoading}
             style={{
               width: "100%",
               padding: "14px 24px",
-              backgroundColor: loadingCompatible
-                ? "#d1d5db"
-                : "var(--wp--preset--color--accent, #10b981)",
+              backgroundColor:
+                loadingCompatible || bookingLoading
+                  ? "#d1d5db"
+                  : "var(--wp--preset--color--accent, #10b981)",
               color: "white",
               border: "none",
               borderRadius: "8px",
               fontSize: "16px",
               fontWeight: 600,
-              cursor: loadingCompatible ? "not-allowed" : "pointer",
+              cursor:
+                loadingCompatible || bookingLoading ? "not-allowed" : "pointer",
               transition: "all 150ms ease",
             }}
           >
-            {loadingCompatible
-              ? "Loading credits..."
-              : hasCompatibleCredits
-                ? `Book with Credits (${totalRemaining} remaining)`
-                : "Book Now"}
+            {bookingLoading
+              ? "Booking..."
+              : loadingCompatible
+                ? "Loading credits..."
+                : hasCompatibleCredits
+                  ? `Book with Credits (${totalRemaining} remaining)`
+                  : "Book Now"}
           </button>
         )}
       </div>
+
+      {/* Booking Error */}
+      {bookingError && !bookingSuccess && (
+        <div
+          style={{
+            marginTop: "16px",
+            padding: "12px",
+            backgroundColor: "#fee2e2",
+            borderRadius: "8px",
+            fontSize: "13px",
+            color: "#991b1b",
+          }}
+        >
+          ❌ {bookingError}
+        </div>
+      )}
 
       {/* Credits info - only show warning if error occurred */}
       {!isFull && compatibleError && !loadingCompatible && (

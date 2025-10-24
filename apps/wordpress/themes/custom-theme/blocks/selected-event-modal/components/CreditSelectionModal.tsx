@@ -8,7 +8,11 @@ import type {
 interface CreditSelectionModalProps {
   compatible: CompatibleCreditsResponse;
   sessionDuration: number; // in minutes
-  onSelectPackage: (packageId: number, requiresConfirmation: boolean) => void;
+  onSelectPackage: (
+    packageId: number,
+    allowanceId: number,
+    requiresConfirmation: boolean,
+  ) => void;
   onPayWithoutCredits: () => void;
   onCancel: () => void;
 }
@@ -22,9 +26,23 @@ export default function CreditSelectionModal({
 }: CreditSelectionModalProps) {
   console.log("CreditSelectionModal: compatible", compatible);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [selectedPackageId, setSelectedPackageId] = useState<number | null>(
-    compatible.recommended,
-  );
+
+  // Use composite key: "packageId-allowanceId" to uniquely identify each option
+  const getOptionKey = (pkg: CompatiblePackage) =>
+    `${pkg.id}-${pkg.allowanceId}`;
+
+  const [selectedKey, setSelectedKey] = useState<string | null>(() => {
+    if (compatible.recommended) {
+      const recommendedPkg = [
+        ...compatible.exactMatch,
+        ...compatible.higherTier,
+      ].find((pkg) => pkg.id === compatible.recommended);
+      return recommendedPkg ? getOptionKey(recommendedPkg) : null;
+    }
+    return compatible.exactMatch.length > 0
+      ? getOptionKey(compatible.exactMatch[0])
+      : null;
+  });
 
   const hasExactMatch = compatible.exactMatch.length > 0;
   const hasHigherTier = compatible.higherTier.length > 0;
@@ -32,15 +50,19 @@ export default function CreditSelectionModal({
   const selectedPackage = [
     ...compatible.exactMatch,
     ...compatible.higherTier,
-  ].find((pkg) => pkg.id === selectedPackageId);
+  ].find((pkg) => getOptionKey(pkg) === selectedKey);
 
   const isHigherTier =
-    selectedPackageId !== null &&
-    compatible.higherTier.some((pkg) => pkg.id === selectedPackageId);
+    selectedKey !== null &&
+    compatible.higherTier.some((pkg) => getOptionKey(pkg) === selectedKey);
 
   function handleConfirm() {
-    if (!selectedPackageId) return;
-    onSelectPackage(selectedPackageId, isHigherTier);
+    if (!selectedKey || !selectedPackage) return;
+    onSelectPackage(
+      selectedPackage.id,
+      selectedPackage.allowanceId,
+      isHigherTier,
+    );
   }
 
   return (
@@ -122,12 +144,12 @@ export default function CreditSelectionModal({
               >
                 {compatible.exactMatch.map((pkg) => (
                   <PackageOption
-                    key={pkg.id}
+                    key={getOptionKey(pkg)}
                     package={pkg}
                     sessionDuration={sessionDuration}
-                    isSelected={selectedPackageId === pkg.id}
+                    isSelected={selectedKey === getOptionKey(pkg)}
                     isRecommended={pkg.id === compatible.recommended}
-                    onSelect={() => setSelectedPackageId(pkg.id)}
+                    onSelect={() => setSelectedKey(getOptionKey(pkg))}
                   />
                 ))}
               </div>
@@ -176,14 +198,14 @@ export default function CreditSelectionModal({
                 >
                   {compatible.higherTier.map((pkg) => (
                     <PackageOption
-                      key={pkg.id}
+                      key={getOptionKey(pkg)}
                       package={pkg}
                       sessionDuration={sessionDuration}
-                      isSelected={selectedPackageId === pkg.id}
+                      isSelected={selectedKey === getOptionKey(pkg)}
                       isRecommended={
                         !hasExactMatch && pkg.id === compatible.recommended
                       }
-                      onSelect={() => setSelectedPackageId(pkg.id)}
+                      onSelect={() => setSelectedKey(getOptionKey(pkg))}
                       warningMessage={pkg.warningMessage}
                     />
                   ))}
@@ -300,16 +322,16 @@ export default function CreditSelectionModal({
           </button>
           <button
             onClick={handleConfirm}
-            disabled={!selectedPackageId}
+            disabled={!selectedKey}
             style={{
               padding: "10px 20px",
-              backgroundColor: selectedPackageId ? "#3b82f6" : "#d1d5db",
+              backgroundColor: selectedKey ? "#3b82f6" : "#d1d5db",
               border: "none",
               borderRadius: "6px",
               fontSize: "14px",
               fontWeight: 500,
               color: "white",
-              cursor: selectedPackageId ? "pointer" : "not-allowed",
+              cursor: selectedKey ? "pointer" : "not-allowed",
             }}
           >
             {isHigherTier ? "Confirm & Book" : "Book Now"}
@@ -369,7 +391,7 @@ function PackageOption({
                 color: "#111827",
               }}
             >
-              {pkg.label}
+              {pkg.packageName} - {pkg.label}
             </span>
             {isRecommended && (
               <span
@@ -404,16 +426,6 @@ function PackageOption({
               })}
             </div>
           )}
-        </div>
-
-        <div
-          style={{
-            fontSize: "18px",
-            fontWeight: 600,
-            color: "#3b82f6",
-          }}
-        >
-          -{creditsNeeded}
         </div>
       </div>
 

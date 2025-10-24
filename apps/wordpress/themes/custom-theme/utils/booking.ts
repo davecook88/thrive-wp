@@ -13,6 +13,7 @@ export interface BuildBookingUrlParams {
   teacherId?: number | string; // Optional for group classes with sessionId
   sessionId?: number | string; // For group classes - references an existing session
   packageId?: number | string; // Optional package ID to use for booking
+  allowanceId?: number | string; // Optional allowance ID within the package
   /**
    * Optional base path for booking page. Defaults to "/book-lesson".
    * You can override via a global (window.thriveBookingBasePath) or by passing here.
@@ -24,7 +25,7 @@ export interface BuildBookingUrlParams {
 /**
  * Builds a booking URL like: /book-lesson?start=...&end=...&teacher=...
  * For group classes with sessionId: /book-lesson?sessionId=...&serviceType=GROUP
- * Optional packageId can be passed to pre-select a package
+ * Optional packageId and allowanceId can be passed to pre-select a package and allowance
  */
 export function buildBookingUrl(params: BuildBookingUrlParams): string {
   const {
@@ -33,6 +34,7 @@ export function buildBookingUrl(params: BuildBookingUrlParams): string {
     teacherId,
     sessionId,
     packageId,
+    allowanceId,
     serviceType,
     basePath = (globalThis as any)?.thriveBookingBasePath ||
       DEFAULT_BOOKING_PATH,
@@ -58,6 +60,11 @@ export function buildBookingUrl(params: BuildBookingUrlParams): string {
   // Add packageId if provided
   if (packageId !== undefined) {
     qp.set("packageId", String(packageId));
+  }
+
+  // Add allowanceId if provided
+  if (allowanceId !== undefined) {
+    qp.set("allowanceId", String(allowanceId));
   }
 
   // Ensure basePath starts with a slash

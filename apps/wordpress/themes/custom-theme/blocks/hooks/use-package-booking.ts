@@ -1,14 +1,25 @@
 import { useCallback, useState } from "@wordpress/element";
+import { thriveClient } from "../../../../shared/thrive";
+import type {
+  BookingResponse,
+  CreateBookingRequest,
+  CreateBookingResponse,
+} from "@thrive/shared";
 
 type UsePackageBookingState = {
   loading: boolean;
-  success: any | null;
+  success: BookingResponse | CreateBookingResponse | null;
   error: string | null;
 };
 
 /**
- * Hook to call POST /api/packages/:id/use with { sessionId } or { bookingData }
- * Returns an action and status properties.
+ * Hook to book sessions with package credits.
+ *
+ * Two flows:
+ * 1. Existing session (sessionId): Uses POST /api/bookings to book an existing group/scheduled session
+ * 2. New private session (bookingData): Uses POST /api/packages/:id/use to create a new private session from availability + book it
+ *
+ * Returns booking action and status.
  */
 export function usePackageBooking() {
   const [state, setState] = useState<UsePackageBookingState>({
@@ -18,47 +29,28 @@ export function usePackageBooking() {
   });
 
   const bookWithPackage = useCallback(
-    async (
-      packageId: number | string,
-      bookingInfo:
-        | number
-        | string
-        | { teacherId: number; startAt: string; endAt: string }
-    ) => {
+    async (bookingInfo: CreateBookingRequest) => {
       setState({ loading: true, success: null, error: null });
 
-      // Determine if we have a sessionId or bookingData
-      const body =
-        typeof bookingInfo === "object"
-          ? { bookingData: bookingInfo }
-          : { sessionId: Number(bookingInfo) };
-
       try {
-        const res = await fetch(
-          `/api/packages/${encodeURIComponent(String(packageId))}/use`,
-          {
-            method: "POST",
-            credentials: "same-origin",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-          }
-        );
+        const data = await thriveClient.createBooking(bookingInfo);
 
-        if (!res.ok) {
-          const text = await res.text().catch(() => "");
-          throw new Error(text || `Request failed: ${res.status}`);
+        if (!data) {
+          const msg = "Failed to book with package";
+          setState({ loading: false, success: null, error: msg });
+          return { ok: false, error: msg };
         }
 
-        const data = await res.json().catch(() => null);
-        setState({ loading: false, success: data || {}, error: null });
+        setState({ loading: false, success: data, error: null });
         return { ok: true, data };
-      } catch (err: any) {
-        const msg = err?.message || "Failed to book with package";
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error ? err.message : "Failed to book with package";
         setState({ loading: false, success: null, error: msg });
         return { ok: false, error: msg };
       }
     },
-    []
+    [],
   );
 
   const reset = useCallback(() => {

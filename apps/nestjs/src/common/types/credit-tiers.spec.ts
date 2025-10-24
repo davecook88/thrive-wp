@@ -36,7 +36,7 @@ describe("Credit Tier System", () => {
     } as any,
   });
 
-  // Mock package factory
+  // Mock package factory (legacy - uses old metadata structure)
   const createMockPackage = (
     serviceType: ServiceType,
     teacherTier: number = 0,
@@ -48,6 +48,22 @@ describe("Credit Tier System", () => {
     totalSessions: 10,
     purchasedAt: new Date(),
     expiresAt: new Date("2025-12-31"),
+    stripeProductMapId: 1,
+    stripeProductMap: {
+      id: 1,
+      allowances: [
+        {
+          id: 1,
+          serviceType,
+          teacherTier,
+          credits: 10,
+          creditUnitMinutes: durationMinutes as 15 | 30 | 45 | 60,
+          stripeProductMapId: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as any,
+      ],
+    } as any,
     metadata: {
       service_type: serviceType,
       teacher_tier: String(teacherTier),
@@ -146,37 +162,49 @@ describe("Credit Tier System", () => {
     it("should allow private package for private session (equal tier)", () => {
       const pkg = createMockPackage(ServiceType.PRIVATE, 0) as StudentPackage;
       const session = createMockSession(ServiceType.PRIVATE, 0) as Session;
-      expect(canUsePackageForSession(pkg, session)).toBe(true);
+      const result = canUsePackageForSession({ pkg, session });
+      expect(result.canUse).toBe(true);
+      expect(result.allowance).toBeTruthy();
     });
 
     it("should allow private package for group session (higher tier)", () => {
       const pkg = createMockPackage(ServiceType.PRIVATE, 0) as StudentPackage;
       const session = createMockSession(ServiceType.GROUP, 0) as Session;
-      expect(canUsePackageForSession(pkg, session)).toBe(true);
+      const result = canUsePackageForSession({ pkg, session });
+      expect(result.canUse).toBe(true);
+      expect(result.allowance).toBeTruthy();
     });
 
     it("should NOT allow group package for private session (lower tier)", () => {
       const pkg = createMockPackage(ServiceType.GROUP, 0) as StudentPackage;
       const session = createMockSession(ServiceType.PRIVATE, 0) as Session;
-      expect(canUsePackageForSession(pkg, session)).toBe(false);
+      const result = canUsePackageForSession({ pkg, session });
+      expect(result.canUse).toBe(false);
+      expect(result.allowance).toBeNull();
     });
 
     it("should NOT allow any package for course session", () => {
       const pkg = createMockPackage(ServiceType.PRIVATE, 0) as StudentPackage;
       const session = createMockSession(ServiceType.COURSE, 0) as Session;
-      expect(canUsePackageForSession(pkg, session)).toBe(false);
+      const result = canUsePackageForSession({ pkg, session });
+      expect(result.canUse).toBe(false);
+      expect(result.allowance).toBeNull();
     });
 
     it("should allow premium private package for standard private session", () => {
       const pkg = createMockPackage(ServiceType.PRIVATE, 10) as StudentPackage;
       const session = createMockSession(ServiceType.PRIVATE, 0) as Session;
-      expect(canUsePackageForSession(pkg, session)).toBe(true);
+      const result = canUsePackageForSession({ pkg, session });
+      expect(result.canUse).toBe(true);
+      expect(result.allowance).toBeTruthy();
     });
 
     it("should NOT allow standard private package for premium private session", () => {
       const pkg = createMockPackage(ServiceType.PRIVATE, 0) as StudentPackage;
       const session = createMockSession(ServiceType.PRIVATE, 10) as Session;
-      expect(canUsePackageForSession(pkg, session)).toBe(false);
+      const result = canUsePackageForSession({ pkg, session });
+      expect(result.canUse).toBe(false);
+      expect(result.allowance).toBeNull();
     });
   });
 
@@ -219,32 +247,42 @@ describe("Credit Tier System", () => {
     it("should return true when using private credit for group session", () => {
       const pkg = createMockPackage(ServiceType.PRIVATE, 0) as StudentPackage;
       const session = createMockSession(ServiceType.GROUP, 0) as Session;
-      expect(isCrossTierBooking(pkg, session)).toBe(true);
+      const result = isCrossTierBooking(pkg, session);
+      expect(result.isCrossTier).toBe(true);
+      expect(result.allowance).toBeTruthy();
     });
 
     it("should return false when using private credit for private session", () => {
       const pkg = createMockPackage(ServiceType.PRIVATE, 0) as StudentPackage;
       const session = createMockSession(ServiceType.PRIVATE, 0) as Session;
-      expect(isCrossTierBooking(pkg, session)).toBe(false);
+      const result = isCrossTierBooking(pkg, session);
+      expect(result.isCrossTier).toBe(false);
+      expect(result.allowance).toBeTruthy();
     });
 
     it("should return false when using group credit for group session", () => {
       const pkg = createMockPackage(ServiceType.GROUP, 0) as StudentPackage;
       const session = createMockSession(ServiceType.GROUP, 0) as Session;
-      expect(isCrossTierBooking(pkg, session)).toBe(false);
+      const result = isCrossTierBooking(pkg, session);
+      expect(result.isCrossTier).toBe(false);
+      expect(result.allowance).toBeTruthy();
     });
 
     it("should return false for invalid tier combinations", () => {
       const pkg = createMockPackage(ServiceType.GROUP, 0) as StudentPackage;
       const session = createMockSession(ServiceType.PRIVATE, 0) as Session;
       // Can't use group for private, so not a valid cross-tier booking
-      expect(isCrossTierBooking(pkg, session)).toBe(false);
+      const result = isCrossTierBooking(pkg, session);
+      expect(result.isCrossTier).toBe(false);
+      expect(result.allowance).toBeNull();
     });
 
     it("should return true when using premium private for standard private", () => {
       const pkg = createMockPackage(ServiceType.PRIVATE, 10) as StudentPackage;
       const session = createMockSession(ServiceType.PRIVATE, 0) as Session;
-      expect(isCrossTierBooking(pkg, session)).toBe(true);
+      const result = isCrossTierBooking(pkg, session);
+      expect(result.isCrossTier).toBe(true);
+      expect(result.allowance).toBeTruthy();
     });
   });
 
@@ -360,8 +398,12 @@ describe("Credit Tier System", () => {
       ) as StudentPackage;
       const groupSession = createMockSession(ServiceType.GROUP, 0) as Session;
 
-      expect(canUsePackageForSession(privatePackage, groupSession)).toBe(true);
-      expect(isCrossTierBooking(privatePackage, groupSession)).toBe(true);
+      const canUseResult = canUsePackageForSession({ pkg: privatePackage, session: groupSession });
+      expect(canUseResult.canUse).toBe(true);
+
+      const crossTierResult = isCrossTierBooking(privatePackage, groupSession);
+      expect(crossTierResult.isCrossTier).toBe(true);
+
       expect(
         getCrossTierWarningMessage(privatePackage, groupSession),
       ).toContain("Private Credit");
@@ -379,7 +421,8 @@ describe("Credit Tier System", () => {
         0,
       ) as Session;
 
-      expect(canUsePackageForSession(groupPackage, privateSession)).toBe(false);
+      const result = canUsePackageForSession({ pkg: groupPackage, session: privateSession });
+      expect(result.canUse).toBe(false);
     });
 
     it("Scenario: 60-min credit for 30-min session", () => {
@@ -394,7 +437,8 @@ describe("Credit Tier System", () => {
         endAt: new Date("2025-01-01T10:30:00Z"),
       } as Session;
 
-      expect(canUsePackageForSession(pkg, session)).toBe(true);
+      const result = canUsePackageForSession({ pkg, session });
+      expect(result.canUse).toBe(true);
       expect(calculateCreditsRequired(30, 60)).toBe(1); // Uses 1 credit, wastes 30 min
       expect(hasDurationMismatch(30, 60)).toBe(true);
       expect(getDurationMismatchWarning(30, 60)).toContain(
@@ -410,7 +454,8 @@ describe("Credit Tier System", () => {
       ) as StudentPackage;
       const session = createMockSession(ServiceType.PRIVATE, 0) as Session;
 
-      expect(canUsePackageForSession(pkg, session)).toBe(true);
+      const result = canUsePackageForSession({ pkg, session });
+      expect(result.canUse).toBe(true);
       expect(calculateCreditsRequired(60, 30)).toBe(2); // Requires 2 credits
       expect(hasDurationMismatch(60, 30)).toBe(true);
       expect(getDurationMismatchWarning(60, 30)).toContain("2");
@@ -426,9 +471,8 @@ describe("Credit Tier System", () => {
         10,
       ) as Session;
 
-      expect(canUsePackageForSession(standardPackage, premiumSession)).toBe(
-        false,
-      );
+      const result = canUsePackageForSession({ pkg: standardPackage, session: premiumSession });
+      expect(result.canUse).toBe(false);
     });
 
     it("Scenario: Premium package can book standard teacher", () => {
@@ -441,10 +485,11 @@ describe("Credit Tier System", () => {
         0,
       ) as Session;
 
-      expect(canUsePackageForSession(premiumPackage, standardSession)).toBe(
-        true,
-      );
-      expect(isCrossTierBooking(premiumPackage, standardSession)).toBe(true);
+      const canUseResult = canUsePackageForSession({ pkg: premiumPackage, session: standardSession });
+      expect(canUseResult.canUse).toBe(true);
+
+      const crossTierResult = isCrossTierBooking(premiumPackage, standardSession);
+      expect(crossTierResult.isCrossTier).toBe(true);
     });
   });
 });

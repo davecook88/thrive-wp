@@ -66,7 +66,6 @@ const Avatar = ({
   isSelected: boolean;
 }) => {
   const initials = (teacher.displayName || "T").slice(0, 1).toUpperCase();
-  console.log("Rendering Avatar for teacher:", teacher);
   return teacher.avatarUrl ? (
     <AvatarImage
       src={teacher.avatarUrl}
@@ -83,7 +82,6 @@ export default function TeacherGrid({
   selectedTeacherIds,
   toggleTeacher,
 }: TeacherGridProps) {
-  console.log("Rendering TeacherGrid with teachers:", teachers);
   return (
     <div>
       <label

@@ -111,58 +111,88 @@ export default function PackagesFooter({
           flexWrap: "wrap",
         }}
       >
-        {packages.map((pkg) => {
-          // Find compatible balance for this event's service type
-          const compatibleBalance =
-            event.serviceType && pkg.balances
-              ? pkg.balances.find((b) => b.serviceType === event.serviceType)
-              : null;
+        {packages.flatMap((pkg) => {
+          // Get allowances for this package
+          const allowances = (pkg as any).stripeProductMap?.allowances || [];
 
-          return (
-            <div
-              key={pkg.id}
-              style={{
-                background: "var(--wp--preset--color--gray-50)",
-                borderRadius: 6,
-                padding: "0.5rem 0.75rem",
-                border: "1px solid var(--wp--preset--color--gray-200)",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.75rem",
-                fontSize: "0.85rem",
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    fontWeight: 600,
-                    color: "var(--wp--preset--color--foreground)",
-                  }}
-                >
-                  {pkg.packageName}
-                </div>
-                <div
-                  style={{
-                    color: "var(--wp--preset--color--gray-600)",
-                    fontSize: "0.8rem",
-                  }}
-                >
-                  {compatibleBalance
-                    ? `${compatibleBalance.remainingCredits}/${compatibleBalance.totalCredits} ${compatibleBalance.serviceType} (${compatibleBalance.creditUnitMinutes}min)`
-                    : `${pkg.remainingSessions}/${pkg.totalSessions} left`}
-                </div>
-              </div>
-              {selectedTeacher && (
-                <PackageBookingButton
-                  pkg={pkg}
-                  selectedTeacher={selectedTeacher}
-                  event={event}
-                  bookingUrl={bookingConfirmationUrl}
-                  onBookingSuccess={onBookingSuccess}
-                />
-              )}
-            </div>
+          // Filter to only show PRIVATE allowances for availability booking
+          const privateAllowances = allowances.filter(
+            (allowance: any) => allowance.serviceType === "PRIVATE"
           );
+
+          // If no private allowances, skip this package
+          if (privateAllowances.length === 0) {
+            return [];
+          }
+
+          // Map each allowance to a booking option
+          return privateAllowances.map((allowance: any) => {
+            // Compute remaining credits for this specific allowance
+            const uses = pkg.uses || [];
+            const allowanceUses = uses.filter(
+              (use: any) => use.allowanceId === allowance.id
+            );
+            const totalUsed = allowanceUses.reduce(
+              (sum: number, use: any) => sum + (use.creditsUsed || 1),
+              0
+            );
+            const remainingCredits = Math.max(0, allowance.credits - totalUsed);
+
+            // Skip if no credits remaining
+            if (remainingCredits <= 0) {
+              return null;
+            }
+
+            const packageName = (pkg.metadata?.name as string) || (pkg as any).stripeProductMap?.metadata?.name || "Package";
+            const allowanceLabel = allowance.teacherTier > 0
+              ? "Premium Private Credit"
+              : "Private Credit";
+
+            return (
+              <div
+                key={`${pkg.id}-${allowance.id}`}
+                style={{
+                  background: "var(--wp--preset--color--gray-50)",
+                  borderRadius: 6,
+                  padding: "0.5rem 0.75rem",
+                  border: "1px solid var(--wp--preset--color--gray-200)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                  fontSize: "0.85rem",
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      color: "var(--wp--preset--color--foreground)",
+                    }}
+                  >
+                    {packageName} - {allowanceLabel}
+                  </div>
+                  <div
+                    style={{
+                      color: "var(--wp--preset--color--gray-600)",
+                      fontSize: "0.8rem",
+                    }}
+                  >
+                    {remainingCredits}/{allowance.credits} credits remaining • {allowance.creditUnitMinutes}min
+                  </div>
+                </div>
+                {selectedTeacher && (
+                  <PackageBookingButton
+                    pkg={pkg}
+                    allowance={allowance}
+                    selectedTeacher={selectedTeacher}
+                    event={event}
+                    bookingUrl={bookingConfirmationUrl}
+                    onBookingSuccess={onBookingSuccess}
+                  />
+                )}
+              </div>
+            );
+          }).filter(Boolean);
         })}
       </div>
     </Footer>

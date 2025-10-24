@@ -31,17 +31,15 @@ export class BookingsController {
     const userId = req.headers["x-auth-user-id"] as string;
     if (!userId) throw new UnauthorizedException("Authentication required");
 
-    // The BookingsService.createBooking expects a studentId (student.id).
-    // Resolve the student id from the user id here using the Student repository.
-    // Reuse the pattern used elsewhere in the app (controllers lookup Student by userId).
     const parsedUserId = parseInt(userId, 10);
 
-    const booking = await this.bookingsService.createBooking(
-      parsedUserId,
-      body.sessionId,
-      body.studentPackageId,
-      body.confirmed,
-    );
+    // Two flows supported:
+    // 1. sessionId provided: book existing session (group classes)
+    // 2. bookingData provided: create new session first, then book (availability slots)
+    const booking = await this.bookingsService.createBooking({
+      ...body,
+      userId: parsedUserId,
+    });
 
     return {
       bookingId: booking.id,

@@ -23,3 +23,4 @@ export { AddServiceTypeAndTeacherTierToStripeProductMap1762000000000 } from "./1
 export { BundlePackagesMigration1762000000010 } from "./1762000000010-BundlePackagesMigration.js";
 export { AddStripeProductMapFKToStudentPackage1762000000020 } from "./1762000000020-AddStripeProductMapFKToStudentPackage.js";
 export { AddPackageUseIdToBooking1762000000030 } from "./1762000000030-AddPackageUseIdToBooking.js";
+export { AddAllowanceIdToPackageUse1762000000040 } from "./1762000000040-AddAllowanceIdToPackageUse.js";

@@ -40,6 +40,27 @@ export function computeRemainingCreditsByServiceType(
 }
 
 /**
+ * Compute remaining credits for a specific allowance.
+ * Filters PackageUse by allowanceId before aggregating.
+ * This is the most precise method since it tracks exactly which allowance was used.
+ */
+export function computeRemainingCreditsForAllowance(
+  allowance: PackageAllowance & { id: number },
+  packageUses: Array<{
+    allowanceId?: number | null;
+    creditsUsed?: number;
+  }>,
+): number {
+  console.log("Computing remaining for allowance:", allowance, packageUses);
+  const totalUsed = packageUses
+    .filter((use) => use.allowanceId === allowance.id)
+    .reduce((sum, use) => sum + (use.creditsUsed || 1), 0);
+
+  console.log("Total used credits for allowance:", totalUsed);
+  return Math.max(0, allowance.credits - totalUsed);
+}
+
+/**
  * Generate auto description for a bundle package.
  * Example: "5 Private (30min) + 3 Group (60min) + 2 Course"
  */
