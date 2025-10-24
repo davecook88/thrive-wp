@@ -7,7 +7,6 @@ import {
   JoinColumn,
 } from "typeorm";
 import { BaseEntity } from "../../common/entities/base.entity.js";
-import { Course } from "../../courses/entities/course.entity.js";
 import type { Teacher } from "../../teachers/entities/teacher.entity.js";
 import type { TeacherAvailability } from "../../teachers/entities/teacher-availability.entity.js";
 import { Booking } from "../../payments/entities/booking.entity.js";
@@ -40,7 +39,6 @@ export enum SessionVisibility {
  */
 @Entity("session")
 @Index(["teacherId", "startAt"])
-@Index(["courseId", "startAt"])
 @Index(["startAt"])
 export class Session extends BaseEntity {
   @Column({
@@ -50,18 +48,6 @@ export class Session extends BaseEntity {
     comment: "Type of session",
   })
   type: ServiceType;
-
-  @Column({
-    name: "course_id",
-    type: "int",
-    nullable: true,
-    comment: "FK to course.id (set for course sessions)",
-  })
-  courseId: number | null;
-
-  @ManyToOne(() => Course, { nullable: true, onDelete: "SET NULL" })
-  @JoinColumn({ name: "course_id" })
-  course: Course | null;
 
   @Column({
     name: "teacher_id",

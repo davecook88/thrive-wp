@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { User } from "./entities/user.entity.js";
-import { Admin } from "../courses/entities/admin.entity.js";
+import { Admin } from "./entities/admin.entity.js";
 import { Teacher } from "../teachers/entities/teacher.entity.js";
 import { AuthModule } from "../auth/auth.module.js";
 import { UsersController } from "./users.controller.js";

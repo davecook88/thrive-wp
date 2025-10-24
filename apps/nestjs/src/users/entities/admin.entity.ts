@@ -1,6 +1,6 @@
 import { Entity, Column, Index, OneToOne, JoinColumn } from "typeorm";
 import { BaseEntity } from "../../common/entities/base.entity.js";
-import type { User } from "../../users/entities/user.entity.js";
+import type { User } from "./user.entity.js";
 
 /**
  * Admin entity represents administrative users with elevated privileges.

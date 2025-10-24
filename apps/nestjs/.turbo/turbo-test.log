@@ -6,607 +6,6 @@
 
  RUN  v3.2.4 /Users/davidcook/personal/thrive-wp/apps/nestjs
 
-stdout | test/waitlist.e2e.spec.ts
-[CONFIG] Test mode detected - Using database: wordpress_test
-db config: {
-  type: [32m'mysql'[39m,
-  host: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  username: [32m'wordpress'[39m,
-  password: [32m'wordpress'[39m,
-  database: [32m'wordpress_test'[39m,
-  synchronize: [33mfalse[39m,
-  logging: [33mfalse[39m,
-  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
-  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
-}
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
-
-stdout | src/packages/packages.service.spec.ts
-[CONFIG] Test mode detected - Using database: wordpress_test
-db config: {
-  type: [32m'mysql'[39m,
-  host: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  username: [32m'wordpress'[39m,
-  password: [32m'wordpress'[39m,
-  database: [32m'wordpress_test'[39m,
-  synchronize: [33mfalse[39m,
-  logging: [33mfalse[39m,
-  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
-  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
-}
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
-
-stdout | src/packages/packages.service.spec.ts
-[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
-[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
-[TEST SETUP] dotenv result: {
-  parsed: {
-    DB_HOST: [32m'127.0.0.1'[39m,
-    DB_PORT: [32m'3306'[39m,
-    DB_USERNAME: [32m'wordpress'[39m,
-    DB_PASSWORD: [32m'wordpress'[39m,
-    DB_DATABASE: [32m'wordpress_test'[39m,
-    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
-    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
-    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
-    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
-  }
-}
-[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
-process.env.DB_HOST: 127.0.0.1
-[TEST SETUP] Migration setup available. Call runMigrations() if needed.
-
-stdout | test/app.e2e.spec.ts
-[CONFIG] Test mode detected - Using database: wordpress_test
-db config: {
-  type: [32m'mysql'[39m,
-  host: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  username: [32m'wordpress'[39m,
-  password: [32m'wordpress'[39m,
-  database: [32m'wordpress_test'[39m,
-  synchronize: [33mfalse[39m,
-  logging: [33mfalse[39m,
-  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
-  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
-}
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
-
-stdout | test/app.e2e.spec.ts
-[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
-[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
-[TEST SETUP] dotenv result: {
-  parsed: {
-    DB_HOST: [32m'127.0.0.1'[39m,
-    DB_PORT: [32m'3306'[39m,
-    DB_USERNAME: [32m'wordpress'[39m,
-    DB_PASSWORD: [32m'wordpress'[39m,
-    DB_DATABASE: [32m'wordpress_test'[39m,
-    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
-    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
-    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
-    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
-  }
-}
-[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
-process.env.DB_HOST: 127.0.0.1
-[TEST SETUP] Migration setup available. Call runMigrations() if needed.
-
-stdout | test/auth-google-start.e2e.spec.ts
-[CONFIG] Test mode detected - Using database: wordpress_test
-db config: {
-  type: [32m'mysql'[39m,
-  host: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  username: [32m'wordpress'[39m,
-  password: [32m'wordpress'[39m,
-  database: [32m'wordpress_test'[39m,
-  synchronize: [33mfalse[39m,
-  logging: [33mfalse[39m,
-  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
-  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
-}
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
-
-stdout | test/auth-google-start.e2e.spec.ts
-[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
-[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
-[TEST SETUP] dotenv result: {
-  parsed: {
-    DB_HOST: [32m'127.0.0.1'[39m,
-    DB_PORT: [32m'3306'[39m,
-    DB_USERNAME: [32m'wordpress'[39m,
-    DB_PASSWORD: [32m'wordpress'[39m,
-    DB_DATABASE: [32m'wordpress_test'[39m,
-    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
-    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
-    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
-    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
-  }
-}
-[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
-process.env.DB_HOST: 127.0.0.1
-[TEST SETUP] Migration setup available. Call runMigrations() if needed.
-
-stdout | test/waitlist.e2e.spec.ts
-[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
-[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
-[TEST SETUP] dotenv result: {
-  parsed: {
-    DB_HOST: [32m'127.0.0.1'[39m,
-    DB_PORT: [32m'3306'[39m,
-    DB_USERNAME: [32m'wordpress'[39m,
-    DB_PASSWORD: [32m'wordpress'[39m,
-    DB_DATABASE: [32m'wordpress_test'[39m,
-    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
-    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
-    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
-    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
-  }
-}
-[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
-process.env.DB_HOST: 127.0.0.1
-[TEST SETUP] Migration setup available. Call runMigrations() if needed.
-
-stdout | test/database-connection.e2e.spec.ts
-[CONFIG] Test mode detected - Using database: wordpress_test
-db config: {
-  type: [32m'mysql'[39m,
-  host: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  username: [32m'wordpress'[39m,
-  password: [32m'wordpress'[39m,
-  database: [32m'wordpress_test'[39m,
-  synchronize: [33mfalse[39m,
-  logging: [33mfalse[39m,
-  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
-  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
-}
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
-
-stdout | test/database-connection.e2e.spec.ts
-[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
-[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
-[TEST SETUP] dotenv result: {
-  parsed: {
-    DB_HOST: [32m'127.0.0.1'[39m,
-    DB_PORT: [32m'3306'[39m,
-    DB_USERNAME: [32m'wordpress'[39m,
-    DB_PASSWORD: [32m'wordpress'[39m,
-    DB_DATABASE: [32m'wordpress_test'[39m,
-    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
-    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
-    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
-    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
-  }
-}
-[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
-process.env.DB_HOST: 127.0.0.1
-[TEST SETUP] Migration setup available. Call runMigrations() if needed.
-
-stdout | src/teachers/teachers.service.spec.ts
-[CONFIG] Test mode detected - Using database: wordpress_test
-db config: {
-  type: [32m'mysql'[39m,
-  host: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  username: [32m'wordpress'[39m,
-  password: [32m'wordpress'[39m,
-  database: [32m'wordpress_test'[39m,
-  synchronize: [33mfalse[39m,
-  logging: [33mfalse[39m,
-  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
-  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
-}
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
-
-stdout | src/teachers/teachers.service.spec.ts
-[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
-[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
-[TEST SETUP] dotenv result: {
-  parsed: {
-    DB_HOST: [32m'127.0.0.1'[39m,
-    DB_PORT: [32m'3306'[39m,
-    DB_USERNAME: [32m'wordpress'[39m,
-    DB_PASSWORD: [32m'wordpress'[39m,
-    DB_DATABASE: [32m'wordpress_test'[39m,
-    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
-    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
-    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
-    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
-  }
-}
-[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
-process.env.DB_HOST: 127.0.0.1
-[TEST SETUP] Migration setup available. Call runMigrations() if needed.
-
-stdout | test/teacher-availability.e2e.spec.ts
-[CONFIG] Test mode detected - Using database: wordpress_test
-db config: {
-  type: [32m'mysql'[39m,
-  host: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  username: [32m'wordpress'[39m,
-  password: [32m'wordpress'[39m,
-  database: [32m'wordpress_test'[39m,
-  synchronize: [33mfalse[39m,
-  logging: [33mfalse[39m,
-  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
-  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
-}
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
-
-stdout | test/teacher-availability.e2e.spec.ts
-[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
-[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
-[TEST SETUP] dotenv result: {
-  parsed: {
-    DB_HOST: [32m'127.0.0.1'[39m,
-    DB_PORT: [32m'3306'[39m,
-    DB_USERNAME: [32m'wordpress'[39m,
-    DB_PASSWORD: [32m'wordpress'[39m,
-    DB_DATABASE: [32m'wordpress_test'[39m,
-    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
-    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
-    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
-    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
-  }
-}
-[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
-process.env.DB_HOST: 127.0.0.1
-[TEST SETUP] Migration setup available. Call runMigrations() if needed.
-
-stdout | src/teachers/teachers.service.spec.ts > TeachersService > previewTeacherAvailability > should generate correct preview windows for spanning rules
-Found availabilities: [
-  {
-    id: [33m1[39m,
-    teacherId: [33m1[39m,
-    kind: [32m'RECURRING'[39m,
-    weekday: [33m3[39m,
-    startTimeMinutes: [33m1080[39m,
-    endTimeMinutes: [33m1680[39m,
-    isActive: [33mtrue[39m,
-    createdAt: [35m2025-10-22T18:21:33.538Z[39m,
-    updatedAt: [35m2025-10-22T18:21:33.538Z[39m
-  }
-]
-
-stdout | src/teachers/teachers.service.spec.ts > TeachersService > previewTeacherAvailability > should generate correct preview windows for normal rules
-Found availabilities: [
-  {
-    id: [33m1[39m,
-    teacherId: [33m1[39m,
-    kind: [32m'RECURRING'[39m,
-    weekday: [33m1[39m,
-    startTimeMinutes: [33m540[39m,
-    endTimeMinutes: [33m1020[39m,
-    isActive: [33mtrue[39m,
-    createdAt: [35m2025-10-22T18:21:33.560Z[39m,
-    updatedAt: [35m2025-10-22T18:21:33.560Z[39m
-  }
-]
-
-stdout | src/teachers/teachers.service.spec.ts > TeachersService > previewTeacherAvailability > should handle multiple days with spanning rules
-Found availabilities: [
-  {
-    id: [33m1[39m,
-    teacherId: [33m1[39m,
-    kind: [32m'RECURRING'[39m,
-    weekday: [33m3[39m,
-    startTimeMinutes: [33m1080[39m,
-    endTimeMinutes: [33m1680[39m,
-    isActive: [33mtrue[39m,
-    createdAt: [35m2025-10-22T18:21:33.561Z[39m,
-    updatedAt: [35m2025-10-22T18:21:33.561Z[39m
-  }
-]
-
-stdout | src/teachers/teachers.service.spec.ts > TeachersService > previewTeacherAvailability > should throw BadRequestException for range exceeding 90 days
-Found availabilities: []
-
- ❯ src/teachers/teachers.service.spec.ts (11 tests) 26ms
-   ✓ TeachersService > should be defined 8ms
-   ✓ TeachersService > updateTeacherAvailability > should handle rules that span midnight 2ms
-   ✓ TeachersService > updateTeacherAvailability > should handle normal rules without spanning 1ms
-   ✓ TeachersService > updateTeacherAvailability > should handle exceptions that span midnight 1ms
-   ✓ TeachersService > updateTeacherAvailability > should throw NotFoundException if teacher not found 2ms
-   ✓ TeachersService > getTeacherAvailability > should return wrapped endTime for spanning rules 1ms
-   ✓ TeachersService > previewTeacherAvailability > should generate correct preview windows for spanning rules 2ms
-   ✓ TeachersService > previewTeacherAvailability > should generate correct preview windows for normal rules 1ms
-   ✓ TeachersService > previewTeacherAvailability > should handle multiple days with spanning rules 1ms
-   ✓ TeachersService > previewTeacherAvailability > should throw NotFoundException if teacher not found 1ms
-   ✓ TeachersService > previewTeacherAvailability > should throw BadRequestException for range exceeding 90 days 4ms
- ❯ src/packages/packages.service.spec.ts (10 tests | 7 failed) 25ms
-   ✓ PackagesService > should be defined 6ms
-   × PackagesService > getActivePackagesForStudent > should return active packages for a student 7ms
-     → Cannot read properties of undefined (reading 'createQueryBuilder')
-   × PackagesService > getActivePackagesForStudent > should filter out expired packages 2ms
-     → Cannot read properties of undefined (reading 'createQueryBuilder')
-   × PackagesService > getActivePackagesForStudent > should filter out packages with no remaining sessions 1ms
-     → Cannot read properties of undefined (reading 'createQueryBuilder')
-   × PackagesService > usePackageForSession > should successfully use package for session with happy path 2ms
-     → Cannot read properties of undefined (reading 'getMetadata')
-   × PackagesService > usePackageForSession > should throw NotFoundException when package not found 2ms
-     → expected error to be instance of NotFoundException
-   × PackagesService > usePackageForSession > should throw BadRequestException when no remaining sessions 1ms
-     → expected error to be instance of BadRequestException
-   × PackagesService > usePackageForSession > should throw BadRequestException when package is expired 1ms
-     → expected error to be instance of BadRequestException
-   ✓ PackagesService > linkUseToBooking > should successfully link use to booking 2ms
-   ✓ PackagesService > linkUseToBooking > should return null when use not found 1ms
-stdout | src/group-classes/group-classes.service.spec.ts
-[CONFIG] Test mode detected - Using database: wordpress_test
-db config: {
-  type: [32m'mysql'[39m,
-  host: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  username: [32m'wordpress'[39m,
-  password: [32m'wordpress'[39m,
-  database: [32m'wordpress_test'[39m,
-  synchronize: [33mfalse[39m,
-  logging: [33mfalse[39m,
-  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
-  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
-}
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
-
-stdout | src/group-classes/group-classes.service.spec.ts
-[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
-[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
-[TEST SETUP] dotenv result: {
-  parsed: {
-    DB_HOST: [32m'127.0.0.1'[39m,
-    DB_PORT: [32m'3306'[39m,
-    DB_USERNAME: [32m'wordpress'[39m,
-    DB_PASSWORD: [32m'wordpress'[39m,
-    DB_DATABASE: [32m'wordpress_test'[39m,
-    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
-    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
-    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
-    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
-  }
-}
-[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
-process.env.DB_HOST: 127.0.0.1
-[TEST SETUP] Migration setup available. Call runMigrations() if needed.
-
-stdout | test/credit-tiers-integration.e2e.spec.ts
-[CONFIG] Test mode detected - Using database: wordpress_test
-db config: {
-  type: [32m'mysql'[39m,
-  host: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  username: [32m'wordpress'[39m,
-  password: [32m'wordpress'[39m,
-  database: [32m'wordpress_test'[39m,
-  synchronize: [33mfalse[39m,
-  logging: [33mfalse[39m,
-  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
-  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
-}
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
-
-stdout | test/credit-tiers-integration.e2e.spec.ts
-[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
-[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
-[TEST SETUP] dotenv result: {
-  parsed: {
-    DB_HOST: [32m'127.0.0.1'[39m,
-    DB_PORT: [32m'3306'[39m,
-    DB_USERNAME: [32m'wordpress'[39m,
-    DB_PASSWORD: [32m'wordpress'[39m,
-    DB_DATABASE: [32m'wordpress_test'[39m,
-    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
-    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
-    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
-    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
-  }
-}
-[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
-process.env.DB_HOST: 127.0.0.1
-[TEST SETUP] Migration setup available. Call runMigrations() if needed.
-
-stdout | test/auth-google-start.e2e.spec.ts > Auth Google Start Redirect (e2e)
-[CONFIG] Test mode detected - Using database: wordpress_test
-
-stdout | test/database-connection.e2e.spec.ts > Database Connection (e2e)
-[CONFIG] Test mode detected - Using database: wordpress_test
-
-stdout | test/app.e2e.spec.ts > AppController (e2e) > / (GET)
-[CONFIG] Test mode detected - Using database: wordpress_test
-
- ❯ test/database-connection.e2e.spec.ts (1 test | 1 skipped) 16ms
-   ↓ Database Connection (e2e) > should initialize the app with test database
- ❯ test/auth-google-start.e2e.spec.ts (3 tests | 3 skipped) 17ms
-   ↓ Auth Google Start Redirect (e2e) > stores same-origin redirect path when provided as absolute URL
-   ↓ Auth Google Start Redirect (e2e) > preserves already-encoded query values without normalizing them
-   ↓ Auth Google Start Redirect (e2e) > ignores redirects for other origins
- ❯ test/app.e2e.spec.ts (1 test | 1 failed) 26ms
-   × AppController (e2e) > / (GET) 25ms
-     → Nest can't resolve dependencies of the BookingsService (BookingRepository, SessionRepository, StudentRepository, StudentPackageRepository, ?, PoliciesService, WaitlistsService). Please make sure that the argument "PackageUseRepository" at index [4] is available in the BookingsModule context.
-
-Potential solutions:
-- Is BookingsModule a valid NestJS module?
-- If "PackageUseRepository" is a provider, is it part of the current BookingsModule?
-- If "PackageUseRepository" is exported from a separate @Module, is that module imported within BookingsModule?
-  @Module({
-    imports: [ /* the Module containing "PackageUseRepository" */ ]
-  })
-
-     → Cannot read properties of undefined (reading 'close')
-stdout | test/teacher-availability.e2e.spec.ts > TeacherAvailabilityService (e2e)
-
-[TEST SETUP] Running database migrations...
-
-MigrationTestDataSource.options: {
-  type: [32m'mysql'[39m,
-  host: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  username: [32m'wordpress'[39m,
-  password: [32m'wordpress'[39m,
-  database: [32m'wordpress_test'[39m,
-  entities: [],
-  migrations: [
-    [36m[class InitialSchema1733770000000][39m,
-    [36m[class AddPasswordHashToUsers1733771000001][39m,
-    [36m[class AddTeacherAndAvailability1733772000002][39m,
-    [36m[class AddAdminTable1756431459155][39m,
-    [36m[class AddStudentTable1756431459156][39m,
-    [36m[class AddSchedulingTables1756431459157][39m,
-    [36m[class AddWaitlistTable1756431459158][39m,
-    [36m[class AddPricingSystemTables1756431459159][39m,
-    [36m[class RenameToStripeProductMap1756431459160][39m,
-    [36m[class AddDraftStatuses1756431459161][39m,
-    [36m[class AddStudentPackagesTables1759000000000][39m,
-    [36m[class AddPackageFieldsToBooking1759000000001][39m,
-    [36m[class AddCancellationPolicies1759000000002][39m,
-    [36m[class AddGroupClassesTables1759000000003][39m,
-    [36m[class AddTeacherProfileFields1759000000004][39m,
-    [36m[class GroupClassMultipleLevels1759000000005][39m,
-    [36m[class AddCourseProgramsTables1760000000000][39m,
-    [36m[class AddServiceTypeAndTeacherTierToStripeProductMap1762000000000][39m,
-    [36m[class BundlePackagesMigration1762000000010][39m
-  ],
-  synchronize: [33mfalse[39m,
-  dropSchema: [33mtrue[39m,
-  logging: [33mfalse[39m
-}
-Target DB for migrations: wordpress_test
-Initializing MigrationTestDataSource...
-
-stderr | test/teacher-availability.e2e.spec.ts > TeacherAvailabilityService (e2e)
-Error during MigrationTestDataSource initialization: Error: connect ECONNREFUSED 127.0.0.1:3306
-[90m    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)[39m {
-  errno: [33m-61[39m,
-  code: [32m'ECONNREFUSED'[39m,
-  syscall: [32m'connect'[39m,
-  address: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  fatal: [33mtrue[39m
-}
-
- ❯ test/teacher-availability.e2e.spec.ts (13 tests | 13 skipped) 5ms
-   ↓ TeacherAvailabilityService (e2e) > validateAvailability > should validate successfully when teacher has ONE_OFF availability
-   ↓ TeacherAvailabilityService (e2e) > validateAvailability > should validate successfully when teacher has RECURRING availability
-   ↓ TeacherAvailabilityService (e2e) > validateAvailability > should fail when teacher has a blackout during requested time
-   ↓ TeacherAvailabilityService (e2e) > validateAvailability > should fail when teacher has a conflicting booking
-   ↓ TeacherAvailabilityService (e2e) > validateAvailability > should fail when teacher is inactive
-   ↓ TeacherAvailabilityService (e2e) > validateAvailability > should fail when teacher does not exist
-   ↓ TeacherAvailabilityService (e2e) > validateAvailability > should fail when teacher has no availability
-   ↓ TeacherAvailabilityService (e2e) > validateAvailability > should fail when RECURRING availability weekday does not match
-   ↓ TeacherAvailabilityService (e2e) > validateAvailability > should fail when RECURRING availability time does not match
-   ↓ TeacherAvailabilityService (e2e) > previewTeacherAvailability (integration) > should correctly exclude time slots that overlap with scheduled sessions
-   ↓ TeacherAvailabilityService (e2e) > previewTeacherAvailability (integration) > should include full availability when no sessions are scheduled
-   ↓ TeacherAvailabilityService (e2e) > previewTeacherAvailability (integration) > should exclude time slots that overlap with blackouts
-   ↓ TeacherAvailabilityService (e2e) > previewTeacherAvailability (integration) > should handle multiple teachers with different availabilities and bookings
-stdout | test/waitlist.e2e.spec.ts > Waitlist (e2e) > should allow a student to join a waitlist for a full group class session
-[CONFIG] Test mode detected - Using database: wordpress_test
-
-stdout | test/waitlist.e2e.spec.ts > Waitlist (e2e) > should not allow a student to join a waitlist for a session that is not full
-[CONFIG] Test mode detected - Using database: wordpress_test
-
-stdout | test/waitlist.e2e.spec.ts > Waitlist (e2e) > when a booking is cancelled, the first student on the waitlist is notified
-[CONFIG] Test mode detected - Using database: wordpress_test
-
-stdout | test/waitlist.e2e.spec.ts > Waitlist (e2e) > admin can promote a student from the waitlist to a booking
-[CONFIG] Test mode detected - Using database: wordpress_test
-
- ❯ test/waitlist.e2e.spec.ts (4 tests | 4 failed) 37ms
-   × Waitlist (e2e) > should allow a student to join a waitlist for a full group class session 17ms
-     → Nest can't resolve dependencies of the BookingsService (BookingRepository, SessionRepository, StudentRepository, StudentPackageRepository, ?, PoliciesService, WaitlistsService). Please make sure that the argument "PackageUseRepository" at index [4] is available in the BookingsModule context.
-
-Potential solutions:
-- Is BookingsModule a valid NestJS module?
-- If "PackageUseRepository" is a provider, is it part of the current BookingsModule?
-- If "PackageUseRepository" is exported from a separate @Module, is that module imported within BookingsModule?
-  @Module({
-    imports: [ /* the Module containing "PackageUseRepository" */ ]
-  })
-
-     → Cannot read properties of undefined (reading 'close')
-   × Waitlist (e2e) > should not allow a student to join a waitlist for a session that is not full 4ms
-     → Nest can't resolve dependencies of the BookingsService (BookingRepository, SessionRepository, StudentRepository, StudentPackageRepository, ?, PoliciesService, WaitlistsService). Please make sure that the argument "PackageUseRepository" at index [4] is available in the BookingsModule context.
-
-Potential solutions:
-- Is BookingsModule a valid NestJS module?
-- If "PackageUseRepository" is a provider, is it part of the current BookingsModule?
-- If "PackageUseRepository" is exported from a separate @Module, is that module imported within BookingsModule?
-  @Module({
-    imports: [ /* the Module containing "PackageUseRepository" */ ]
-  })
-
-     → Cannot read properties of undefined (reading 'close')
-   × Waitlist (e2e) > when a booking is cancelled, the first student on the waitlist is notified 11ms
-     → Nest can't resolve dependencies of the BookingsService (BookingRepository, SessionRepository, StudentRepository, StudentPackageRepository, ?, PoliciesService, WaitlistsService). Please make sure that the argument "PackageUseRepository" at index [4] is available in the BookingsModule context.
-
-Potential solutions:
-- Is BookingsModule a valid NestJS module?
-- If "PackageUseRepository" is a provider, is it part of the current BookingsModule?
-- If "PackageUseRepository" is exported from a separate @Module, is that module imported within BookingsModule?
-  @Module({
-    imports: [ /* the Module containing "PackageUseRepository" */ ]
-  })
-
-     → Cannot read properties of undefined (reading 'close')
-   × Waitlist (e2e) > admin can promote a student from the waitlist to a booking 3ms
-     → Nest can't resolve dependencies of the BookingsService (BookingRepository, SessionRepository, StudentRepository, StudentPackageRepository, ?, PoliciesService, WaitlistsService). Please make sure that the argument "PackageUseRepository" at index [4] is available in the BookingsModule context.
-
-Potential solutions:
-- Is BookingsModule a valid NestJS module?
-- If "PackageUseRepository" is a provider, is it part of the current BookingsModule?
-- If "PackageUseRepository" is exported from a separate @Module, is that module imported within BookingsModule?
-  @Module({
-    imports: [ /* the Module containing "PackageUseRepository" */ ]
-  })
-
-     → Cannot read properties of undefined (reading 'close')
- ❯ src/group-classes/group-classes.service.spec.ts (6 tests | 2 failed | 1 skipped) 20ms
-   ✓ GroupClassesService > should be defined 10ms
-   ↓ GroupClassesService > generateSessions > should parse RRULE strings correctly (skipped - rrule import issues in test)
-   × GroupClassesService > getAvailableSessions > should return sessions with enrollment count and computed fields 5ms
-     → session.teacher.toPublicDto is not a function
-   ✓ GroupClassesService > getAvailableSessions > should apply level filter correctly 2ms
-   ✓ GroupClassesService > getAvailableSessions > should apply teacher filter correctly 1ms
-   × GroupClassesService > getAvailableSessions > should calculate availableSpots as capacityMax - enrolledCount 1ms
-     → Cannot read properties of undefined (reading 'toISOString')
-stdout | test/students-api.e2e.spec.ts
-[CONFIG] Test mode detected - Using database: wordpress_test
-db config: {
-  type: [32m'mysql'[39m,
-  host: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  username: [32m'wordpress'[39m,
-  password: [32m'wordpress'[39m,
-  database: [32m'wordpress_test'[39m,
-  synchronize: [33mfalse[39m,
-  logging: [33mfalse[39m,
-  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
-  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
-}
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
-
-stdout | test/students-api.e2e.spec.ts
-[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
-[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
-[TEST SETUP] dotenv result: {
-  parsed: {
-    DB_HOST: [32m'127.0.0.1'[39m,
-    DB_PORT: [32m'3306'[39m,
-    DB_USERNAME: [32m'wordpress'[39m,
-    DB_PASSWORD: [32m'wordpress'[39m,
-    DB_DATABASE: [32m'wordpress_test'[39m,
-    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
-    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
-    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
-    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
-  }
-}
-[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
-process.env.DB_HOST: 127.0.0.1
-[TEST SETUP] Migration setup available. Call runMigrations() if needed.
-
 stdout | test/database.e2e.spec.ts
 [CONFIG] Test mode detected - Using database: wordpress_test
 db config: {
@@ -621,81 +20,9 @@ db config: {
   entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
   migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
 }
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
 
 stdout | test/database.e2e.spec.ts
-[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
-[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
-[TEST SETUP] dotenv result: {
-  parsed: {
-    DB_HOST: [32m'127.0.0.1'[39m,
-    DB_PORT: [32m'3306'[39m,
-    DB_USERNAME: [32m'wordpress'[39m,
-    DB_PASSWORD: [32m'wordpress'[39m,
-    DB_DATABASE: [32m'wordpress_test'[39m,
-    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
-    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
-    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
-    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
-  }
-}
-[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
-process.env.DB_HOST: 127.0.0.1
-[TEST SETUP] Migration setup available. Call runMigrations() if needed.
-
-stdout | test/payments-session-booking.e2e.spec.ts
-[CONFIG] Test mode detected - Using database: wordpress_test
-db config: {
-  type: [32m'mysql'[39m,
-  host: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  username: [32m'wordpress'[39m,
-  password: [32m'wordpress'[39m,
-  database: [32m'wordpress_test'[39m,
-  synchronize: [33mfalse[39m,
-  logging: [33mfalse[39m,
-  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
-  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
-}
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
-
-stdout | test/payments-session-booking.e2e.spec.ts
-[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
-[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
-[TEST SETUP] dotenv result: {
-  parsed: {
-    DB_HOST: [32m'127.0.0.1'[39m,
-    DB_PORT: [32m'3306'[39m,
-    DB_USERNAME: [32m'wordpress'[39m,
-    DB_PASSWORD: [32m'wordpress'[39m,
-    DB_DATABASE: [32m'wordpress_test'[39m,
-    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
-    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
-    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
-    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
-  }
-}
-[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
-process.env.DB_HOST: 127.0.0.1
-[TEST SETUP] Migration setup available. Call runMigrations() if needed.
-
-stdout | test/package-booking.e2e.spec.ts
-[CONFIG] Test mode detected - Using database: wordpress_test
-db config: {
-  type: [32m'mysql'[39m,
-  host: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  username: [32m'wordpress'[39m,
-  password: [32m'wordpress'[39m,
-  database: [32m'wordpress_test'[39m,
-  synchronize: [33mfalse[39m,
-  logging: [33mfalse[39m,
-  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
-  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
-}
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
-
-stdout | test/package-booking.e2e.spec.ts
 [TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
 [TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
 [TEST SETUP] dotenv result: {
@@ -729,7 +56,7 @@ db config: {
   entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
   migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
 }
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
 
 stdout | test/group-class-booking.e2e.spec.ts
 [TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
@@ -751,7 +78,7 @@ stdout | test/group-class-booking.e2e.spec.ts
 process.env.DB_HOST: 127.0.0.1
 [TEST SETUP] Migration setup available. Call runMigrations() if needed.
 
-stdout | src/users/users.service.spec.ts
+stdout | test/payments-webhook-group-booking.e2e.spec.ts
 [CONFIG] Test mode detected - Using database: wordpress_test
 db config: {
   type: [32m'mysql'[39m,
@@ -765,9 +92,9 @@ db config: {
   entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
   migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
 }
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
 
-stdout | src/users/users.service.spec.ts
+stdout | test/payments-webhook-group-booking.e2e.spec.ts
 [TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
 [TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
 [TEST SETUP] dotenv result: {
@@ -787,82 +114,7 @@ stdout | src/users/users.service.spec.ts
 process.env.DB_HOST: 127.0.0.1
 [TEST SETUP] Migration setup available. Call runMigrations() if needed.
 
-stdout | test/credit-tiers-integration.e2e.spec.ts > Credit Tier System Integration (e2e)
-
-[TEST SETUP] Running database migrations...
-
-MigrationTestDataSource.options: {
-  type: [32m'mysql'[39m,
-  host: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  username: [32m'wordpress'[39m,
-  password: [32m'wordpress'[39m,
-  database: [32m'wordpress_test'[39m,
-  entities: [],
-  migrations: [
-    [36m[class InitialSchema1733770000000][39m,
-    [36m[class AddPasswordHashToUsers1733771000001][39m,
-    [36m[class AddTeacherAndAvailability1733772000002][39m,
-    [36m[class AddAdminTable1756431459155][39m,
-    [36m[class AddStudentTable1756431459156][39m,
-    [36m[class AddSchedulingTables1756431459157][39m,
-    [36m[class AddWaitlistTable1756431459158][39m,
-    [36m[class AddPricingSystemTables1756431459159][39m,
-    [36m[class RenameToStripeProductMap1756431459160][39m,
-    [36m[class AddDraftStatuses1756431459161][39m,
-    [36m[class AddStudentPackagesTables1759000000000][39m,
-    [36m[class AddPackageFieldsToBooking1759000000001][39m,
-    [36m[class AddCancellationPolicies1759000000002][39m,
-    [36m[class AddGroupClassesTables1759000000003][39m,
-    [36m[class AddTeacherProfileFields1759000000004][39m,
-    [36m[class GroupClassMultipleLevels1759000000005][39m,
-    [36m[class AddCourseProgramsTables1760000000000][39m,
-    [36m[class AddServiceTypeAndTeacherTierToStripeProductMap1762000000000][39m,
-    [36m[class BundlePackagesMigration1762000000010][39m
-  ],
-  synchronize: [33mfalse[39m,
-  dropSchema: [33mtrue[39m,
-  logging: [33mfalse[39m
-}
-Target DB for migrations: wordpress_test
-Initializing MigrationTestDataSource...
-
-stderr | test/credit-tiers-integration.e2e.spec.ts > Credit Tier System Integration (e2e)
-Error during MigrationTestDataSource initialization: Error: connect ECONNREFUSED 127.0.0.1:3306
-[90m    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)[39m {
-  errno: [33m-61[39m,
-  code: [32m'ECONNREFUSED'[39m,
-  syscall: [32m'connect'[39m,
-  address: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  fatal: [33mtrue[39m
-}
-
- ❯ test/credit-tiers-integration.e2e.spec.ts (22 tests | 22 skipped) 6ms
-   ↓ Credit Tier System Integration (e2e) > GET /packages/compatible-for-session/:sessionId > should return compatible packages for a private session
-   ↓ Credit Tier System Integration (e2e) > GET /packages/compatible-for-session/:sessionId > should return both exact and higher-tier packages for group session
-   ↓ Credit Tier System Integration (e2e) > GET /packages/compatible-for-session/:sessionId > should exclude incompatible packages (group package for private session)
-   ↓ Credit Tier System Integration (e2e) > GET /packages/compatible-for-session/:sessionId > should exclude expired packages
-   ↓ Credit Tier System Integration (e2e) > GET /packages/compatible-for-session/:sessionId > should exclude packages with no remaining sessions
-   ↓ Credit Tier System Integration (e2e) > GET /packages/compatible-for-session/:sessionId > should handle premium teacher sessions correctly
-   ↓ Credit Tier System Integration (e2e) > GET /packages/compatible-for-session/:sessionId > should return 401 when not authenticated
-   ↓ Credit Tier System Integration (e2e) > GET /packages/compatible-for-session/:sessionId > should return 404 for non-existent session
-   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should allow booking with exact-match package
-   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should allow cross-tier booking with confirmation
-   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should reject cross-tier booking without confirmation
-   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should reject booking group package for private session
-   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should calculate correct credits for duration mismatch (60 min session, 30 min credit)
-   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should calculate correct credits for duration mismatch (30 min session, 60 min credit)
-   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should reject booking when insufficient credits
-   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should reject booking with expired package
-   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should reject standard package for premium teacher session
-   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should allow premium package for standard teacher session with confirmation
-   ↓ Credit Tier System Integration (e2e) > Cancellation Refund (Tier System) > should refund to original package when canceling cross-tier booking
-   ↓ Credit Tier System Integration (e2e) > Cancellation Refund (Tier System) > should refund correct number of credits for duration-based booking
-   ↓ Credit Tier System Integration (e2e) > Edge Cases > should handle concurrent booking attempts with last credit
-   ↓ Credit Tier System Integration (e2e) > Edge Cases > should handle package with missing metadata gracefully
- ✓ src/users/users.service.spec.ts (10 tests) 62ms
-stdout | src/waitlists/waitlists.service.spec.ts
+stdout | test/students-api.e2e.spec.ts
 [CONFIG] Test mode detected - Using database: wordpress_test
 db config: {
   type: [32m'mysql'[39m,
@@ -876,9 +128,9 @@ db config: {
   entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
   migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
 }
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
 
-stdout | src/waitlists/waitlists.service.spec.ts
+stdout | test/students-api.e2e.spec.ts
 [TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
 [TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
 [TEST SETUP] dotenv result: {
@@ -898,61 +150,114 @@ stdout | src/waitlists/waitlists.service.spec.ts
 process.env.DB_HOST: 127.0.0.1
 [TEST SETUP] Migration setup available. Call runMigrations() if needed.
 
-stdout | test/students-api.e2e.spec.ts > Students API (e2e)
-
-[TEST SETUP] Running database migrations...
-
-MigrationTestDataSource.options: {
+stdout | test/package-booking.e2e.spec.ts
+[CONFIG] Test mode detected - Using database: wordpress_test
+db config: {
   type: [32m'mysql'[39m,
   host: [32m'127.0.0.1'[39m,
   port: [33m3306[39m,
   username: [32m'wordpress'[39m,
   password: [32m'wordpress'[39m,
   database: [32m'wordpress_test'[39m,
-  entities: [],
-  migrations: [
-    [36m[class InitialSchema1733770000000][39m,
-    [36m[class AddPasswordHashToUsers1733771000001][39m,
-    [36m[class AddTeacherAndAvailability1733772000002][39m,
-    [36m[class AddAdminTable1756431459155][39m,
-    [36m[class AddStudentTable1756431459156][39m,
-    [36m[class AddSchedulingTables1756431459157][39m,
-    [36m[class AddWaitlistTable1756431459158][39m,
-    [36m[class AddPricingSystemTables1756431459159][39m,
-    [36m[class RenameToStripeProductMap1756431459160][39m,
-    [36m[class AddDraftStatuses1756431459161][39m,
-    [36m[class AddStudentPackagesTables1759000000000][39m,
-    [36m[class AddPackageFieldsToBooking1759000000001][39m,
-    [36m[class AddCancellationPolicies1759000000002][39m,
-    [36m[class AddGroupClassesTables1759000000003][39m,
-    [36m[class AddTeacherProfileFields1759000000004][39m,
-    [36m[class GroupClassMultipleLevels1759000000005][39m,
-    [36m[class AddCourseProgramsTables1760000000000][39m,
-    [36m[class AddServiceTypeAndTeacherTierToStripeProductMap1762000000000][39m,
-    [36m[class BundlePackagesMigration1762000000010][39m
-  ],
   synchronize: [33mfalse[39m,
-  dropSchema: [33mtrue[39m,
-  logging: [33mfalse[39m
+  logging: [33mfalse[39m,
+  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
+  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
 }
-Target DB for migrations: wordpress_test
-Initializing MigrationTestDataSource...
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
 
-stderr | test/students-api.e2e.spec.ts > Students API (e2e)
-Error during MigrationTestDataSource initialization: Error: connect ECONNREFUSED 127.0.0.1:3306
-[90m    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)[39m {
-  errno: [33m-61[39m,
-  code: [32m'ECONNREFUSED'[39m,
-  syscall: [32m'connect'[39m,
-  address: [32m'127.0.0.1'[39m,
+stdout | test/package-booking.e2e.spec.ts
+[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
+[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
+[TEST SETUP] dotenv result: {
+  parsed: {
+    DB_HOST: [32m'127.0.0.1'[39m,
+    DB_PORT: [32m'3306'[39m,
+    DB_USERNAME: [32m'wordpress'[39m,
+    DB_PASSWORD: [32m'wordpress'[39m,
+    DB_DATABASE: [32m'wordpress_test'[39m,
+    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
+    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
+    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
+    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
+  }
+}
+[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
+process.env.DB_HOST: 127.0.0.1
+[TEST SETUP] Migration setup available. Call runMigrations() if needed.
+
+stdout | test/credit-tiers-integration.e2e.spec.ts
+[CONFIG] Test mode detected - Using database: wordpress_test
+db config: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
   port: [33m3306[39m,
-  fatal: [33mtrue[39m
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  synchronize: [33mfalse[39m,
+  logging: [33mfalse[39m,
+  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
+  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
 }
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
 
- ❯ test/students-api.e2e.spec.ts (3 tests | 3 skipped) 6ms
-   ↓ Students API (e2e) > GET /api/students/me/upcoming > should return upcoming sessions with correct teacher name
-   ↓ Students API (e2e) > GET /api/students/me/upcoming > should respect limit parameter
-   ↓ Students API (e2e) > GET /api/students/me/upcoming > should return empty array for student with no upcoming sessions
+stdout | test/credit-tiers-integration.e2e.spec.ts
+[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
+[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
+[TEST SETUP] dotenv result: {
+  parsed: {
+    DB_HOST: [32m'127.0.0.1'[39m,
+    DB_PORT: [32m'3306'[39m,
+    DB_USERNAME: [32m'wordpress'[39m,
+    DB_PASSWORD: [32m'wordpress'[39m,
+    DB_DATABASE: [32m'wordpress_test'[39m,
+    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
+    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
+    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
+    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
+  }
+}
+[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
+process.env.DB_HOST: 127.0.0.1
+[TEST SETUP] Migration setup available. Call runMigrations() if needed.
+
+stdout | test/waitlist.e2e.spec.ts
+[CONFIG] Test mode detected - Using database: wordpress_test
+db config: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
+  port: [33m3306[39m,
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  synchronize: [33mfalse[39m,
+  logging: [33mfalse[39m,
+  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
+  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
+}
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
+
+stdout | test/waitlist.e2e.spec.ts
+[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
+[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
+[TEST SETUP] dotenv result: {
+  parsed: {
+    DB_HOST: [32m'127.0.0.1'[39m,
+    DB_PORT: [32m'3306'[39m,
+    DB_USERNAME: [32m'wordpress'[39m,
+    DB_PASSWORD: [32m'wordpress'[39m,
+    DB_DATABASE: [32m'wordpress_test'[39m,
+    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
+    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
+    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
+    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
+  }
+}
+[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
+process.env.DB_HOST: 127.0.0.1
+[TEST SETUP] Migration setup available. Call runMigrations() if needed.
+
 stdout | test/database.e2e.spec.ts > Database Integration (e2e)
 
 [TEST SETUP] Running database migrations...
@@ -984,7 +289,10 @@ MigrationTestDataSource.options: {
     [36m[class GroupClassMultipleLevels1759000000005][39m,
     [36m[class AddCourseProgramsTables1760000000000][39m,
     [36m[class AddServiceTypeAndTeacherTierToStripeProductMap1762000000000][39m,
-    [36m[class BundlePackagesMigration1762000000010][39m
+    [36m[class BundlePackagesMigration1762000000010][39m,
+    [36m[class AddStripeProductMapFKToStudentPackage1762000000020][39m,
+    [36m[class AddPackageUseIdToBooking1762000000030][39m,
+    [36m[class AddAllowanceIdToPackageUse1762000000040][39m
   ],
   synchronize: [33mfalse[39m,
   dropSchema: [33mtrue[39m,
@@ -993,16 +301,48 @@ MigrationTestDataSource.options: {
 Target DB for migrations: wordpress_test
 Initializing MigrationTestDataSource...
 
-stderr | test/database.e2e.spec.ts > Database Integration (e2e)
-Error during MigrationTestDataSource initialization: Error: connect ECONNREFUSED 127.0.0.1:3306
-[90m    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)[39m {
-  errno: [33m-61[39m,
-  code: [32m'ECONNREFUSED'[39m,
-  syscall: [32m'connect'[39m,
-  address: [32m'127.0.0.1'[39m,
+stdout | test/payments-webhook-group-booking.e2e.spec.ts > PaymentsService - Group Session Booking via Package Purchase Webhook
+
+[TEST SETUP] Running database migrations...
+
+MigrationTestDataSource.options: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
   port: [33m3306[39m,
-  fatal: [33mtrue[39m
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  entities: [],
+  migrations: [
+    [36m[class InitialSchema1733770000000][39m,
+    [36m[class AddPasswordHashToUsers1733771000001][39m,
+    [36m[class AddTeacherAndAvailability1733772000002][39m,
+    [36m[class AddAdminTable1756431459155][39m,
+    [36m[class AddStudentTable1756431459156][39m,
+    [36m[class AddSchedulingTables1756431459157][39m,
+    [36m[class AddWaitlistTable1756431459158][39m,
+    [36m[class AddPricingSystemTables1756431459159][39m,
+    [36m[class RenameToStripeProductMap1756431459160][39m,
+    [36m[class AddDraftStatuses1756431459161][39m,
+    [36m[class AddStudentPackagesTables1759000000000][39m,
+    [36m[class AddPackageFieldsToBooking1759000000001][39m,
+    [36m[class AddCancellationPolicies1759000000002][39m,
+    [36m[class AddGroupClassesTables1759000000003][39m,
+    [36m[class AddTeacherProfileFields1759000000004][39m,
+    [36m[class GroupClassMultipleLevels1759000000005][39m,
+    [36m[class AddCourseProgramsTables1760000000000][39m,
+    [36m[class AddServiceTypeAndTeacherTierToStripeProductMap1762000000000][39m,
+    [36m[class BundlePackagesMigration1762000000010][39m,
+    [36m[class AddStripeProductMapFKToStudentPackage1762000000020][39m,
+    [36m[class AddPackageUseIdToBooking1762000000030][39m,
+    [36m[class AddAllowanceIdToPackageUse1762000000040][39m
+  ],
+  synchronize: [33mfalse[39m,
+  dropSchema: [33mtrue[39m,
+  logging: [33mfalse[39m
 }
+Target DB for migrations: wordpress_test
+Initializing MigrationTestDataSource...
 
 stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e)
 
@@ -1035,7 +375,10 @@ MigrationTestDataSource.options: {
     [36m[class GroupClassMultipleLevels1759000000005][39m,
     [36m[class AddCourseProgramsTables1760000000000][39m,
     [36m[class AddServiceTypeAndTeacherTierToStripeProductMap1762000000000][39m,
-    [36m[class BundlePackagesMigration1762000000010][39m
+    [36m[class BundlePackagesMigration1762000000010][39m,
+    [36m[class AddStripeProductMapFKToStudentPackage1762000000020][39m,
+    [36m[class AddPackageUseIdToBooking1762000000030][39m,
+    [36m[class AddAllowanceIdToPackageUse1762000000040][39m
   ],
   synchronize: [33mfalse[39m,
   dropSchema: [33mtrue[39m,
@@ -1044,31 +387,7 @@ MigrationTestDataSource.options: {
 Target DB for migrations: wordpress_test
 Initializing MigrationTestDataSource...
 
- ❯ test/database.e2e.spec.ts (2 tests | 2 skipped) 7ms
-   ↓ Database Integration (e2e) > should connect to test database
-   ↓ Database Integration (e2e) > should have access to entities
-stderr | test/package-booking.e2e.spec.ts > Package Booking (e2e)
-Error during MigrationTestDataSource initialization: Error: connect ECONNREFUSED 127.0.0.1:3306
-[90m    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)[39m {
-  errno: [33m-61[39m,
-  code: [32m'ECONNREFUSED'[39m,
-  syscall: [32m'connect'[39m,
-  address: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  fatal: [33mtrue[39m
-}
-
- ❯ test/package-booking.e2e.spec.ts (9 tests | 9 skipped) 7ms
-   ↓ Package Booking (e2e) > GET /packages/my-credits > should return student credits
-   ↓ Package Booking (e2e) > GET /packages/my-credits > should return 401 when user not authenticated
-   ↓ Package Booking (e2e) > POST /payments/book-with-package > should successfully book session with package credit
-   ↓ Package Booking (e2e) > POST /payments/book-with-package > should return 400 when package has no remaining sessions
-   ↓ Package Booking (e2e) > POST /payments/book-with-package > should return 404 when package not found
-   ↓ Package Booking (e2e) > POST /payments/book-with-package > should return 400 when package is expired
-   ↓ Package Booking (e2e) > POST /payments/book-with-package > should return 400 with invalid request body
-   ↓ Package Booking (e2e) > POST /packages/:id/use > should successfully use package for session
-   ↓ Package Booking (e2e) > Concurrency test > should handle concurrent package usage correctly
-stdout | test/payments-session-booking.e2e.spec.ts > PaymentsService.createSessionAndBookingFromMetadata (e2e)
+stdout | test/credit-tiers-integration.e2e.spec.ts > Credit Tier System Integration (e2e)
 
 [TEST SETUP] Running database migrations...
 
@@ -1099,7 +418,10 @@ MigrationTestDataSource.options: {
     [36m[class GroupClassMultipleLevels1759000000005][39m,
     [36m[class AddCourseProgramsTables1760000000000][39m,
     [36m[class AddServiceTypeAndTeacherTierToStripeProductMap1762000000000][39m,
-    [36m[class BundlePackagesMigration1762000000010][39m
+    [36m[class BundlePackagesMigration1762000000010][39m,
+    [36m[class AddStripeProductMapFKToStudentPackage1762000000020][39m,
+    [36m[class AddPackageUseIdToBooking1762000000030][39m,
+    [36m[class AddAllowanceIdToPackageUse1762000000040][39m
   ],
   synchronize: [33mfalse[39m,
   dropSchema: [33mtrue[39m,
@@ -1108,26 +430,49 @@ MigrationTestDataSource.options: {
 Target DB for migrations: wordpress_test
 Initializing MigrationTestDataSource...
 
-stderr | test/payments-session-booking.e2e.spec.ts > PaymentsService.createSessionAndBookingFromMetadata (e2e)
-Error during MigrationTestDataSource initialization: Error: connect ECONNREFUSED 127.0.0.1:3306
-[90m    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)[39m {
-  errno: [33m-61[39m,
-  code: [32m'ECONNREFUSED'[39m,
-  syscall: [32m'connect'[39m,
-  address: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  fatal: [33mtrue[39m
-}
+stdout | test/students-api.e2e.spec.ts > Students API (e2e)
 
- ❯ test/payments-session-booking.e2e.spec.ts (8 tests | 8 skipped) 5ms
-   ↓ PaymentsService.createSessionAndBookingFromMetadata (e2e) > createSessionAndBookingFromMetadata > PRIVATE sessions > should create session and booking in a transaction
-   ↓ PaymentsService.createSessionAndBookingFromMetadata (e2e) > createSessionAndBookingFromMetadata > PRIVATE sessions > should fail if teacher availability validation fails
-   ↓ PaymentsService.createSessionAndBookingFromMetadata (e2e) > createSessionAndBookingFromMetadata > GROUP sessions > should create booking for existing session
-   ↓ PaymentsService.createSessionAndBookingFromMetadata (e2e) > createSessionAndBookingFromMetadata > GROUP sessions > should fail if student does not exist
-   ↓ PaymentsService.createSessionAndBookingFromMetadata (e2e) > createSessionAndBookingFromMetadata > GROUP sessions > should fail if session type mismatch
-   ↓ PaymentsService.createSessionAndBookingFromMetadata (e2e) > createSessionAndBookingFromMetadata > COURSE sessions > should create booking for existing course session
-   ↓ PaymentsService.createSessionAndBookingFromMetadata (e2e) > createSessionAndBookingFromMetadata > Error handling > should handle missing student_id gracefully
-   ↓ PaymentsService.createSessionAndBookingFromMetadata (e2e) > createSessionAndBookingFromMetadata > Error handling > should handle invalid service type for session creation
+[TEST SETUP] Running database migrations...
+
+MigrationTestDataSource.options: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
+  port: [33m3306[39m,
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  entities: [],
+  migrations: [
+    [36m[class InitialSchema1733770000000][39m,
+    [36m[class AddPasswordHashToUsers1733771000001][39m,
+    [36m[class AddTeacherAndAvailability1733772000002][39m,
+    [36m[class AddAdminTable1756431459155][39m,
+    [36m[class AddStudentTable1756431459156][39m,
+    [36m[class AddSchedulingTables1756431459157][39m,
+    [36m[class AddWaitlistTable1756431459158][39m,
+    [36m[class AddPricingSystemTables1756431459159][39m,
+    [36m[class RenameToStripeProductMap1756431459160][39m,
+    [36m[class AddDraftStatuses1756431459161][39m,
+    [36m[class AddStudentPackagesTables1759000000000][39m,
+    [36m[class AddPackageFieldsToBooking1759000000001][39m,
+    [36m[class AddCancellationPolicies1759000000002][39m,
+    [36m[class AddGroupClassesTables1759000000003][39m,
+    [36m[class AddTeacherProfileFields1759000000004][39m,
+    [36m[class GroupClassMultipleLevels1759000000005][39m,
+    [36m[class AddCourseProgramsTables1760000000000][39m,
+    [36m[class AddServiceTypeAndTeacherTierToStripeProductMap1762000000000][39m,
+    [36m[class BundlePackagesMigration1762000000010][39m,
+    [36m[class AddStripeProductMapFKToStudentPackage1762000000020][39m,
+    [36m[class AddPackageUseIdToBooking1762000000030][39m,
+    [36m[class AddAllowanceIdToPackageUse1762000000040][39m
+  ],
+  synchronize: [33mfalse[39m,
+  dropSchema: [33mtrue[39m,
+  logging: [33mfalse[39m
+}
+Target DB for migrations: wordpress_test
+Initializing MigrationTestDataSource...
+
 stdout | test/group-class-booking.e2e.spec.ts > Group Class Booking (e2e)
 
 [TEST SETUP] Running database migrations...
@@ -1159,7 +504,10 @@ MigrationTestDataSource.options: {
     [36m[class GroupClassMultipleLevels1759000000005][39m,
     [36m[class AddCourseProgramsTables1760000000000][39m,
     [36m[class AddServiceTypeAndTeacherTierToStripeProductMap1762000000000][39m,
-    [36m[class BundlePackagesMigration1762000000010][39m
+    [36m[class BundlePackagesMigration1762000000010][39m,
+    [36m[class AddStripeProductMapFKToStudentPackage1762000000020][39m,
+    [36m[class AddPackageUseIdToBooking1762000000030][39m,
+    [36m[class AddAllowanceIdToPackageUse1762000000040][39m
   ],
   synchronize: [33mfalse[39m,
   dropSchema: [33mtrue[39m,
@@ -1168,29 +516,1082 @@ MigrationTestDataSource.options: {
 Target DB for migrations: wordpress_test
 Initializing MigrationTestDataSource...
 
-stderr | test/group-class-booking.e2e.spec.ts > Group Class Booking (e2e)
-Error during MigrationTestDataSource initialization: Error: connect ECONNREFUSED 127.0.0.1:3306
-[90m    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)[39m {
-  errno: [33m-61[39m,
-  code: [32m'ECONNREFUSED'[39m,
-  syscall: [32m'connect'[39m,
-  address: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  fatal: [33mtrue[39m
-}
+stdout | test/waitlist.e2e.spec.ts > Waitlist (e2e) > should allow a student to join a waitlist for a full group class session
+[CONFIG] Test mode detected - Using database: wordpress_test
 
- ❯ test/group-class-booking.e2e.spec.ts (3 tests | 3 skipped) 5ms
+stdout | test/waitlist.e2e.spec.ts > Waitlist (e2e) > should allow a student to join a waitlist for a full group class session
+[AppModule] Loaded 26 entities directly via import
+
+stdout | test/waitlist.e2e.spec.ts > Waitlist (e2e) > should not allow a student to join a waitlist for a session that is not full
+[CONFIG] Test mode detected - Using database: wordpress_test
+
+stdout | test/waitlist.e2e.spec.ts > Waitlist (e2e) > should not allow a student to join a waitlist for a session that is not full
+[AppModule] Loaded 26 entities directly via import
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e)
+Running migrations...
+
+stdout | test/group-class-booking.e2e.spec.ts > Group Class Booking (e2e)
+Running migrations...
+
+stdout | test/waitlist.e2e.spec.ts > Waitlist (e2e) > when a booking is cancelled, the first student on the waitlist is notified
+[CONFIG] Test mode detected - Using database: wordpress_test
+
+stdout | test/students-api.e2e.spec.ts > Students API (e2e)
+Running migrations...
+
+stdout | test/waitlist.e2e.spec.ts > Waitlist (e2e) > when a booking is cancelled, the first student on the waitlist is notified
+[AppModule] Loaded 26 entities directly via import
+
+stdout | test/credit-tiers-integration.e2e.spec.ts > Credit Tier System Integration (e2e)
+Running migrations...
+
+stdout | test/payments-webhook-group-booking.e2e.spec.ts > PaymentsService - Group Session Booking via Package Purchase Webhook
+Running migrations...
+
+stdout | test/database.e2e.spec.ts > Database Integration (e2e)
+Running migrations...
+
+stdout | test/waitlist.e2e.spec.ts > Waitlist (e2e) > admin can promote a student from the waitlist to a booking
+[CONFIG] Test mode detected - Using database: wordpress_test
+
+stdout | test/waitlist.e2e.spec.ts > Waitlist (e2e) > admin can promote a student from the waitlist to a booking
+[AppModule] Loaded 26 entities directly via import
+
+stdout | test/credit-tiers-integration.e2e.spec.ts > Credit Tier System Integration (e2e)
+Migration "AddPasswordHashToUsers1733771000001" failed, error: Duplicate column name 'password_hash'
+
+stdout | test/students-api.e2e.spec.ts > Students API (e2e)
+Migration "AddPasswordHashToUsers1733771000001" failed, error: Duplicate column name 'password_hash'
+
+stdout | test/group-class-booking.e2e.spec.ts > Group Class Booking (e2e)
+Migration "AddPasswordHashToUsers1733771000001" failed, error: Duplicate column name 'password_hash'
+
+ ❯ test/credit-tiers-integration.e2e.spec.ts (22 tests | 22 skipped) 216ms
+   ↓ Credit Tier System Integration (e2e) > GET /packages/compatible-for-session/:sessionId > should return compatible packages for a private session
+   ↓ Credit Tier System Integration (e2e) > GET /packages/compatible-for-session/:sessionId > should return both exact and higher-tier packages for group session
+   ↓ Credit Tier System Integration (e2e) > GET /packages/compatible-for-session/:sessionId > should exclude incompatible packages (group package for private session)
+   ↓ Credit Tier System Integration (e2e) > GET /packages/compatible-for-session/:sessionId > should exclude expired packages
+   ↓ Credit Tier System Integration (e2e) > GET /packages/compatible-for-session/:sessionId > should exclude packages with no remaining sessions
+   ↓ Credit Tier System Integration (e2e) > GET /packages/compatible-for-session/:sessionId > should handle premium teacher sessions correctly
+   ↓ Credit Tier System Integration (e2e) > GET /packages/compatible-for-session/:sessionId > should return 401 when not authenticated
+   ↓ Credit Tier System Integration (e2e) > GET /packages/compatible-for-session/:sessionId > should return 404 for non-existent session
+   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should allow booking with exact-match package
+   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should allow cross-tier booking with confirmation
+   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should reject cross-tier booking without confirmation
+   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should reject booking group package for private session
+   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should calculate correct credits for duration mismatch (60 min session, 30 min credit)
+   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should calculate correct credits for duration mismatch (30 min session, 60 min credit)
+   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should reject booking when insufficient credits
+   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should reject booking with expired package
+   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should reject standard package for premium teacher session
+   ↓ Credit Tier System Integration (e2e) > POST /payments/book-with-package (Tier Validation) > should allow premium package for standard teacher session with confirmation
+   ↓ Credit Tier System Integration (e2e) > Cancellation Refund (Tier System) > should refund to original package when canceling cross-tier booking
+   ↓ Credit Tier System Integration (e2e) > Cancellation Refund (Tier System) > should refund correct number of credits for duration-based booking
+   ↓ Credit Tier System Integration (e2e) > Edge Cases > should handle concurrent booking attempts with last credit
+   ↓ Credit Tier System Integration (e2e) > Edge Cases > should handle package with missing metadata gracefully
+ ❯ test/students-api.e2e.spec.ts (3 tests | 3 skipped) 214ms
+   ↓ Students API (e2e) > GET /api/students/me/upcoming > should return upcoming sessions with correct teacher name
+   ↓ Students API (e2e) > GET /api/students/me/upcoming > should respect limit parameter
+   ↓ Students API (e2e) > GET /api/students/me/upcoming > should return empty array for student with no upcoming sessions
+stdout | test/payments-webhook-group-booking.e2e.spec.ts > PaymentsService - Group Session Booking via Package Purchase Webhook
+Migration "AddPasswordHashToUsers1733771000001" failed, error: Duplicate column name 'password_hash'
+
+ ❯ test/group-class-booking.e2e.spec.ts (3 tests | 3 skipped) 222ms
    ↓ Group Class Booking (e2e) > should create a group class, generate sessions, and see them as available
    ↓ Group Class Booking (e2e) > POST /bookings > should allow a student to book a group class session
    ↓ Group Class Booking (e2e) > POST /bookings > should not allow booking a full group class session
+ ❯ test/payments-webhook-group-booking.e2e.spec.ts (6 tests | 6 skipped) 244ms
+   ↓ PaymentsService - Group Session Booking via Package Purchase Webhook > handlePaymentIntentSucceeded with group session booking metadata > should promote PENDING booking to CONFIRMED when payment has booking_id and session_id
+   ↓ PaymentsService - Group Session Booking via Package Purchase Webhook > handlePaymentIntentSucceeded with group session booking metadata > should handle webhook when booking_id already points to CONFIRMED booking (idempotency)
+   ↓ PaymentsService - Group Session Booking via Package Purchase Webhook > handlePaymentIntentSucceeded with group session booking metadata > should not process if session is not found
+   ↓ PaymentsService - Group Session Booking via Package Purchase Webhook > handlePaymentIntentSucceeded with group session booking metadata > should promote session from DRAFT to SCHEDULED along with booking
+   ↓ PaymentsService - Group Session Booking via Package Purchase Webhook > handlePaymentIntentSucceeded with group session booking metadata > should handle metadata with empty start_at/end_at for group bookings
+   ↓ PaymentsService - Group Session Booking via Package Purchase Webhook > handlePaymentIntentSucceeded with group session booking metadata > should create PackageUse record and deduct credits when promoting booking
+stdout | test/database.e2e.spec.ts > Database Integration (e2e)
+Migration "AddPasswordHashToUsers1733771000001" failed, error: Duplicate column name 'password_hash'
+
+ ❯ test/database.e2e.spec.ts (2 tests | 2 skipped) 282ms
+   ↓ Database Integration (e2e) > should connect to test database
+   ↓ Database Integration (e2e) > should have access to entities
+ ❯ test/waitlist.e2e.spec.ts (4 tests | 4 failed) 284ms
+   × Waitlist (e2e) > should allow a student to join a waitlist for a full group class session 145ms
+     → Table 'wordpress_test.cancellation_policy' doesn't exist
+   × Waitlist (e2e) > should not allow a student to join a waitlist for a session that is not full 22ms
+     → Table 'wordpress_test.cancellation_policy' doesn't exist
+   × Waitlist (e2e) > when a booking is cancelled, the first student on the waitlist is notified 26ms
+     → Table 'wordpress_test.cancellation_policy' doesn't exist
+   × Waitlist (e2e) > admin can promote a student from the waitlist to a booking 91ms
+     → Table 'wordpress_test.cancellation_policy' doesn't exist
+stdout | test/auth-google-start.e2e.spec.ts
+[CONFIG] Test mode detected - Using database: wordpress_test
+db config: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
+  port: [33m3306[39m,
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  synchronize: [33mfalse[39m,
+  logging: [33mfalse[39m,
+  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
+  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
+}
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
+
+stdout | test/auth-google-start.e2e.spec.ts
+[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
+[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
+[TEST SETUP] dotenv result: {
+  parsed: {
+    DB_HOST: [32m'127.0.0.1'[39m,
+    DB_PORT: [32m'3306'[39m,
+    DB_USERNAME: [32m'wordpress'[39m,
+    DB_PASSWORD: [32m'wordpress'[39m,
+    DB_DATABASE: [32m'wordpress_test'[39m,
+    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
+    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
+    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
+    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
+  }
+}
+[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
+process.env.DB_HOST: 127.0.0.1
+[TEST SETUP] Migration setup available. Call runMigrations() if needed.
+
+stdout | test/app.e2e.spec.ts
+[CONFIG] Test mode detected - Using database: wordpress_test
+db config: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
+  port: [33m3306[39m,
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  synchronize: [33mfalse[39m,
+  logging: [33mfalse[39m,
+  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
+  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
+}
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
+
+stdout | test/app.e2e.spec.ts
+[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
+[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
+[TEST SETUP] dotenv result: {
+  parsed: {
+    DB_HOST: [32m'127.0.0.1'[39m,
+    DB_PORT: [32m'3306'[39m,
+    DB_USERNAME: [32m'wordpress'[39m,
+    DB_PASSWORD: [32m'wordpress'[39m,
+    DB_DATABASE: [32m'wordpress_test'[39m,
+    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
+    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
+    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
+    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
+  }
+}
+[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
+process.env.DB_HOST: 127.0.0.1
+[TEST SETUP] Migration setup available. Call runMigrations() if needed.
+
+stdout | test/teacher-availability.e2e.spec.ts
+[CONFIG] Test mode detected - Using database: wordpress_test
+db config: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
+  port: [33m3306[39m,
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  synchronize: [33mfalse[39m,
+  logging: [33mfalse[39m,
+  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
+  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
+}
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
+
+stdout | test/teacher-availability.e2e.spec.ts
+[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
+[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
+[TEST SETUP] dotenv result: {
+  parsed: {
+    DB_HOST: [32m'127.0.0.1'[39m,
+    DB_PORT: [32m'3306'[39m,
+    DB_USERNAME: [32m'wordpress'[39m,
+    DB_PASSWORD: [32m'wordpress'[39m,
+    DB_DATABASE: [32m'wordpress_test'[39m,
+    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
+    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
+    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
+    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
+  }
+}
+[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
+process.env.DB_HOST: 127.0.0.1
+[TEST SETUP] Migration setup available. Call runMigrations() if needed.
+
+stdout | src/common/types/credit-tiers.spec.ts
+[CONFIG] Test mode detected - Using database: wordpress_test
+db config: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
+  port: [33m3306[39m,
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  synchronize: [33mfalse[39m,
+  logging: [33mfalse[39m,
+  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
+  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
+}
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
+
+stdout | src/common/types/credit-tiers.spec.ts
+[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
+[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
+[TEST SETUP] dotenv result: {
+  parsed: {
+    DB_HOST: [32m'127.0.0.1'[39m,
+    DB_PORT: [32m'3306'[39m,
+    DB_USERNAME: [32m'wordpress'[39m,
+    DB_PASSWORD: [32m'wordpress'[39m,
+    DB_DATABASE: [32m'wordpress_test'[39m,
+    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
+    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
+    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
+    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
+  }
+}
+[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
+process.env.DB_HOST: 127.0.0.1
+[TEST SETUP] Migration setup available. Call runMigrations() if needed.
+
+stdout | src/packages/packages.service.spec.ts
+[CONFIG] Test mode detected - Using database: wordpress_test
+db config: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
+  port: [33m3306[39m,
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  synchronize: [33mfalse[39m,
+  logging: [33mfalse[39m,
+  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
+  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
+}
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
+
+stdout | src/packages/packages.service.spec.ts
+[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
+[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
+[TEST SETUP] dotenv result: {
+  parsed: {
+    DB_HOST: [32m'127.0.0.1'[39m,
+    DB_PORT: [32m'3306'[39m,
+    DB_USERNAME: [32m'wordpress'[39m,
+    DB_PASSWORD: [32m'wordpress'[39m,
+    DB_DATABASE: [32m'wordpress_test'[39m,
+    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
+    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
+    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
+    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
+  }
+}
+[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
+process.env.DB_HOST: 127.0.0.1
+[TEST SETUP] Migration setup available. Call runMigrations() if needed.
+
+stdout | src/teachers/teachers.service.spec.ts
+[CONFIG] Test mode detected - Using database: wordpress_test
+db config: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
+  port: [33m3306[39m,
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  synchronize: [33mfalse[39m,
+  logging: [33mfalse[39m,
+  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
+  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
+}
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
+
+stdout | src/teachers/teachers.service.spec.ts
+[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
+[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
+[TEST SETUP] dotenv result: {
+  parsed: {
+    DB_HOST: [32m'127.0.0.1'[39m,
+    DB_PORT: [32m'3306'[39m,
+    DB_USERNAME: [32m'wordpress'[39m,
+    DB_PASSWORD: [32m'wordpress'[39m,
+    DB_DATABASE: [32m'wordpress_test'[39m,
+    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
+    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
+    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
+    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
+  }
+}
+[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
+process.env.DB_HOST: 127.0.0.1
+[TEST SETUP] Migration setup available. Call runMigrations() if needed.
+
+ ❯ src/common/types/credit-tiers.spec.ts (54 tests | 5 failed) 17ms
+   ✓ Credit Tier System > SERVICE_TYPE_BASE_TIERS > should have correct base tier values 1ms
+   ✓ Credit Tier System > getSessionTier > should calculate tier for private session with standard teacher 0ms
+   ✓ Credit Tier System > getSessionTier > should calculate tier for private session with premium teacher 0ms
+   ✓ Credit Tier System > getSessionTier > should calculate tier for group session with standard teacher 0ms
+   ✓ Credit Tier System > getSessionTier > should calculate tier for group session with premium teacher 0ms
+   ✓ Credit Tier System > getSessionTier > should calculate tier for course session 0ms
+   ✓ Credit Tier System > getSessionTier > should handle missing teacher gracefully 0ms
+   ✓ Credit Tier System > getPackageTier > should calculate tier for private package with standard teacher 0ms
+   ✓ Credit Tier System > getPackageTier > should calculate tier for private package with premium teacher 0ms
+   ✓ Credit Tier System > getPackageTier > should calculate tier for group package 0ms
+   ✓ Credit Tier System > getPackageTier > should handle missing metadata gracefully 0ms
+   × Credit Tier System > getPackageTier > should handle numeric teacher tier in metadata 7ms
+     → expected 100 to be 105 // Object.is equality
+   ✓ Credit Tier System > getPackageTier > should handle invalid teacher tier gracefully 0ms
+   ✓ Credit Tier System > canUsePackageForSession > should allow private package for private session (equal tier) 0ms
+   × Credit Tier System > canUsePackageForSession > should allow private package for group session (higher tier) 0ms
+     → expected false to be true // Object.is equality
+   ✓ Credit Tier System > canUsePackageForSession > should NOT allow group package for private session (lower tier) 0ms
+   ✓ Credit Tier System > canUsePackageForSession > should NOT allow any package for course session 0ms
+   ✓ Credit Tier System > canUsePackageForSession > should allow premium private package for standard private session 0ms
+   ✓ Credit Tier System > canUsePackageForSession > should NOT allow standard private package for premium private session 0ms
+   ✓ Credit Tier System > getPackageDisplayLabel > should return "Private Credit" for standard private package 0ms
+   ✓ Credit Tier System > getPackageDisplayLabel > should return "Premium Private Credit" for premium private package 0ms
+   ✓ Credit Tier System > getPackageDisplayLabel > should return "Group Credit" for standard group package 0ms
+   ✓ Credit Tier System > getPackageDisplayLabel > should return "Premium Group Credit" for premium group package 0ms
+   ✓ Credit Tier System > getPackageDisplayLabel > should return "Course Credit" for course package 0ms
+   ✓ Credit Tier System > getPackageDisplayLabel > should handle missing metadata 0ms
+   × Credit Tier System > isCrossTierBooking > should return true when using private credit for group session 0ms
+     → expected false to be true // Object.is equality
+   ✓ Credit Tier System > isCrossTierBooking > should return false when using private credit for private session 0ms
+   ✓ Credit Tier System > isCrossTierBooking > should return false when using group credit for group session 0ms
+   ✓ Credit Tier System > isCrossTierBooking > should return false for invalid tier combinations 0ms
+   ✓ Credit Tier System > isCrossTierBooking > should return true when using premium private for standard private 0ms
+   × Credit Tier System > getCrossTierWarningMessage > should return warning message for private credit used for group class 3ms
+     → the given combination of arguments (null and string) is invalid for this assertion. You can use an array, a map, an object, a set, a string, or a weakset instead of a string
+   ✓ Credit Tier System > getCrossTierWarningMessage > should return null for same-tier booking 0ms
+   ✓ Credit Tier System > getCrossTierWarningMessage > should return warning for premium private used for standard private 0ms
+   ✓ Credit Tier System > calculateCreditsRequired > should return 1 for exact match (60 min session, 60 min credit) 0ms
+   ✓ Credit Tier System > calculateCreditsRequired > should return 2 for double duration (60 min session, 30 min credit) 0ms
+   ✓ Credit Tier System > calculateCreditsRequired > should round up for partial credit (45 min session, 60 min credit) 0ms
+   ✓ Credit Tier System > calculateCreditsRequired > should round up for partial credit (90 min session, 60 min credit) 0ms
+   ✓ Credit Tier System > calculateCreditsRequired > should handle 30 min credit unit correctly 0ms
+   ✓ Credit Tier System > calculateCreditsRequired > should handle edge case of 1 minute over 0ms
+   ✓ Credit Tier System > hasDurationMismatch > should return false for exact match 0ms
+   ✓ Credit Tier System > hasDurationMismatch > should return true for mismatch (session shorter than credit) 0ms
+   ✓ Credit Tier System > hasDurationMismatch > should return true for mismatch (session longer than credit) 0ms
+   ✓ Credit Tier System > hasDurationMismatch > should return true for any non-exact match 0ms
+   ✓ Credit Tier System > getDurationMismatchWarning > should return null for exact match 0ms
+   ✓ Credit Tier System > getDurationMismatchWarning > should warn about unused minutes when session is shorter 0ms
+   ✓ Credit Tier System > getDurationMismatchWarning > should warn about multiple credits when session is longer 0ms
+   ✓ Credit Tier System > getDurationMismatchWarning > should handle 30-min credit for 60-min session 0ms
+   ✓ Credit Tier System > getDurationMismatchWarning > should handle partial credit usage correctly 0ms
+   × Credit Tier System > Integration scenarios > Scenario: Student uses private credit for group class 0ms
+     → expected false to be true // Object.is equality
+   ✓ Credit Tier System > Integration scenarios > Scenario: Student tries to use group credit for private class 0ms
+   ✓ Credit Tier System > Integration scenarios > Scenario: 60-min credit for 30-min session 0ms
+   ✓ Credit Tier System > Integration scenarios > Scenario: 30-min credit for 60-min session 0ms
+   ✓ Credit Tier System > Integration scenarios > Scenario: Premium teacher requires premium package 1ms
+   ✓ Credit Tier System > Integration scenarios > Scenario: Premium package can book standard teacher 0ms
+stdout | src/packages/packages.service.spec.ts > PackagesService > getActivePackagesForStudent > should return active packages for a student
+Fetching active packages for student [33m1[39m
+
+stdout | src/packages/packages.service.spec.ts > PackagesService > getActivePackagesForStudent > should return active packages for a student
+withremaining [
+  {
+    id: [33m1[39m,
+    packageName: [32m'5-class pack'[39m,
+    totalSessions: [33m5[39m,
+    remainingSessions: [33m3[39m,
+    purchasedAt: [32m'2025-10-24T18:29:47.827Z'[39m,
+    expiresAt: [32m'2025-10-25T18:29:47.827Z'[39m,
+    allowances: []
+  }
+]
+
+stdout | src/packages/packages.service.spec.ts > PackagesService > getActivePackagesForStudent > should filter out expired packages
+Fetching active packages for student [33m1[39m
+
+stdout | src/packages/packages.service.spec.ts > PackagesService > getActivePackagesForStudent > should filter out expired packages
+withremaining []
+
+stdout | src/packages/packages.service.spec.ts > PackagesService > getActivePackagesForStudent > should filter out packages with no remaining sessions
+Fetching active packages for student [33m1[39m
+
+stdout | src/packages/packages.service.spec.ts > PackagesService > getActivePackagesForStudent > should filter out packages with no remaining sessions
+withremaining [
+  {
+    id: [33m1[39m,
+    packageName: [32m'Used up pack'[39m,
+    totalSessions: [33m5[39m,
+    remainingSessions: [33m0[39m,
+    purchasedAt: [32m'2025-10-24T18:29:47.833Z'[39m,
+    expiresAt: [1mnull[22m,
+    allowances: []
+  }
+]
+
+ ❯ src/packages/packages.service.spec.ts (10 tests | 4 failed) 29ms
+   ✓ PackagesService > should be defined 9ms
+   × PackagesService > getActivePackagesForStudent > should return active packages for a student 5ms
+     → expected { id: 1, …(6) } to have property "creditUnitMinutes"
+   ✓ PackagesService > getActivePackagesForStudent > should filter out expired packages 1ms
+   ✓ PackagesService > getActivePackagesForStudent > should filter out packages with no remaining sessions 1ms
+   ✓ PackagesService > usePackageForSession > should successfully use package for session with happy path 2ms
+   × PackagesService > usePackageForSession > should throw NotFoundException when package not found 4ms
+     → expected error to be instance of NotFoundException
+   × PackagesService > usePackageForSession > should throw BadRequestException when no remaining sessions 1ms
+     → expected error to be instance of BadRequestException
+   × PackagesService > usePackageForSession > should throw BadRequestException when package is expired 1ms
+     → expected error to be instance of BadRequestException
+   ✓ PackagesService > linkUseToBooking > should successfully link use to booking 1ms
+   ✓ PackagesService > linkUseToBooking > should return null when use not found 1ms
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e)
+✓ Migration complete:
+  - Created 0 package allowances
+
+stdout | src/teachers/teachers.service.spec.ts > TeachersService > previewTeacherAvailability > should generate correct preview windows for spanning rules
+Found availabilities: [
+  {
+    id: [33m1[39m,
+    teacherId: [33m1[39m,
+    kind: [32m'RECURRING'[39m,
+    weekday: [33m3[39m,
+    startTimeMinutes: [33m1080[39m,
+    endTimeMinutes: [33m1680[39m,
+    isActive: [33mtrue[39m,
+    createdAt: [35m2025-10-24T18:29:47.860Z[39m,
+    updatedAt: [35m2025-10-24T18:29:47.860Z[39m
+  }
+]
+
+stdout | src/teachers/teachers.service.spec.ts > TeachersService > previewTeacherAvailability > should generate correct preview windows for normal rules
+Found availabilities: [
+  {
+    id: [33m1[39m,
+    teacherId: [33m1[39m,
+    kind: [32m'RECURRING'[39m,
+    weekday: [33m1[39m,
+    startTimeMinutes: [33m540[39m,
+    endTimeMinutes: [33m1020[39m,
+    isActive: [33mtrue[39m,
+    createdAt: [35m2025-10-24T18:29:47.898Z[39m,
+    updatedAt: [35m2025-10-24T18:29:47.898Z[39m
+  }
+]
+
+stdout | src/teachers/teachers.service.spec.ts > TeachersService > previewTeacherAvailability > should handle multiple days with spanning rules
+Found availabilities: [
+  {
+    id: [33m1[39m,
+    teacherId: [33m1[39m,
+    kind: [32m'RECURRING'[39m,
+    weekday: [33m3[39m,
+    startTimeMinutes: [33m1080[39m,
+    endTimeMinutes: [33m1680[39m,
+    isActive: [33mtrue[39m,
+    createdAt: [35m2025-10-24T18:29:47.900Z[39m,
+    updatedAt: [35m2025-10-24T18:29:47.900Z[39m
+  }
+]
+
+stdout | src/teachers/teachers.service.spec.ts > TeachersService > previewTeacherAvailability > should throw BadRequestException for range exceeding 90 days
+Found availabilities: []
+
+ ❯ src/teachers/teachers.service.spec.ts (11 tests) 36ms
+   ✓ TeachersService > should be defined 9ms
+   ✓ TeachersService > updateTeacherAvailability > should handle rules that span midnight 6ms
+   ✓ TeachersService > updateTeacherAvailability > should handle normal rules without spanning 4ms
+   ✓ TeachersService > updateTeacherAvailability > should handle exceptions that span midnight 3ms
+   ✓ TeachersService > updateTeacherAvailability > should throw NotFoundException if teacher not found 2ms
+   ✓ TeachersService > getTeacherAvailability > should return wrapped endTime for spanning rules 1ms
+   ✓ TeachersService > previewTeacherAvailability > should generate correct preview windows for spanning rules 3ms
+   ✓ TeachersService > previewTeacherAvailability > should generate correct preview windows for normal rules 4ms
+   ✓ TeachersService > previewTeacherAvailability > should handle multiple days with spanning rules 2ms
+   ✓ TeachersService > previewTeacherAvailability > should throw NotFoundException if teacher not found 1ms
+   ✓ TeachersService > previewTeacherAvailability > should throw BadRequestException for range exceeding 90 days 0ms
+stdout | test/payments-session-booking.e2e.spec.ts
+[CONFIG] Test mode detected - Using database: wordpress_test
+db config: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
+  port: [33m3306[39m,
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  synchronize: [33mfalse[39m,
+  logging: [33mfalse[39m,
+  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
+  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
+}
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
+
+stdout | test/payments-session-booking.e2e.spec.ts
+[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
+[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
+[TEST SETUP] dotenv result: {
+  parsed: {
+    DB_HOST: [32m'127.0.0.1'[39m,
+    DB_PORT: [32m'3306'[39m,
+    DB_USERNAME: [32m'wordpress'[39m,
+    DB_PASSWORD: [32m'wordpress'[39m,
+    DB_DATABASE: [32m'wordpress_test'[39m,
+    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
+    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
+    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
+    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
+  }
+}
+[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
+process.env.DB_HOST: 127.0.0.1
+[TEST SETUP] Migration setup available. Call runMigrations() if needed.
+
+stdout | test/teacher-availability.e2e.spec.ts > TeacherAvailabilityService (e2e)
+
+[TEST SETUP] Running database migrations...
+
+MigrationTestDataSource.options: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
+  port: [33m3306[39m,
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  entities: [],
+  migrations: [
+    [36m[class InitialSchema1733770000000][39m,
+    [36m[class AddPasswordHashToUsers1733771000001][39m,
+    [36m[class AddTeacherAndAvailability1733772000002][39m,
+    [36m[class AddAdminTable1756431459155][39m,
+    [36m[class AddStudentTable1756431459156][39m,
+    [36m[class AddSchedulingTables1756431459157][39m,
+    [36m[class AddWaitlistTable1756431459158][39m,
+    [36m[class AddPricingSystemTables1756431459159][39m,
+    [36m[class RenameToStripeProductMap1756431459160][39m,
+    [36m[class AddDraftStatuses1756431459161][39m,
+    [36m[class AddStudentPackagesTables1759000000000][39m,
+    [36m[class AddPackageFieldsToBooking1759000000001][39m,
+    [36m[class AddCancellationPolicies1759000000002][39m,
+    [36m[class AddGroupClassesTables1759000000003][39m,
+    [36m[class AddTeacherProfileFields1759000000004][39m,
+    [36m[class GroupClassMultipleLevels1759000000005][39m,
+    [36m[class AddCourseProgramsTables1760000000000][39m,
+    [36m[class AddServiceTypeAndTeacherTierToStripeProductMap1762000000000][39m,
+    [36m[class BundlePackagesMigration1762000000010][39m,
+    [36m[class AddStripeProductMapFKToStudentPackage1762000000020][39m,
+    [36m[class AddPackageUseIdToBooking1762000000030][39m,
+    [36m[class AddAllowanceIdToPackageUse1762000000040][39m
+  ],
+  synchronize: [33mfalse[39m,
+  dropSchema: [33mtrue[39m,
+  logging: [33mfalse[39m
+}
+Target DB for migrations: wordpress_test
+Initializing MigrationTestDataSource...
+
+stdout | test/app.e2e.spec.ts > AppController (e2e) > / (GET)
+[CONFIG] Test mode detected - Using database: wordpress_test
+
+stdout | test/auth-google-start.e2e.spec.ts > Auth Google Start Redirect (e2e)
+[CONFIG] Test mode detected - Using database: wordpress_test
+
+stdout | test/app.e2e.spec.ts > AppController (e2e) > / (GET)
+[AppModule] Loaded 26 entities directly via import
+
+stdout | test/auth-google-start.e2e.spec.ts > Auth Google Start Redirect (e2e)
+[AppModule] Loaded 26 entities directly via import
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e)
+Migrations complete.
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e)
+MigrationTestDataSource destroyed.
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e) > GET /packages/my-credits > should return student credits
+[CONFIG] Test mode detected - Using database: wordpress_test
+
+stdout | test/auth-google-start.e2e.spec.ts > Auth Google Start Redirect (e2e)
+
+[TEST SETUP] Running database migrations...
+
+MigrationTestDataSource.options: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
+  port: [33m3306[39m,
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  entities: [],
+  migrations: [
+    [36m[class InitialSchema1733770000000][39m,
+    [36m[class AddPasswordHashToUsers1733771000001][39m,
+    [36m[class AddTeacherAndAvailability1733772000002][39m,
+    [36m[class AddAdminTable1756431459155][39m,
+    [36m[class AddStudentTable1756431459156][39m,
+    [36m[class AddSchedulingTables1756431459157][39m,
+    [36m[class AddWaitlistTable1756431459158][39m,
+    [36m[class AddPricingSystemTables1756431459159][39m,
+    [36m[class RenameToStripeProductMap1756431459160][39m,
+    [36m[class AddDraftStatuses1756431459161][39m,
+    [36m[class AddStudentPackagesTables1759000000000][39m,
+    [36m[class AddPackageFieldsToBooking1759000000001][39m,
+    [36m[class AddCancellationPolicies1759000000002][39m,
+    [36m[class AddGroupClassesTables1759000000003][39m,
+    [36m[class AddTeacherProfileFields1759000000004][39m,
+    [36m[class GroupClassMultipleLevels1759000000005][39m,
+    [36m[class AddCourseProgramsTables1760000000000][39m,
+    [36m[class AddServiceTypeAndTeacherTierToStripeProductMap1762000000000][39m,
+    [36m[class BundlePackagesMigration1762000000010][39m,
+    [36m[class AddStripeProductMapFKToStudentPackage1762000000020][39m,
+    [36m[class AddPackageUseIdToBooking1762000000030][39m,
+    [36m[class AddAllowanceIdToPackageUse1762000000040][39m
+  ],
+  synchronize: [33mfalse[39m,
+  dropSchema: [33mtrue[39m,
+  logging: [33mfalse[39m
+}
+Target DB for migrations: wordpress_test
+Initializing MigrationTestDataSource...
+
+stdout | test/database-connection.e2e.spec.ts
+[CONFIG] Test mode detected - Using database: wordpress_test
+db config: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
+  port: [33m3306[39m,
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  synchronize: [33mfalse[39m,
+  logging: [33mfalse[39m,
+  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
+  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
+}
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
+
+stdout | test/database-connection.e2e.spec.ts
+[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
+[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
+[TEST SETUP] dotenv result: {
+  parsed: {
+    DB_HOST: [32m'127.0.0.1'[39m,
+    DB_PORT: [32m'3306'[39m,
+    DB_USERNAME: [32m'wordpress'[39m,
+    DB_PASSWORD: [32m'wordpress'[39m,
+    DB_DATABASE: [32m'wordpress_test'[39m,
+    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
+    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
+    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
+    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
+  }
+}
+[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
+process.env.DB_HOST: 127.0.0.1
+[TEST SETUP] Migration setup available. Call runMigrations() if needed.
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e) > GET /packages/my-credits > should return student credits
+[AppModule] Loaded 26 entities directly via import
+
+ ❯ test/app.e2e.spec.ts (1 test | 1 failed) 126ms
+   × AppController (e2e) > / (GET) 125ms
+     → getHttpServer is not defined
+stdout | src/sessions/services/sessions.service.spec.ts
+[CONFIG] Test mode detected - Using database: wordpress_test
+db config: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
+  port: [33m3306[39m,
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  synchronize: [33mfalse[39m,
+  logging: [33mfalse[39m,
+  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
+  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
+}
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
+
+stdout | src/sessions/services/sessions.service.spec.ts
+[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
+[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
+[TEST SETUP] dotenv result: {
+  parsed: {
+    DB_HOST: [32m'127.0.0.1'[39m,
+    DB_PORT: [32m'3306'[39m,
+    DB_USERNAME: [32m'wordpress'[39m,
+    DB_PASSWORD: [32m'wordpress'[39m,
+    DB_DATABASE: [32m'wordpress_test'[39m,
+    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
+    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
+    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
+    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
+  }
+}
+[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
+process.env.DB_HOST: 127.0.0.1
+[TEST SETUP] Migration setup available. Call runMigrations() if needed.
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e) > GET /packages/my-credits > should return 401 when user not authenticated
+[CONFIG] Test mode detected - Using database: wordpress_test
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e) > GET /packages/my-credits > should return 401 when user not authenticated
+[AppModule] Loaded 26 entities directly via import
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e) > POST /payments/book-with-package > should successfully book session with package credit
+[CONFIG] Test mode detected - Using database: wordpress_test
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e) > POST /payments/book-with-package > should successfully book session with package credit
+[AppModule] Loaded 26 entities directly via import
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e) > POST /payments/book-with-package > should return 400 when package has no remaining sessions
+[CONFIG] Test mode detected - Using database: wordpress_test
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e) > POST /payments/book-with-package > should return 400 when package has no remaining sessions
+[AppModule] Loaded 26 entities directly via import
+
+stdout | test/teacher-availability.e2e.spec.ts > TeacherAvailabilityService (e2e)
+Running migrations...
+
+stdout | test/auth-google-start.e2e.spec.ts > Auth Google Start Redirect (e2e)
+Running migrations...
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e) > POST /payments/book-with-package > should return 404 when package not found
+[CONFIG] Test mode detected - Using database: wordpress_test
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e) > POST /payments/book-with-package > should return 404 when package not found
+[AppModule] Loaded 26 entities directly via import
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e) > POST /payments/book-with-package > should return 400 when package is expired
+[CONFIG] Test mode detected - Using database: wordpress_test
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e) > POST /payments/book-with-package > should return 400 when package is expired
+[AppModule] Loaded 26 entities directly via import
+
+stdout | src/sessions/services/sessions.service.spec.ts > SessionsService > validateAvailability > should throw BadRequestException on database error
+Error validating session: Error: Database connection failed
+    at [90m/Users/davidcook/personal/thrive-wp/apps/nestjs/[39msrc/sessions/services/sessions.service.spec.ts:189:9
+    at file:///Users/davidcook/personal/thrive-wp/node_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:155:11
+    at file:///Users/davidcook/personal/thrive-wp/node_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:752:26
+    at file:///Users/davidcook/personal/thrive-wp/node_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:1897:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/davidcook/personal/thrive-wp/node_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:1863:10)
+    at runTest (file:///Users/davidcook/personal/thrive-wp/node_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:1574:12)
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at runSuite (file:///Users/davidcook/personal/thrive-wp/node_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:1729:8)
+    at runSuite (file:///Users/davidcook/personal/thrive-wp/node_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:1729:8)
+
+stdout | test/teacher-availability.e2e.spec.ts > TeacherAvailabilityService (e2e)
+Migration "AddPasswordHashToUsers1733771000001" failed, error: Duplicate column name 'password_hash'
+
+ ✓ src/sessions/services/sessions.service.spec.ts (8 tests) 16ms
+ ❯ test/teacher-availability.e2e.spec.ts (13 tests | 13 skipped) 465ms
+   ↓ TeacherAvailabilityService (e2e) > validateAvailability > should validate successfully when teacher has ONE_OFF availability
+   ↓ TeacherAvailabilityService (e2e) > validateAvailability > should validate successfully when teacher has RECURRING availability
+   ↓ TeacherAvailabilityService (e2e) > validateAvailability > should fail when teacher has a blackout during requested time
+   ↓ TeacherAvailabilityService (e2e) > validateAvailability > should fail when teacher has a conflicting booking
+   ↓ TeacherAvailabilityService (e2e) > validateAvailability > should fail when teacher is inactive
+   ↓ TeacherAvailabilityService (e2e) > validateAvailability > should fail when teacher does not exist
+   ↓ TeacherAvailabilityService (e2e) > validateAvailability > should fail when teacher has no availability
+   ↓ TeacherAvailabilityService (e2e) > validateAvailability > should fail when RECURRING availability weekday does not match
+   ↓ TeacherAvailabilityService (e2e) > validateAvailability > should fail when RECURRING availability time does not match
+   ↓ TeacherAvailabilityService (e2e) > previewTeacherAvailability (integration) > should correctly exclude time slots that overlap with scheduled sessions
+   ↓ TeacherAvailabilityService (e2e) > previewTeacherAvailability (integration) > should include full availability when no sessions are scheduled
+   ↓ TeacherAvailabilityService (e2e) > previewTeacherAvailability (integration) > should exclude time slots that overlap with blackouts
+   ↓ TeacherAvailabilityService (e2e) > previewTeacherAvailability (integration) > should handle multiple teachers with different availabilities and bookings
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e) > POST /payments/book-with-package > should return 400 with invalid request body
+[CONFIG] Test mode detected - Using database: wordpress_test
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e) > POST /payments/book-with-package > should return 400 with invalid request body
+[AppModule] Loaded 26 entities directly via import
+
+stdout | src/users/users.service.spec.ts
+[CONFIG] Test mode detected - Using database: wordpress_test
+db config: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
+  port: [33m3306[39m,
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  synchronize: [33mfalse[39m,
+  logging: [33mfalse[39m,
+  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
+  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
+}
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
+
+stdout | src/users/users.service.spec.ts
+[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
+[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
+[TEST SETUP] dotenv result: {
+  parsed: {
+    DB_HOST: [32m'127.0.0.1'[39m,
+    DB_PORT: [32m'3306'[39m,
+    DB_USERNAME: [32m'wordpress'[39m,
+    DB_PASSWORD: [32m'wordpress'[39m,
+    DB_DATABASE: [32m'wordpress_test'[39m,
+    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
+    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
+    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
+    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
+  }
+}
+[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
+process.env.DB_HOST: 127.0.0.1
+[TEST SETUP] Migration setup available. Call runMigrations() if needed.
+
+stdout | test/payments-session-booking.e2e.spec.ts > PaymentsService.createSessionAndBookingFromMetadata (e2e)
+
+[TEST SETUP] Running database migrations...
+
+MigrationTestDataSource.options: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
+  port: [33m3306[39m,
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  entities: [],
+  migrations: [
+    [36m[class InitialSchema1733770000000][39m,
+    [36m[class AddPasswordHashToUsers1733771000001][39m,
+    [36m[class AddTeacherAndAvailability1733772000002][39m,
+    [36m[class AddAdminTable1756431459155][39m,
+    [36m[class AddStudentTable1756431459156][39m,
+    [36m[class AddSchedulingTables1756431459157][39m,
+    [36m[class AddWaitlistTable1756431459158][39m,
+    [36m[class AddPricingSystemTables1756431459159][39m,
+    [36m[class RenameToStripeProductMap1756431459160][39m,
+    [36m[class AddDraftStatuses1756431459161][39m,
+    [36m[class AddStudentPackagesTables1759000000000][39m,
+    [36m[class AddPackageFieldsToBooking1759000000001][39m,
+    [36m[class AddCancellationPolicies1759000000002][39m,
+    [36m[class AddGroupClassesTables1759000000003][39m,
+    [36m[class AddTeacherProfileFields1759000000004][39m,
+    [36m[class GroupClassMultipleLevels1759000000005][39m,
+    [36m[class AddCourseProgramsTables1760000000000][39m,
+    [36m[class AddServiceTypeAndTeacherTierToStripeProductMap1762000000000][39m,
+    [36m[class BundlePackagesMigration1762000000010][39m,
+    [36m[class AddStripeProductMapFKToStudentPackage1762000000020][39m,
+    [36m[class AddPackageUseIdToBooking1762000000030][39m,
+    [36m[class AddAllowanceIdToPackageUse1762000000040][39m
+  ],
+  synchronize: [33mfalse[39m,
+  dropSchema: [33mtrue[39m,
+  logging: [33mfalse[39m
+}
+Target DB for migrations: wordpress_test
+Initializing MigrationTestDataSource...
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e) > POST /packages/:id/use with bookingData > should successfully create session and book with package
+[CONFIG] Test mode detected - Using database: wordpress_test
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e) > POST /packages/:id/use with bookingData > should successfully create session and book with package
+[AppModule] Loaded 26 entities directly via import
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e) > Concurrency test for POST /bookings > should handle concurrent booking requests correctly
+[CONFIG] Test mode detected - Using database: wordpress_test
+
+stdout | test/package-booking.e2e.spec.ts > Package Booking (e2e) > Concurrency test for POST /bookings > should handle concurrent booking requests correctly
+[AppModule] Loaded 26 entities directly via import
+
+stdout | test/auth-google-start.e2e.spec.ts > Auth Google Start Redirect (e2e)
+Migration "AddSchedulingTables1756431459157" failed, error: Can't create table `wordpress_test`.`course_teacher` (errno: 150 "Foreign key constraint is incorrectly formed")
+
+ ❯ test/auth-google-start.e2e.spec.ts (3 tests | 3 skipped) 646ms
+   ↓ Auth Google Start Redirect (e2e) > stores same-origin redirect path when provided as absolute URL
+   ↓ Auth Google Start Redirect (e2e) > preserves already-encoded query values without normalizing them
+   ↓ Auth Google Start Redirect (e2e) > ignores redirects for other origins
+ ❯ test/package-booking.e2e.spec.ts (9 tests | 9 failed) 2206ms
+   × Package Booking (e2e) > GET /packages/my-credits > should return student credits 167ms
+     → Table 'wordpress_test.package_allowance' doesn't exist
+   × Package Booking (e2e) > GET /packages/my-credits > should return 401 when user not authenticated 68ms
+     → Table 'wordpress_test.cancellation_policy' doesn't exist
+   × Package Booking (e2e) > POST /payments/book-with-package > should successfully book session with package credit 45ms
+     → Table 'wordpress_test.stripe_product_map' doesn't exist
+   × Package Booking (e2e) > POST /payments/book-with-package > should return 400 when package has no remaining sessions 29ms
+     → Table 'wordpress_test.user' doesn't exist
+   × Package Booking (e2e) > POST /payments/book-with-package > should return 404 when package not found 31ms
+     → Unknown column 'User.password_hash' in 'SELECT'
+   × Package Booking (e2e) > POST /payments/book-with-package > should return 400 when package is expired 55ms
+     → Table 'wordpress_test.student' doesn't exist
+   × Package Booking (e2e) > POST /payments/book-with-package > should return 400 with invalid request body 101ms
+     → Unknown column 'Student.stripe_customer_id' in 'SELECT'
+   × Package Booking (e2e) > POST /packages/:id/use with bookingData > should successfully create session and book with package 33ms
+     → Table 'wordpress_test.admin' doesn't exist
+   × Package Booking (e2e) > Concurrency test for POST /bookings > should handle concurrent booking requests correctly 114ms
+     → Table 'wordpress_test.user' doesn't exist
+stdout | test/payments-session-booking.e2e.spec.ts > PaymentsService.createSessionAndBookingFromMetadata (e2e)
+Running migrations...
+
+stdout | test/database-connection.e2e.spec.ts > Database Connection (e2e)
+[CONFIG] Test mode detected - Using database: wordpress_test
+
+stdout | test/database-connection.e2e.spec.ts > Database Connection (e2e)
+[AppModule] Loaded 26 entities directly via import
+
+stdout | src/group-classes/group-classes.service.spec.ts
+[CONFIG] Test mode detected - Using database: wordpress_test
+db config: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
+  port: [33m3306[39m,
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  synchronize: [33mfalse[39m,
+  logging: [33mfalse[39m,
+  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
+  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
+}
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
+
+stdout | src/group-classes/group-classes.service.spec.ts
+[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
+[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
+[TEST SETUP] dotenv result: {
+  parsed: {
+    DB_HOST: [32m'127.0.0.1'[39m,
+    DB_PORT: [32m'3306'[39m,
+    DB_USERNAME: [32m'wordpress'[39m,
+    DB_PASSWORD: [32m'wordpress'[39m,
+    DB_DATABASE: [32m'wordpress_test'[39m,
+    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
+    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
+    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
+    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
+  }
+}
+[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
+process.env.DB_HOST: 127.0.0.1
+[TEST SETUP] Migration setup available. Call runMigrations() if needed.
+
+ ✓ src/users/users.service.spec.ts (10 tests) 21ms
+ ✓ test/database-connection.e2e.spec.ts (1 test) 151ms
+stdout | src/waitlists/waitlists.service.spec.ts
+[CONFIG] Test mode detected - Using database: wordpress_test
+db config: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
+  port: [33m3306[39m,
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  synchronize: [33mfalse[39m,
+  logging: [33mfalse[39m,
+  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
+  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
+}
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
+
+stdout | src/waitlists/waitlists.service.spec.ts
+[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
+[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
+[TEST SETUP] dotenv result: {
+  parsed: {
+    DB_HOST: [32m'127.0.0.1'[39m,
+    DB_PORT: [32m'3306'[39m,
+    DB_USERNAME: [32m'wordpress'[39m,
+    DB_PASSWORD: [32m'wordpress'[39m,
+    DB_DATABASE: [32m'wordpress_test'[39m,
+    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
+    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
+    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
+    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
+  }
+}
+[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
+process.env.DB_HOST: 127.0.0.1
+[TEST SETUP] Migration setup available. Call runMigrations() if needed.
+
+stdout | src/auth/auth.service.spec.ts
+[CONFIG] Test mode detected - Using database: wordpress_test
+db config: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
+  port: [33m3306[39m,
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  synchronize: [33mfalse[39m,
+  logging: [33mfalse[39m,
+  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
+  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
+}
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
+
+stdout | src/auth/auth.service.spec.ts
+[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
+[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
+[TEST SETUP] dotenv result: {
+  parsed: {
+    DB_HOST: [32m'127.0.0.1'[39m,
+    DB_PORT: [32m'3306'[39m,
+    DB_USERNAME: [32m'wordpress'[39m,
+    DB_PASSWORD: [32m'wordpress'[39m,
+    DB_DATABASE: [32m'wordpress_test'[39m,
+    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
+    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
+    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
+    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
+  }
+}
+[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
+process.env.DB_HOST: 127.0.0.1
+[TEST SETUP] Migration setup available. Call runMigrations() if needed.
+
+stdout | src/payments/payments.controller.spec.ts
+[CONFIG] Test mode detected - Using database: wordpress_test
+db config: {
+  type: [32m'mysql'[39m,
+  host: [32m'127.0.0.1'[39m,
+  port: [33m3306[39m,
+  username: [32m'wordpress'[39m,
+  password: [32m'wordpress'[39m,
+  database: [32m'wordpress_test'[39m,
+  synchronize: [33mfalse[39m,
+  logging: [33mfalse[39m,
+  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
+  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
+}
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
+
+stdout | src/payments/payments.controller.spec.ts
+[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
+[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
+[TEST SETUP] dotenv result: {
+  parsed: {
+    DB_HOST: [32m'127.0.0.1'[39m,
+    DB_PORT: [32m'3306'[39m,
+    DB_USERNAME: [32m'wordpress'[39m,
+    DB_PASSWORD: [32m'wordpress'[39m,
+    DB_DATABASE: [32m'wordpress_test'[39m,
+    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
+    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
+    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
+    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
+  }
+}
+[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
+process.env.DB_HOST: 127.0.0.1
+[TEST SETUP] Migration setup available. Call runMigrations() if needed.
+
+ ✓ src/group-classes/group-classes.service.spec.ts (6 tests | 1 skipped) 26ms
 stdout | src/waitlists/waitlists.service.spec.ts > WaitlistsService > notifyWaitlistMember > should update notifiedAt and notificationExpiresAt fields
 Notifying student 1 about opening in session 1
 
 stdout | src/waitlists/waitlists.service.spec.ts > WaitlistsService > handleBookingCancellation > should notify first waitlist member when booking is cancelled
 Notifying student 1 about opening in session undefined
 
- ✓ src/waitlists/waitlists.service.spec.ts (11 tests) 100ms
-stdout | src/sessions/services/sessions.service.spec.ts
+ ✓ src/payments/payments.controller.spec.ts (5 tests) 4ms
+ ✓ src/waitlists/waitlists.service.spec.ts (11 tests) 28ms
+stdout | src/common/types/class-types.spec.ts
 [CONFIG] Test mode detected - Using database: wordpress_test
 db config: {
   type: [32m'mysql'[39m,
@@ -1204,81 +1605,9 @@ db config: {
   entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
   migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
 }
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
 
-stdout | src/sessions/services/sessions.service.spec.ts
-[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
-[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
-[TEST SETUP] dotenv result: {
-  parsed: {
-    DB_HOST: [32m'127.0.0.1'[39m,
-    DB_PORT: [32m'3306'[39m,
-    DB_USERNAME: [32m'wordpress'[39m,
-    DB_PASSWORD: [32m'wordpress'[39m,
-    DB_DATABASE: [32m'wordpress_test'[39m,
-    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
-    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
-    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
-    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
-  }
-}
-[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
-process.env.DB_HOST: 127.0.0.1
-[TEST SETUP] Migration setup available. Call runMigrations() if needed.
-
-stdout | src/payments/payments.controller.spec.ts
-[CONFIG] Test mode detected - Using database: wordpress_test
-db config: {
-  type: [32m'mysql'[39m,
-  host: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  username: [32m'wordpress'[39m,
-  password: [32m'wordpress'[39m,
-  database: [32m'wordpress_test'[39m,
-  synchronize: [33mfalse[39m,
-  logging: [33mfalse[39m,
-  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
-  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
-}
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
-
-stdout | src/payments/payments.controller.spec.ts
-[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
-[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
-[TEST SETUP] dotenv result: {
-  parsed: {
-    DB_HOST: [32m'127.0.0.1'[39m,
-    DB_PORT: [32m'3306'[39m,
-    DB_USERNAME: [32m'wordpress'[39m,
-    DB_PASSWORD: [32m'wordpress'[39m,
-    DB_DATABASE: [32m'wordpress_test'[39m,
-    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
-    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
-    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
-    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
-  }
-}
-[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
-process.env.DB_HOST: 127.0.0.1
-[TEST SETUP] Migration setup available. Call runMigrations() if needed.
-
-stdout | src/auth/auth.service.spec.ts
-[CONFIG] Test mode detected - Using database: wordpress_test
-db config: {
-  type: [32m'mysql'[39m,
-  host: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  username: [32m'wordpress'[39m,
-  password: [32m'wordpress'[39m,
-  database: [32m'wordpress_test'[39m,
-  synchronize: [33mfalse[39m,
-  logging: [33mfalse[39m,
-  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
-  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
-}
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
-
-stdout | src/auth/auth.service.spec.ts
+stdout | src/common/types/class-types.spec.ts
 [TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
 [TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
 [TEST SETUP] dotenv result: {
@@ -1312,23 +1641,7 @@ db config: {
   entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
   migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
 }
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
-
-stdout | src/teachers/entities/teacher-availability.entity.spec.ts
-[CONFIG] Test mode detected - Using database: wordpress_test
-db config: {
-  type: [32m'mysql'[39m,
-  host: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  username: [32m'wordpress'[39m,
-  password: [32m'wordpress'[39m,
-  database: [32m'wordpress_test'[39m,
-  synchronize: [33mfalse[39m,
-  logging: [33mfalse[39m,
-  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
-  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
-}
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
 
 stdout | src/app.controller.spec.ts
 [TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
@@ -1350,27 +1663,26 @@ stdout | src/app.controller.spec.ts
 process.env.DB_HOST: 127.0.0.1
 [TEST SETUP] Migration setup available. Call runMigrations() if needed.
 
-stdout | src/teachers/entities/teacher-availability.entity.spec.ts
-[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
-[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
-[TEST SETUP] dotenv result: {
-  parsed: {
-    DB_HOST: [32m'127.0.0.1'[39m,
-    DB_PORT: [32m'3306'[39m,
-    DB_USERNAME: [32m'wordpress'[39m,
-    DB_PASSWORD: [32m'wordpress'[39m,
-    DB_DATABASE: [32m'wordpress_test'[39m,
-    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
-    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
-    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
-    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
-  }
-}
-[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
-process.env.DB_HOST: 127.0.0.1
-[TEST SETUP] Migration setup available. Call runMigrations() if needed.
+stdout | test/payments-session-booking.e2e.spec.ts > PaymentsService.createSessionAndBookingFromMetadata (e2e)
+✓ Migration complete:
+  - Created 0 package allowances
 
-stdout | src/common/types/credit-tiers.spec.ts
+ ✓ src/common/types/class-types.spec.ts (3 tests) 3ms
+ ✓ src/auth/auth.service.spec.ts (5 tests) 20ms
+ ✓ src/app.controller.spec.ts (1 test) 34ms
+stdout | test/payments-session-booking.e2e.spec.ts > PaymentsService.createSessionAndBookingFromMetadata (e2e)
+Migrations complete.
+
+stdout | test/payments-session-booking.e2e.spec.ts > PaymentsService.createSessionAndBookingFromMetadata (e2e)
+MigrationTestDataSource destroyed.
+
+stdout | test/payments-session-booking.e2e.spec.ts > PaymentsService.createSessionAndBookingFromMetadata (e2e)
+[CONFIG] Test mode detected - Using database: wordpress_test
+
+stdout | test/payments-session-booking.e2e.spec.ts > PaymentsService.createSessionAndBookingFromMetadata (e2e)
+[AppModule] Loaded 26 entities directly via import
+
+stdout | src/teachers/entities/teacher-availability.entity.spec.ts
 [CONFIG] Test mode detected - Using database: wordpress_test
 db config: {
   type: [32m'mysql'[39m,
@@ -1384,9 +1696,9 @@ db config: {
   entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
   migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
 }
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
 
-stdout | src/common/types/credit-tiers.spec.ts
+stdout | src/teachers/entities/teacher-availability.entity.spec.ts
 [TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
 [TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
 [TEST SETUP] dotenv result: {
@@ -1420,7 +1732,7 @@ db config: {
   entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
   migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
 }
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
+[MIGRATIONS] Loaded 22 migrations directly (no file glob needed)
 
 stdout | src/teachers/entities/teacher.entity.spec.ts
 [TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
@@ -1443,73 +1755,63 @@ process.env.DB_HOST: 127.0.0.1
 [TEST SETUP] Migration setup available. Call runMigrations() if needed.
 
  ✓ src/teachers/entities/teacher-availability.entity.spec.ts (4 tests) 2ms
- ✓ src/sessions/services/sessions.service.spec.ts (8 tests) 19ms
- ✓ src/payments/payments.controller.spec.ts (5 tests) 4ms
- ✓ src/common/types/credit-tiers.spec.ts (54 tests) 4ms
- ✓ src/app.controller.spec.ts (1 test) 5ms
  ✓ src/teachers/entities/teacher.entity.spec.ts (4 tests) 2ms
- ✓ src/auth/auth.service.spec.ts (5 tests) 12ms
-stdout | src/common/types/class-types.spec.ts
-[CONFIG] Test mode detected - Using database: wordpress_test
-db config: {
-  type: [32m'mysql'[39m,
-  host: [32m'127.0.0.1'[39m,
-  port: [33m3306[39m,
-  username: [32m'wordpress'[39m,
-  password: [32m'wordpress'[39m,
-  database: [32m'wordpress_test'[39m,
-  synchronize: [33mfalse[39m,
-  logging: [33mfalse[39m,
-  entities: [ [32m'dist/**/*.entity{.ts,.js}'[39m ],
-  migrations: [ [32m'dist/migrations/*{.ts,.js}'[39m ]
+[31m[Nest] 50956  - [39m10/24/2025, 12:29:50 PM [31m  ERROR[39m [38;5;3m[PaymentsService] [39m[31mError creating session and booking from intent:[39m
+[31m[Nest] 50956  - [39m10/24/2025, 12:29:50 PM [31m  ERROR[39m [38;5;3m[PaymentsService] [39mQueryFailedError: Cannot add or update a child row: a foreign key constraint fails (`wordpress_test`.`booking`, CONSTRAINT `FK_booking_student` FOREIGN KEY (`student_id`) REFERENCES `student` (`id`) ON DELETE CASCADE)
+    at Query.onResult [90m(/Users/davidcook/personal/thrive-wp/apps/nestjs/[39msrc/driver/mysql/MysqlQueryRunner.ts:247:33[90m)[39m
+    at Query.execute [90m(/Users/davidcook/personal/thrive-wp/apps/nestjs/[39mnode_modules/[4mmysql2[24m/lib/commands/command.js:36:14[90m)[39m
+    at PoolConnection.handlePacket [90m(/Users/davidcook/personal/thrive-wp/apps/nestjs/[39mnode_modules/[4mmysql2[24m/lib/base/connection.js:475:34[90m)[39m
+    at PacketParser.onPacket [90m(/Users/davidcook/personal/thrive-wp/apps/nestjs/[39mnode_modules/[4mmysql2[24m/lib/base/connection.js:93:12[90m)[39m
+    at PacketParser.executeStart [90m(/Users/davidcook/personal/thrive-wp/apps/nestjs/[39mnode_modules/[4mmysql2[24m/lib/packet_parser.js:75:16[90m)[39m
+    at Socket.<anonymous> [90m(/Users/davidcook/personal/thrive-wp/apps/nestjs/[39mnode_modules/[4mmysql2[24m/lib/base/connection.js:100:25[90m)[39m
+[90m    at Socket.emit (node:events:518:28)[39m
+[90m    at addChunk (node:internal/streams/readable:561:12)[39m
+[90m    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)[39m
+[90m    at Socket.Readable.push (node:internal/streams/readable:392:5)[39m {
+  query: [32m'INSERT INTO `booking`(`id`, `created_at`, `updated_at`, `deleted_at`, `session_id`, `student_id`, `status`, `cancelled_at`, `cancellation_reason`, `invited_at`, `accepted_at`, `student_package_id`, `package_use_id`, `credits_cost`, `rescheduled_count`, `original_session_id`, `cancelled_by_student`) VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, ?, ?, ?, DEFAULT, DEFAULT, DEFAULT, ?, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT)'[39m,
+  parameters: [
+    [33m1[39m,
+    [33m99999[39m,
+    [32m'CONFIRMED'[39m,
+    [35m2025-10-24T18:29:50.225Z[39m
+  ],
+  driverError: Error: Cannot add or update a child row: a foreign key constraint fails (`wordpress_test`.`booking`, CONSTRAINT `FK_booking_student` FOREIGN KEY (`student_id`) REFERENCES `student` (`id`) ON DELETE CASCADE)
+      at Packet.asError [90m(/Users/davidcook/personal/thrive-wp/apps/nestjs/[39mnode_modules/[4mmysql2[24m/lib/packets/packet.js:740:17[90m)[39m
+      at Query.execute [90m(/Users/davidcook/personal/thrive-wp/apps/nestjs/[39mnode_modules/[4mmysql2[24m/lib/commands/command.js:29:26[90m)[39m
+      at PoolConnection.handlePacket [90m(/Users/davidcook/personal/thrive-wp/apps/nestjs/[39mnode_modules/[4mmysql2[24m/lib/base/connection.js:475:34[90m)[39m
+      at PacketParser.onPacket [90m(/Users/davidcook/personal/thrive-wp/apps/nestjs/[39mnode_modules/[4mmysql2[24m/lib/base/connection.js:93:12[90m)[39m
+      at PacketParser.executeStart [90m(/Users/davidcook/personal/thrive-wp/apps/nestjs/[39mnode_modules/[4mmysql2[24m/lib/packet_parser.js:75:16[90m)[39m
+      at Socket.<anonymous> [90m(/Users/davidcook/personal/thrive-wp/apps/nestjs/[39mnode_modules/[4mmysql2[24m/lib/base/connection.js:100:25[90m)[39m
+  [90m    at Socket.emit (node:events:518:28)[39m
+  [90m    at addChunk (node:internal/streams/readable:561:12)[39m
+  [90m    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)[39m
+  [90m    at Socket.Readable.push (node:internal/streams/readable:392:5)[39m {
+    code: [32m'ER_NO_REFERENCED_ROW_2'[39m,
+    errno: [33m1452[39m,
+    sqlState: [32m'23000'[39m,
+    sqlMessage: [32m'Cannot add or update a child row: a foreign key constraint fails (`wordpress_test`.`booking`, CONSTRAINT `FK_booking_student` FOREIGN KEY (`student_id`) REFERENCES `student` (`id`) ON DELETE CASCADE)'[39m,
+    sql: [32m"INSERT INTO `booking`(`id`, `created_at`, `updated_at`, `deleted_at`, `session_id`, `student_id`, `status`, `cancelled_at`, `cancellation_reason`, `invited_at`, `accepted_at`, `student_package_id`, `package_use_id`, `credits_cost`, `rescheduled_count`, `original_session_id`, `cancelled_by_student`) VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, 1, 99999, 'CONFIRMED', DEFAULT, DEFAULT, DEFAULT, '2025-10-24 18:29:50.225', DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT)"[39m
+  },
+  code: [32m'ER_NO_REFERENCED_ROW_2'[39m,
+  errno: [33m1452[39m,
+  sqlState: [32m'23000'[39m,
+  sqlMessage: [32m'Cannot add or update a child row: a foreign key constraint fails (`wordpress_test`.`booking`, CONSTRAINT `FK_booking_student` FOREIGN KEY (`student_id`) REFERENCES `student` (`id`) ON DELETE CASCADE)'[39m,
+  sql: [32m"INSERT INTO `booking`(`id`, `created_at`, `updated_at`, `deleted_at`, `session_id`, `student_id`, `status`, `cancelled_at`, `cancellation_reason`, `invited_at`, `accepted_at`, `student_package_id`, `package_use_id`, `credits_cost`, `rescheduled_count`, `original_session_id`, `cancelled_by_student`) VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, 1, 99999, 'CONFIRMED', DEFAULT, DEFAULT, DEFAULT, '2025-10-24 18:29:50.225', DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT)"[39m
 }
-[MIGRATIONS] Loaded 19 migrations directly (no file glob needed)
+ ✓ test/payments-session-booking.e2e.spec.ts (8 tests) 1937ms
 
-stdout | src/common/types/class-types.spec.ts
-[TEST SETUP] Current dir: /Users/davidcook/personal/thrive-wp/apps/nestjs
-[TEST SETUP] Loading .env.test from: /Users/davidcook/personal/thrive-wp/apps/nestjs/.env.test
-[TEST SETUP] dotenv result: {
-  parsed: {
-    DB_HOST: [32m'127.0.0.1'[39m,
-    DB_PORT: [32m'3306'[39m,
-    DB_USERNAME: [32m'wordpress'[39m,
-    DB_PASSWORD: [32m'wordpress'[39m,
-    DB_DATABASE: [32m'wordpress_test'[39m,
-    SESSION_SECRET: [32m'test_session_secret_for_jwt_cookies'[39m,
-    GOOGLE_CLIENT_ID: [32m'test-client-id'[39m,
-    GOOGLE_CLIENT_SECRET: [32m'test-client-secret'[39m,
-    GOOGLE_CALLBACK_URL: [32m'http://localhost:3000/auth/google/callback'[39m
-  }
-}
-[TEST SETUP] DB_HOST after dotenv: 127.0.0.1
-process.env.DB_HOST: 127.0.0.1
-[TEST SETUP] Migration setup available. Call runMigrations() if needed.
-
- ✓ src/common/types/class-types.spec.ts (3 tests) 2ms
-
-⎯⎯⎯⎯⎯⎯ Failed Suites 10 ⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯ Failed Suites 8 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  test/auth-google-start.e2e.spec.ts > Auth Google Start Redirect (e2e)
- FAIL  test/database-connection.e2e.spec.ts > Database Connection (e2e)
-Error: Nest can't resolve dependencies of the BookingsService (BookingRepository, SessionRepository, StudentRepository, StudentPackageRepository, ?, PoliciesService, WaitlistsService). Please make sure that the argument "PackageUseRepository" at index [4] is available in the BookingsModule context.
+QueryFailedError: Can't create table `wordpress_test`.`course_teacher` (errno: 150 "Foreign key constraint is incorrectly formed")
+ ❯ Query.onResult src/driver/mysql/MysqlQueryRunner.ts:247:33
+ ❯ Query.execute node_modules/mysql2/lib/commands/command.js:36:14
+ ❯ PoolConnection.handlePacket node_modules/mysql2/lib/base/connection.js:475:34
+ ❯ PacketParser.onPacket node_modules/mysql2/lib/base/connection.js:93:12
+ ❯ PacketParser.executeStart node_modules/mysql2/lib/packet_parser.js:75:16
+ ❯ Socket.<anonymous> node_modules/mysql2/lib/base/connection.js:100:25
 
-Potential solutions:
-- Is BookingsModule a valid NestJS module?
-- If "PackageUseRepository" is a provider, is it part of the current BookingsModule?
-- If "PackageUseRepository" is exported from a separate @Module, is that module imported within BookingsModule?
-  @Module({
-    imports: [ /* the Module containing "PackageUseRepository" */ ]
-  })
-
- ❯ TestingInjector.lookupComponentInParentModules node_modules/@nestjs/core/injector/injector.js:286:19
- ❯ TestingInjector.resolveComponentWrapper node_modules/@nestjs/testing/testing-injector.js:19:45
- ❯ resolveParam node_modules/@nestjs/core/injector/injector.js:141:38
- ❯ TestingInjector.resolveConstructorParams node_modules/@nestjs/core/injector/injector.js:169:27
- ❯ TestingInjector.loadInstance node_modules/@nestjs/core/injector/injector.js:75:13
- ❯ TestingInjector.loadProvider node_modules/@nestjs/core/injector/injector.js:103:9
- ❯ node_modules/@nestjs/core/injector/instance-loader.js:56:13
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/31]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/33]⎯
 
  FAIL  test/auth-google-start.e2e.spec.ts > Auth Google Start Redirect (e2e)
 TypeError: Cannot read properties of undefined (reading 'close')
@@ -1521,17 +1823,23 @@ TypeError: Cannot read properties of undefined (reading 'close')
      44|   });
      45| 
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/31]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/33]⎯
 
  FAIL  test/credit-tiers-integration.e2e.spec.ts > Credit Tier System Integration (e2e)
  FAIL  test/database.e2e.spec.ts > Database Integration (e2e)
  FAIL  test/group-class-booking.e2e.spec.ts > Group Class Booking (e2e)
- FAIL  test/package-booking.e2e.spec.ts > Package Booking (e2e)
- FAIL  test/payments-session-booking.e2e.spec.ts > PaymentsService.createSessionAndBookingFromMetadata (e2e)
+ FAIL  test/payments-webhook-group-booking.e2e.spec.ts > PaymentsService - Group Session Booking via Package Purchase Webhook
  FAIL  test/students-api.e2e.spec.ts > Students API (e2e)
  FAIL  test/teacher-availability.e2e.spec.ts > TeacherAvailabilityService (e2e)
-Error: connect ECONNREFUSED 127.0.0.1:3306
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/31]⎯
+QueryFailedError: Duplicate column name 'password_hash'
+ ❯ Query.onResult src/driver/mysql/MysqlQueryRunner.ts:247:33
+ ❯ Query.execute node_modules/mysql2/lib/commands/command.js:36:14
+ ❯ PoolConnection.handlePacket node_modules/mysql2/lib/base/connection.js:475:34
+ ❯ PacketParser.onPacket node_modules/mysql2/lib/base/connection.js:93:12
+ ❯ PacketParser.executeStart node_modules/mysql2/lib/packet_parser.js:75:16
+ ❯ Socket.<anonymous> node_modules/mysql2/lib/base/connection.js:100:25
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/33]⎯
 
  FAIL  test/students-api.e2e.spec.ts > Students API (e2e)
 TypeError: Cannot read properties of undefined (reading 'close')
@@ -1543,155 +1851,131 @@ TypeError: Cannot read properties of undefined (reading 'close')
      36|   });
      37| 
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/31]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/33]⎯
 
  FAIL  src/teachers/teachers.service.spec.ts > TeachersService > previewTeacherAvailability
 Error: No test found in suite previewTeacherAvailability
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/31]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/33]⎯
 
 
-⎯⎯⎯⎯⎯⎯ Failed Tests 14 ⎯⎯⎯⎯⎯⎯⎯
-
- FAIL  test/app.e2e.spec.ts > AppController (e2e) > / (GET)
- FAIL  test/waitlist.e2e.spec.ts > Waitlist (e2e) > should allow a student to join a waitlist for a full group class session
- FAIL  test/waitlist.e2e.spec.ts > Waitlist (e2e) > should not allow a student to join a waitlist for a session that is not full
- FAIL  test/waitlist.e2e.spec.ts > Waitlist (e2e) > when a booking is cancelled, the first student on the waitlist is notified
- FAIL  test/waitlist.e2e.spec.ts > Waitlist (e2e) > admin can promote a student from the waitlist to a booking
-Error: Nest can't resolve dependencies of the BookingsService (BookingRepository, SessionRepository, StudentRepository, StudentPackageRepository, ?, PoliciesService, WaitlistsService). Please make sure that the argument "PackageUseRepository" at index [4] is available in the BookingsModule context.
-
-Potential solutions:
-- Is BookingsModule a valid NestJS module?
-- If "PackageUseRepository" is a provider, is it part of the current BookingsModule?
-- If "PackageUseRepository" is exported from a separate @Module, is that module imported within BookingsModule?
-  @Module({
-    imports: [ /* the Module containing "PackageUseRepository" */ ]
-  })
-
- ❯ TestingInjector.lookupComponentInParentModules node_modules/@nestjs/core/injector/injector.js:286:19
- ❯ TestingInjector.resolveComponentWrapper node_modules/@nestjs/testing/testing-injector.js:19:45
- ❯ resolveParam node_modules/@nestjs/core/injector/injector.js:141:38
- ❯ TestingInjector.resolveConstructorParams node_modules/@nestjs/core/injector/injector.js:169:27
- ❯ TestingInjector.loadInstance node_modules/@nestjs/core/injector/injector.js:75:13
- ❯ TestingInjector.loadProvider node_modules/@nestjs/core/injector/injector.js:103:9
- ❯ node_modules/@nestjs/core/injector/instance-loader.js:56:13
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/31]⎯
+⎯⎯⎯⎯⎯⎯ Failed Tests 23 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  test/app.e2e.spec.ts > AppController (e2e) > / (GET)
-TypeError: Cannot read properties of undefined (reading 'close')
- ❯ test/app.e2e.spec.ts:21:15
-     19| 
-     20|   afterEach(async () => {
-     21|     await app.close();
-       |               ^
-     22|   });
+ReferenceError: getHttpServer is not defined
+ ❯ test/app.e2e.spec.ts:25:12
      23| 
+     24|   it("/ (GET)", () => {
+     25|     return request(getHttpServer(app))
+       |            ^
+     26|       .get("/")
+     27|       .expect(200)
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/31]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/33]⎯
 
+ FAIL  test/package-booking.e2e.spec.ts > Package Booking (e2e) > GET /packages/my-credits > should return student credits
+QueryFailedError: Table 'wordpress_test.package_allowance' doesn't exist
+ ❯ Query.onResult src/driver/mysql/MysqlQueryRunner.ts:247:33
+ ❯ Query.execute node_modules/mysql2/lib/commands/command.js:36:14
+ ❯ PoolConnection.handlePacket node_modules/mysql2/lib/base/connection.js:475:34
+ ❯ PacketParser.onPacket node_modules/mysql2/lib/base/connection.js:93:12
+ ❯ PacketParser.executeStart node_modules/mysql2/lib/packet_parser.js:75:16
+ ❯ Socket.<anonymous> node_modules/mysql2/lib/base/connection.js:100:25
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/33]⎯
+
+ FAIL  test/package-booking.e2e.spec.ts > Package Booking (e2e) > GET /packages/my-credits > should return 401 when user not authenticated
  FAIL  test/waitlist.e2e.spec.ts > Waitlist (e2e) > should allow a student to join a waitlist for a full group class session
  FAIL  test/waitlist.e2e.spec.ts > Waitlist (e2e) > should not allow a student to join a waitlist for a session that is not full
  FAIL  test/waitlist.e2e.spec.ts > Waitlist (e2e) > when a booking is cancelled, the first student on the waitlist is notified
  FAIL  test/waitlist.e2e.spec.ts > Waitlist (e2e) > admin can promote a student from the waitlist to a booking
-TypeError: Cannot read properties of undefined (reading 'close')
- ❯ test/waitlist.e2e.spec.ts:79:15
-     77| 
-     78|   afterEach(async () => {
-     79|     await app.close();
-       |               ^
-     80|   });
-     81| 
+QueryFailedError: Table 'wordpress_test.cancellation_policy' doesn't exist
+ ❯ Query.onResult src/driver/mysql/MysqlQueryRunner.ts:247:33
+ ❯ Query.execute node_modules/mysql2/lib/commands/command.js:36:14
+ ❯ PoolConnection.handlePacket node_modules/mysql2/lib/base/connection.js:475:34
+ ❯ PacketParser.onPacket node_modules/mysql2/lib/base/connection.js:93:12
+ ❯ PacketParser.executeStart node_modules/mysql2/lib/packet_parser.js:75:16
+ ❯ Socket.<anonymous> node_modules/mysql2/lib/base/connection.js:100:25
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/31]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/33]⎯
 
- FAIL  src/group-classes/group-classes.service.spec.ts > GroupClassesService > getAvailableSessions > should return sessions with enrollment count and computed fields
-TypeError: session.teacher.toPublicDto is not a function
- ❯ map src/group-classes/group-classes.service.ts:407:36
-    405|           isFull: session.enrolledCount >= session.capacityMax,
-    406|           canJoinWaitlist: session.enrolledCount >= session.capacityMa…
-    407|           teacher: session.teacher.toPublicDto(),
-       |                                    ^
-    408|         }) as SessionWithEnrollmentResponse,
-    409|     );
- ❯ GroupClassesService.getAvailableSessions src/group-classes/group-classes.service.ts:384:21
- ❯ src/group-classes/group-classes.service.spec.ts:140:22
+ FAIL  test/package-booking.e2e.spec.ts > Package Booking (e2e) > POST /payments/book-with-package > should successfully book session with package credit
+QueryFailedError: Table 'wordpress_test.stripe_product_map' doesn't exist
+ ❯ Query.onResult src/driver/mysql/MysqlQueryRunner.ts:247:33
+ ❯ Query.execute node_modules/mysql2/lib/commands/command.js:36:14
+ ❯ PoolConnection.handlePacket node_modules/mysql2/lib/base/connection.js:475:34
+ ❯ PacketParser.onPacket node_modules/mysql2/lib/base/connection.js:93:12
+ ❯ PacketParser.executeStart node_modules/mysql2/lib/packet_parser.js:75:16
+ ❯ Socket.<anonymous> node_modules/mysql2/lib/base/connection.js:100:25
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/31]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/33]⎯
 
- FAIL  src/group-classes/group-classes.service.spec.ts > GroupClassesService > getAvailableSessions > should calculate availableSpots as capacityMax - enrolledCount
-TypeError: Cannot read properties of undefined (reading 'toISOString')
- ❯ map src/group-classes/group-classes.service.ts:389:36
-    387|           id: session.id,
-    388|           type: session.type,
-    389|           startAt: session.startAt.toISOString(),
-       |                                    ^
-    390|           endAt: session.endAt.toISOString(),
-    391|           capacityMax: session.capacityMax,
- ❯ GroupClassesService.getAvailableSessions src/group-classes/group-classes.service.ts:384:21
- ❯ src/group-classes/group-classes.service.spec.ts:194:22
+ FAIL  test/package-booking.e2e.spec.ts > Package Booking (e2e) > POST /payments/book-with-package > should return 400 when package has no remaining sessions
+ FAIL  test/package-booking.e2e.spec.ts > Package Booking (e2e) > Concurrency test for POST /bookings > should handle concurrent booking requests correctly
+QueryFailedError: Table 'wordpress_test.user' doesn't exist
+ ❯ Query.onResult src/driver/mysql/MysqlQueryRunner.ts:247:33
+ ❯ Query.execute node_modules/mysql2/lib/commands/command.js:36:14
+ ❯ PoolConnection.handlePacket node_modules/mysql2/lib/base/connection.js:475:34
+ ❯ PacketParser.onPacket node_modules/mysql2/lib/base/connection.js:93:12
+ ❯ PacketParser.executeStart node_modules/mysql2/lib/packet_parser.js:75:16
+ ❯ Socket.<anonymous> node_modules/mysql2/lib/base/connection.js:100:25
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/31]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/33]⎯
+
+ FAIL  test/package-booking.e2e.spec.ts > Package Booking (e2e) > POST /payments/book-with-package > should return 404 when package not found
+QueryFailedError: Unknown column 'User.password_hash' in 'SELECT'
+ ❯ Query.onResult src/driver/mysql/MysqlQueryRunner.ts:247:33
+ ❯ Query.execute node_modules/mysql2/lib/commands/command.js:36:14
+ ❯ PoolConnection.handlePacket node_modules/mysql2/lib/base/connection.js:475:34
+ ❯ PacketParser.onPacket node_modules/mysql2/lib/base/connection.js:93:12
+ ❯ PacketParser.executeStart node_modules/mysql2/lib/packet_parser.js:75:16
+ ❯ Socket.<anonymous> node_modules/mysql2/lib/base/connection.js:100:25
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/33]⎯
+
+ FAIL  test/package-booking.e2e.spec.ts > Package Booking (e2e) > POST /payments/book-with-package > should return 400 when package is expired
+QueryFailedError: Table 'wordpress_test.student' doesn't exist
+ ❯ Query.onResult src/driver/mysql/MysqlQueryRunner.ts:247:33
+ ❯ Query.execute node_modules/mysql2/lib/commands/command.js:36:14
+ ❯ PoolConnection.handlePacket node_modules/mysql2/lib/base/connection.js:475:34
+ ❯ PacketParser.onPacket node_modules/mysql2/lib/base/connection.js:93:12
+ ❯ PacketParser.executeStart node_modules/mysql2/lib/packet_parser.js:75:16
+ ❯ Socket.<anonymous> node_modules/mysql2/lib/base/connection.js:100:25
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/33]⎯
+
+ FAIL  test/package-booking.e2e.spec.ts > Package Booking (e2e) > POST /payments/book-with-package > should return 400 with invalid request body
+QueryFailedError: Unknown column 'Student.stripe_customer_id' in 'SELECT'
+ ❯ Query.onResult src/driver/mysql/MysqlQueryRunner.ts:247:33
+ ❯ Query.execute node_modules/mysql2/lib/commands/command.js:36:14
+ ❯ PoolConnection.handlePacket node_modules/mysql2/lib/base/connection.js:475:34
+ ❯ PacketParser.onPacket node_modules/mysql2/lib/base/connection.js:93:12
+ ❯ PacketParser.executeStart node_modules/mysql2/lib/packet_parser.js:75:16
+ ❯ Socket.<anonymous> node_modules/mysql2/lib/base/connection.js:100:25
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/33]⎯
+
+ FAIL  test/package-booking.e2e.spec.ts > Package Booking (e2e) > POST /packages/:id/use with bookingData > should successfully create session and book with package
+QueryFailedError: Table 'wordpress_test.admin' doesn't exist
+ ❯ Query.onResult src/driver/mysql/MysqlQueryRunner.ts:247:33
+ ❯ Query.execute node_modules/mysql2/lib/commands/command.js:36:14
+ ❯ PoolConnection.handlePacket node_modules/mysql2/lib/base/connection.js:475:34
+ ❯ PacketParser.onPacket node_modules/mysql2/lib/base/connection.js:93:12
+ ❯ PacketParser.executeStart node_modules/mysql2/lib/packet_parser.js:75:16
+ ❯ Socket.<anonymous> node_modules/mysql2/lib/base/connection.js:100:25
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/33]⎯
 
  FAIL  src/packages/packages.service.spec.ts > PackagesService > getActivePackagesForStudent > should return active packages for a student
-TypeError: Cannot read properties of undefined (reading 'createQueryBuilder')
- ❯ Repository.createQueryBuilder src/repository/Repository.ts:82:29
- ❯ Function.buildActiveStudentPackagesQuery src/packages/utils/package-query-builder.ts:64:8
-     62|   ): SelectQueryBuilder<StudentPackage> {
-     63|     return repo
-     64|       .createQueryBuilder("sp")
-       |        ^
-     65|       .leftJoinAndSelect("sp.uses", "uses", "uses.deleted_at IS NULL")
-     66|       .where("sp.student_id = :studentId", { studentId })
- ❯ PackagesService.getActivePackagesForStudent src/packages/packages.service.ts:371:48
- ❯ src/packages/packages.service.spec.ts:110:36
+AssertionError: expected { id: 1, …(6) } to have property "creditUnitMinutes"
+ ❯ src/packages/packages.service.spec.ts:191:34
+    189|       expect(result.totalRemaining).toBe(3);
+    190|       // New metadata-derived fields should exist (null when absent)
+    191|       expect(result.packages[0]).toHaveProperty("creditUnitMinutes");
+       |                                  ^
+    192|       expect(result.packages[0]).toHaveProperty("teacherTier");
+    193|       expect(result.packages[0]).toHaveProperty("serviceType");
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/31]⎯
-
- FAIL  src/packages/packages.service.spec.ts > PackagesService > getActivePackagesForStudent > should filter out expired packages
-TypeError: Cannot read properties of undefined (reading 'createQueryBuilder')
- ❯ Repository.createQueryBuilder src/repository/Repository.ts:82:29
- ❯ Function.buildActiveStudentPackagesQuery src/packages/utils/package-query-builder.ts:64:8
-     62|   ): SelectQueryBuilder<StudentPackage> {
-     63|     return repo
-     64|       .createQueryBuilder("sp")
-       |        ^
-     65|       .leftJoinAndSelect("sp.uses", "uses", "uses.deleted_at IS NULL")
-     66|       .where("sp.student_id = :studentId", { studentId })
- ❯ PackagesService.getActivePackagesForStudent src/packages/packages.service.ts:371:48
- ❯ src/packages/packages.service.spec.ts:146:36
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/31]⎯
-
- FAIL  src/packages/packages.service.spec.ts > PackagesService > getActivePackagesForStudent > should filter out packages with no remaining sessions
-TypeError: Cannot read properties of undefined (reading 'createQueryBuilder')
- ❯ Repository.createQueryBuilder src/repository/Repository.ts:82:29
- ❯ Function.buildActiveStudentPackagesQuery src/packages/utils/package-query-builder.ts:64:8
-     62|   ): SelectQueryBuilder<StudentPackage> {
-     63|     return repo
-     64|       .createQueryBuilder("sp")
-       |        ^
-     65|       .leftJoinAndSelect("sp.uses", "uses", "uses.deleted_at IS NULL")
-     66|       .where("sp.student_id = :studentId", { studentId })
- ❯ PackagesService.getActivePackagesForStudent src/packages/packages.service.ts:371:48
- ❯ src/packages/packages.service.spec.ts:176:36
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/31]⎯
-
- FAIL  src/packages/packages.service.spec.ts > PackagesService > usePackageForSession > should successfully use package for session with happy path
-TypeError: Cannot read properties of undefined (reading 'getMetadata')
- ❯ Repository.get metadata [as metadata] src/repository/Repository.ts:54:40
- ❯ Repository.createQueryBuilder src/repository/Repository.ts:83:18
- ❯ Function.buildStudentPackageWithUsesQuery src/packages/utils/package-query-builder.ts:83:8
-     81|   ): SelectQueryBuilder<StudentPackage> {
-     82|     return repo
-     83|       .createQueryBuilder("sp")
-       |        ^
-     84|       .leftJoinAndSelect("sp.uses", "uses", "uses.deleted_at IS NULL")
-     85|       .where("sp.id = :packageId", { packageId })
- ❯ PackagesService.usePackageForSession src/packages/packages.service.ts:411:43
- ❯ src/packages/packages.service.spec.ts:249:36
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/31]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/33]⎯
 
  FAIL  src/packages/packages.service.spec.ts > PackagesService > usePackageForSession > should throw NotFoundException when package not found
 AssertionError: expected error to be instance of NotFoundException
@@ -1701,10 +1985,10 @@ AssertionError: expected error to be instance of NotFoundException
 
 [31m+ Received:[39m 
 TypeError {
-  "message": "Cannot read properties of undefined (reading 'createQueryBuilder')",
+  "message": "__vite_ssr_import_15__.PackageQueryBuilder.buildStudentPackageWithUsesQuery(...).leftJoinAndSelect is not a function",
 }
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/31]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/33]⎯
 
  FAIL  src/packages/packages.service.spec.ts > PackagesService > usePackageForSession > should throw BadRequestException when no remaining sessions
  FAIL  src/packages/packages.service.spec.ts > PackagesService > usePackageForSession > should throw BadRequestException when package is expired
@@ -1715,15 +1999,103 @@ AssertionError: expected error to be instance of BadRequestException
 
 [31m+ Received:[39m 
 TypeError {
-  "message": "Cannot read properties of undefined (reading 'createQueryBuilder')",
+  "message": "__vite_ssr_import_15__.PackageQueryBuilder.buildStudentPackageWithUsesQuery(...).leftJoinAndSelect is not a function",
 }
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/31]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/33]⎯
+
+ FAIL  src/common/types/credit-tiers.spec.ts > Credit Tier System > getPackageTier > should handle numeric teacher tier in metadata
+AssertionError: expected 100 to be 105 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 105[39m
+[31m+ 100[39m
+
+ ❯ src/common/types/credit-tiers.spec.ts:146:35
+    144|         metadata: { service_type: ServiceType.PRIVATE, teacher_tier: 5…
+    145|       } as StudentPackage;
+    146|       expect(getPackageTier(pkg)).toBe(105);
+       |                                   ^
+    147|     });
+    148| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/33]⎯
+
+ FAIL  src/common/types/credit-tiers.spec.ts > Credit Tier System > canUsePackageForSession > should allow private package for group session (higher tier)
+AssertionError: expected false to be true // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+ ❯ src/common/types/credit-tiers.spec.ts:174:29
+    172|       const session = createMockSession(ServiceType.GROUP, 0) as Sessi…
+    173|       const result = canUsePackageForSession({ pkg, session });
+    174|       expect(result.canUse).toBe(true);
+       |                             ^
+    175|       expect(result.allowance).toBeTruthy();
+    176|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/33]⎯
+
+ FAIL  src/common/types/credit-tiers.spec.ts > Credit Tier System > isCrossTierBooking > should return true when using private credit for group session
+AssertionError: expected false to be true // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+ ❯ src/common/types/credit-tiers.spec.ts:251:34
+    249|       const session = createMockSession(ServiceType.GROUP, 0) as Sessi…
+    250|       const result = isCrossTierBooking(pkg, session);
+    251|       expect(result.isCrossTier).toBe(true);
+       |                                  ^
+    252|       expect(result.allowance).toBeTruthy();
+    253|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/33]⎯
+
+ FAIL  src/common/types/credit-tiers.spec.ts > Credit Tier System > getCrossTierWarningMessage > should return warning message for private credit used for group class
+AssertionError: the given combination of arguments (null and string) is invalid for this assertion. You can use an array, a map, an object, a set, a string, or a weakset instead of a string
+ ❯ src/common/types/credit-tiers.spec.ts:294:23
+    292|       const session = createMockSession(ServiceType.GROUP, 0) as Sessi…
+    293|       const message = getCrossTierWarningMessage(pkg, session);
+    294|       expect(message).toContain("Private Credit");
+       |                       ^
+    295|       expect(message).toContain("group class");
+    296|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/33]⎯
+
+ FAIL  src/common/types/credit-tiers.spec.ts > Credit Tier System > Integration scenarios > Scenario: Student uses private credit for group class
+AssertionError: expected false to be true // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+ ❯ src/common/types/credit-tiers.spec.ts:402:35
+    400| 
+    401|       const canUseResult = canUsePackageForSession({ pkg: privatePacka…
+    402|       expect(canUseResult.canUse).toBe(true);
+       |                                   ^
+    403| 
+    404|       const crossTierResult = isCrossTierBooking(privatePackage, group…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/33]⎯
 
 
- Test Files  14 failed | 10 passed (24)
-      Tests  14 failed | 122 passed | 65 skipped (201)
-   Start at  12:21:32
-   Duration  4.39s (transform 721ms, setup 8.59s, collect 14.45s, tests 420ms, environment 2ms, prepare 1.77s)
+ Test Files  13 failed | 12 passed (25)
+      Tests  23 failed | 131 passed | 53 skipped (207)
+   Start at  12:29:44
+   Duration  5.70s (transform 795ms, setup 8.67s, collect 13.12s, tests 7.23s, environment 2ms, prepare 1.81s)
 
  ELIFECYCLE  Test failed. See above for more details.

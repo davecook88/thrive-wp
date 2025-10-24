@@ -43,17 +43,6 @@ interface CourseCountResult {
   count: string;
 }
 
-interface CourseEnrollmentResult {
-  enrollment_id: number;
-  status: string;
-  enrolled_at: Date;
-  course_id: number;
-  course_title: string;
-  description: string;
-  total_sessions: string;
-  completed_sessions: string;
-  next_session_at: Date | null;
-}
 
 @Injectable()
 export class StudentsService {
@@ -93,7 +82,7 @@ export class StudentsService {
     const result: SessionQueryResult[] = await this.dataSource.query(
       `
       WITH student AS (SELECT id FROM student WHERE user_id = ?)
-      -- All sessions through confirmed bookings (covers private, group, and course sessions)
+      -- All sessions through confirmed bookings (covers private and group sessions)
       SELECT
         b.id as booking_id,
         s.id,
@@ -102,7 +91,7 @@ export class StudentsService {
         s.end_at,
         s.status,
         s.teacher_id,
-        s.course_id,
+        NULL as course_id,
         s.capacity_max,
         s.visibility,
         s.requires_enrollment,
@@ -113,7 +102,6 @@ export class StudentsService {
         CASE
           WHEN s.type = 'PRIVATE' THEN 'private'
           WHEN s.type = 'GROUP' THEN 'group'
-          WHEN s.type = 'COURSE' THEN 'course'
           ELSE 'unknown'
         END as session_source
       FROM session s
@@ -173,7 +161,7 @@ export class StudentsService {
         s.start_at,
         s.end_at,
         s.teacher_id,
-        s.course_id,
+        NULL as course_id,
         s.meeting_url,
         concat(u.first_name,' ',u.last_name) as teacher_name
       FROM session s
@@ -226,7 +214,7 @@ export class StudentsService {
     const coursesQuery = await this.dataSource.query<CourseCountResult[]>(
       `
       SELECT COUNT(*) as count
-      FROM course_enrollment
+      FROM student_course_enrollment
       WHERE student_id = ?
       AND status = 'ACTIVE'
       `,
@@ -272,16 +260,15 @@ export class StudentsService {
         s.start_at,
         s.end_at,
         s.teacher_id,
-        s.course_id,
+        NULL as course_id,
         s.meeting_url,
         s.status,
         CONCAT(u.first_name, ' ', u.last_name) as teacher_name,
-        c.title as course_name
+        NULL as course_name
       FROM session s
       JOIN booking b ON b.session_id = s.id
       JOIN teacher t ON t.id = s.teacher_id
       JOIN user u ON u.id = t.user_id
-      LEFT JOIN course c ON c.id = s.course_id
       WHERE b.student_id = ?
       AND s.deleted_at IS NULL
       AND b.status = 'CONFIRMED'
@@ -320,61 +307,4 @@ export class StudentsService {
     }));
   }
 
-  async getStudentEnrollments(userId: number) {
-    const student = await this.findByUserId(userId);
-    if (!student) {
-      return [];
-    }
-
-    const enrollments = await this.dataSource.query<CourseEnrollmentResult[]>(
-      `
-      SELECT
-        ce.id as enrollment_id,
-        ce.status,
-        ce.enrolled_at,
-        c.id as course_id,
-        c.title as course_title,
-        c.description,
-        (SELECT COUNT(*) FROM session s
-         WHERE s.course_id = c.id
-         AND s.deleted_at IS NULL
-         AND s.status = 'SCHEDULED') as total_sessions,
-        (SELECT COUNT(*) FROM session s
-         JOIN booking b ON b.session_id = s.id
-         WHERE s.course_id = c.id
-         AND b.student_id = ?
-         AND s.deleted_at IS NULL
-         AND s.status = 'COMPLETED') as completed_sessions,
-        (SELECT s.start_at FROM session s
-         JOIN booking b ON b.session_id = s.id
-         WHERE s.course_id = c.id
-         AND b.student_id = ?
-         AND s.deleted_at IS NULL
-         AND b.status = 'CONFIRMED'
-         AND s.status = 'SCHEDULED'
-         AND s.start_at > NOW()
-         ORDER BY s.start_at ASC
-         LIMIT 1) as next_session_at
-      FROM course_enrollment ce
-      JOIN course c ON c.id = ce.course_id
-      WHERE ce.student_id = ?
-      AND ce.status = 'ACTIVE'
-      ORDER BY ce.enrolled_at DESC
-      `,
-      [student.id, student.id, student.id],
-    );
-
-    return enrollments.map((enrollment) => ({
-      enrollmentId: enrollment.enrollment_id,
-      courseId: enrollment.course_id,
-      courseName: enrollment.course_title,
-      description: enrollment.description,
-      status: enrollment.status,
-      enrolledAt: enrollment.enrolled_at,
-
-      totalSessions: parseInt(enrollment.total_sessions || "0", 10),
-      completedSessions: parseInt(enrollment.completed_sessions || "0", 10),
-      nextSessionAt: enrollment.next_session_at,
-    }));
-  }
 }

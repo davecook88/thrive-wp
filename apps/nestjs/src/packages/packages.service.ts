@@ -722,11 +722,9 @@ export class PackagesService {
       throw new NotFoundException("Session not found");
     }
 
-    // Check if this is a course session
-    // Note: courseStepOptions relation will be added when course system is implemented
-    const requiresCourseEnrollment = session.type === ServiceType.COURSE;
-
-    // TODO: Check actual enrollment when course system is fully implemented
+    // Note: Course sessions have been moved to the course-programs system
+    // Legacy COURSE service type is no longer used for new bookings
+    const requiresCourseEnrollment = false;
     const isEnrolledInCourse = false;
 
     // Get student's active packages with uses loaded for balance computation

@@ -7,16 +7,13 @@ export { BaseEntity } from "./common/entities/base.entity.js";
 
 // Users & Auth
 export { User } from "./users/entities/user.entity.js";
-export { Admin } from "./courses/entities/admin.entity.js";
+export { Admin } from "./users/entities/admin.entity.js";
 export { Student } from "./students/entities/student.entity.js";
 export { Teacher } from "./teachers/entities/teacher.entity.js";
 export { TeacherAvailability } from "./teachers/entities/teacher-availability.entity.js";
 
 // Classes & Sessions
 export { Session } from "./sessions/entities/session.entity.js";
-export { Course } from "./courses/entities/course.entity.js";
-export { CourseTeacher } from "./course-teachers/entities/course-teacher.entity.js";
-export { CourseEnrollment } from "./enrollments/entities/course-enrollment.entity.js";
 
 // Group Classes
 export { GroupClass } from "./group-classes/entities/group-class.entity.js";

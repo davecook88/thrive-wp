@@ -9,7 +9,6 @@ import {
 import { BaseEntity } from "../../common/entities/base.entity.js";
 import type { User } from "../../users/entities/user.entity.js";
 import { Booking } from "../../payments/entities/booking.entity.js";
-import type { CourseEnrollment } from "../../enrollments/entities/course-enrollment.entity.js";
 import { Waitlist } from "../../waitlists/entities/waitlist.entity.js";
 
 /**
@@ -42,9 +41,6 @@ export class Student extends BaseEntity {
 
   @OneToMany(() => Booking, (booking) => booking.student)
   bookings: Booking[];
-
-  @OneToMany("CourseEnrollment", "student")
-  courseEnrollments: CourseEnrollment[];
 
   @OneToMany(() => Waitlist, "student")
   waitlists: Waitlist[];
