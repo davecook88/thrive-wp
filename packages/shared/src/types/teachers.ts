@@ -14,6 +14,7 @@ export type LocationInputDto = z.infer<typeof LocationInputSchema>;
 export const PublicTeacherSchema = z.object({
   id: z.number().int(),
   userId: z.number().int(),
+  tier: z.number().int().default(10),
   birthplace: LocationInputSchema,
   currentLocation: LocationInputSchema,
   displayName: z.string(),

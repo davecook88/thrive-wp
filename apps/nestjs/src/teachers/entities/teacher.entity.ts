@@ -187,6 +187,7 @@ export class Teacher extends BaseEntity {
     return {
       id: this.id,
       userId: this.userId,
+      tier: this.tier ?? 10,
       bio: this.bio ?? null,
       avatarUrl: this.avatarUrl ?? null,
       languagesSpoken: this.languagesSpoken ?? [],

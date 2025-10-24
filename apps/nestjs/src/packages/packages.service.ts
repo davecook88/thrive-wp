@@ -48,6 +48,7 @@ import {
   getAllowanceTier,
   getAllowanceDisplayLabel,
   getAllowanceCrossTierWarningMessage,
+  SERVICE_TYPE_BASE_TIERS,
 } from "../common/types/credit-tiers.js";
 
 @Injectable()
@@ -182,9 +183,12 @@ export class PackagesService {
     const mappings = await PackageQueryBuilder.buildPackageMappingQuery(
       this.stripeProductMapRepository,
     )
-      .andWhere("spm.metadata ->> 'service_type' = :serviceType", {
-        serviceType,
-      })
+      .innerJoin(
+        "spm.allowances",
+        "allowances_filter",
+        "allowances_filter.service_type = :serviceType AND allowances_filter.deleted_at IS NULL",
+        { serviceType },
+      )
       .orderBy("spm.created_at", "DESC")
       .getMany();
 
@@ -828,5 +832,137 @@ export class PackagesService {
 
     // Return the package ID of the first (recommended) option
     return sorted[0].id;
+  }
+
+  /**
+   * Get compatible packages for a booking based on service type and teacher tier.
+   * This is similar to getCompatiblePackagesForSession but works with booking params
+   * instead of an existing session (used for private session availability booking).
+   *
+   * @param studentId - Student ID
+   * @param serviceType - Service type (PRIVATE, GROUP, etc.)
+   * @param teacherTier - Teacher tier (from Teacher entity)
+   * @returns Compatible packages response
+   */
+  async getCompatiblePackagesForBooking(
+    studentId: number,
+    serviceType: ServiceType,
+    teacherTier: number,
+  ): Promise<CompatiblePackagesForSessionResponseDto> {
+    // Get student's active packages with uses loaded for balance computation
+    const activePackages = await this.pkgRepo
+      .createQueryBuilder("sp")
+      .leftJoinAndSelect("sp.uses", "uses", "uses.deleted_at IS NULL")
+      .leftJoinAndSelect("sp.stripeProductMap", "spm")
+      .leftJoinAndSelect(
+        "spm.allowances",
+        "allowances",
+        "allowances.deleted_at IS NULL",
+      )
+      .where("sp.student_id = :studentId", { studentId })
+      .andWhere("sp.deleted_at IS NULL")
+      .andWhere("(sp.expires_at IS NULL OR sp.expires_at > NOW())")
+      .getMany();
+
+    console.log(
+      `Found ${activePackages.length} active packages for student ${studentId}`,
+    );
+
+    // Calculate the target tier (base service tier + teacher tier)
+    const baseServiceTier = SERVICE_TYPE_BASE_TIERS[serviceType] ?? 0;
+    const targetTier = baseServiceTier + teacherTier;
+    console.log(
+      `Target tier for ${serviceType} booking with teacher tier ${teacherTier}: ${targetTier}`,
+    );
+
+    const exactMatch: CompatiblePackage[] = [];
+    const higherTier: CompatiblePackageWithWarning[] = [];
+
+    // Iterate through each package and each allowance within it
+    for (const pkg of activePackages) {
+      const allowances = pkg.stripeProductMap?.allowances || [];
+      const packageName =
+        (pkg.metadata?.name as string) ||
+        String(pkg.stripeProductMap?.metadata?.name || "Package");
+
+      for (const allowance of allowances) {
+        // Check if this allowance matches the service type
+        if (allowance.serviceType !== serviceType) {
+          console.log(
+            `Allowance ${allowance.id} service type ${allowance.serviceType} doesn't match ${serviceType}`,
+          );
+          continue;
+        }
+
+        // Calculate allowance tier
+        const allowanceTier = getAllowanceTier(allowance);
+
+        // Allowance must have equal or higher tier than target
+        if (allowanceTier < targetTier) {
+          console.log(
+            `Allowance ${allowance.id} tier ${allowanceTier} is lower than target ${targetTier}`,
+          );
+          continue;
+        }
+
+        // Compute remaining credits for this specific allowance
+        const remainingSessions = computeRemainingCreditsForAllowance(
+          allowance,
+          pkg.uses || [],
+        );
+
+        // Skip if no credits remaining for this allowance
+        if (remainingSessions <= 0) {
+          console.log(
+            `Allowance ${allowance.id} in package ${pkg.id} has no remaining credits`,
+          );
+          continue;
+        }
+
+        const label = getAllowanceDisplayLabel(allowance);
+
+        const baseInfo: CompatiblePackage = {
+          id: pkg.id, // Student package ID
+          allowanceId: allowance.id,
+          packageName: String(packageName || "Package"),
+          label,
+          remainingSessions,
+          expiresAt: pkg.expiresAt?.toISOString() || null,
+          creditUnitMinutes: allowance.creditUnitMinutes,
+          tier: allowanceTier,
+          serviceType: allowance.serviceType,
+          teacherTier: allowance.teacherTier,
+        };
+
+        console.log(
+          `Allowance ${allowance.id} in package ${pkg.id} has tier ${allowanceTier}`,
+        );
+
+        if (allowanceTier === targetTier) {
+          exactMatch.push(baseInfo);
+        } else if (allowanceTier > targetTier) {
+          // Generate warning message for cross-tier usage
+          const tierDifference = allowanceTier - targetTier;
+          const warningMessage = `This will use a ${label} (tier ${allowanceTier}) for a ${serviceType.toLowerCase()} session with a tier ${teacherTier} teacher (tier ${targetTier}). The credit is ${tierDifference} tier${tierDifference > 1 ? "s" : ""} higher than needed.`;
+
+          const allowanceWithWarning: CompatiblePackageWithWarning = {
+            ...baseInfo,
+            warningMessage,
+          };
+          higherTier.push(allowanceWithWarning);
+        }
+      }
+    }
+
+    // Select recommended allowance: prefer exact matches, then closest to expiration
+    const recommended = this.selectRecommendedPackage(exactMatch, higherTier);
+
+    return {
+      exactMatch,
+      higherTier,
+      recommended,
+      requiresCourseEnrollment: false, // Not applicable for booking flow
+      isEnrolledInCourse: false,
+    };
   }
 }

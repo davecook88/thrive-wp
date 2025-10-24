@@ -24,7 +24,6 @@ export default function CreditSelectionModal({
   onPayWithoutCredits,
   onCancel,
 }: CreditSelectionModalProps) {
-  console.log("CreditSelectionModal: compatible", compatible);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Use composite key: "packageId-allowanceId" to uniquely identify each option

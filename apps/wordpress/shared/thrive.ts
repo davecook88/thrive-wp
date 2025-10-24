@@ -305,6 +305,18 @@ export const thriveClient = {
       CompatiblePackagesForSessionResponseSchema,
     );
   },
+  fetchCompatiblePackagesForBooking: async (
+    serviceType: ServiceType,
+    teacherTier: number,
+  ): Promise<CompatiblePackagesForSessionResponseDto | null> => {
+    const params = new URLSearchParams();
+    params.append("serviceType", serviceType);
+    params.append("teacherTier", String(teacherTier));
+    return await apiGet<CompatiblePackagesForSessionResponseDto | null>(
+      `/api/packages/compatible-for-booking?${params.toString()}`,
+      CompatiblePackagesForSessionResponseSchema,
+    );
+  },
 
   getPackages: async (): Promise<PackageResponseDto[]> => {
     const data = await apiGet<PackageResponseDto[]>("/api/admin/packages");

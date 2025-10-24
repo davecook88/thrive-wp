@@ -90,4 +90,38 @@ export class PackagesController {
       sessionId,
     );
   }
+
+  @Get("compatible-for-booking")
+  async getCompatiblePackagesForBooking(
+    @Query("serviceType") serviceType: ServiceType,
+    @Query("teacherTier", ParseIntPipe) teacherTier: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    // Validate required query params
+    if (!serviceType) {
+      throw new BadRequestException("serviceType is required");
+    }
+    if (!Number.isFinite(teacherTier)) {
+      throw new BadRequestException("teacherTier must be a valid number");
+    }
+
+    const userId = req.headers["x-auth-user-id"];
+    if (!userId) {
+      throw new UnauthorizedException("User ID not found in auth headers");
+    }
+
+    // Convert user ID to student ID
+    const student = await this.studentsService.findByUserId(
+      parseInt(userId, 10),
+    );
+    if (!student) {
+      throw new NotFoundException("Student record not found for this user");
+    }
+
+    return this.packagesService.getCompatiblePackagesForBooking(
+      student.id,
+      serviceType,
+      teacherTier,
+    );
+  }
 }
