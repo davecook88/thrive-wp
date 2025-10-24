@@ -4,12 +4,8 @@ export class RemoveLegacyCourseTables1762000000050 implements MigrationInterface
   name = "RemoveLegacyCourseTables1762000000050";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Drop tables in reverse dependency order
-    await queryRunner.query(`DROP TABLE IF EXISTS course_enrollment`);
-    await queryRunner.query(`DROP TABLE IF EXISTS course_teacher`);
-    await queryRunner.query(`DROP TABLE IF EXISTS course`);
-
-    // Remove session.course_id column and its foreign key
+    // Must remove session.course_id foreign key FIRST before dropping course table
+    // Otherwise we'll get FK constraint violation
     const sessionTable = await queryRunner.getTable("session");
     if (sessionTable) {
       const courseIdColumn = sessionTable.findColumnByName("course_id");
@@ -32,6 +28,11 @@ export class RemoveLegacyCourseTables1762000000050 implements MigrationInterface
         await queryRunner.dropColumn("session", "course_id");
       }
     }
+
+    // Now drop tables in reverse dependency order
+    await queryRunner.query(`DROP TABLE IF EXISTS course_enrollment`);
+    await queryRunner.query(`DROP TABLE IF EXISTS course_teacher`);
+    await queryRunner.query(`DROP TABLE IF EXISTS course`);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

@@ -24,3 +24,4 @@ export { BundlePackagesMigration1762000000010 } from "./1762000000010-BundlePack
 export { AddStripeProductMapFKToStudentPackage1762000000020 } from "./1762000000020-AddStripeProductMapFKToStudentPackage.js";
 export { AddPackageUseIdToBooking1762000000030 } from "./1762000000030-AddPackageUseIdToBooking.js";
 export { AddAllowanceIdToPackageUse1762000000040 } from "./1762000000040-AddAllowanceIdToPackageUse.js";
+export { RemoveLegacyCourseTables1762000000050 } from "./1762000000050-RemoveLegacyCourseTables.js";
