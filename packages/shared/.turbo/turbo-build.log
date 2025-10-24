@@ -2,3 +2,6 @@
 > @thrive/shared@1.0.0 build /Users/davidcook/personal/thrive-wp/packages/shared
 > tsc
 
+src/types/course-programs.ts(173,6): error TS2554: Expected 2-3 arguments, but got 1.
+src/types/course-programs.ts(204,6): error TS2554: Expected 2-3 arguments, but got 1.
+ ELIFECYCLE  Command failed with exit code 2.

@@ -4,6 +4,7 @@ import { ServiceType } from "./class-types.js";
 /**
  * PackageAllowance describes one service type's allocation within a bundle.
  * Example: "5 PRIVATE credits @ 30 min each"
+ * For COURSE allowances, courseProgramId links to the specific course.
  * remainingCredits is only included in StudentPackageMyCreditsResponse, computed for each student.
  */
 export const PackageAllowanceSchema = z.object({
@@ -18,6 +19,7 @@ export const PackageAllowanceSchema = z.object({
     z.literal(45),
     z.literal(60),
   ]),
+  courseProgramId: z.number().int().positive().optional(),
 });
 
 export type PackageAllowance = z.infer<typeof PackageAllowanceSchema>;

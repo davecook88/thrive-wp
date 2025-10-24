@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { LocationInputSchema } from "./teachers.js";
+import { PublicTeacherSchema } from "./teachers.js";
 
 export const AdminResponseSchema = z.object({
   id: z.number(),
@@ -12,25 +12,6 @@ export const AdminResponseSchema = z.object({
 
 export type AdminResponse = z.infer<typeof AdminResponseSchema>;
 
-export const TeacherResponseSchema = z
-  .object({
-    id: z.number(),
-    tier: z.number(),
-    bio: z.string().nullable(),
-    isActive: z.union([z.boolean(), z.number()]),
-    avatarUrl: z.string().nullable(),
-    birthplace: LocationInputSchema.nullable(),
-    currentLocation: LocationInputSchema.nullable(),
-    specialties: z.array(z.string()).nullable(),
-    yearsExperience: z.number().nullable(),
-    languagesSpoken: z.array(z.string()).nullable(),
-    createdAt: z.string(),
-    updatedAt: z.string(),
-  })
-  .strict();
-
-export type TeacherResponse = z.infer<typeof TeacherResponseSchema>;
-
 export const UserResponseSchema = z.object({
   id: z.number(),
   email: z.string(),
@@ -39,7 +20,7 @@ export const UserResponseSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   admin: AdminResponseSchema.optional(),
-  teacher: TeacherResponseSchema.optional(),
+  teacher: PublicTeacherSchema.optional(),
 });
 
 export type UserResponse = z.infer<typeof UserResponseSchema>;
@@ -55,3 +36,22 @@ export const PaginatedUsersResponseSchema = z.object({
 export type PaginatedUsersResponse = z.infer<
   typeof PaginatedUsersResponseSchema
 >;
+
+// Admin action schemas
+export const MakeAdminSchema = z.object({
+  userId: z
+    .number()
+    .int()
+    .positive({ message: "User ID must be a positive integer" }),
+});
+
+export type MakeAdminDto = z.infer<typeof MakeAdminSchema>;
+
+export const MakeTeacherSchema = z.object({
+  userId: z
+    .number()
+    .int()
+    .positive({ message: "User ID must be a positive integer" }),
+});
+
+export type MakeTeacherDto = z.infer<typeof MakeTeacherSchema>;
