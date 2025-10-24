@@ -389,6 +389,7 @@ export class PackagesService {
 
   // NEW CREDIT-BASED METHODS (added alongside)
   async getActivePackagesForStudent(studentId: number) {
+    console.log("Fetching active packages for student", studentId);
     // Load packages with uses
     const packages = await PackageQueryBuilder.buildActiveStudentPackagesQuery(
       this.pkgRepo,
@@ -449,6 +450,8 @@ export class PackagesService {
         allowances,
       };
     });
+
+    console.log("withremaining", withRemaining);
 
     // Filter out packages with no remaining sessions
     const activePackages = withRemaining.filter(

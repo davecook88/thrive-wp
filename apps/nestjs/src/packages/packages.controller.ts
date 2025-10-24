@@ -64,6 +64,7 @@ export class PackagesController {
       throw new NotFoundException("Student record not found for this user");
     }
 
+    console.log("studentId", student.id);
     return this.packagesService.getActivePackagesForStudent(student.id);
   }
 

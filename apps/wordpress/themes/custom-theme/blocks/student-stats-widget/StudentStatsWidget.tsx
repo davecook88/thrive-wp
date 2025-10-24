@@ -23,22 +23,16 @@ export default function StudentStatsWidget({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const data = await thriveClient.getStudentStats();
-        setStats(data);
-      } catch (err) {
-        if (err instanceof ThriveApiError) {
-          setError(err.message);
-        } else {
-          setError(err instanceof Error ? err.message : "Unknown error");
-        }
-      } finally {
+    setLoading(true);
+    thriveClient
+      .getStudentStats()
+      .then((res) => setStats(res))
+      .catch((err: ThriveApiError) => {
+        setError(err.message || "Unknown error");
+      })
+      .finally(() => {
         setLoading(false);
-      }
-    };
-
-    fetchStats();
+      });
   }, []);
 
   const formatDateTime = (dateString: string) => {
@@ -48,15 +42,6 @@ export default function StudentStatsWidget({
       day: "numeric",
       hour: "numeric",
       minute: "2-digit",
-    }).format(date);
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
     }).format(date);
   };
 
