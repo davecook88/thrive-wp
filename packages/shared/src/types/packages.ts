@@ -6,6 +6,7 @@ import { ServiceType } from "./class-types.js";
  * Example: "5 PRIVATE credits @ 30 min each"
  */
 export const PackageAllowanceSchema = z.object({
+  id: z.number().int().positive(),
   serviceType: z.enum(ServiceType),
   teacherTier: z.number().int().nonnegative().default(0),
   credits: z.number().int().positive(),
@@ -83,15 +84,19 @@ export type StudentPackage = {
 
 /**
  * Compatible package for a session, with computed remaining credits.
+ * Now includes allowanceId to identify which specific allowance within the package.
  */
 export const CompatiblePackageSchema = z.object({
-  id: z.number(),
-  label: z.string(),
-  remainingSessions: z.number(), // Computed from PackageUse for the requested service type
+  id: z.number(), // Student package ID
+  allowanceId: z.number(), // Specific allowance ID within the package
+  packageName: z.string(), // Package name for display
+  label: z.string(), // Allowance label (e.g., "Private Credit", "Premium Group Credit")
+  remainingSessions: z.number(), // Computed from PackageUse for this specific allowance
   expiresAt: z.string().nullable(),
   creditUnitMinutes: z.number(),
   tier: z.number(),
-  allowances: z.array(PackageAllowanceSchema),
+  serviceType: z.enum(ServiceType), // Service type of this allowance
+  teacherTier: z.number(), // Teacher tier of this allowance
 });
 
 export type CompatiblePackage = z.infer<typeof CompatiblePackageSchema>;

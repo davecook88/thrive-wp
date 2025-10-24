@@ -74,11 +74,32 @@ export const CreateBookingResponseSchema = z.object({
 
 export type CreateBookingResponse = z.infer<typeof CreateBookingResponseSchema>;
 
-// Booking Creation Request Schema
-export const CreateBookingRequestSchema = z.object({
-  sessionId: z.number().int().positive(),
-  studentPackageId: z.number().int().positive().optional(),
-  confirmed: z.boolean().optional(),
+// Booking Data Schema (for creating new sessions from availability)
+export const BookingDataSchema = z.object({
+  teacherId: z.number().int().positive(),
+  startAt: z.string(),
+  endAt: z.string(),
 });
+
+export type BookingData = z.infer<typeof BookingDataSchema>;
+
+// Booking Creation Request Schema
+// Supports two flows:
+// 1. Book existing session: provide sessionId
+// 2. Create and book new session: provide bookingData
+export const CreateBookingRequestSchema = z
+  .object({
+    sessionId: z.number().int().positive().optional(),
+    bookingData: BookingDataSchema.optional(),
+    studentPackageId: z.number().int().positive(),
+    allowanceId: z.number().int().positive(),
+    confirmed: z.boolean().optional(),
+  })
+  .refine(
+    (data) => data.sessionId !== undefined || data.bookingData !== undefined,
+    {
+      message: "Either sessionId or bookingData must be provided",
+    },
+  );
 
 export type CreateBookingRequest = z.infer<typeof CreateBookingRequestSchema>;

@@ -74,6 +74,25 @@ export class ThriveClient {
     );
     return this.request("/students/me/stats", {}, StudentStatsResponseSchema);
   }
+
+  async createBooking(data: {
+    sessionId: number;
+    studentPackageId: number;
+    allowanceId: number;
+    confirmed?: boolean;
+  }) {
+    const { CreateBookingResponseSchema } = await import(
+      "../types/group-classes.js"
+    );
+    return this.request(
+      "/bookings",
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      },
+      CreateBookingResponseSchema,
+    );
+  }
 }
 
 export const thriveClient = new ThriveClient();
