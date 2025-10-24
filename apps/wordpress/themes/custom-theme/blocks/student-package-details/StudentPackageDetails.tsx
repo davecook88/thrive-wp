@@ -1,28 +1,9 @@
 import { useEffect, useState } from "react";
-import type { StudentPackage } from "@thrive/shared/types/packages";
-
-interface PackageBalance {
-  serviceType: string;
-  teacherTier: number;
-  creditUnitMinutes: number;
-  totalCredits: number;
-  remainingCredits: number;
-}
-
-interface StudentPackageWithBalances extends StudentPackage {
-  allowances?: Array<{
-    serviceType: string;
-    teacherTier: number;
-    credits: number;
-    creditUnitMinutes: number;
-  }>;
-  balances?: PackageBalance[];
-}
-
-interface PackagesData {
-  packages: StudentPackageWithBalances[];
-  totalRemaining: number;
-}
+import type {
+  PackageAllowance,
+  StudentPackageMyCreditsResponse,
+} from "@thrive/shared/types/packages";
+import { thriveClient } from "../../../../shared/thrive";
 
 interface StudentPackageDetailsProps {
   viewMode?: "compact" | "detailed";
@@ -33,22 +14,16 @@ export default function StudentPackageDetails({
   viewMode = "detailed",
   showExpired = false,
 }: StudentPackageDetailsProps) {
-  const [packagesData, setPackagesData] = useState<PackagesData | null>(null);
+  const [packagesData, setPackagesData] =
+    useState<StudentPackageMyCreditsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPackages = async () => {
       try {
-        const response = await fetch("/api/packages/my-credits", {
-          credentials: "include",
-        });
+        const data = await thriveClient.fetchStudentCredits();
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch packages");
-        }
-
-        const data = await response.json();
         setPackagesData(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
@@ -57,7 +32,7 @@ export default function StudentPackageDetails({
       }
     };
 
-    fetchPackages();
+    void fetchPackages();
   }, []);
 
   const formatDate = (dateString: string) => {
@@ -81,6 +56,23 @@ export default function StudentPackageDetails({
         (1000 * 60 * 60 * 24),
     );
     return daysUntilExpiry <= 7 && daysUntilExpiry > 0;
+  };
+
+  const formatServiceType = (serviceType: string) => {
+    return serviceType
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  };
+
+  const formatTierDisplay = (tier: number) => {
+    const tierNames: Record<number, string> = {
+      1: "Tier 1",
+      2: "Tier 2",
+      3: "Tier 3",
+      4: "Tier 4",
+    };
+    return tierNames[tier] || `Tier ${tier}`;
   };
 
   if (loading) {
@@ -114,6 +106,8 @@ export default function StudentPackageDetails({
     ? packagesData.packages
     : packagesData.packages.filter((pkg) => !isExpired(pkg.expiresAt));
 
+  console.log("Filtered Packages:", filteredPackages);
+
   return (
     <div className={`student-package-details ${viewMode}-view`}>
       <div className="package-summary">
@@ -125,8 +119,6 @@ export default function StudentPackageDetails({
 
       <div className="packages-list">
         {filteredPackages.map((pkg) => {
-          const usedSessions = pkg.totalSessions - pkg.remainingSessions;
-          const progressPercent = (usedSessions / pkg.totalSessions) * 100;
           const expired = isExpired(pkg.expiresAt);
           const expiringSoon = isExpiringSoon(pkg.expiresAt);
 
@@ -141,42 +133,63 @@ export default function StudentPackageDetails({
                 <h4 className="package-name">{pkg.packageName}</h4>
               </div>
 
-              {/* Display balances breakdown for bundle packages */}
-              {pkg.balances && pkg.balances.length > 0 ? (
+              {/* Display credits breakdown for bundle packages */}
+              {pkg.allowances && pkg.allowances.length > 0 ? (
                 <div className="package-balances">
-                  {pkg.balances.map((balance: PackageBalance, idx: number) => {
-                    const usedCredits =
-                      balance.totalCredits - balance.remainingCredits;
-                    const balanceProgress =
-                      (usedCredits / balance.totalCredits) * 100;
-                    return (
-                      <div key={idx} className="balance-item">
-                        <div className="balance-header">
-                          <span className="balance-type">
-                            {balance.serviceType} ({balance.creditUnitMinutes}
-                            min)
-                          </span>
-                          <span className="balance-count">
-                            {balance.remainingCredits} of {balance.totalCredits}{" "}
-                            remaining
-                          </span>
-                        </div>
-                        <div className="progress-bar-container">
-                          <div
-                            className="progress-bar"
-                            style={{ width: `${balanceProgress}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  <div className="balances-list">
+                    {pkg.allowances.map(
+                      (allowance: PackageAllowance, idx: number) => {
+                        const usedCredits =
+                          allowance.credits - (allowance.remainingCredits ?? 0);
+                        const balanceProgress =
+                          (usedCredits / allowance.credits) * 100;
+                        return (
+                          <div key={idx} className="balance-item">
+                            <div className="balance-header">
+                              <div className="balance-type-info">
+                                <span className="balance-type">
+                                  {formatServiceType(allowance.serviceType)}
+                                </span>
+                                <span className="balance-tier">
+                                  {formatTierDisplay(allowance.teacherTier)}
+                                </span>
+                              </div>
+                              <span className="balance-duration">
+                                {allowance.creditUnitMinutes} min
+                              </span>
+                            </div>
+                            <div className="balance-progress">
+                              <div className="progress-bar-container">
+                                <div
+                                  className="progress-bar"
+                                  style={{ width: `${balanceProgress}%` }}
+                                ></div>
+                              </div>
+                              <div className="balance-count">
+                                <span className="remaining">
+                                  {allowance.remainingCredits}
+                                </span>
+                                <span className="separator">/</span>
+                                <span className="total">
+                                  {allowance.credits}
+                                </span>
+                                <span className="unit">remaining</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      },
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="package-progress">
                   <div className="progress-bar-container">
                     <div
                       className="progress-bar"
-                      style={{ width: `${progressPercent}%` }}
+                      style={{
+                        width: `${((pkg.totalSessions - pkg.remainingSessions) / pkg.totalSessions) * 100}%`,
+                      }}
                     ></div>
                   </div>
                   <div className="progress-text">
@@ -209,15 +222,6 @@ export default function StudentPackageDetails({
             </div>
           );
         })}
-      </div>
-
-      <div className="package-actions">
-        <a href="/booking" className="button">
-          Book a Session
-        </a>
-        <a href="/packages" className="button secondary">
-          Buy More Credits
-        </a>
       </div>
     </div>
   );

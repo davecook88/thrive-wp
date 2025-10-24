@@ -39,7 +39,7 @@ export default function AvailabilityModalContent({
     error: compatibleError,
   } = useCompatibleCreditsForBooking(
     selectedTeacher ? ServiceType.PRIVATE : null,
-    selectedTeacher?.tier ?? null,
+    selectedTeacher?.tier || null,
   );
 
   // Package booking hook

@@ -1,7 +1,3 @@
-export type StudentPackageMyCreditsResponse = {
-  packages: StudentPackage[];
-  totalRemaining: 4;
-};
 export type StudentPackage = {
   id: number;
   packageName: string;

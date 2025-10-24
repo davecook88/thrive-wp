@@ -83,7 +83,7 @@ export class StripeProductMap extends BaseEntity {
     "PackageAllowance",
     (allowance: PackageAllowance) => allowance.stripeProductMap,
     {
-      eager: false,
+      eager: true,
       cascade: true,
     },
   )

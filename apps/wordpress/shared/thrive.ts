@@ -23,6 +23,7 @@ import {
   CreateSessionResponse,
   CreateSessionDto,
   StripeKeyResponseSchema,
+  StudentPackageMyCreditsResponseSchema,
 } from "@thrive/shared";
 import {
   PreviewAvailabilityResponseSchema,
@@ -223,6 +224,7 @@ export const thriveClient = {
     async (): Promise<StudentPackageMyCreditsResponse | null> => {
       return await apiGet<StudentPackageMyCreditsResponse>(
         "/api/packages/my-credits",
+        StudentPackageMyCreditsResponseSchema,
       );
     },
   fetchAvailableGroupSessions: async ({

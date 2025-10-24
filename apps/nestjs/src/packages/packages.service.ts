@@ -389,30 +389,66 @@ export class PackagesService {
 
   // NEW CREDIT-BASED METHODS (added alongside)
   async getActivePackagesForStudent(studentId: number) {
+    // Load packages with uses
     const packages = await PackageQueryBuilder.buildActiveStudentPackagesQuery(
       this.pkgRepo,
       studentId,
     )
-      .leftJoinAndSelect("sp.stripeProductMap", "spm")
-      .leftJoinAndSelect(
-        "spm.allowances",
-        "allowances",
-        "allowances.deleted_at IS NULL",
-      )
       .orderBy("sp.created_at", "DESC")
       .getMany();
 
+    // For each package, load the stripeProductMap with allowances separately
+    // to avoid query complexity issues
+    const packagesWithMappings = await Promise.all(
+      packages.map(async (pkg) => {
+        const mapping = await this.stripeProductMapRepository.findOne({
+          where: { id: pkg.stripeProductMapId },
+          relations: ["allowances"],
+        });
+        return { ...pkg, stripeProductMap: mapping };
+      }),
+    );
+
     // Compute remaining for each package
-    const withRemaining = packages.map((pkg) => ({
-      ...pkg,
-      remainingSessions: computeRemainingCredits(
+    const withRemaining = packagesWithMappings.map((pkg) => {
+      const remainingSessions = computeRemainingCredits(
         pkg.totalSessions,
         pkg.uses || [],
-      ),
-      creditUnitMinutes: Number(pkg.metadata?.credit_unit_minutes) || 30,
-      teacherTier: pkg.metadata?.teacher_tier || null,
-      serviceType: pkg.metadata?.service_type || null,
-    }));
+      );
+
+      // Map allowances from stripeProductMap, calculating remaining credits per allowance
+      const allowances = (pkg.stripeProductMap?.allowances || []).map(
+        (allowance: PackageAllowance) => {
+          // Calculate remaining credits for this specific allowance
+          // by summing up credits_used from PackageUse records for this allowance
+          const usedCreditsForAllowance = (pkg.uses || [])
+            .filter((use) => use.allowanceId === allowance.id)
+            .reduce((sum, use) => sum + (use.creditsUsed || 1), 0);
+
+          return {
+            id: allowance.id,
+            serviceType: allowance.serviceType,
+            teacherTier: allowance.teacherTier ?? 0,
+            credits: allowance.credits,
+            remainingCredits: Math.max(
+              0,
+              allowance.credits - usedCreditsForAllowance,
+            ),
+            creditUnitMinutes: allowance.creditUnitMinutes,
+          };
+        },
+      );
+
+      return {
+        id: pkg.id,
+        packageName: pkg.packageName,
+        totalSessions: pkg.totalSessions,
+        remainingSessions,
+        purchasedAt: pkg.purchasedAt.toISOString(),
+        expiresAt: pkg.expiresAt ? pkg.expiresAt.toISOString() : null,
+        allowances,
+      };
+    });
 
     // Filter out packages with no remaining sessions
     const activePackages = withRemaining.filter(
