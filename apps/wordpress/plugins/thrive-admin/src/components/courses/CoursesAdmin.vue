@@ -76,6 +76,12 @@
                   ]">
                     {{ course.isActive ? 'Active' : 'Inactive' }}
                   </span>
+                  <span v-if="course.stripeProductId" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    Published to Stripe
+                  </span>
+                  <span v-else-if="course.priceInCents" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    Price Set (Not Published)
+                  </span>
                 </div>
               </div>
               <div class="ml-4 flex items-center space-x-2">
@@ -84,6 +90,13 @@
                   class="text-blue-600 hover:text-blue-800 text-sm font-medium"
                 >
                   Manage Steps
+                </button>
+                <button
+                  v-if="!course.stripeProductId"
+                  @click="openPublishModal(course)"
+                  class="text-green-600 hover:text-green-800 text-sm font-medium"
+                >
+                  Publish to Stripe
                 </button>
                 <button
                   @click="editCourse(course)"
@@ -203,6 +216,13 @@
       @close="closeManageStepsModal"
       @course-updated="onCourseUpdated"
     />
+
+    <!-- Publish Course Modal -->
+    <PublishCourseModal
+      :course="publishingCourse"
+      @close="closePublishModal"
+      @published="onCoursePublished"
+    />
   </div>
 </template>
 
@@ -211,12 +231,14 @@ import { defineComponent, ref, reactive, onMounted } from 'vue';
 import { thriveClient } from '@wp-shared/thrive';
 import type { CourseProgramDetailDto } from '@thrive/shared';
 import ManageStepsModal from './ManageStepsModal.vue';
+import PublishCourseModal from './PublishCourseModal.vue';
 import type { CourseForm } from './types';
 
 export default defineComponent({
   name: 'CoursesAdmin',
   components: {
-    ManageStepsModal
+    ManageStepsModal,
+    PublishCourseModal
   },
   setup() {
     const activeTab = ref<'list' | 'create' | 'edit'>('list');
@@ -226,6 +248,7 @@ export default defineComponent({
     const error = ref<string | null>(null);
     const selectedCourse = ref<CourseProgramDetailDto | null>(null);
     const editingCourse = ref<CourseProgramDetailDto | null>(null);
+    const publishingCourse = ref<CourseProgramDetailDto | null>(null);
 
     const form: CourseForm = reactive({
       code: '',
@@ -343,6 +366,18 @@ export default defineComponent({
       form.isActive = true;
     };
 
+    const openPublishModal = (course: CourseProgramDetailDto) => {
+      publishingCourse.value = course;
+    };
+
+    const closePublishModal = () => {
+      publishingCourse.value = null;
+    };
+
+    const onCoursePublished = async () => {
+      await loadCourses();
+    };
+
     onMounted(loadCourses);
 
     return {
@@ -353,6 +388,7 @@ export default defineComponent({
       error,
       selectedCourse,
       editingCourse,
+      publishingCourse,
       form,
       loadCourses,
       saveCourse,
@@ -362,7 +398,10 @@ export default defineComponent({
       closeManageStepsModal,
       onCourseUpdated,
       cancelEdit,
-      resetForm
+      resetForm,
+      openPublishModal,
+      closePublishModal,
+      onCoursePublished
     };
   }
 });

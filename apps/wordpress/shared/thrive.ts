@@ -31,6 +31,9 @@ import {
   UpdateCourseProgramDto,
   CreateCourseStepDto,
   UpdateCourseStepDto,
+  PublishCourseDto,
+  AttachStepOptionDto,
+  StepOptionDetailDto,
 } from "@thrive/shared";
 import {
   PreviewAvailabilityResponseSchema,
@@ -616,5 +619,65 @@ export const thriveClient = {
     await apiRequest(`/api/admin/course-programs/steps/${stepId}`, {
       method: "DELETE",
     });
+  },
+
+  publishCourseToStripe: async (
+    id: number,
+    data: Omit<PublishCourseDto, "courseProgramId">,
+  ): Promise<{ stripeProductId: string; stripePriceId: string }> => {
+    const response = await apiRequest(
+      `/api/admin/course-programs/${id}/publish`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+    );
+    return response as { stripeProductId: string; stripePriceId: string };
+  },
+
+  // Step Options management methods
+  attachStepOption: async (
+    stepId: number,
+    data: Omit<AttachStepOptionDto, "courseStepId">,
+  ): Promise<StepOptionDetailDto> => {
+    const response = await apiPost(
+      `/api/admin/course-programs/steps/${stepId}/options`,
+      { ...data, courseStepId: stepId } as Record<string, unknown>,
+    );
+    return response as StepOptionDetailDto;
+  },
+
+  detachStepOption: async (optionId: number): Promise<void> => {
+    await apiRequest(`/api/admin/course-programs/steps/options/${optionId}`, {
+      method: "DELETE",
+    });
+  },
+
+  listStepOptions: async (stepId: number): Promise<StepOptionDetailDto[]> => {
+    const response = await apiRequest(
+      `/api/admin/course-programs/steps/${stepId}/options`,
+    );
+    return response as StepOptionDetailDto[];
+  },
+
+  // Group Classes management methods
+  getAllGroupClasses: async (): Promise<
+    Array<{
+      id: number;
+      title: string;
+      description: string | null;
+      isActive: boolean;
+      levels: Array<{ id: number; code: string; name: string }>;
+    }>
+  > => {
+    const response = await apiRequest(`/api/group-classes`);
+    return response as Array<{
+      id: number;
+      title: string;
+      description: string | null;
+      isActive: boolean;
+      levels: Array<{ id: number; code: string; name: string }>;
+    }>;
   },
 } as const;

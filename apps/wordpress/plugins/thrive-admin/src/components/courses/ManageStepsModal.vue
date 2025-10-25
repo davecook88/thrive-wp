@@ -104,7 +104,7 @@
             :key="step.id"
             class="border border-gray-200 rounded-lg p-4"
           >
-            <div class="flex items-start justify-between">
+            <div class="flex items-start justify-between mb-3">
               <div class="flex-1">
                 <div class="flex items-center">
                   <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-800 text-sm font-medium">
@@ -126,6 +126,49 @@
                 Delete
               </button>
             </div>
+
+            <!-- Step Options (Group Classes) -->
+            <div class="ml-11 mt-3 space-y-2 bg-gray-50 rounded-md p-3">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h6 class="text-xs font-medium text-gray-700">Class Scheduling Options</h6>
+                  <p class="text-xs text-gray-500 mt-0.5">Link group classes that students can choose for this step</p>
+                </div>
+                <button
+                  @click="openAttachOptionModal(step)"
+                  class="text-xs text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap"
+                >
+                  + Add Option
+                </button>
+              </div>
+
+              <div v-if="step.options && step.options.length > 0" class="space-y-1">
+                <div
+                  v-for="option in step.options"
+                  :key="option.id"
+                  class="flex items-center justify-between bg-white border border-gray-200 rounded px-3 py-2"
+                >
+                  <div class="flex-1">
+                    <span class="text-xs font-medium text-gray-900">{{ option.groupClassName }}</span>
+                    <span v-if="!option.isActive" class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                      Inactive
+                    </span>
+                  </div>
+                  <button
+                    @click="handleDetachOption(option.id)"
+                    class="text-xs text-red-600 hover:text-red-800"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+              <div v-else class="bg-yellow-50 border border-yellow-200 rounded p-2">
+                <p class="text-xs text-yellow-800">
+                  <strong>No class options yet.</strong> Add group classes that students can book for this step.
+                  Make sure to create group classes first in the Group Classes section.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
         <div v-else class="text-center py-6 text-gray-500 text-sm">
@@ -133,13 +176,69 @@
         </div>
       </div>
     </div>
+
+    <!-- Attach Option Modal -->
+    <div
+      v-if="showAttachOptionModal && selectedStep"
+      class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-[60]"
+      @click.self="closeAttachOptionModal"
+    >
+      <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h4 class="text-lg font-medium text-gray-900">Add Class Option to {{ selectedStep.label }}</h4>
+          <p class="text-sm text-gray-500 mt-1">Students will choose from these class options when booking this step</p>
+        </div>
+        <div class="px-6 py-4 space-y-4">
+          <div v-if="availableGroupClasses.length === 0" class="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+            <p class="text-sm text-yellow-800">
+              <strong>No group classes available.</strong><br>
+              Please create group classes first in the Group Classes admin section before adding them to course steps.
+            </p>
+          </div>
+          <div v-else>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Select Group Class</label>
+            <select
+              v-model="selectedGroupClassId"
+              class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option :value="null">-- Select a group class --</option>
+              <option
+                v-for="groupClass in availableGroupClasses"
+                :key="groupClass.id"
+                :value="groupClass.id"
+              >
+                {{ groupClass.title }} {{ groupClass.isActive ? '' : '(Inactive)' }}
+              </option>
+            </select>
+            <p class="mt-2 text-xs text-gray-500">
+              Students will be able to book sessions from the selected group class for this course step.
+            </p>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+          <button
+            @click="closeAttachOptionModal"
+            class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            @click="handleAttachOption"
+            :disabled="!selectedGroupClassId || attachingOption"
+            class="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+          >
+            {{ attachingOption ? 'Adding...' : 'Add Option' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive, ref, watch } from 'vue';
+import { defineComponent, reactive, ref, watch, onMounted } from 'vue';
 import { thriveClient } from '@wp-shared/thrive';
-import type { CourseProgramDetailDto } from '@thrive/shared';
+import type { CourseProgramDetailDto, CourseStepDetailDto } from '@thrive/shared';
 import type { CourseStepForm } from './types';
 
 export default defineComponent({
@@ -162,8 +261,20 @@ export default defineComponent({
       });
       labelNumber.value = newCourse?.steps ? newCourse.steps.length + 1 : 1;
       updateLabelNumber(); // Ensure label is unique after course change
-    }, { deep: true });    
+    }, { deep: true });
     const addingStep = ref(false);
+
+    // Step options state
+    const showAttachOptionModal = ref(false);
+    const selectedStep = ref<CourseStepDetailDto | null>(null);
+    const selectedGroupClassId = ref<number | null>(null);
+    const attachingOption = ref(false);
+    const availableGroupClasses = ref<Array<{
+      id: number;
+      title: string;
+      description: string | null;
+      isActive: boolean;
+    }>>([]);
 
     const stepForm: CourseStepForm = reactive({
       stepOrder: 1,
@@ -238,7 +349,6 @@ export default defineComponent({
 
     const updateLabelNumber = (n?: string | number) => {
         const provided = typeof n === 'string' ? parseInt(n, 10) : typeof n === 'number' ? n : undefined;
-        console.log('Updating label number based on step order:', stepForm.stepOrder, n);
         const existingStepLabels = props.course?.steps.reduce((acc, step) => {
             const parts = step.label.split('-');
             const numberPart = parseInt(parts[1], 10);
@@ -272,6 +382,63 @@ export default defineComponent({
       updateStepOrder();
     }
 
+    // Load available group classes
+    const loadGroupClasses = async () => {
+      try {
+        availableGroupClasses.value = await thriveClient.getAllGroupClasses();
+      } catch (err) {
+        console.error('Failed to load group classes:', err);
+      }
+    };
+
+    onMounted(loadGroupClasses);
+
+    // Step options management
+    const openAttachOptionModal = (step: CourseStepDetailDto) => {
+      selectedStep.value = step;
+      selectedGroupClassId.value = null;
+      showAttachOptionModal.value = true;
+    };
+
+    const closeAttachOptionModal = () => {
+      showAttachOptionModal.value = false;
+      selectedStep.value = null;
+      selectedGroupClassId.value = null;
+    };
+
+    const handleAttachOption = async () => {
+      if (!selectedStep.value || !selectedGroupClassId.value) return;
+
+      attachingOption.value = true;
+
+      try {
+        await thriveClient.attachStepOption(selectedStep.value.id, {
+          groupClassId: selectedGroupClassId.value,
+          isActive: true,
+        });
+
+        closeAttachOptionModal();
+        emit('course-updated');
+      } catch (err: any) {
+        console.error('Failed to attach option:', err);
+      } finally {
+        attachingOption.value = false;
+      }
+    };
+
+    const handleDetachOption = async (optionId: number) => {
+      if (!confirm('Are you sure you want to remove this class option?')) {
+        return;
+      }
+
+      try {
+        await thriveClient.detachStepOption(optionId);
+        emit('course-updated');
+      } catch (err: any) {
+        console.error('Failed to detach option:', err);
+      }
+    };
+
     return {
       addingStep,
       stepForm,
@@ -279,7 +446,17 @@ export default defineComponent({
       handleAddStep,
       handleDeleteStep,
       updateLabelNumber,
-      onLabelChange
+      onLabelChange,
+      // Step options
+      showAttachOptionModal,
+      selectedStep,
+      selectedGroupClassId,
+      attachingOption,
+      availableGroupClasses,
+      openAttachOptionModal,
+      closeAttachOptionModal,
+      handleAttachOption,
+      handleDetachOption,
     };
   }
 });
