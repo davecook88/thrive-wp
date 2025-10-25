@@ -24,6 +24,13 @@ import {
   CreateSessionDto,
   StripeKeyResponseSchema,
   StudentPackageMyCreditsResponseSchema,
+  // Course programs types
+  CourseProgramDetailDto,
+  CourseProgramDetailSchema,
+  CreateCourseProgramDto,
+  UpdateCourseProgramDto,
+  CreateCourseStepDto,
+  UpdateCourseStepDto,
 } from "@thrive/shared";
 import {
   PreviewAvailabilityResponseSchema,
@@ -542,5 +549,72 @@ export const thriveClient = {
       { tier },
       UserResponseSchema,
     );
+  },
+
+  // Course Programs management methods
+  getCoursePrograms: async (): Promise<CourseProgramDetailDto[]> => {
+    const data = await apiGet(
+      `/api/admin/course-programs`,
+      z.array(CourseProgramDetailSchema),
+    );
+    return data || [];
+  },
+
+  getCourseProgram: async (
+    id: number,
+  ): Promise<CourseProgramDetailDto | null> => {
+    return await apiGet(
+      `/api/admin/course-programs/${id}`,
+      CourseProgramDetailSchema,
+    );
+  },
+
+  createCourseProgram: async (
+    data: CreateCourseProgramDto,
+  ): Promise<CourseProgramDetailDto | null> => {
+    return await apiPost(
+      `/api/admin/course-programs`,
+      data as Record<string, unknown>,
+      CourseProgramDetailSchema,
+    );
+  },
+
+  updateCourseProgram: async (
+    id: number,
+    data: UpdateCourseProgramDto,
+  ): Promise<CourseProgramDetailDto | null> => {
+    return await apiPut(
+      `/api/admin/course-programs/${id}`,
+      data as Record<string, unknown>,
+      CourseProgramDetailSchema,
+    );
+  },
+
+  deleteCourseProgram: async (id: number): Promise<void> => {
+    await apiRequest(`/api/admin/course-programs/${id}`, { method: "DELETE" });
+  },
+
+  // Course Steps management methods
+  createCourseStep: async (data: CreateCourseStepDto): Promise<unknown> => {
+    return await apiPost(
+      `/api/admin/course-programs/${data.courseProgramId}/steps`,
+      data as Record<string, unknown>,
+    );
+  },
+
+  updateCourseStep: async (
+    stepId: number,
+    data: UpdateCourseStepDto,
+  ): Promise<unknown> => {
+    return await apiPut(
+      `/api/admin/course-programs/steps/${stepId}`,
+      data as Record<string, unknown>,
+    );
+  },
+
+  deleteCourseStep: async (stepId: number): Promise<void> => {
+    await apiRequest(`/api/admin/course-programs/steps/${stepId}`, {
+      method: "DELETE",
+    });
   },
 } as const;

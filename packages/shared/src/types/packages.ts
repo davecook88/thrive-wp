@@ -19,7 +19,7 @@ export const PackageAllowanceSchema = z.object({
     z.literal(45),
     z.literal(60),
   ]),
-  courseProgramId: z.number().int().positive().optional(),
+  courseProgramId: z.number().int().positive().nullable().optional(),
 });
 
 export type PackageAllowance = z.infer<typeof PackageAllowanceSchema>;

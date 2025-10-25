@@ -50,6 +50,7 @@ import {
   getAllowanceCrossTierWarningMessage,
   SERVICE_TYPE_BASE_TIERS,
 } from "../common/types/credit-tiers.js";
+import { StripeProductService } from "../common/services/stripe-product.service.js";
 
 @Injectable()
 export class PackagesService {
@@ -71,6 +72,7 @@ export class PackagesService {
     private readonly sessionRepo: Repository<Session>,
 
     private readonly sessionsService: SessionsService,
+    private readonly stripeProductService: StripeProductService,
   ) {
     const secretKey = this.configService.get<string>("stripe.secretKey");
     if (!secretKey) {
@@ -317,29 +319,28 @@ export class PackagesService {
         );
       }
 
-      // Create Stripe product for entire bundle
-      const stripeProduct = await this.stripe.products.create({
-        name: dto.name,
-        description: dto.description,
-        type: "service",
-        metadata: {
-          name: dto.name,
-          allowances: JSON.stringify(dto.allowances),
-          expires_in_days: dto.expiresInDays || "",
-          scope: dto.scope,
-        },
-      });
-
-      // Create Stripe price
-      const stripePrice = await this.stripe.prices.create({
-        product: stripeProduct.id,
-        unit_amount: dto.amountMinor,
-        currency: dto.currency.toLowerCase(),
-        lookup_key: lookupKey,
-        metadata: {
-          allowances: JSON.stringify(dto.allowances),
-        },
-      });
+      // Create Stripe product and price using centralized service
+      const { product: stripeProduct, price: stripePrice } =
+        await this.stripeProductService.createProductWithPrice(
+          {
+            name: dto.name,
+            description: dto.description,
+            metadata: {
+              name: dto.name,
+              allowances: JSON.stringify(dto.allowances),
+              expires_in_days: dto.expiresInDays?.toString() || "",
+              scope: dto.scope,
+            },
+          },
+          {
+            amountMinor: dto.amountMinor,
+            currency: dto.currency,
+            lookupKey,
+            metadata: {
+              allowances: JSON.stringify(dto.allowances),
+            },
+          },
+        );
 
       // Create local mapping
       const mapping = this.stripeProductMapRepository.create({
@@ -357,12 +358,20 @@ export class PackagesService {
       const savedMapping = await this.stripeProductMapRepository.save(mapping);
 
       // Create PackageAllowance rows
-      const allowances = dto.allowances.map((a) =>
-        this.allowanceRepo.create({
+      const allowances = dto.allowances.map((a) => {
+        const courseProgramId: number | undefined =
+          a.courseProgramId ?? undefined;
+        return this.allowanceRepo.create({
           stripeProductMapId: savedMapping.id,
-          ...a,
-        }),
-      );
+          courseProgramId,
+          createdAt: new Date(),
+          credits: a.credits,
+          creditUnitMinutes: a.creditUnitMinutes,
+          serviceType: a.serviceType,
+          stripeProductMap: savedMapping,
+          teacherTier: a.teacherTier || 0,
+        });
+      });
       await this.allowanceRepo.save(allowances);
 
       // Reload with allowances

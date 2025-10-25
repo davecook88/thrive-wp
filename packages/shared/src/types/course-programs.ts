@@ -87,7 +87,7 @@ export const CreateCourseStepSchema = z.object({
     .describe("Step content/overview"),
 
   isRequired: z
-    .boolean()
+    .preprocess((val) => Boolean(val), z.boolean())
     .default(true)
     .describe("Whether step must be completed"),
 });
@@ -175,7 +175,8 @@ export const CourseProgramListItemSchema = z.object({
   title: z.string(),
   description: z.string().nullable(),
   timezone: z.string(),
-  isActive: z.boolean(),
+  // could be 1, should be transformed to boolean
+  isActive: z.preprocess((val) => Boolean(val), z.boolean()),
   stepCount: z.number().describe("Number of steps in this course"),
   priceInCents: z.number().nullable().describe("Price in cents if published"),
   stripePriceId: z.string().nullable(),
@@ -228,7 +229,7 @@ export const CourseStepDetailSchema = z.object({
   label: z.string(),
   title: z.string(),
   description: z.string().nullable(),
-  isRequired: z.boolean(),
+  isRequired: z.preprocess((val) => Boolean(val), z.boolean()),
   options: z.array(StepOptionDetailSchema),
 });
 
@@ -257,12 +258,11 @@ export const CourseProgramDetailSchema = z.object({
   title: z.string(),
   description: z.string().nullable(),
   timezone: z.string(),
-  isActive: z.boolean(),
+  isActive: z.preprocess((val) => Boolean(val), z.boolean()),
   stripeProductId: z.string().nullable(),
   stripePriceId: z.string().nullable(),
   priceInCents: z.number().nullable(),
   steps: z.array(CourseStepDetailSchema),
-  bundleComponents: z.array(BundleComponentDetailSchema),
 });
 
 export type CourseProgramDetailDto = z.infer<typeof CourseProgramDetailSchema>;

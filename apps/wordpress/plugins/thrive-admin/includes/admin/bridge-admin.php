@@ -73,6 +73,16 @@ class Thrive_Admin_Bridge_Admin
             [$this, 'thrive_admin_group_classes_page']
         );
 
+        // Submenu: Courses
+        add_submenu_page(
+            'thrive-admin-dashboard',
+            'Course Programs',
+            'Courses',
+            'manage_options',
+            'thrive-admin-courses',
+            [$this, 'thrive_admin_courses_page']
+        );
+
         // Submenu: Settings
         add_submenu_page(
             'thrive-admin-dashboard',
@@ -91,6 +101,7 @@ class Thrive_Admin_Bridge_Admin
             'thrive-admin_page_thrive-admin-users',
             'thrive-admin_page_thrive-admin-products',
             'thrive-admin_page_thrive-admin-group-classes',
+            'thrive-admin_page_thrive-admin-courses',
             'thrive-admin_page_thrive-admin-settings'
         ];
 
@@ -258,6 +269,16 @@ class Thrive_Admin_Bridge_Admin
 
         // Load the Vue template
         include plugin_dir_path(__FILE__) . '../../templates/group-classes.php';
+    }
+
+    public function thrive_admin_courses_page()
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.'));
+        }
+
+        // Load the Vue template
+        include plugin_dir_path(__FILE__) . '../../templates/courses.php';
     }
 
     public function thrive_admin_settings_page()

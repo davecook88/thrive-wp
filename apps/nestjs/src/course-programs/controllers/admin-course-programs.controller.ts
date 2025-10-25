@@ -42,12 +42,16 @@ export class AdminCourseProgramsController {
 
   @Get()
   async findAll() {
-    return this.courseProgramsService.findAll(true); // Include inactive
+    return this.courseProgramsService.findAllWithPricing(true); // Include inactive, with pricing data
   }
 
   @Get(":id")
   async findOne(@Param("id", ParseIntPipe) id: number) {
-    return this.courseProgramsService.findOneOrFail(id, true); // Include relations
+    const courseProgram = await this.courseProgramsService.findOneOrFail(
+      id,
+      true,
+    ); // Include relations
+    return this.courseProgramsService.enrichWithPricing(courseProgram);
   }
 
   @Put(":id")

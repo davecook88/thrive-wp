@@ -16,6 +16,8 @@ import { AuthService } from "../auth/auth.service.js";
 import { User } from "../users/entities/user.entity.js";
 import { Admin } from "../users/entities/admin.entity.js";
 import { Teacher } from "../teachers/entities/teacher.entity.js";
+import { StripeProductService } from "../common/services/stripe-product.service.js";
+import { StripeProductMap } from "../payments/entities/stripe-product-map.entity.js";
 
 @Module({
   imports: [
@@ -28,6 +30,7 @@ import { Teacher } from "../teachers/entities/teacher.entity.js";
       User,
       Admin,
       Teacher,
+      StripeProductMap,
     ]),
   ],
   controllers: [AdminCourseProgramsController, CourseProgramsController],
@@ -36,6 +39,7 @@ import { Teacher } from "../teachers/entities/teacher.entity.js";
     CourseStepsService,
     CourseStepProgressService,
     AuthService,
+    StripeProductService,
   ],
   exports: [
     CourseProgramsService,

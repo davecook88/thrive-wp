@@ -13,6 +13,7 @@ import { AdminPackagesController } from "./admin-packages.controller.js";
 import { AuthModule } from "../auth/auth.module.js";
 import { StudentsModule } from "../students/students.module.js";
 import { SessionsModule } from "../sessions/sessions.module.js";
+import { StripeProductService } from "../common/services/stripe-product.service.js";
 
 @Module({
   imports: [
@@ -30,7 +31,7 @@ import { SessionsModule } from "../sessions/sessions.module.js";
     SessionsModule,
   ],
   controllers: [PackagesController, AdminPackagesController],
-  providers: [PackagesService],
+  providers: [PackagesService, StripeProductService],
   exports: [PackagesService],
 })
 export class PackagesModule {}
