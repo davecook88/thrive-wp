@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import {
   CourseProgram,
+  CourseProgramLevel,
   CourseStep,
   CourseStepOption,
   StudentCourseStepProgress,
@@ -23,6 +24,7 @@ import { StripeProductMap } from "../payments/entities/stripe-product-map.entity
   imports: [
     TypeOrmModule.forFeature([
       CourseProgram,
+      CourseProgramLevel,
       CourseStep,
       CourseStepOption,
       StudentCourseStepProgress,

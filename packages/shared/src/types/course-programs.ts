@@ -38,6 +38,12 @@ export const CreateCourseProgramSchema = z.object({
     .boolean()
     .default(true)
     .describe("Whether the course is available for purchase"),
+
+  levelIds: z
+    .array(z.number().int().positive())
+    .optional()
+    .default([])
+    .describe("Array of level IDs appropriate for this course"),
 });
 
 export type CreateCourseProgramDto = z.infer<typeof CreateCourseProgramSchema>;
@@ -207,7 +213,7 @@ export const StepOptionDetailSchema = z.object({
   id: z.number(),
   groupClassId: z.number(),
   groupClassName: z.string(),
-  isActive: z.boolean(),
+  isActive: z.preprocess((val) => Boolean(val), z.boolean()),
   // Include relevant GroupClass fields
   dayOfWeek: z.number().optional(),
   startTime: z.string().optional(),
@@ -263,6 +269,16 @@ export const CourseProgramDetailSchema = z.object({
   stripePriceId: z.string().nullable(),
   priceInCents: z.number().nullable(),
   steps: z.array(CourseStepDetailSchema),
+  levels: z
+    .array(
+      z.object({
+        id: z.number(),
+        code: z.string(),
+        name: z.string(),
+      }),
+    )
+    .optional()
+    .default([]),
 });
 
 export type CourseProgramDetailDto = z.infer<typeof CourseProgramDetailSchema>;

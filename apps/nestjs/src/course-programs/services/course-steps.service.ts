@@ -148,9 +148,9 @@ export class CourseStepsService {
     const progressCount = (await this.courseStepRepo.manager
       .createQueryBuilder()
       .select("COUNT(*)", "count")
-      .from("student_course_progress", "scp")
-      .where("scp.course_step_id = :id", { id })
-      .andWhere("scp.status IN (:...statuses)", {
+      .from("student_course_step_progress", "scsp")
+      .where("scsp.course_step_id = :id", { id })
+      .andWhere("scsp.status IN (:...statuses)", {
         statuses: ["BOOKED", "COMPLETED"],
       })
       .getRawOne()) as { count: string };
@@ -215,6 +215,7 @@ export class CourseStepsService {
   async detachOption(courseStepOptionId: number): Promise<void> {
     const option = await this.stepOptionRepo.findOne({
       where: { id: courseStepOptionId },
+      relations: ["courseStep"],
     });
 
     if (!option) {
@@ -223,20 +224,21 @@ export class CourseStepsService {
       );
     }
 
-    // Check if students have booked this specific option
+    // Check if students have booked the step that contains this option
+    // In the simplified schema, we track progress at step level, not option level
     const progressCount = (await this.stepOptionRepo.manager
       .createQueryBuilder()
       .select("COUNT(*)", "count")
-      .from("student_course_progress", "scp")
-      .where("scp.selected_option_id = :id", { id: courseStepOptionId })
-      .andWhere("scp.status IN (:...statuses)", {
+      .from("student_course_step_progress", "scsp")
+      .where("scsp.course_step_id = :stepId", { stepId: option.courseStepId })
+      .andWhere("scsp.status IN (:...statuses)", {
         statuses: ["BOOKED", "COMPLETED"],
       })
       .getRawOne()) as { count: string };
 
     if (parseInt(progressCount.count) > 0) {
       throw new BadRequestException(
-        "Cannot detach option with active or completed bookings",
+        "Cannot detach option - students have booked this step",
       );
     }
 

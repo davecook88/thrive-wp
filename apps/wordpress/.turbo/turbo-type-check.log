@@ -1,5 +1,4 @@
 
-
 > @thrive/wordpress@1.0.0 type-check /Users/davidcook/personal/thrive-wp/apps/wordpress
 > tsc --noEmit
 

@@ -6,6 +6,7 @@ export interface CourseForm {
   description: string;
   timezone: string;
   isActive: boolean;
+  levelIds: number[];
 }
 
 export interface CourseStepForm {

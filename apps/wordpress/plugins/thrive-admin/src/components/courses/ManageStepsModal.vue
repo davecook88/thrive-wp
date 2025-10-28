@@ -134,12 +134,20 @@
                   <h6 class="text-xs font-medium text-gray-700">Class Scheduling Options</h6>
                   <p class="text-xs text-gray-500 mt-0.5">Link group classes that students can choose for this step</p>
                 </div>
-                <button
-                  @click="openAttachOptionModal(step)"
-                  class="text-xs text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap"
-                >
-                  + Add Option
-                </button>
+                <div class="flex gap-2">
+                  <button
+                    @click="openCreateGroupClassModal(step)"
+                    class="text-xs text-green-600 hover:text-green-800 font-medium whitespace-nowrap"
+                  >
+                    + Create New
+                  </button>
+                  <button
+                    @click="openAttachOptionModal(step)"
+                    class="text-xs text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap"
+                  >
+                    + Add Existing
+                  </button>
+                </div>
               </div>
 
               <div v-if="step.options && step.options.length > 0" class="space-y-1">
@@ -192,7 +200,7 @@
           <div v-if="availableGroupClasses.length === 0" class="bg-yellow-50 border border-yellow-200 rounded-md p-4">
             <p class="text-sm text-yellow-800">
               <strong>No group classes available.</strong><br>
-              Please create group classes first in the Group Classes admin section before adding them to course steps.
+              Click "Create New" to create a group class for this step.
             </p>
           </div>
           <div v-else>
@@ -232,17 +240,33 @@
         </div>
       </div>
     </div>
+
+    <!-- Create Group Class Modal -->
+    <GroupClassModal
+      v-if="showCreateGroupClassModal && selectedStep"
+      :levels="levels"
+      :teachers="teachers"
+      :default-values="groupClassDefaults"
+      :auto-attach-to-course-step="{ stepId: selectedStep.id }"
+      :course-context="course ? { courseProgramId: course.id, stepId: selectedStep.id } : null"
+      @close="closeCreateGroupClassModal"
+      @save="handleGroupClassCreated"
+    />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive, ref, watch, onMounted } from 'vue';
+import { defineComponent, reactive, ref, watch, onMounted, computed } from 'vue';
 import { thriveClient } from '@wp-shared/thrive';
-import type { CourseProgramDetailDto, CourseStepDetailDto } from '@thrive/shared';
+import type { CourseProgramDetailDto, CourseStepDetailDto, LevelDto, PublicTeacherDto } from '@thrive/shared';
 import type { CourseStepForm } from './types';
+import GroupClassModal from '../GroupClassModal.vue';
 
 export default defineComponent({
   name: 'ManageStepsModal',
+  components: {
+    GroupClassModal,
+  },
   props: {
     course: {
       type: Object as () => CourseProgramDetailDto | null,
@@ -266,6 +290,7 @@ export default defineComponent({
 
     // Step options state
     const showAttachOptionModal = ref(false);
+    const showCreateGroupClassModal = ref(false);
     const selectedStep = ref<CourseStepDetailDto | null>(null);
     const selectedGroupClassId = ref<number | null>(null);
     const attachingOption = ref(false);
@@ -275,6 +300,8 @@ export default defineComponent({
       description: string | null;
       isActive: boolean;
     }>>([]);
+    const levels = ref<Array<LevelDto>>([]);
+    const teachers = ref<Array<PublicTeacherDto>>([]);
 
     const stepForm: CourseStepForm = reactive({
       stepOrder: 1,
@@ -382,7 +409,7 @@ export default defineComponent({
       updateStepOrder();
     }
 
-    // Load available group classes
+    // Load available group classes, levels, and teachers
     const loadGroupClasses = async () => {
       try {
         availableGroupClasses.value = await thriveClient.getAllGroupClasses();
@@ -391,7 +418,24 @@ export default defineComponent({
       }
     };
 
-    onMounted(loadGroupClasses);
+    const loadLevelsAndTeachers = async () => {
+      try {
+        const [levelsData, teachersData] = await Promise.all([
+          thriveClient.fetchLevels(),
+          thriveClient.fetchTeachers(),
+        ]);
+        levels.value = levelsData;
+        // Map PublicTeacherDto to the format expected by GroupClassFormComponent
+        teachers.value = teachersData
+      } catch (err) {
+        console.error('Failed to load levels and teachers:', err);
+      }
+    };
+
+    onMounted(() => {
+      loadGroupClasses();
+      loadLevelsAndTeachers();
+    });
 
     // Step options management
     const openAttachOptionModal = (step: CourseStepDetailDto) => {
@@ -439,6 +483,38 @@ export default defineComponent({
       }
     };
 
+    // Create group class modal management
+    const openCreateGroupClassModal = (step: CourseStepDetailDto) => {
+      selectedStep.value = step;
+      showCreateGroupClassModal.value = true;
+    };
+
+    const closeCreateGroupClassModal = () => {
+      showCreateGroupClassModal.value = false;
+      selectedStep.value = null;
+    };
+
+    const handleGroupClassCreated = async () => {
+      await loadGroupClasses();
+      closeCreateGroupClassModal();
+      emit('course-updated');
+    };
+
+    // Compute default values for group class creation
+    const groupClassDefaults = computed(() => {
+      if (!selectedStep.value || !props.course) {
+        return {};
+      }
+
+      // Pre-populate title with course code and step label
+      return {
+        title: `${props.course.code} - ${selectedStep.value.label}`,
+        description: selectedStep.value.description || props.course.description || '',
+        // Use course's designated levels
+        levelIds: props.course.levels?.map(l => l.id) || [],
+      };
+    });
+
     return {
       addingStep,
       stepForm,
@@ -449,14 +525,21 @@ export default defineComponent({
       onLabelChange,
       // Step options
       showAttachOptionModal,
+      showCreateGroupClassModal,
       selectedStep,
       selectedGroupClassId,
       attachingOption,
       availableGroupClasses,
+      levels,
+      teachers,
       openAttachOptionModal,
       closeAttachOptionModal,
       handleAttachOption,
       handleDetachOption,
+      openCreateGroupClassModal,
+      closeCreateGroupClassModal,
+      handleGroupClassCreated,
+      groupClassDefaults,
     };
   }
 });

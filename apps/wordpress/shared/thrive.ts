@@ -24,6 +24,11 @@ import {
   CreateSessionDto,
   StripeKeyResponseSchema,
   StudentPackageMyCreditsResponseSchema,
+  CreateGroupClassResponseSchema,
+  type CreateGroupClassResponse,
+  CreateGroupClassResponseSchema,
+  // Session types
+  UpdateSessionRequest,
   // Course programs types
   CourseProgramDetailDto,
   CourseProgramDetailSchema,
@@ -679,5 +684,38 @@ export const thriveClient = {
       isActive: boolean;
       levels: Array<{ id: number; code: string; name: string }>;
     }>;
+  },
+
+  createGroupClass: async (
+    data: Record<string, unknown>,
+  ): Promise<CreateGroupClassResponse | null> => {
+    const result = await apiPost<CreateGroupClassResponse>(
+      `/api/group-classes`,
+      data,
+      CreateGroupClassResponseSchema,
+    );
+    return result;
+  },
+
+  updateGroupClass: async (
+    id: number,
+    data: Record<string, unknown>,
+  ): Promise<Record<string, unknown> | null> => {
+    const result = await apiPatch<Record<string, unknown>>(
+      `/api/group-classes/${id}`,
+      data,
+    );
+    return result as Record<string, unknown> | null;
+  },
+
+  updateSession: async (
+    sessionId: number,
+    data: UpdateSessionRequest,
+  ): Promise<Record<string, unknown> | null> => {
+    const result = await apiPatch<Record<string, unknown>>(
+      `/api/sessions/${sessionId}`,
+      data,
+    );
+    return result;
   },
 } as const;

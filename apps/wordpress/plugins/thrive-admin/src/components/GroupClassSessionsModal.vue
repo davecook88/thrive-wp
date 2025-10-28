@@ -103,58 +103,20 @@
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="session in sessions" :key="session.id" class="hover:bg-gray-50">
-              <td class="px-6 py-4">
-                <div class="text-sm font-medium text-gray-900">
-                  {{ formatDate(session.startAt) }}
-                </div>
-                <div class="text-sm text-gray-500">
-                  {{ formatTime(session.startAt) }} - {{ formatTime(session.endAt) }}
-                </div>
-              </td>
-              <td class="px-6 py-4">
-                <div class="text-sm text-gray-900">
-                  {{ session.enrolledCount }} / {{ groupClass.capacityMax }}
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
-                  <div
-                    class="h-2 rounded-full"
-                    :class="session.enrolledCount >= groupClass.capacityMax ? 'bg-red-600' : 'bg-blue-600'"
-                    :style="{ width: `${(session.enrolledCount / groupClass.capacityMax) * 100}%` }"
-                  ></div>
-                </div>
-              </td>
-              <td class="px-6 py-4">
-                <button
-                  v-if="session.waitlistCount > 0"
-                  @click="viewWaitlist(session)"
-                  class="text-sm text-blue-600 hover:text-blue-800 underline"
-                >
-                  {{ session.waitlistCount }} waiting
-                </button>
-                <span v-else class="text-sm text-gray-400">-</span>
-              </td>
-              <td class="px-6 py-4">
-                <span :class="[
-                  'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                  session.status === 'SCHEDULED' ? 'bg-green-100 text-green-800' :
-                  session.status === 'COMPLETED' ? 'bg-gray-100 text-gray-800' :
-                  session.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                  'bg-yellow-100 text-yellow-800'
-                ]">
-                  {{ session.status }}
-                </span>
-              </td>
-              <td class="px-6 py-4 text-right text-sm font-medium">
-                <button
-                  v-if="session.status === 'SCHEDULED'"
-                  @click="cancelSession(session)"
-                  class="text-red-600 hover:text-red-900"
-                >
-                  Cancel
-                </button>
-              </td>
-            </tr>
+            <SessionEventItem
+              v-for="session in sessions"
+              :key="session.id"
+              :session="session"
+              :group-class="groupClass"
+              :capacity-max="groupClass.capacityMax"
+              display-mode="list"
+              :show-actions="true"
+              :editable="true"
+              @edit="editSession"
+              @swap-teacher="swapTeacher"
+              @cancel="cancelSession"
+              @view-waitlist="viewWaitlist"
+            />
           </tbody>
         </table>
       </div>
@@ -232,19 +194,26 @@
         </div>
       </div>
     </div>
+
+    <!-- Session Editor Modal -->
+    <SessionEditorModal
+      v-if="showEditModal && selectedSession"
+      :session="selectedSession"
+      :available-teachers="availableTeachers"
+      @close="closeEditModal"
+      @save="handleSessionUpdate"
+    />
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent, ref, onMounted, PropType } from 'vue';
 import { GroupClass } from './GroupClasses.vue';
+import SessionEventItem from './shared/SessionEventItem.vue';
+import SessionEditorModal from './shared/SessionEditorModal.vue';
+import { PublicTeacherDto, SessionDto } from '@thrive/shared';
 
-
-interface Session {
-  id: number;
-  startAt: string;
-  endAt: string;
-  status: string;
+interface SessionWithEnrollment extends SessionDto {
   enrolledCount: number;
   waitlistCount: number;
 }
@@ -257,25 +226,40 @@ interface WaitlistEntry {
   notifiedAt: string | null;
 }
 
+
 export default defineComponent({
   name: 'GroupClassSessionsModal',
+  components: {
+    SessionEventItem,
+    SessionEditorModal,
+  },
   props: {
     groupClass: {
       type: Object as PropType<GroupClass>,
       required: true,
     },
+    levels: {
+      type: Array,
+      default: () => [],
+    },
+    teachers: {
+      type: Array as PropType<PublicTeacherDto[]>,
+      default: () => [],
+    },
   },
   emits: ['close'],
-  setup(props) {
-    const sessions = ref<Session[]>([]);
+  setup(props, { emit }) {
+    const sessions = ref<SessionWithEnrollment[]>([]);
     const loading = ref(false);
     const regenerating = ref(false);
     const error = ref<string | null>(null);
 
     const showWaitlistModal = ref(false);
-    const selectedSession = ref<Session | null>(null);
+    const showEditModal = ref(false);
+    const selectedSession = ref<SessionWithEnrollment | null>(null);
     const waitlistEntries = ref<WaitlistEntry[]>([]);
     const loadingWaitlist = ref(false);
+    const availableTeachers = ref<PublicTeacherDto[]>(props.teachers || []);
 
     const loadSessions = async () => {
       loading.value = true;
@@ -326,7 +310,27 @@ export default defineComponent({
       }
     };
 
-    const cancelSession = async (session: Session) => {
+    const editSession = (session: SessionWithEnrollment) => {
+      selectedSession.value = session;
+      showEditModal.value = true;
+    };
+
+    const swapTeacher = (session: SessionWithEnrollment) => {
+      selectedSession.value = session;
+      showEditModal.value = true;
+    };
+
+    const closeEditModal = () => {
+      showEditModal.value = false;
+      selectedSession.value = null;
+    };
+
+    const handleSessionUpdate = async () => {
+      await loadSessions();
+      closeEditModal();
+    };
+
+    const cancelSession = async (session: SessionWithEnrollment) => {
       if (!confirm(`Cancel session on ${formatDate(session.startAt)}?`)) {
         return;
       }
@@ -350,7 +354,7 @@ export default defineComponent({
       }
     };
 
-    const viewWaitlist = async (session: Session) => {
+    const viewWaitlist = async (session: SessionWithEnrollment) => {
       selectedSession.value = session;
       showWaitlistModal.value = true;
       loadingWaitlist.value = true;
@@ -419,13 +423,6 @@ export default defineComponent({
       });
     };
 
-    const formatTime = (dateStr: string): string => {
-      return new Date(dateStr).toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    };
-
     const formatDateTime = (dateStr: string): string => {
       return new Date(dateStr).toLocaleString('en-US', {
         month: 'short',
@@ -443,17 +440,22 @@ export default defineComponent({
       regenerating,
       error,
       showWaitlistModal,
+      showEditModal,
       selectedSession,
       waitlistEntries,
       loadingWaitlist,
+      availableTeachers,
       loadSessions,
       regenerateSessions,
+      editSession,
+      swapTeacher,
+      closeEditModal,
+      handleSessionUpdate,
       cancelSession,
       viewWaitlist,
       notifyWaitlist,
       promoteWaitlist,
       formatDate,
-      formatTime,
       formatDateTime,
     };
   },

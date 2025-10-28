@@ -177,6 +177,25 @@
               </select>
             </div>
 
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Student Levels *</label>
+              <p class="text-xs text-gray-500 mb-3">Select which student levels this course is appropriate for</p>
+              <div class="space-y-2">
+                <div v-for="level in levels" :key="level.id" class="flex items-center">
+                  <input
+                    :id="`level-${level.id}`"
+                    type="checkbox"
+                    :value="level.id"
+                    v-model="form.levelIds"
+                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label :for="`level-${level.id}`" class="ml-2 block text-sm text-gray-900">
+                    {{ level.code }} - {{ level.name }}
+                  </label>
+                </div>
+              </div>
+            </div>
+
             <div class="flex items-center">
               <input
                 id="isActive"
@@ -243,6 +262,7 @@ export default defineComponent({
   setup() {
     const activeTab = ref<'list' | 'create' | 'edit'>('list');
     const courses = ref<CourseProgramDetailDto[]>([]);
+    const levels = ref<Array<{ id: number; code: string; name: string }>>([]);
     const loading = ref(false);
     const creating = ref(false);
     const error = ref<string | null>(null);
@@ -255,8 +275,17 @@ export default defineComponent({
       title: '',
       description: '',
       timezone: 'America/New_York',
-      isActive: true
+      isActive: true,
+      levelIds: []
     });
+
+    const loadLevels = async () => {
+      try {
+        levels.value = await thriveClient.fetchLevels();
+      } catch (err) {
+        console.error('Failed to load levels:', err);
+      }
+    };
 
     const loadCourses = async () => {
       loading.value = true;
@@ -300,6 +329,7 @@ export default defineComponent({
       form.description = course.description || '';
       form.timezone = course.timezone;
       form.isActive = course.isActive;
+      form.levelIds = course.levels?.map(l => l.id) || [];
       activeTab.value = 'edit';
     };
 
@@ -364,6 +394,7 @@ export default defineComponent({
       form.description = '';
       form.timezone = 'America/New_York';
       form.isActive = true;
+      form.levelIds = [];
     };
 
     const openPublishModal = (course: CourseProgramDetailDto) => {
@@ -378,11 +409,15 @@ export default defineComponent({
       await loadCourses();
     };
 
-    onMounted(loadCourses);
+    onMounted(() => {
+      loadLevels();
+      loadCourses();
+    });
 
     return {
       activeTab,
       courses,
+      levels,
       loading,
       creating,
       error,

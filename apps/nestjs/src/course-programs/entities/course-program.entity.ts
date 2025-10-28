@@ -1,6 +1,7 @@
 import { Entity, Column, Index, OneToMany } from "typeorm";
 import { BaseEntity } from "../../common/entities/base.entity.js";
 import type { CourseStep } from "./course-step.entity.js";
+import type { CourseProgramLevel } from "./course-program-level.entity.js";
 
 /**
  * CourseProgram entity represents a structured course program with sequential steps.
@@ -58,4 +59,7 @@ export class CourseProgram extends BaseEntity {
 
   @OneToMany("CourseStep", "courseProgram")
   steps: CourseStep[];
+
+  @OneToMany("CourseProgramLevel", "courseProgram")
+  courseProgramLevels: CourseProgramLevel[];
 }

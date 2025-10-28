@@ -2,6 +2,34 @@ import { z } from "zod";
 import { PublicTeacherSchema } from "./teachers.js";
 import { LevelSchema } from "./level.js";
 
+// Session DTO Schema - for editing sessions
+export const SessionDtoSchema = z.object({
+  id: z.number().int().positive(),
+  startAt: z.string(),
+  endAt: z.string(),
+  status: z.enum(["SCHEDULED", "CANCELLED", "COMPLETED"]),
+  enrolledCount: z.number().int().nonnegative().optional(),
+  teacherId: z.number().int().positive().optional(),
+  capacityMax: z.number().int().positive().optional(),
+  description: z.string().optional(),
+  meetingUrl: z.string().nullable().optional(),
+});
+
+export type SessionDto = z.infer<typeof SessionDtoSchema>;
+
+// Update Session Request Schema
+export const UpdateSessionRequestSchema = z.object({
+  startAt: z.string().optional(),
+  endAt: z.string().optional(),
+  status: z.enum(["SCHEDULED", "CANCELLED", "COMPLETED"]).optional(),
+  teacherId: z.number().int().positive().optional(),
+  capacityMax: z.number().int().positive().optional(),
+  description: z.string().optional(),
+  meetingUrl: z.string().nullable().optional(),
+});
+
+export type UpdateSessionRequest = z.infer<typeof UpdateSessionRequestSchema>;
+
 // Session with Enrollment Response Schema
 export const SessionWithEnrollmentResponseSchema = z.object({
   id: z.number().int().positive(),

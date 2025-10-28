@@ -7,8 +7,12 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, DataSource } from "typeorm";
 import { CourseProgram } from "../entities/course-program.entity.js";
-import { CourseStep } from "../entities/course-step.entity.js";
-import { CreateCourseProgramDto, UpdateCourseProgramDto } from "@thrive/shared";
+import { CourseProgramLevel } from "../entities/course-program-level.entity.js";
+import {
+  CreateCourseProgramDto,
+  UpdateCourseProgramDto,
+  CourseProgramDetailDto,
+} from "@thrive/shared";
 import { StripeProductService } from "../../common/services/stripe-product.service.js";
 import {
   StripeProductMap,
@@ -20,6 +24,8 @@ export class CourseProgramsService {
   constructor(
     @InjectRepository(CourseProgram)
     private readonly courseProgramRepo: Repository<CourseProgram>,
+    @InjectRepository(CourseProgramLevel)
+    private readonly courseProgramLevelRepo: Repository<CourseProgramLevel>,
     @InjectRepository(StripeProductMap)
     private readonly stripeProductMapRepo: Repository<StripeProductMap>,
     private readonly dataSource: DataSource,
@@ -41,8 +47,27 @@ export class CourseProgramsService {
       );
     }
 
-    const courseProgram = this.courseProgramRepo.create(input);
-    return this.courseProgramRepo.save(courseProgram);
+    // Extract levelIds before creating the entity
+    const { levelIds, ...courseProgramData } =
+      input as CreateCourseProgramDto & {
+        levelIds?: number[];
+      };
+
+    const courseProgram = this.courseProgramRepo.create(courseProgramData);
+    const savedProgram = await this.courseProgramRepo.save(courseProgram);
+
+    // Create level associations if provided
+    if (levelIds && levelIds.length > 0) {
+      const levelAssociations = levelIds.map((levelId: number) =>
+        this.courseProgramLevelRepo.create({
+          courseProgramId: savedProgram.id,
+          levelId,
+        }),
+      );
+      await this.courseProgramLevelRepo.save(levelAssociations);
+    }
+
+    return savedProgram;
   }
 
   /**
@@ -67,8 +92,31 @@ export class CourseProgramsService {
       }
     }
 
-    Object.assign(courseProgram, input);
-    return this.courseProgramRepo.save(courseProgram);
+    // Extract levelIds before updating the entity
+    const { levelIds, ...courseProgramData } =
+      input as UpdateCourseProgramDto & { levelIds?: number[] };
+
+    Object.assign(courseProgram, courseProgramData);
+    const savedProgram = await this.courseProgramRepo.save(courseProgram);
+
+    // Sync level associations if provided
+    if (levelIds !== undefined) {
+      // Remove existing associations
+      await this.courseProgramLevelRepo.delete({ courseProgramId: id });
+
+      // Create new associations
+      if (levelIds.length > 0) {
+        const levelAssociations = levelIds.map((levelId: number) =>
+          this.courseProgramLevelRepo.create({
+            courseProgramId: id,
+            levelId,
+          }),
+        );
+        await this.courseProgramLevelRepo.save(levelAssociations);
+      }
+    }
+
+    return savedProgram;
   }
 
   /**
@@ -87,6 +135,8 @@ export class CourseProgramsService {
         .leftJoinAndSelect("cp.steps", "step")
         .leftJoinAndSelect("step.options", "option")
         .leftJoinAndSelect("option.groupClass", "groupClass")
+        .leftJoinAndSelect("cp.courseProgramLevels", "cpl")
+        .leftJoinAndSelect("cpl.level", "level")
         .orderBy("step.stepOrder", "ASC")
         .addOrderBy("option.id", "ASC");
     }
@@ -126,6 +176,8 @@ export class CourseProgramsService {
         .leftJoinAndSelect("cp.steps", "step")
         .leftJoinAndSelect("step.options", "option")
         .leftJoinAndSelect("option.groupClass", "groupClass")
+        .leftJoinAndSelect("cp.courseProgramLevels", "cpl")
+        .leftJoinAndSelect("cpl.level", "level")
         .orderBy("step.stepOrder", "ASC")
         .addOrderBy("option.id", "ASC");
     }
@@ -163,18 +215,9 @@ export class CourseProgramsService {
   /**
    * Enrich course program with Stripe pricing data
    */
-  async enrichWithPricing(courseProgram: CourseProgram): Promise<{
-    id: number;
-    code: string;
-    title: string;
-    description: string | null;
-    timezone: string;
-    isActive: boolean;
-    stripeProductId: string | null;
-    stripePriceId: string | null;
-    priceInCents: number | null;
-    steps: CourseStep[];
-  }> {
+  async enrichWithPricing(
+    courseProgram: CourseProgram,
+  ): Promise<CourseProgramDetailDto> {
     // Find Stripe product mapping for this course
     const mapping = await this.stripeProductMapRepo.findOne({
       where: {
@@ -183,6 +226,33 @@ export class CourseProgramsService {
       },
     });
 
+    // Map levels from courseProgramLevels relation
+    const levels = (courseProgram.courseProgramLevels || [])
+      .map((cpl) => cpl.level)
+      .filter((level) => level) // Filter out any undefined levels
+      .map((level) => ({
+        id: level.id,
+        code: level.code,
+        name: level.name,
+      }));
+
+    // Transform steps to match DTO structure
+    const transformedSteps = (courseProgram.steps || []).map((step) => ({
+      id: step.id,
+      stepOrder: step.stepOrder,
+      label: step.label,
+      title: step.title,
+      description: step.description,
+      isRequired: step.isRequired,
+      options: (step.options || []).map((option) => ({
+        id: option.id,
+        groupClassId: option.groupClassId,
+        groupClassName: option.groupClass?.title || "",
+        isActive: Boolean(option.isActive),
+        maxStudents: option.groupClass?.capacityMax,
+      })),
+    }));
+
     const baseData = {
       id: courseProgram.id,
       code: courseProgram.code,
@@ -190,7 +260,8 @@ export class CourseProgramsService {
       description: courseProgram.description,
       timezone: courseProgram.timezone,
       isActive: courseProgram.isActive,
-      steps: courseProgram.steps || [],
+      steps: transformedSteps,
+      levels,
     };
 
     if (!mapping) {
@@ -232,20 +303,9 @@ export class CourseProgramsService {
   /**
    * Get all course programs enriched with pricing data
    */
-  async findAllWithPricing(includeInactive = false): Promise<
-    {
-      id: number;
-      code: string;
-      title: string;
-      description: string | null;
-      timezone: string;
-      isActive: boolean;
-      stripeProductId: string | null;
-      stripePriceId: string | null;
-      priceInCents: number | null;
-      steps: CourseStep[];
-    }[]
-  > {
+  async findAllWithPricing(
+    includeInactive = false,
+  ): Promise<CourseProgramDetailDto[]> {
     const programs = await this.findAll(includeInactive);
     return Promise.all(
       programs.map((program) => this.enrichWithPricing(program)),
