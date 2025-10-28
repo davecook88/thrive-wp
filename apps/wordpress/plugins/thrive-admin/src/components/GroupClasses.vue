@@ -238,9 +238,6 @@ export interface GroupClass {
   description: string | null;
   levels: LevelDto[];
   capacityMax: number;
-  rrule: string | null;
-  startDate: string | null;
-  endDate: string | null;
   teachers: GroupClassTeacher[];
   upcomingSessionsCount: number;
   isActive: boolean;
@@ -317,12 +314,9 @@ export default defineComponent({
     };
 
     const formatSchedule = (gc: GroupClass): string => {
-      if (gc.rrule) {
-        return 'Recurring';
-      } else if (gc.startDate) {
-        return `One-off (${new Date(gc.startDate).toLocaleDateString()})`;
-      }
-      return 'No schedule';
+      // Each GroupClass now has a single session
+      // Show session count or "Single Session"
+      return gc.upcomingSessionsCount > 0 ? 'Active Session' : 'No Upcoming Session';
     };
 
     const editGroupClass = (gc: GroupClass) => {

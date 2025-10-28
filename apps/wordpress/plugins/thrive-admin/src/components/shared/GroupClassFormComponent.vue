@@ -131,43 +131,35 @@
           + Add Session
         </button>
       </div>
-      <div v-for="(session, index) in form.sessions" :key="index" class="flex gap-2 items-start">
-        <div class="flex-1 grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs text-gray-600">Start Date/Time</label>
-            <input
-              v-model="session.startAt"
-              type="datetime-local"
-              required
-              class="mt-1 block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label class="block text-xs text-gray-600">Duration (mins)</label>
-            <select
-              v-model.number="session.duration"
-              class="mt-1 block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option v-for="min in [15, 30, 45, 60]" :key="min" :value="min" >{{ min }}</option>
-            </select>
-          </div>
-          <div>
-            <span class="block text-xs text-gray-600">End Date/Time</span>
-            <span class="mt-1 block w-full text-sm border-gray-300 rounded-md shadow-sm p-2 bg-gray-50">
-              {{ getSessionEndAt(session) }}
-            </span>
-          </div>
+      <div v-for="(session, index) in form.sessions" :key="index" class="border border-gray-200 rounded-lg p-4 space-y-4">
+        <div class="flex justify-between items-start">
+          <h5 class="text-sm font-medium text-gray-700">Session {{ index + 1 }}</h5>
+          <button
+            type="button"
+            @click="removeSession(index)"
+            class="text-red-600 hover:text-red-800"
+            :disabled="form.sessions.length === 1"
+          >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-        <button
-          type="button"
-          @click="removeSession(index)"
-          class="mt-6 text-red-600 hover:text-red-800"
-          :disabled="form.sessions.length === 1"
-        >
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+
+        <ClassDateTimePicker
+          :model-value="session.startAt"
+          :duration="session.duration"
+          label="Session Start"
+          show-duration
+          @update:model-value="(val: string) => session.startAt = val"
+          @update:duration="(val: number) => session.duration = val"
+        />
+
+        <div v-if="getSessionEndAt(session) !== '—'" class="bg-blue-50 border border-blue-200 rounded-md p-3">
+          <p class="text-sm text-blue-900">
+            <span class="font-medium">End Time:</span> {{ getSessionEndAt(session) }}
+          </p>
+        </div>
       </div>
     </div>
 
@@ -188,29 +180,61 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label for="sessionTime" class="block text-sm font-medium text-gray-700">Start Time *</label>
-          <input
+          <label for="sessionTime" class="block text-sm font-medium text-gray-700 mb-2">Start Time *</label>
+          <select
             id="sessionTime"
             v-model="form.recurring.startTime"
-            type="time"
             required
-            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-          />
+            class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Select a time...</option>
+            <optgroup label="Morning">
+              <option v-for="time in morningTimes" :key="`morning-${time}`" :value="time">
+                {{ time }}
+              </option>
+            </optgroup>
+            <optgroup label="Afternoon">
+              <option v-for="time in afternoonTimes" :key="`afternoon-${time}`" :value="time">
+                {{ time }}
+              </option>
+            </optgroup>
+            <optgroup label="Evening">
+              <option v-for="time in eveningTimes" :key="`evening-${time}`" :value="time">
+                {{ time }}
+              </option>
+            </optgroup>
+          </select>
         </div>
 
         <div>
           <label for="duration" class="block text-sm font-medium text-gray-700">Duration (minutes) *</label>
-          <input
-            id="duration"
-            v-model.number="form.recurring.duration"
-            type="number"
-            min="15"
-            step="15"
-            required
-            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-          />
+          <div class="flex gap-2 mt-1">
+            <button
+              v-for="duration in [30, 45, 60]"
+              :key="duration"
+              type="button"
+              @click="form.recurring.duration = duration"
+              :class="[
+                'flex-1 py-2 px-3 rounded-md text-sm font-medium transition',
+                form.recurring.duration === duration
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-50',
+              ]"
+            >
+              {{ duration }}m
+            </button>
+            <input
+              v-model.number="form.recurring.duration"
+              type="number"
+              min="15"
+              step="15"
+              required
+              class="w-20 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Custom"
+            />
+          </div>
         </div>
       </div>
 
@@ -270,6 +294,7 @@
 <script lang="ts">
 import { LevelDto, PublicTeacherDto } from '@thrive/shared';
 import { defineComponent, ref, computed, PropType, watch } from 'vue';
+import ClassDateTimePicker from './ClassDateTimePicker.vue';
 
 
 interface Session {
@@ -297,6 +322,9 @@ interface GroupClassFormData {
 
 export default defineComponent({
   name: 'GroupClassFormComponent',
+  components: {
+    ClassDateTimePicker,
+  },
   props: {
     groupClass: {
       type: Object as PropType<any | null>,
@@ -344,6 +372,18 @@ export default defineComponent({
       { value: 'FR', label: 'Fri' },
       { value: 'SA', label: 'Sat' },
       { value: 'SU', label: 'Sun' },
+    ];
+
+    const morningTimes = [
+      '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00'
+    ];
+
+    const afternoonTimes = [
+      '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'
+    ];
+
+    const eveningTimes = [
+      '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00'
     ];
 
     const form = ref<GroupClassFormData>({
@@ -496,6 +536,9 @@ export default defineComponent({
       submitting,
       error,
       daysOfWeek,
+      morningTimes,
+      afternoonTimes,
+      eveningTimes,
       isFormValid,
       addSession,
       removeSession,

@@ -92,6 +92,12 @@
                   Manage Steps
                 </button>
                 <button
+                  @click="openManageCohortsModal(course)"
+                  class="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                >
+                  Manage Cohorts
+                </button>
+                <button
                   v-if="!course.stripeProductId"
                   @click="openPublishModal(course)"
                   class="text-green-600 hover:text-green-800 text-sm font-medium"
@@ -236,6 +242,13 @@
       @course-updated="onCourseUpdated"
     />
 
+    <!-- Manage Cohorts Modal -->
+    <ManageCohortsModal
+      :course="selectedCourseForCohorts"
+      @close="closeManageCohortsModal"
+      @cohorts-updated="onCohortsUpdated"
+    />
+
     <!-- Publish Course Modal -->
     <PublishCourseModal
       :course="publishingCourse"
@@ -250,6 +263,7 @@ import { defineComponent, ref, reactive, onMounted } from 'vue';
 import { thriveClient } from '@wp-shared/thrive';
 import type { CourseProgramDetailDto } from '@thrive/shared';
 import ManageStepsModal from './ManageStepsModal.vue';
+import ManageCohortsModal from './ManageCohortsModal.vue';
 import PublishCourseModal from './PublishCourseModal.vue';
 import type { CourseForm } from './types';
 
@@ -257,6 +271,7 @@ export default defineComponent({
   name: 'CoursesAdmin',
   components: {
     ManageStepsModal,
+    ManageCohortsModal,
     PublishCourseModal
   },
   setup() {
@@ -267,6 +282,7 @@ export default defineComponent({
     const creating = ref(false);
     const error = ref<string | null>(null);
     const selectedCourse = ref<CourseProgramDetailDto | null>(null);
+    const selectedCourseForCohorts = ref<CourseProgramDetailDto | null>(null);
     const editingCourse = ref<CourseProgramDetailDto | null>(null);
     const publishingCourse = ref<CourseProgramDetailDto | null>(null);
 
@@ -409,6 +425,27 @@ export default defineComponent({
       await loadCourses();
     };
 
+    const openManageCohortsModal = async (course: CourseProgramDetailDto) => {
+      try {
+        const fullCourse = await thriveClient.getCourseProgram(course.id);
+        if (!fullCourse) {
+          error.value = 'Failed to load course details';
+          return;
+        }
+        selectedCourseForCohorts.value = fullCourse;
+      } catch (err: any) {
+        error.value = err.message || 'Failed to load course details';
+      }
+    };
+
+    const closeManageCohortsModal = () => {
+      selectedCourseForCohorts.value = null;
+    };
+
+    const onCohortsUpdated = async () => {
+      await loadCourses();
+    };
+
     onMounted(() => {
       loadLevels();
       loadCourses();
@@ -422,6 +459,7 @@ export default defineComponent({
       creating,
       error,
       selectedCourse,
+      selectedCourseForCohorts,
       editingCourse,
       publishingCourse,
       form,
@@ -432,6 +470,9 @@ export default defineComponent({
       openManageStepsModal,
       closeManageStepsModal,
       onCourseUpdated,
+      openManageCohortsModal,
+      closeManageCohortsModal,
+      onCohortsUpdated,
       cancelEdit,
       resetForm,
       openPublishModal,

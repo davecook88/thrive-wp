@@ -20,17 +20,6 @@
       <div class="border-b border-gray-200 px-6 py-3 bg-gray-50 flex justify-between items-center">
         <div class="flex gap-2">
           <button
-            v-if="groupClass.rrule"
-            @click="regenerateSessions"
-            :disabled="regenerating"
-            class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-          >
-            <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {{ regenerating ? 'Regenerating...' : 'Regenerate Sessions' }}
-          </button>
-          <button
             @click="loadSessions"
             class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
           >
@@ -69,14 +58,7 @@
           <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <p class="mt-4 text-gray-500">No sessions found</p>
-          <button
-            v-if="groupClass.rrule"
-            @click="regenerateSessions"
-            class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
-          >
-            Generate Sessions from Schedule
-          </button>
+          <p class="mt-4 text-gray-500">No session found for this class</p>
         </div>
       </div>
 
@@ -251,7 +233,6 @@ export default defineComponent({
   setup(props, { emit }) {
     const sessions = ref<SessionWithEnrollment[]>([]);
     const loading = ref(false);
-    const regenerating = ref(false);
     const error = ref<string | null>(null);
 
     const showWaitlistModal = ref(false);
@@ -280,33 +261,6 @@ export default defineComponent({
         error.value = err.message || 'Failed to load sessions';
       } finally {
         loading.value = false;
-      }
-    };
-
-    const regenerateSessions = async () => {
-      if (!confirm('This will generate new sessions based on the schedule. Continue?')) {
-        return;
-      }
-
-      regenerating.value = true;
-      error.value = null;
-
-      try {
-        const response = await fetch(`/api/group-classes/${props.groupClass.id}/generate-sessions`, {
-          method: 'POST',
-          credentials: 'same-origin',
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-          throw new Error(errorData.message || `HTTP ${response.status}`);
-        }
-
-        await loadSessions();
-      } catch (err: any) {
-        error.value = err.message || 'Failed to regenerate sessions';
-      } finally {
-        regenerating.value = false;
       }
     };
 
@@ -437,7 +391,6 @@ export default defineComponent({
     return {
       sessions,
       loading,
-      regenerating,
       error,
       showWaitlistModal,
       showEditModal,
@@ -446,7 +399,6 @@ export default defineComponent({
       loadingWaitlist,
       availableTeachers,
       loadSessions,
-      regenerateSessions,
       editSession,
       swapTeacher,
       closeEditModal,
