@@ -57,6 +57,25 @@ export class CourseProgram extends BaseEntity {
   })
   isActive: boolean;
 
+  @Column({
+    name: "hero_image_url",
+    type: "varchar",
+    length: 512,
+    nullable: true,
+    comment: "URL to course hero image (placeholder support)",
+  })
+  heroImageUrl: string | null;
+
+  @Column({
+    name: "slug",
+    type: "varchar",
+    length: 100,
+    nullable: true,
+    unique: true,
+    comment: "URL-friendly slug (future migration from code-based URLs)",
+  })
+  slug: string | null;
+
   @OneToMany("CourseStep", "courseProgram")
   steps: CourseStep[];
 

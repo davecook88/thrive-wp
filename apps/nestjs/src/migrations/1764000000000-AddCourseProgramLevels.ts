@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner, Table, TableIndex } from "typeorm";
 
-export class AddCourseProgramLevels1764000000000
-  implements MigrationInterface
-{
+export class AddCourseProgramLevels1764000000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Create course_program_level junction table
     await queryRunner.createTable(

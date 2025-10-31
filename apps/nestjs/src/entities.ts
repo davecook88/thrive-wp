@@ -40,6 +40,8 @@ export { CourseStep } from "./course-programs/entities/course-step.entity.js";
 export { CourseStepOption } from "./course-programs/entities/course-step-option.entity.js";
 export { StudentCourseStepProgress } from "./course-programs/entities/student-course-step-progress.entity.js";
 export { CourseProgramLevel } from "./course-programs/entities/course-program-level.entity.js";
+export { CourseCohort } from "./course-programs/entities/course-cohort.entity.js";
+export { CourseCohortSession } from "./course-programs/entities/course-cohort-session.entity.js";
 
 // Levels
 export { Level } from "./levels/entities/level.entity.js";

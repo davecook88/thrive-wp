@@ -38,7 +38,7 @@ export class GroupClassesService {
         "groupClassTeachers",
         "groupClassTeachers.teacher",
         "groupClassTeachers.teacher.user",
-        "sessions",
+        "session",
       ],
     });
 
@@ -83,15 +83,15 @@ export class GroupClassesService {
         });
       }
 
+      // Check if the single session is upcoming
       let upcomingSessionsCount = 0;
-      const sessionsArr = gc.sessions ?? [];
-      for (const s of sessionsArr) {
-        if (
-          s.status === SessionStatus.SCHEDULED &&
-          new Date(s.startAt) > new Date()
-        ) {
-          upcomingSessionsCount += 1;
-        }
+      const session = gc.session;
+      if (
+        session &&
+        session.status === SessionStatus.SCHEDULED &&
+        new Date(session.startAt) > new Date()
+      ) {
+        upcomingSessionsCount = 1;
       }
 
       return {
@@ -99,13 +99,10 @@ export class GroupClassesService {
         title: gc.title,
         description: gc.description,
         capacityMax: gc.capacityMax,
-        rrule: gc.rrule,
-        startDate: gc.startDate,
-        endDate: gc.endDate,
         isActive: gc.isActive,
         levels: levelsMapped,
         teachers: teachersMapped,
-        upcomingSessionsCount: upcomingSessionsCount || 0,
+        upcomingSessionsCount,
       } as GroupClassListDto;
     });
   }
@@ -119,8 +116,8 @@ export class GroupClassesService {
         "groupClassTeachers",
         "groupClassTeachers.teacher",
         "groupClassTeachers.teacher.user",
-        "sessions",
-        "sessions.bookings",
+        "session",
+        "session.bookings",
       ],
     });
 
@@ -167,8 +164,9 @@ export class GroupClassesService {
       });
     }
 
+    // Check if the single session is upcoming
     let upcomingSessionsCount = 0;
-    const sessionsArr = gc.sessions ?? [];
+    const session = gc.session;
     const sessionsMapped: Array<{
       id: number;
       startAt: Date;
@@ -178,17 +176,17 @@ export class GroupClassesService {
       waitlistCount: number;
     }> = [];
 
-    for (const s of sessionsArr) {
+    if (session) {
       if (
-        s.status === SessionStatus.SCHEDULED &&
-        new Date(s.startAt) > new Date()
+        session.status === SessionStatus.SCHEDULED &&
+        new Date(session.startAt) > new Date()
       ) {
-        upcomingSessionsCount += 1;
+        upcomingSessionsCount = 1;
       }
 
       // Count bookings and waitlist
       const bookings =
-        (s.bookings as Array<{ status: string }> | undefined) ?? [];
+        (session.bookings as Array<{ status: string }> | undefined) ?? [];
       const enrolledCount = bookings.filter(
         (b) => b.status === "CONFIRMED",
       ).length;
@@ -197,10 +195,10 @@ export class GroupClassesService {
       ).length;
 
       sessionsMapped.push({
-        id: s.id,
-        startAt: s.startAt,
-        endAt: s.endAt,
-        status: s.status,
+        id: session.id,
+        startAt: session.startAt,
+        endAt: session.endAt,
+        status: session.status,
         enrolledCount,
         waitlistCount,
       });
@@ -211,9 +209,6 @@ export class GroupClassesService {
       title: gc.title,
       description: gc.description,
       capacityMax: gc.capacityMax,
-      rrule: gc.rrule,
-      startDate: gc.startDate,
-      endDate: gc.endDate,
       isActive: gc.isActive,
       levels: levelsMapped,
       teachers: teachersMapped,
@@ -223,119 +218,155 @@ export class GroupClassesService {
   }
 
   /**
-   * Create a new group class with levels, teachers, and optional sessions
+   * Create group class(es) with single session each
+   * When rrule is provided, creates multiple GroupClass records (one per occurrence)
+   * When one-off sessions are provided, creates one GroupClass per session
    */
-  async createGroupClass(dto: CreateGroupClassDto): Promise<GroupClass> {
-    // Create the group class record
+  async createGroupClass(
+    dto: CreateGroupClassDto,
+  ): Promise<GroupClass | GroupClass[]> {
+    // Helper to create levels and teachers for a GroupClass
+    const createLevelsAndTeachers = async (groupClassId: number) => {
+      // Create group_class_level records
+      if (dto.levelIds && dto.levelIds.length > 0) {
+        const groupClassLevels = dto.levelIds.map((levelId) =>
+          this.groupClassLevelRepository.create({
+            groupClassId,
+            levelId,
+          }),
+        );
+        await this.groupClassLevelRepository.save(groupClassLevels);
+      }
+
+      // Create group_class_teacher records
+      if (dto.teacherIds && dto.teacherIds.length > 0) {
+        const groupClassTeachers = dto.teacherIds.map((teacherId) =>
+          this.groupClassTeacherRepository.create({
+            groupClassId,
+            teacherId,
+            isPrimary:
+              dto.primaryTeacherId !== undefined &&
+              teacherId === dto.primaryTeacherId,
+          }),
+        );
+        await this.groupClassTeacherRepository.save(groupClassTeachers);
+      }
+    };
+
+    // Helper to create a single session for a GroupClass
+    const createSession = async (
+      groupClassId: number,
+      startAt: Date,
+      endAt: Date,
+    ) => {
+      const session = this.sessionsRepository.create({
+        type: ServiceType.GROUP,
+        groupClassId,
+        startAt,
+        endAt,
+        capacityMax: dto.capacityMax || 6,
+        status: SessionStatus.SCHEDULED,
+        visibility: SessionVisibility.PUBLIC,
+        teacherId: dto.primaryTeacherId || dto.teacherIds[0],
+      });
+      return this.sessionsRepository.save(session);
+    };
+
+    // Case 1: Recurring schedule (rrule provided)
+    if (dto.rrule && dto.startDate && dto.endDate) {
+      const rule = RRule.fromString(dto.rrule);
+      const dates = rule.all();
+
+      // Extract time and duration from dto if provided
+      const sessionDuration = dto.sessionDuration || 60; // default 60 minutes
+
+      const createdGroupClasses: GroupClass[] = [];
+
+      for (const date of dates) {
+        // Combine date with session time if provided
+        let startAt: Date;
+        if (dto.sessionStartTime) {
+          const [hours, minutes] = dto.sessionStartTime.split(":").map(Number);
+          startAt = new Date(date);
+          startAt.setHours(hours, minutes, 0, 0);
+        } else {
+          startAt = date;
+        }
+
+        const endAt = new Date(startAt.getTime() + sessionDuration * 60000);
+
+        // Create GroupClass
+        const groupClass = this.groupClassesRepository.create({
+          title: dto.title,
+          description: dto.description || null,
+          capacityMax: dto.capacityMax || 6,
+          isActive: true,
+        });
+
+        const savedGroupClass =
+          await this.groupClassesRepository.save(groupClass);
+
+        // Create relations
+        await createLevelsAndTeachers(savedGroupClass.id);
+
+        // Create the single session for this GroupClass
+        await createSession(savedGroupClass.id, startAt, endAt);
+
+        createdGroupClasses.push(savedGroupClass);
+      }
+
+      return createdGroupClasses;
+    }
+
+    // Case 2: One-off session(s)
+    if (dto.sessions && dto.sessions.length > 0) {
+      const createdGroupClasses: GroupClass[] = [];
+
+      for (const sessionDto of dto.sessions) {
+        // Create GroupClass
+        const groupClass = this.groupClassesRepository.create({
+          title: dto.title,
+          description: dto.description || null,
+          capacityMax: dto.capacityMax || 6,
+          isActive: true,
+        });
+
+        const savedGroupClass =
+          await this.groupClassesRepository.save(groupClass);
+
+        // Create relations
+        await createLevelsAndTeachers(savedGroupClass.id);
+
+        // Create the single session for this GroupClass
+        await createSession(
+          savedGroupClass.id,
+          new Date(sessionDto.startAt),
+          new Date(sessionDto.endAt),
+        );
+
+        createdGroupClasses.push(savedGroupClass);
+      }
+
+      // Return single item if only one session, otherwise return array
+      return createdGroupClasses.length === 1
+        ? createdGroupClasses[0]
+        : createdGroupClasses;
+    }
+
+    // Case 3: No sessions defined - create empty GroupClass (shouldn't happen normally)
     const groupClass = this.groupClassesRepository.create({
       title: dto.title,
       description: dto.description || null,
       capacityMax: dto.capacityMax || 6,
-      rrule: dto.rrule || null,
-      startDate: dto.startDate ? new Date(dto.startDate) : null,
-      endDate: dto.endDate ? new Date(dto.endDate) : null,
       isActive: true,
     });
 
     const savedGroupClass = await this.groupClassesRepository.save(groupClass);
+    await createLevelsAndTeachers(savedGroupClass.id);
 
-    // Create group_class_level records
-    if (dto.levelIds && dto.levelIds.length > 0) {
-      const groupClassLevels = dto.levelIds.map((levelId) =>
-        this.groupClassLevelRepository.create({
-          groupClassId: savedGroupClass.id,
-          levelId,
-        }),
-      );
-      await this.groupClassLevelRepository.save(groupClassLevels);
-    }
-
-    // Create group_class_teacher records
-    if (dto.teacherIds && dto.teacherIds.length > 0) {
-      const groupClassTeachers = dto.teacherIds.map((teacherId) =>
-        this.groupClassTeacherRepository.create({
-          groupClassId: savedGroupClass.id,
-          teacherId,
-          isPrimary:
-            dto.primaryTeacherId !== undefined &&
-            teacherId === dto.primaryTeacherId,
-        }),
-      );
-      await this.groupClassTeacherRepository.save(groupClassTeachers);
-    }
-
-    // If one-off sessions are provided, create them
-    if (dto.sessions && dto.sessions.length > 0) {
-      const sessions = dto.sessions.map((sessionDto) => {
-        const session = this.sessionsRepository.create({
-          type: ServiceType.GROUP,
-          groupClassId: savedGroupClass.id,
-          startAt: new Date(sessionDto.startAt),
-          endAt: new Date(sessionDto.endAt),
-          capacityMax: savedGroupClass.capacityMax,
-          status: SessionStatus.SCHEDULED,
-          visibility: SessionVisibility.PUBLIC,
-          // Note: teacherId should be set from the primary teacher if available
-          teacherId: dto.primaryTeacherId || dto.teacherIds[0],
-        });
-        return session;
-      });
-      await this.sessionsRepository.save(sessions);
-    }
-
-    // If recurring (rrule provided), optionally generate initial sessions
-    // This could be done here or via the separate generate-sessions endpoint
-    // For now, leaving it to the explicit generate-sessions call
-
-    // Return the created group class with relations
-    return this.groupClassesRepository.findOne({
-      where: { id: savedGroupClass.id },
-      relations: ["groupClassLevels", "groupClassTeachers"],
-    }) as Promise<GroupClass>;
+    return savedGroupClass;
   }
 
-  async generateSessions(groupClassId: number): Promise<Session[]> {
-    const groupClass = await this.groupClassesRepository.findOne({
-      where: { id: groupClassId },
-      relations: ["groupClassTeachers"],
-    });
-    if (!groupClass || !groupClass.rrule) {
-      return [];
-    }
-
-    // Find the primary teacher or use the first teacher
-    const primaryTeacher = groupClass.groupClassTeachers?.find(
-      (gct) => gct.isPrimary,
-    );
-    const teacherId =
-      primaryTeacher?.teacherId ||
-      groupClass.groupClassTeachers?.[0]?.teacherId;
-
-    if (!teacherId) {
-      throw new Error(
-        `No teacher assigned to group class ${groupClassId}. Cannot generate sessions.`,
-      );
-    }
-
-    const rule = RRule.fromString(groupClass.rrule);
-    const dates = rule.all();
-
-    const sessions: Session[] = [];
-    for (const date of dates) {
-      const session = new Session();
-      session.type = ServiceType.GROUP;
-      session.groupClassId = groupClass.id;
-      session.teacherId = teacherId;
-      session.startAt = date;
-      session.endAt = new Date(date.getTime() + 3600 * 1000); // Assuming 1 hour duration
-      session.capacityMax = groupClass.capacityMax;
-      session.status = SessionStatus.SCHEDULED;
-      session.visibility = SessionVisibility.PUBLIC;
-      sessions.push(session);
-    }
-
-    return this.sessionsRepository.save(sessions);
-  }
   async getAvailableSessions(filters: {
     levelId?: number;
     teacherId?: number;

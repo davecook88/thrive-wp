@@ -27,3 +27,5 @@ export { AddAllowanceIdToPackageUse1762000000040 } from "./1762000000040-AddAllo
 export { RemoveLegacyCourseTables1762000000050 } from "./1762000000050-RemoveLegacyCourseTables.js";
 export { SimplifyCourseProgramSchema1763000000000 } from "./1763000000000-SimplifyCourseProgramSchema.js";
 export { AddCourseProgramLevels1764000000000 } from "./1764000000000-AddCourseProgramLevels.js";
+export { AddCourseCohorts1765000000000 } from "./1765000000000-AddCourseCohorts.js";
+export { RemoveGroupClassRruleFields1730131200000 } from "./1730131200000-RemoveGroupClassRruleFields.js";

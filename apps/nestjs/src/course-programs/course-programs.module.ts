@@ -6,12 +6,18 @@ import {
   CourseStep,
   CourseStepOption,
   StudentCourseStepProgress,
+  CourseCohort,
+  CourseCohortSession,
 } from "./entities/index.js";
 import { GroupClass } from "../group-classes/entities/group-class.entity.js";
 import { CourseProgramsService } from "./services/course-programs.service.js";
 import { CourseStepsService } from "./services/course-steps.service.js";
 import { CourseStepProgressService } from "./services/course-step-progress.service.js";
-import { AdminCourseProgramsController } from "./controllers/admin-course-programs.controller.js";
+import { CohortsService } from "./services/cohorts.service.js";
+import {
+  AdminCourseProgramsController,
+  AdminCohortsController,
+} from "./controllers/admin-course-programs.controller.js";
 import { CourseProgramsController } from "./controllers/course-programs.controller.js";
 import { AuthService } from "../auth/auth.service.js";
 import { User } from "../users/entities/user.entity.js";
@@ -28,6 +34,8 @@ import { StripeProductMap } from "../payments/entities/stripe-product-map.entity
       CourseStep,
       CourseStepOption,
       StudentCourseStepProgress,
+      CourseCohort,
+      CourseCohortSession,
       GroupClass,
       User,
       Admin,
@@ -35,11 +43,16 @@ import { StripeProductMap } from "../payments/entities/stripe-product-map.entity
       StripeProductMap,
     ]),
   ],
-  controllers: [AdminCourseProgramsController, CourseProgramsController],
+  controllers: [
+    AdminCourseProgramsController,
+    AdminCohortsController,
+    CourseProgramsController,
+  ],
   providers: [
     CourseProgramsService,
     CourseStepsService,
     CourseStepProgressService,
+    CohortsService,
     AuthService,
     StripeProductService,
   ],
@@ -47,6 +60,7 @@ import { StripeProductMap } from "../payments/entities/stripe-product-map.entity
     CourseProgramsService,
     CourseStepsService,
     CourseStepProgressService,
+    CohortsService,
   ],
 })
 export class CourseProgramsModule {}

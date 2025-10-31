@@ -398,7 +398,10 @@ describe("Credit Tier System", () => {
       ) as StudentPackage;
       const groupSession = createMockSession(ServiceType.GROUP, 0) as Session;
 
-      const canUseResult = canUsePackageForSession({ pkg: privatePackage, session: groupSession });
+      const canUseResult = canUsePackageForSession({
+        pkg: privatePackage,
+        session: groupSession,
+      });
       expect(canUseResult.canUse).toBe(true);
 
       const crossTierResult = isCrossTierBooking(privatePackage, groupSession);
@@ -421,7 +424,10 @@ describe("Credit Tier System", () => {
         0,
       ) as Session;
 
-      const result = canUsePackageForSession({ pkg: groupPackage, session: privateSession });
+      const result = canUsePackageForSession({
+        pkg: groupPackage,
+        session: privateSession,
+      });
       expect(result.canUse).toBe(false);
     });
 
@@ -471,7 +477,10 @@ describe("Credit Tier System", () => {
         10,
       ) as Session;
 
-      const result = canUsePackageForSession({ pkg: standardPackage, session: premiumSession });
+      const result = canUsePackageForSession({
+        pkg: standardPackage,
+        session: premiumSession,
+      });
       expect(result.canUse).toBe(false);
     });
 
@@ -485,10 +494,16 @@ describe("Credit Tier System", () => {
         0,
       ) as Session;
 
-      const canUseResult = canUsePackageForSession({ pkg: premiumPackage, session: standardSession });
+      const canUseResult = canUsePackageForSession({
+        pkg: premiumPackage,
+        session: standardSession,
+      });
       expect(canUseResult.canUse).toBe(true);
 
-      const crossTierResult = isCrossTierBooking(premiumPackage, standardSession);
+      const crossTierResult = isCrossTierBooking(
+        premiumPackage,
+        standardSession,
+      );
       expect(crossTierResult.isCrossTier).toBe(true);
     });
   });

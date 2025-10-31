@@ -74,5 +74,4 @@ export class StudentsController {
       return sessions;
     }
   }
-
 }

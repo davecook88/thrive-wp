@@ -39,6 +39,14 @@ import {
   PublishCourseDto,
   AttachStepOptionDto,
   StepOptionDetailDto,
+  // Course cohorts types
+  CreateCourseCohortDto,
+  UpdateCourseCohortDto,
+  AssignCohortSessionDto,
+  CourseCohortListItemDto,
+  CourseCohortDetailDto,
+  CourseCohortListItemSchema,
+  CourseCohortDetailSchema,
 } from "@thrive/shared";
 import {
   PreviewAvailabilityResponseSchema,
@@ -664,6 +672,70 @@ export const thriveClient = {
       `/api/admin/course-programs/steps/${stepId}/options`,
     );
     return response as StepOptionDetailDto[];
+  },
+
+  // Course Cohorts management methods
+  getCourseCohorts: async (
+    courseProgramId: number,
+  ): Promise<CourseCohortListItemDto[]> => {
+    const data = await apiGet(
+      `/api/admin/course-programs/${courseProgramId}/cohorts`,
+      z.array(CourseCohortListItemSchema),
+    );
+    return data || [];
+  },
+
+  getCourseCohort: async (
+    cohortId: number,
+  ): Promise<CourseCohortDetailDto | null> => {
+    return await apiGet(
+      `/api/admin/cohorts/${cohortId}`,
+      CourseCohortDetailSchema,
+    );
+  },
+
+  createCourseCohort: async (
+    courseProgramId: number,
+    data: Omit<CreateCourseCohortDto, "courseProgramId">,
+  ): Promise<CourseCohortDetailDto | null> => {
+    return await apiPost(
+      `/api/admin/course-programs/${courseProgramId}/cohorts`,
+      { ...data, courseProgramId } as Record<string, unknown>,
+      CourseCohortDetailSchema,
+    );
+  },
+
+  updateCourseCohort: async (
+    cohortId: number,
+    data: UpdateCourseCohortDto,
+  ): Promise<CourseCohortDetailDto | null> => {
+    return await apiPut(
+      `/api/admin/cohorts/${cohortId}`,
+      data as Record<string, unknown>,
+      CourseCohortDetailSchema,
+    );
+  },
+
+  deleteCourseCohort: async (cohortId: number): Promise<void> => {
+    await apiRequest(`/api/admin/cohorts/${cohortId}`, { method: "DELETE" });
+  },
+
+  // Cohort Session assignment methods
+  assignCohortSession: async (data: AssignCohortSessionDto): Promise<void> => {
+    await apiPost(
+      `/api/admin/cohorts/${data.cohortId}/sessions`,
+      data as Record<string, unknown>,
+    );
+  },
+
+  removeCohortSession: async (
+    cohortId: number,
+    courseStepId: number,
+  ): Promise<void> => {
+    await apiRequest(
+      `/api/admin/cohorts/${cohortId}/sessions/${courseStepId}`,
+      { method: "DELETE" },
+    );
   },
 
   // Group Classes management methods

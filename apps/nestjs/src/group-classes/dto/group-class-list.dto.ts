@@ -3,9 +3,6 @@ export interface GroupClassListDto {
   title: string;
   description: string | null;
   capacityMax: number;
-  rrule: string | null;
-  startDate: Date | null;
-  endDate: Date | null;
   isActive: boolean;
   levels: Array<{
     id: number;

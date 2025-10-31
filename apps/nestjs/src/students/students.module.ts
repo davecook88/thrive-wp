@@ -9,14 +9,7 @@ import { Booking } from "../payments/entities/booking.entity.js";
 import { Session } from "../sessions/entities/session.entity.js";
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      Student,
-      Booking,
-      Session,
-    ]),
-    AuthModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Student, Booking, Session]), AuthModule],
   controllers: [StudentsController],
   providers: [StudentsService, StudentAvailabilityService],
   exports: [StudentsService, StudentAvailabilityService],

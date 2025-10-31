@@ -336,3 +336,179 @@ export const StudentCoursePackageSchema = z.object({
 });
 
 export type StudentCoursePackage = z.infer<typeof StudentCoursePackageSchema>;
+
+// ==================== COHORT DTOs ====================
+
+/**
+ * Schema for creating a new course cohort
+ */
+export const CreateCourseCohortSchema = z.object({
+  courseProgramId: z
+    .number()
+    .int()
+    .positive()
+    .describe("FK to course_program.id"),
+
+  name: z
+    .string()
+    .min(3, "Cohort name must be at least 3 characters")
+    .max(255, "Cohort name must not exceed 255 characters")
+    .describe("Cohort display name (e.g., 'Fall 2025 Cohort')"),
+
+  description: z
+    .string()
+    .max(5000, "Description must not exceed 5000 characters")
+    .optional()
+    .nullable()
+    .describe("Optional cohort-specific description"),
+
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Start date must be in YYYY-MM-DD format")
+    .describe("First session date of cohort"),
+
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "End date must be in YYYY-MM-DD format")
+    .describe("Last session date of cohort"),
+
+  timezone: z
+    .string()
+    .default("America/New_York")
+    .describe("Timezone for cohort"),
+
+  maxEnrollment: z
+    .number()
+    .int()
+    .positive()
+    .min(1, "Maximum enrollment must be at least 1")
+    .describe("Maximum students allowed in cohort"),
+
+  enrollmentDeadline: z
+    .string()
+    .optional()
+    .nullable()
+    .describe("Last datetime student can enroll (ISO 8601 format)"),
+
+  isActive: z
+    .boolean()
+    .default(true)
+    .describe("Whether cohort is available for enrollment"),
+});
+
+export type CreateCourseCohortDto = z.infer<typeof CreateCourseCohortSchema>;
+
+/**
+ * Schema for updating an existing cohort
+ */
+export const UpdateCourseCohortSchema = CreateCourseCohortSchema.omit({
+  courseProgramId: true,
+}).partial();
+
+export type UpdateCourseCohortDto = z.infer<typeof UpdateCourseCohortSchema>;
+
+/**
+ * Schema for assigning a session to a cohort step
+ */
+export const AssignCohortSessionSchema = z.object({
+  cohortId: z.number().int().positive().describe("FK to course_cohort.id"),
+
+  courseStepId: z.number().int().positive().describe("FK to course_step.id"),
+
+  courseStepOptionId: z
+    .number()
+    .int()
+    .positive()
+    .describe("FK to course_step_option.id"),
+});
+
+export type AssignCohortSessionDto = z.infer<typeof AssignCohortSessionSchema>;
+
+/**
+ * Cohort session detail (which session is assigned to which step)
+ */
+export const CohortSessionDetailSchema = z.object({
+  id: z.number(),
+  cohortId: z.number(),
+  courseStepId: z.number(),
+  courseStepOptionId: z.number(),
+  // Include step and option details for convenience
+  stepLabel: z.string(),
+  stepTitle: z.string(),
+  stepOrder: z.number(),
+  groupClassName: z.string(),
+  dayOfWeek: z.number().optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+  timezone: z.string().optional(),
+});
+
+export type CohortSessionDetailDto = z.infer<typeof CohortSessionDetailSchema>;
+
+/**
+ * Cohort list item (for admin cohort management)
+ */
+export const CourseCohortListItemSchema = z.object({
+  id: z.number(),
+  courseProgramId: z.number(),
+  name: z.string(),
+  description: z.string().nullable(),
+  startDate: z.string(),
+  endDate: z.string(),
+  timezone: z.string(),
+  maxEnrollment: z.number(),
+  currentEnrollment: z.number(),
+  enrollmentDeadline: z.string().nullable(),
+  isActive: z.preprocess((val) => Boolean(val), z.boolean()),
+  availableSpots: z.number().describe("maxEnrollment - currentEnrollment"),
+  sessionCount: z.number().describe("Number of sessions assigned to cohort"),
+});
+
+export type CourseCohortListItemDto = z.infer<
+  typeof CourseCohortListItemSchema
+>;
+
+/**
+ * Full cohort detail with assigned sessions
+ */
+export const CourseCohortDetailSchema = z.object({
+  id: z.number(),
+  courseProgramId: z.number(),
+  courseCode: z.string(),
+  courseTitle: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  startDate: z.string(),
+  endDate: z.string(),
+  timezone: z.string(),
+  maxEnrollment: z.number(),
+  currentEnrollment: z.number(),
+  enrollmentDeadline: z.string().nullable(),
+  isActive: z.preprocess((val) => Boolean(val), z.boolean()),
+  availableSpots: z.number(),
+  sessions: z.array(CohortSessionDetailSchema),
+});
+
+export type CourseCohortDetailDto = z.infer<typeof CourseCohortDetailSchema>;
+
+/**
+ * Public cohort info (for students browsing courses)
+ */
+export const PublicCourseCohortSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  description: z.string().nullable(),
+  startDate: z.string(),
+  endDate: z.string(),
+  timezone: z.string(),
+  availableSpots: z.number(),
+  enrollmentDeadline: z.string().nullable(),
+  isAvailable: z
+    .boolean()
+    .describe(
+      "True if spots available and deadline not passed and cohort is active",
+    ),
+  sessions: z.array(CohortSessionDetailSchema),
+});
+
+export type PublicCourseCohortDto = z.infer<typeof PublicCourseCohortSchema>;

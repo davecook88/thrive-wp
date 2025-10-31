@@ -43,7 +43,6 @@ interface CourseCountResult {
   count: string;
 }
 
-
 @Injectable()
 export class StudentsService {
   constructor(
@@ -306,5 +305,4 @@ export class StudentsService {
       status: session.status,
     }));
   }
-
 }

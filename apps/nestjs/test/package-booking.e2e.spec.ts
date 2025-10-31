@@ -392,9 +392,7 @@ describe("Package Booking (e2e)", () => {
       const results = await Promise.allSettled(promises);
 
       // At least one request should process
-      const processedRequests = results.filter(
-        (r) => r.status === "fulfilled",
-      );
+      const processedRequests = results.filter((r) => r.status === "fulfilled");
 
       expect(processedRequests.length).toBeGreaterThan(0);
     });

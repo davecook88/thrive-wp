@@ -12,6 +12,7 @@ import {
 import { AdminGuard } from "../../auth/admin.guard.js";
 import { CourseProgramsService } from "../services/course-programs.service.js";
 import { CourseStepsService } from "../services/course-steps.service.js";
+import { CohortsService } from "../services/cohorts.service.js";
 import type {
   CreateCourseProgramDto,
   UpdateCourseProgramDto,
@@ -19,6 +20,9 @@ import type {
   UpdateCourseStepDto,
   AttachStepOptionDto,
   PublishCourseDto,
+  CreateCourseCohortDto,
+  UpdateCourseCohortDto,
+  AssignCohortSessionDto,
 } from "@thrive/shared";
 
 /**
@@ -31,6 +35,7 @@ export class AdminCourseProgramsController {
   constructor(
     private readonly courseProgramsService: CourseProgramsService,
     private readonly courseStepsService: CourseStepsService,
+    private readonly cohortsService: CohortsService,
   ) {}
 
   // ==================== COURSE PROGRAM CRUD ====================
@@ -128,5 +133,72 @@ export class AdminCourseProgramsController {
       priceInCents,
       currency,
     );
+  }
+
+  // ==================== COHORTS ====================
+
+  @Get(":id/cohorts")
+  async getCohorts(@Param("id", ParseIntPipe) courseProgramId: number) {
+    return this.cohortsService.findByCourseProgram(courseProgramId);
+  }
+
+  @Post(":id/cohorts")
+  async createCohort(
+    @Param("id", ParseIntPipe) courseProgramId: number,
+    @Body() dto: Omit<CreateCourseCohortDto, "courseProgramId">,
+  ) {
+    return this.cohortsService.create(courseProgramId, dto);
+  }
+}
+
+/**
+ * Admin endpoints for managing individual cohorts
+ * Base path: /admin/cohorts
+ */
+@Controller("admin/cohorts")
+@UseGuards(AdminGuard)
+export class AdminCohortsController {
+  constructor(private readonly cohortsService: CohortsService) {}
+
+  @Get(":id")
+  async getCohort(@Param("id", ParseIntPipe) cohortId: number) {
+    return this.cohortsService.findOneDetail(cohortId);
+  }
+
+  @Put(":id")
+  async updateCohort(
+    @Param("id", ParseIntPipe) cohortId: number,
+    @Body() dto: UpdateCourseCohortDto,
+  ) {
+    return this.cohortsService.update(cohortId, dto);
+  }
+
+  @Delete(":id")
+  async deleteCohort(@Param("id", ParseIntPipe) cohortId: number) {
+    await this.cohortsService.remove(cohortId);
+    return { message: "Cohort deleted successfully" };
+  }
+
+  @Post(":id/sessions")
+  async assignSession(
+    @Param("id", ParseIntPipe) cohortId: number,
+    @Body() dto: Omit<AssignCohortSessionDto, "cohortId">,
+  ) {
+    await this.cohortsService.assignSession({ ...dto, cohortId });
+    return { message: "Session assigned successfully" };
+  }
+
+  @Delete(":id/sessions/:stepId/:optionId")
+  async removeSession(
+    @Param("id", ParseIntPipe) cohortId: number,
+    @Param("stepId", ParseIntPipe) courseStepId: number,
+    @Param("optionId", ParseIntPipe) courseStepOptionId: number,
+  ) {
+    await this.cohortsService.removeSession(
+      cohortId,
+      courseStepId,
+      courseStepOptionId,
+    );
+    return { message: "Session removed successfully" };
   }
 }

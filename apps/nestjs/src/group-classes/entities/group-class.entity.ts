@@ -1,4 +1,4 @@
-import { Entity, Column, Index, OneToMany } from "typeorm";
+import { Entity, Column, Index, OneToMany, OneToOne } from "typeorm";
 import { BaseEntity } from "../../common/entities/base.entity.js";
 import type { GroupClassTeacher } from "./group-class-teacher.entity.js";
 import type { GroupClassLevel } from "./group-class-level.entity.js";
@@ -33,31 +33,6 @@ export class GroupClass extends BaseEntity {
   capacityMax: number;
 
   @Column({
-    name: "rrule",
-    type: "varchar",
-    length: 500,
-    nullable: true,
-    comment: "RFC5545 RRULE for recurring",
-  })
-  rrule: string | null;
-
-  @Column({
-    name: "start_date",
-    type: "date",
-    nullable: true,
-    comment: "First occurrence date",
-  })
-  startDate: Date | null;
-
-  @Column({
-    name: "end_date",
-    type: "date",
-    nullable: true,
-    comment: "Last occurrence date",
-  })
-  endDate: Date | null;
-
-  @Column({
     name: "is_active",
     type: "boolean",
     default: true,
@@ -71,6 +46,6 @@ export class GroupClass extends BaseEntity {
   @OneToMany("GroupClassLevel", "groupClass")
   groupClassLevels: GroupClassLevel[];
 
-  @OneToMany("Session", "groupClass")
-  sessions: Session[];
+  @OneToOne("Session", (session: Session) => session.groupClass)
+  session: Session | null;
 }

@@ -12,7 +12,6 @@ import {
 import { ZodValidationPipe } from "nestjs-zod";
 import { GroupClassesService } from "./group-classes.service.js";
 import { GroupClass } from "./entities/group-class.entity.js";
-import { Session } from "../sessions/entities/session.entity.js";
 import { AdminGuard } from "../auth/admin.guard.js";
 import {
   CreateGroupClassSchema,
@@ -54,20 +53,16 @@ export class GroupClassesController {
     return await this.groupClassesService.findOne(+id);
   }
 
-  @Post(":id/generate-sessions")
-  generateSessions(@Param("id") id: string): Promise<Session[]> {
-    return this.groupClassesService.generateSessions(+id);
-  }
-
   /**
    * Create a new Group Class (Admin)
+   * When rrule is provided, creates multiple GroupClass records (one per occurrence)
    */
   @Post()
   @UseGuards(AdminGuard)
   async createGroupClass(
     @Body(new ZodValidationPipe(CreateGroupClassSchema))
     dto: CreateGroupClassDto,
-  ): Promise<GroupClass> {
+  ): Promise<GroupClass | GroupClass[]> {
     return this.groupClassesService.createGroupClass(dto);
   }
 }

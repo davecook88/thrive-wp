@@ -2,6 +2,7 @@ import { Entity, Column, ManyToOne, JoinColumn, Index } from "typeorm";
 import { BaseEntity } from "../../common/entities/base.entity.js";
 import { StudentPackage } from "../../packages/entities/student-package.entity.js";
 import { CourseStep } from "./course-step.entity.js";
+import type { CourseCohort } from "./course-cohort.entity.js";
 
 /**
  * StudentCourseStepProgress tracks a student's progress through individual course steps.
@@ -22,6 +23,7 @@ import { CourseStep } from "./course-step.entity.js";
 @Entity("student_course_step_progress")
 @Index(["studentPackageId"])
 @Index(["courseStepId"])
+@Index(["cohortId"])
 @Index(["studentPackageId", "courseStepId"], { unique: true })
 export class StudentCourseStepProgress extends BaseEntity {
   @Column({ name: "student_package_id", type: "int" })
@@ -68,4 +70,19 @@ export class StudentCourseStepProgress extends BaseEntity {
     nullable: true,
   })
   completedAt?: Date;
+
+  @Column({
+    name: "cohort_id",
+    type: "int",
+    nullable: true,
+    comment: "Which cohort student enrolled in (null for legacy enrollments)",
+  })
+  cohortId?: number;
+
+  @ManyToOne("CourseCohort", {
+    onDelete: "SET NULL",
+    eager: false,
+  })
+  @JoinColumn({ name: "cohort_id" })
+  cohort?: CourseCohort;
 }

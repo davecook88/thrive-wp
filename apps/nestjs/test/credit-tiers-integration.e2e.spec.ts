@@ -580,11 +580,7 @@ describe("Credit Tier System Integration (e2e)", () => {
         ServiceType.PRIVATE,
         premiumTeacher,
       );
-      const standardPackage = await createPackage(
-        ServiceType.PRIVATE,
-        0,
-        60,
-      );
+      const standardPackage = await createPackage(ServiceType.PRIVATE, 0, 60);
 
       const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
@@ -605,11 +601,7 @@ describe("Credit Tier System Integration (e2e)", () => {
         ServiceType.PRIVATE,
         standardTeacher,
       );
-      const premiumPackage = await createPackage(
-        ServiceType.PRIVATE,
-        10,
-        60,
-      );
+      const premiumPackage = await createPackage(ServiceType.PRIVATE, 10, 60);
 
       const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
