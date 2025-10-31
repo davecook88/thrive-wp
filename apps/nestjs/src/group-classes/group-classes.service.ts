@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { GroupClass } from "./entities/group-class.entity.js";
@@ -13,9 +13,12 @@ import {
 } from "../sessions/entities/session.entity.js";
 import { ServiceType } from "../common/types/class-types.js";
 import { SessionWithEnrollment } from "./dto/session-with-enrollment.dto.js";
-import { SessionWithEnrollmentResponse } from "@thrive/shared";
-import { CreateGroupClassDto } from "./dto/create-group-class.dto.js";
-import { GroupClassListDto } from "./dto/group-class-list.dto.js";
+import {
+  SessionWithEnrollmentResponse,
+  CreateGroupClassDto,
+  GroupClassListDto,
+  PatchGroupClassDto,
+} from "@thrive/shared";
 
 @Injectable()
 export class GroupClassesService {
@@ -437,6 +440,24 @@ export class GroupClassesService {
           canJoinWaitlist: session.enrolledCount >= session.capacityMax,
           teacher: session.teacher.toPublicDto(),
         }) as SessionWithEnrollmentResponse,
+    );
+  }
+
+  async updateGroupClass(
+    id: number,
+    dto: PatchGroupClassDto,
+  ): Promise<GroupClass> {
+    const existing = await this.groupClassesRepository.findOne({
+      where: { id },
+    });
+    if (!existing) {
+      throw new NotFoundException(`GroupClass with id ${id} not found`);
+    }
+    return this.groupClassesRepository.save(
+      this.groupClassesRepository.merge(existing, {
+        ...existing,
+        ...dto,
+      } as GroupClass),
     );
   }
 }

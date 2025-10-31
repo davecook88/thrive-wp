@@ -8,6 +8,7 @@ import {
   UseGuards,
   HttpException,
   HttpStatus,
+  Patch,
 } from "@nestjs/common";
 import { ZodValidationPipe } from "nestjs-zod";
 import { GroupClassesService } from "./group-classes.service.js";
@@ -15,9 +16,11 @@ import { GroupClass } from "./entities/group-class.entity.js";
 import { AdminGuard } from "../auth/admin.guard.js";
 import {
   CreateGroupClassSchema,
+  type PatchGroupClassDto,
+  PatchGroupClassSchema,
   type CreateGroupClassDto,
-} from "./dto/create-group-class.dto.js";
-import { GroupClassListDto } from "./dto/group-class-list.dto.js";
+  type GroupClassListDto,
+} from "@thrive/shared";
 
 @Controller("group-classes")
 export class GroupClassesController {
@@ -51,6 +54,16 @@ export class GroupClassesController {
   @Get(":id")
   async findOne(@Param("id") id: string): Promise<GroupClassListDto | null> {
     return await this.groupClassesService.findOne(+id);
+  }
+
+  @Patch(":id")
+  @UseGuards(AdminGuard)
+  updateGroupClass(
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(PatchGroupClassSchema))
+    dto: PatchGroupClassDto,
+  ): Promise<GroupClass> {
+    return this.groupClassesService.updateGroupClass(+id, dto);
   }
 
   /**

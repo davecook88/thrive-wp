@@ -131,3 +131,77 @@ export const CreateBookingRequestSchema = z
   );
 
 export type CreateBookingRequest = z.infer<typeof CreateBookingRequestSchema>;
+
+// Create Group Class Schema
+export const CreateGroupClassSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().nullable().optional(),
+  levelIds: z.array(z.number().int().positive()),
+  capacityMax: z.number().int().positive().optional(),
+  teacherIds: z.array(z.number().int().positive()),
+  primaryTeacherId: z.number().int().positive().nullable().optional(),
+  // Recurring schedule fields (used to generate multiple GroupClasses)
+  rrule: z.string().nullable().optional(),
+  startDate: z.string().nullable().optional(),
+  endDate: z.string().nullable().optional(),
+  sessionStartTime: z.string().nullable().optional(), // e.g., "14:00"
+  sessionDuration: z.number().int().positive().optional(), // in minutes
+  // One-off sessions (creates one GroupClass per session)
+  sessions: z
+    .array(
+      z.object({
+        startAt: z.string(),
+        endAt: z.string(),
+      }),
+    )
+    .optional(),
+});
+
+export type CreateGroupClassDto = z.infer<typeof CreateGroupClassSchema>;
+
+export const PatchGroupClassSchema = CreateGroupClassSchema.extend({
+  title: z.string().min(1).optional(),
+  levelIds: z.array(z.number().int().positive()).optional(),
+  teacherIds: z.array(z.number().int().positive()).optional(),
+});
+
+export type PatchGroupClassDto = z.infer<typeof PatchGroupClassSchema>;
+
+// Group Class List Schema
+export const GroupClassListSchema = z.object({
+  id: z.number().int().positive(),
+  title: z.string(),
+  description: z.string().nullable(),
+  capacityMax: z.number().int().positive(),
+  isActive: z.boolean(),
+  levels: z.array(
+    z.object({
+      id: z.number().int().positive(),
+      code: z.string(),
+      name: z.string(),
+    }),
+  ),
+  teachers: z.array(
+    z.object({
+      teacherId: z.number().int().positive(),
+      userId: z.number().int().positive(),
+      name: z.string(),
+      isPrimary: z.boolean(),
+    }),
+  ),
+  upcomingSessionsCount: z.number().int().nonnegative(),
+  sessions: z
+    .array(
+      z.object({
+        id: z.number().int().positive(),
+        startAt: z.coerce.date(),
+        endAt: z.coerce.date(),
+        status: z.string(),
+        enrolledCount: z.number().int().nonnegative(),
+        waitlistCount: z.number().int().nonnegative(),
+      }),
+    )
+    .optional(),
+});
+
+export type GroupClassListDto = z.infer<typeof GroupClassListSchema>;
