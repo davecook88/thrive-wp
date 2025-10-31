@@ -35,14 +35,21 @@ export class GroupClassesController {
   getAvailableSessions(
     @Query()
     filters: {
-      levelId?: number;
+      levelIds: string;
       teacherId?: number;
       startDate?: Date;
       endDate?: Date;
     },
   ) {
     try {
-      return this.groupClassesService.getAvailableSessions(filters);
+      return this.groupClassesService.getAvailableSessions({
+        levelIds: filters.levelIds
+          ? filters.levelIds.split(",").map((id) => parseInt(id, 10))
+          : undefined,
+        teacherId: filters.teacherId,
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+      });
     } catch (error) {
       throw new HttpException(
         error instanceof Error ? error.message : "",

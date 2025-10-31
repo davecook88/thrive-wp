@@ -371,7 +371,7 @@ export class GroupClassesService {
   }
 
   async getAvailableSessions(filters: {
-    levelId?: number;
+    levelIds?: number[];
     teacherId?: number;
     startDate?: Date;
     endDate?: Date;
@@ -400,9 +400,9 @@ export class GroupClassesService {
       qb.andWhere("session.startAt <= :endDate", { endDate: filters.endDate });
     }
 
-    if (filters.levelId) {
-      qb.andWhere("level.id = :levelId", {
-        levelId: filters.levelId,
+    if (filters.levelIds && filters.levelIds.length > 0) {
+      qb.andWhere("level.id IN (:...levelIds)", {
+        levelIds: filters.levelIds,
       });
     }
 

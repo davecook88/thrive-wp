@@ -1,7 +1,4 @@
-import type {
-  BaseCalendarEvent,
-  BookingEvent,
-} from "@thrive/shared/calendar";
+import type { BaseCalendarEvent, BookingEvent } from "@thrive/shared/calendar";
 import { thriveClient } from "../../../../../shared/thrive";
 
 export const fetchStudentBookings = async (
@@ -14,12 +11,12 @@ export const fetchStudentBookings = async (
 export const fetchAvailableGroupSessions = async (
   start: Date,
   end: Date,
-  filters?: { levelId?: number; teacherId?: number },
+  filters?: { levelIds?: number[]; teacherId?: number },
 ): Promise<BaseCalendarEvent[]> => {
   return await thriveClient.fetchAvailableGroupSessions({
     startDate: start,
     endDate: end,
-    levelId: filters?.levelId,
+    levelIds: filters?.levelIds,
     teacherId: filters?.teacherId,
   });
 };

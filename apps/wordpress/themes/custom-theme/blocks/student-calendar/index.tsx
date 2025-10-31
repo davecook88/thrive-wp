@@ -10,25 +10,17 @@ type Attrs = {
   viewHeight?: number;
 };
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      "thrive-calendar": any;
-    }
-  }
-}
-
 registerBlockType<Attrs>("custom-theme/student-calendar", {
   title: __("Student Calendar", "custom-theme"),
   category: "widgets",
   icon: "calendar-alt",
   description: __(
     "Calendar showing the logged-in student's sessions and bookings.",
-    "custom-theme"
+    "custom-theme",
   ),
   attributes: {},
   edit: (props) => {
-    const { attributes, setAttributes } = props as any as {
+    const { attributes, setAttributes } = props as {
       attributes: Attrs;
       setAttributes: (a: Partial<Attrs>) => void;
     };
@@ -94,7 +86,7 @@ registerBlockType<Attrs>("custom-theme/student-calendar", {
           <div style={{ marginTop: 8, fontSize: "12px", color: "#6b7280" }}>
             {__(
               "This calendar will show the logged-in student's sessions and bookings.",
-              "custom-theme"
+              "custom-theme",
             )}
           </div>
           <div style={{ marginTop: 8 }}>

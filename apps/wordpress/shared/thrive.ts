@@ -253,18 +253,18 @@ export const thriveClient = {
       );
     },
   fetchAvailableGroupSessions: async ({
-    levelId,
+    levelIds,
     startDate,
     endDate,
     teacherId,
   }: {
-    levelId?: number;
+    levelIds?: number[];
     startDate?: Date;
     endDate?: Date;
     teacherId?: number;
   } = {}): Promise<ClassEvent[]> => {
     const params = new URLSearchParams();
-    if (levelId) params.append("levelId", String(levelId));
+    if (levelIds) params.append("levelIds", levelIds.join(","));
     if (startDate) params.append("startDate", startDate.toISOString());
     if (endDate) params.append("endDate", endDate.toISOString());
     if (teacherId) params.append("teacherId", String(teacherId));

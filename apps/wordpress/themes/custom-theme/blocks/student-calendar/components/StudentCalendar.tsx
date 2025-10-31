@@ -90,8 +90,7 @@ export default function StudentCalendar({
         fetchStudentBookings(start, end),
         showGroupClasses
           ? fetchAvailableGroupSessions(start, end, {
-              levelId:
-                selectedLevelIds.length > 0 ? selectedLevelIds[0] : undefined,
+              levelIds: selectedLevelIds,
             })
           : Promise.resolve([]),
       ]);
