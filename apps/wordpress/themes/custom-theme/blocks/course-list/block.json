@@ -1,0 +1,101 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "custom-theme/course-list",
+  "title": "Course List",
+  "category": "thrive",
+  "icon": "welcome-learn-more",
+  "description": "Display a list of available courses with filtering and sorting options",
+  "keywords": [
+    "courses",
+    "list",
+    "grid",
+    "filter"
+  ],
+  "version": "1.0.0",
+  "textdomain": "custom-theme",
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ],
+    "spacing": {
+      "margin": true,
+      "padding": true
+    }
+  },
+  "attributes": {
+    "columns": {
+      "type": "number",
+      "default": 3
+    },
+    "showLevelBadges": {
+      "type": "boolean",
+      "default": true
+    },
+    "showPrice": {
+      "type": "boolean",
+      "default": true
+    },
+    "showEnrollmentCount": {
+      "type": "boolean",
+      "default": false
+    },
+    "showCohortInfo": {
+      "type": "boolean",
+      "default": true
+    },
+    "showDescription": {
+      "type": "boolean",
+      "default": true
+    },
+    "cardLayout": {
+      "type": "string",
+      "enum": [
+        "image-top",
+        "image-side"
+      ],
+      "default": "image-top"
+    },
+    "sortBy": {
+      "type": "string",
+      "enum": [
+        "startDate",
+        "title",
+        "price"
+      ],
+      "default": "startDate"
+    },
+    "sortOrder": {
+      "type": "string",
+      "enum": [
+        "asc",
+        "desc"
+      ],
+      "default": "asc"
+    },
+    "showFilters": {
+      "type": "boolean",
+      "default": true
+    },
+    "defaultLevelId": {
+      "type": "number",
+      "default": null
+    },
+    "pageSize": {
+      "type": "number",
+      "default": 12
+    },
+    "showPagination": {
+      "type": "boolean",
+      "default": true
+    },
+    "imagePlaceholder": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "editorScript": "custom-theme-blocks",
+  "render": "file:./render.php"
+}

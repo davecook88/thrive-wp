@@ -213,6 +213,164 @@ export class CourseProgramsService {
   }
 
   /**
+   * Browse courses with filtering and pagination (public endpoint)
+   */
+  async browse(params: {
+    levelId?: number;
+    page?: number;
+    pageSize?: number;
+    sortBy?: "startDate" | "title" | "price";
+    sortOrder?: "asc" | "desc";
+  }): Promise<{
+    items: import("@thrive/shared").CourseProgramListItemDto[];
+    total: number;
+    page: number;
+    pageSize: number;
+  }> {
+    const {
+      levelId,
+      page = 1,
+      pageSize = 20,
+      sortBy = "startDate",
+      sortOrder = "asc",
+    } = params;
+
+    // Limit page size
+    const limitedPageSize = Math.min(pageSize, 100);
+    const skip = (page - 1) * limitedPageSize;
+
+    // Build query
+    let query = this.courseProgramRepo
+      .createQueryBuilder("cp")
+      .leftJoinAndSelect("cp.steps", "step")
+      .leftJoinAndSelect("cp.courseProgramLevels", "cpl")
+      .leftJoinAndSelect("cpl.level", "level")
+      .where("cp.isActive = :isActive", { isActive: true });
+
+    // Filter by level if provided
+    if (levelId) {
+      query = query.andWhere("cpl.levelId = :levelId", { levelId });
+    }
+
+    // Get total count
+    const total = await query.getCount();
+
+    // Apply sorting
+    if (sortBy === "title") {
+      query = query.orderBy(
+        "cp.title",
+        sortOrder.toUpperCase() as "ASC" | "DESC",
+      );
+    } else if (sortBy === "startDate") {
+      // Get next cohort start date via subquery for sorting
+      query = query.orderBy(
+        "cp.createdAt",
+        sortOrder.toUpperCase() as "ASC" | "DESC",
+      );
+    } else {
+      query = query.orderBy(
+        "cp.createdAt",
+        sortOrder.toUpperCase() as "ASC" | "DESC",
+      );
+    }
+
+    // Apply pagination
+    query = query.skip(skip).take(limitedPageSize);
+
+    const coursePrograms = await query.getMany();
+
+    // Enrich with cohort and pricing data
+    const items = await Promise.all(
+      coursePrograms.map(async (cp) => {
+        // Count available cohorts
+        const availableCohortsCount = await this.dataSource
+          .createQueryBuilder()
+          .select("COUNT(*)", "count")
+          .from("course_cohort", "cc")
+          .where("cc.course_program_id = :cpId", { cpId: cp.id })
+          .andWhere("cc.is_active = 1")
+          .andWhere("cc.current_enrollment < cc.max_enrollment")
+          .andWhere(
+            "(cc.enrollment_deadline IS NULL OR cc.enrollment_deadline > NOW())",
+          )
+          .getRawOne<{ count: string }>();
+
+        const availableCohorts = parseInt(availableCohortsCount?.count || "0");
+
+        // Get next cohort start date
+        const nextCohortResult = await this.dataSource
+          .createQueryBuilder()
+          .select("MIN(cc.start_date)", "startDate")
+          .from("course_cohort", "cc")
+          .where("cc.course_program_id = :cpId", { cpId: cp.id })
+          .andWhere("cc.is_active = 1")
+          .andWhere("cc.current_enrollment < cc.max_enrollment")
+          .andWhere(
+            "(cc.enrollment_deadline IS NULL OR cc.enrollment_deadline > NOW())",
+          )
+          .andWhere("cc.start_date >= CURDATE()")
+          .getRawOne<{ startDate: string | null }>();
+
+        const nextCohortStartDate = nextCohortResult?.startDate || null;
+
+        // Get Stripe pricing
+        const mapping = await this.stripeProductMapRepo.findOne({
+          where: {
+            scopeType: ScopeType.COURSE,
+            scopeId: cp.id,
+          },
+        });
+
+        let priceInCents: number | null = null;
+        let stripePriceId: string | null = null;
+
+        if (mapping) {
+          try {
+            const prices = await this.stripeProductService.listPrices(
+              mapping.stripeProductId,
+              true,
+            );
+            const activePrice = prices[0];
+            priceInCents = activePrice?.unit_amount || null;
+            stripePriceId = activePrice?.id || null;
+          } catch {
+            // Ignore Stripe errors
+          }
+        }
+
+        return {
+          id: cp.id,
+          code: cp.code,
+          title: cp.title,
+          description: cp.description,
+          heroImageUrl: cp.heroImageUrl,
+          timezone: cp.timezone,
+          isActive: cp.isActive,
+          stepCount: cp.steps?.length || 0,
+          priceInCents,
+          stripePriceId,
+          levels: (cp.courseProgramLevels || [])
+            .filter((cpl) => cpl.level)
+            .map((cpl) => ({
+              id: cpl.level.id,
+              code: cpl.level.code,
+              name: cpl.level.name,
+            })),
+          availableCohorts,
+          nextCohortStartDate,
+        };
+      }),
+    );
+
+    return {
+      items,
+      total,
+      page,
+      pageSize: limitedPageSize,
+    };
+  }
+
+  /**
    * Enrich course program with Stripe pricing data
    */
   async enrichWithPricing(
@@ -258,6 +416,8 @@ export class CourseProgramsService {
       code: courseProgram.code,
       title: courseProgram.title,
       description: courseProgram.description,
+      heroImageUrl: courseProgram.heroImageUrl,
+      slug: courseProgram.slug,
       timezone: courseProgram.timezone,
       isActive: courseProgram.isActive,
       steps: transformedSteps,

@@ -327,9 +327,19 @@ export function canUseAllowanceForSession(
     return false;
   }
 
-  // Service types must match
+  // Service types must be appropriate
   if (allowance.serviceType !== session.type) {
-    return false;
+    if (session.type === ServiceType.PRIVATE) {
+      // Private sessions can only use private credits
+      return false;
+    } else if (
+      session.type === ServiceType.GROUP &&
+      allowance.serviceType !== ServiceType.PRIVATE
+    ) {
+      // Private or group credits can be used for group sessions
+      // but not course credits
+      return false;
+    }
   }
 
   const allowanceTier = getAllowanceTier(allowance);

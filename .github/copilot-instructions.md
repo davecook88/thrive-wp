@@ -17,15 +17,14 @@ This entire app must be able to be deployed to a single VPS. This means all serv
 ### WordPress-NestJS Bridge Communication
 - WordPress calls NestJS via `http://nestjs:3000/` (Docker internal hostname)
 - External API access via `http://localhost:8080/api/` (through Nginx proxy)
-- Example in `wordpress/plugins/nodejs-bridge/includes/class-nodejs-bridge.php`:
-  ```php
-  $url = 'http://nestjs:3000/' . $endpoint;  // Use 'nestjs' hostname, not localhost
-  $response = wp_remote_request($url, $args);
-  ```
 - NestJS endpoints follow REST conventions in `nestjs/src/app.controller.ts`
 - **Important**: Most API endpoints require authentication via JWT token in `thrive_sess` cookie
 - Admin-only endpoints use `AdminGuard` which requires user to have 'admin' role
 - Test bridge with shortcode: `[test_nodejs_bridge]`
+### Typing Standards
+- `any` types are strictly forbidden.
+- All API calls from the browser MUST be made with the shared thriveClient
+- All API types MUST be declared in the shared package - this should cover most types used in - the client side code. There should be minimal type declarations in the client side apps. Use API types where possible.
 
 ### Database Table Names
 - User table: `user` (singular, not `users`)

@@ -1,0 +1,29 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "custom-theme/course-details",
+    "title": "Course Details",
+    "category": "thrive",
+    "icon": "text-page",
+    "description": "Static content area for additional course information",
+    "keywords": [
+        "course",
+        "details",
+        "content",
+        "information"
+    ],
+    "supports": {
+        "html": false,
+        "align": [
+            "wide",
+            "full"
+        ],
+        "spacing": {
+            "padding": true,
+            "margin": true
+        }
+    },
+    "editorScript": "custom-theme-blocks",
+    "style": "file:./style.css",
+    "render": "file:./render.php"
+}

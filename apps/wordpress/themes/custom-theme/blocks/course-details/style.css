@@ -1,0 +1,59 @@
+.wp-block-custom-theme-course-details {
+  margin: 3rem 0;
+  padding: 2rem;
+  background-color: #fff;
+  border-radius: 8px;
+}
+
+/* Wide alignment */
+.wp-block-custom-theme-course-details.alignwide {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Full alignment */
+.wp-block-custom-theme-course-details.alignfull {
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
+
+/* Editor styles */
+.course-details-block-editor {
+  padding: 1.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #fafafa;
+}
+
+.course-details-editor-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.course-details-editor-header h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  color: #1a1a1a;
+}
+
+.course-details-editor-header p {
+  margin: 0;
+  color: #666;
+  font-size: 0.875rem;
+}
+
+/* Inner blocks spacing */
+.wp-block-custom-theme-course-details > * + * {
+  margin-top: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .wp-block-custom-theme-course-details {
+    padding: 1.5rem;
+  }
+}

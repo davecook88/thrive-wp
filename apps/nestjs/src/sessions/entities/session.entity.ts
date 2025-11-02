@@ -4,6 +4,7 @@ import {
   Index,
   ManyToOne,
   OneToMany,
+  OneToOne,
   JoinColumn,
 } from "typeorm";
 import { BaseEntity } from "../../common/entities/base.entity.js";
@@ -159,7 +160,10 @@ export class Session extends BaseEntity {
   })
   groupClassId: number | null;
 
-  @ManyToOne(() => GroupClass, { nullable: true, onDelete: "SET NULL" })
+  @OneToOne(() => GroupClass, (groupClass) => groupClass.session, {
+    nullable: true,
+    onDelete: "SET NULL",
+  })
   @JoinColumn({ name: "group_class_id" })
   groupClass: GroupClass | null;
 }

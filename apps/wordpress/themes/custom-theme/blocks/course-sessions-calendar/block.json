@@ -1,0 +1,44 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "custom-theme/course-sessions-calendar",
+    "title": "Course Sessions Calendar",
+    "category": "thrive",
+    "icon": "calendar-alt",
+    "description": "Display course sessions in a calendar view",
+    "keywords": [
+        "course",
+        "calendar",
+        "sessions",
+        "schedule"
+    ],
+    "attributes": {
+        "showFutureOnly": {
+            "type": "boolean",
+            "default": true
+        },
+        "defaultView": {
+            "type": "string",
+            "enum": [
+                "week",
+                "month"
+            ],
+            "default": "week"
+        },
+        "height": {
+            "type": "number",
+            "default": 600
+        },
+        "showHeading": {
+            "type": "boolean",
+            "default": true
+        },
+        "headingText": {
+            "type": "string",
+            "default": "Course Schedule"
+        }
+    },
+    "editorScript": "custom-theme-blocks",
+    "style": "file:./style.css",
+    "render": "file:./render.php"
+}

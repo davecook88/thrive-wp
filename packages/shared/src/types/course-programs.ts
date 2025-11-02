@@ -180,12 +180,29 @@ export const CourseProgramListItemSchema = z.object({
   code: z.string(),
   title: z.string(),
   description: z.string().nullable(),
+  heroImageUrl: z.string().nullable().describe("URL to course hero image"),
   timezone: z.string(),
   // could be 1, should be transformed to boolean
   isActive: z.preprocess((val) => Boolean(val), z.boolean()),
   stepCount: z.number().describe("Number of steps in this course"),
   priceInCents: z.number().nullable().describe("Price in cents if published"),
   stripePriceId: z.string().nullable(),
+  levels: z
+    .array(
+      z.object({
+        id: z.number(),
+        code: z.string(),
+        name: z.string(),
+      }),
+    )
+    .describe("Student levels appropriate for this course"),
+  availableCohorts: z
+    .number()
+    .describe("Count of cohorts with available spots"),
+  nextCohortStartDate: z
+    .string()
+    .nullable()
+    .describe("ISO date of soonest available cohort"),
 });
 
 export type CourseProgramListItemDto = z.infer<
@@ -263,6 +280,8 @@ export const CourseProgramDetailSchema = z.object({
   code: z.string(),
   title: z.string(),
   description: z.string().nullable(),
+  heroImageUrl: z.string().nullable().describe("URL to course hero image"),
+  slug: z.string().nullable().describe("URL-friendly slug"),
   timezone: z.string(),
   isActive: z.preprocess((val) => Boolean(val), z.boolean()),
   stripeProductId: z.string().nullable(),
@@ -437,10 +456,8 @@ export const CohortSessionDetailSchema = z.object({
   stepTitle: z.string(),
   stepOrder: z.number(),
   groupClassName: z.string(),
-  dayOfWeek: z.number().optional(),
-  startTime: z.string().optional(),
-  endTime: z.string().optional(),
-  timezone: z.string().optional(),
+  sessionDateTime: z.string().describe("ISO datetime of session"),
+  durationMinutes: z.number().describe("Session duration in minutes"),
 });
 
 export type CohortSessionDetailDto = z.infer<typeof CohortSessionDetailSchema>;
@@ -512,3 +529,27 @@ export const PublicCourseCohortSchema = z.object({
 });
 
 export type PublicCourseCohortDto = z.infer<typeof PublicCourseCohortSchema>;
+
+// ==================== ENROLLMENT DTOs ====================
+
+/**
+ * Request body for enrolling in a cohort
+ */
+export const EnrollInCohortSchema = z.object({
+  successUrl: z.string().url().optional(),
+  cancelUrl: z.string().url().optional(),
+});
+
+export type EnrollInCohortDto = z.infer<typeof EnrollInCohortSchema>;
+
+/**
+ * Response from enrollment endpoint (Stripe checkout session)
+ */
+export const EnrollmentCheckoutResponseSchema = z.object({
+  sessionId: z.string().describe("Stripe Checkout Session ID"),
+  url: z.string().url().describe("Stripe Checkout URL to redirect to"),
+});
+
+export type EnrollmentCheckoutResponseDto = z.infer<
+  typeof EnrollmentCheckoutResponseSchema
+>;

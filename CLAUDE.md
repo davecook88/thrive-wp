@@ -133,3 +133,11 @@ Before merging changes that affect runtime contracts or DB schema, ensure:
 3. Payments integration (Stripe).
 
 Maintainers: Keep this file the canonical truth; when adding features or changing runtime contracts, update `docs/` and the appropriate files in `.github/instructions/` to keep contributors aligned.
+
+
+-- 
+## 10. Typing:
+
+`any` types are strictly forbidden.
+All API calls from the browser MUST be made with the shared thriveClient
+All API types MUST be declared in the shared package - this should cover most types used in the client side code. There should be minimal type declarations in the client side apps. Use API types where possible.

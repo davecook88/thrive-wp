@@ -93,6 +93,46 @@ export class ThriveClient {
       CreateBookingResponseSchema,
     );
   }
+
+  async getCourseProgramByCode(code: string) {
+    const { CourseProgramDetailSchema } = await import(
+      "../types/course-programs.js"
+    );
+    return this.request(
+      `/course-programs/${code}`,
+      {},
+      CourseProgramDetailSchema,
+    );
+  }
+
+  async getCohortsByCourseCode(code: string) {
+    const { CourseCohortListItemSchema } = await import(
+      "../types/course-programs.js"
+    );
+    return this.request(
+      `/course-programs/${code}/cohorts`,
+      {},
+      z.array(CourseCohortListItemSchema),
+    );
+  }
+
+  async enrollInCohort(
+    courseCode: string,
+    cohortId: number,
+    data: { successUrl?: string; cancelUrl?: string } = {},
+  ) {
+    const { EnrollmentCheckoutResponseSchema } = await import(
+      "../types/course-programs.js"
+    );
+    return this.request(
+      `/course-programs/${courseCode}/cohorts/${cohortId}/enroll`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      },
+      EnrollmentCheckoutResponseSchema,
+    );
+  }
 }
 
 export const thriveClient = new ThriveClient();

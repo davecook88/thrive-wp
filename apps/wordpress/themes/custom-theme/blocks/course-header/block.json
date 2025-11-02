@@ -1,0 +1,35 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "custom-theme/course-header",
+  "title": "Course Header",
+  "category": "thrive",
+  "icon": "welcome-learn-more",
+  "description": "Display course title, description, levels, and price",
+  "keywords": [
+    "course",
+    "header",
+    "title"
+  ],
+  "attributes": {
+    "showDescription": {
+      "type": "boolean",
+      "default": true
+    },
+    "showLevelBadges": {
+      "type": "boolean",
+      "default": true
+    },
+    "showPrice": {
+      "type": "boolean",
+      "default": true
+    },
+    "showStepCount": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "editorScript": "custom-theme-blocks",
+  "style": "file:./style.css",
+  "render": "file:./render.php"
+}

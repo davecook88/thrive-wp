@@ -14,6 +14,7 @@ import {
 import { ServiceType } from "./class-types.js";
 import type { Session } from "../../sessions/entities/session.entity.js";
 import type { StudentPackage } from "../../packages/entities/student-package.entity.js";
+import { PackageAllowance } from "@/entities.js";
 
 describe("Credit Tier System", () => {
   // Mock session factory
@@ -28,12 +29,24 @@ describe("Credit Tier System", () => {
     teacher: {
       id: 1,
       userId: 1,
+      bio: "Test Teacher Bio",
+      isActive: true,
       tier: teacherTier,
       createdAt: new Date(),
       updatedAt: new Date(),
       deletedAt: undefined,
-      user: { id: 1, email: "teacher@test.com" } as any,
-    } as any,
+      user: {
+        id: 1,
+        email: "teacher@test.com",
+        firstName: "Test",
+        lastName: "Teacher",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: undefined,
+        admin: null,
+        passwordHash: "",
+      } as unknown as Session["teacher"]["user"],
+    } as unknown as Session["teacher"],
   });
 
   // Mock package factory (legacy - uses old metadata structure)
@@ -51,6 +64,12 @@ describe("Credit Tier System", () => {
     stripeProductMapId: 1,
     stripeProductMap: {
       id: 1,
+      serviceKey: "test_product",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: undefined,
+      active: true,
+      stripeProductId: "prod_test",
       allowances: [
         {
           id: 1,
@@ -61,9 +80,9 @@ describe("Credit Tier System", () => {
           stripeProductMapId: 1,
           createdAt: new Date(),
           updatedAt: new Date(),
-        } as any,
+        } as unknown as PackageAllowance,
       ],
-    } as any,
+    },
     metadata: {
       service_type: serviceType,
       teacher_tier: String(teacherTier),
@@ -140,8 +159,7 @@ describe("Credit Tier System", () => {
 
     it("should handle numeric teacher tier in metadata", () => {
       const pkg = {
-        ...createMockPackage(ServiceType.PRIVATE, 0),
-        metadata: { service_type: ServiceType.PRIVATE, teacher_tier: 5 },
+        ...createMockPackage(ServiceType.PRIVATE, 5),
       } as StudentPackage;
       expect(getPackageTier(pkg)).toBe(105);
     });

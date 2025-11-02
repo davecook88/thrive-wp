@@ -28,4 +28,4 @@ export { RemoveLegacyCourseTables1762000000050 } from "./1762000000050-RemoveLeg
 export { SimplifyCourseProgramSchema1763000000000 } from "./1763000000000-SimplifyCourseProgramSchema.js";
 export { AddCourseProgramLevels1764000000000 } from "./1764000000000-AddCourseProgramLevels.js";
 export { AddCourseCohorts1765000000000 } from "./1765000000000-AddCourseCohorts.js";
-export { RemoveGroupClassRruleFields1730131200000 } from "./1730131200000-RemoveGroupClassRruleFields.js";
+export { RemoveGroupClassRruleFields1766000000000 } from "./1766000000000-RemoveGroupClassRruleFields.js";

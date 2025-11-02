@@ -58,6 +58,44 @@ export class GroupClassesController {
     }
   }
 
+  @Get("sessions")
+  async getSessionsForCalendar(
+    @Query()
+    filters: {
+      levelIds?: string;
+      teacherId?: string;
+      startDate?: string;
+      endDate?: string;
+      isActive?: string;
+    },
+  ) {
+    try {
+      return await this.groupClassesService.getSessionsForCalendar({
+        levelIds: filters.levelIds
+          ? filters.levelIds.split(",").map((id) => parseInt(id, 10))
+          : undefined,
+        teacherId: filters.teacherId
+          ? parseInt(filters.teacherId, 10)
+          : undefined,
+        startDate: filters.startDate ? new Date(filters.startDate) : undefined,
+        endDate: filters.endDate ? new Date(filters.endDate) : undefined,
+        isActive:
+          filters.isActive === "true"
+            ? true
+            : filters.isActive === "false"
+              ? false
+              : undefined,
+      });
+    } catch (error) {
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch calendar sessions",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Get(":id")
   async findOne(@Param("id") id: string): Promise<GroupClassListDto | null> {
     return await this.groupClassesService.findOne(+id);

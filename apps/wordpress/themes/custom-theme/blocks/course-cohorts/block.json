@@ -1,0 +1,31 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "custom-theme/course-cohorts",
+    "title": "Course Cohorts",
+    "category": "thrive",
+    "icon": "groups",
+    "description": "Display available cohorts for a course with enrollment CTAs",
+    "keywords": [
+        "course",
+        "cohort",
+        "enroll"
+    ],
+    "attributes": {
+        "showDescription": {
+            "type": "boolean",
+            "default": true
+        },
+        "showEnrollmentCount": {
+            "type": "boolean",
+            "default": true
+        },
+        "ctaText": {
+            "type": "string",
+            "default": "Enroll"
+        }
+    },
+    "editorScript": "custom-theme-blocks",
+    "style": "file:./style.css",
+    "render": "file:./render.php"
+}

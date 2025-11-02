@@ -3,6 +3,10 @@ import "./teacher-availability/view";
 import "./teacher-profile-form/view";
 import "./student-calendar/view";
 import "./student-class-credits/view";
+import "./course-list/view";
+import "./course-header/view";
+import "./course-cohorts/view";
+import "./course-sessions-calendar/view";
 import "./private-session-availability-calendar/view";
 import "./selected-event-modal/view";
 // import "./teacher-picker/view"; // Removed - block deleted
@@ -11,6 +15,7 @@ import "./conditional-stripe-payment/view";
 import "./student-package-details/view";
 import "./student-upcoming-sessions/view";
 import "./student-course-enrollments/view";
+import "./session-selection-wizard/view";
 import "./student-stats-widget/view";
 import "./teacher-stats-widget/view";
 import "./teacher-info/view";

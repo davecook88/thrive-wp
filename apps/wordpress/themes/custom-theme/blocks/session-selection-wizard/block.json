@@ -1,0 +1,17 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "custom-theme/session-selection-wizard",
+  "version": "1.0.0",
+  "title": "Session Selection Wizard",
+  "category": "thrive",
+  "icon": "calendar-alt",
+  "description": "Wizard for selecting course sessions after enrollment",
+  "supports": {
+    "html": false
+  },
+  "textdomain": "custom-theme",
+  "editorScript": "file:./index.js",
+  "viewScript": "file:./view.js",
+  "style": "file:./style.css"
+}

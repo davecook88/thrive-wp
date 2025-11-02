@@ -460,4 +460,113 @@ export class GroupClassesService {
       } as GroupClass),
     );
   }
+
+  /**
+   * Get group class sessions formatted for calendar display
+   * Returns events in the CalendarEvent format expected by the thrive-calendar web component
+   */
+  async getSessionsForCalendar(filters: {
+    levelIds?: number[];
+    teacherId?: number;
+    startDate?: Date;
+    endDate?: Date;
+    isActive?: boolean;
+  }): Promise<
+    Array<{
+      id: string;
+      title: string;
+      startUtc: string;
+      endUtc: string;
+      type: "class";
+      classType: "GROUP";
+      teacherId: string;
+      capacityMax: number;
+      enrolledCount: number;
+      status: "SCHEDULED" | "CANCELLED" | "COMPLETED";
+      groupClassId: number;
+      groupClassTitle: string;
+      levels: Array<{ id: number; code: string; name: string }>;
+      meetingUrl?: string;
+      description?: string;
+    }>
+  > {
+    const qb = this.sessionsRepository
+      .createQueryBuilder("session")
+      .leftJoinAndSelect("session.groupClass", "groupClass")
+      .leftJoinAndSelect("groupClass.groupClassLevels", "groupClassLevels")
+      .leftJoinAndSelect("groupClassLevels.level", "level")
+      .leftJoinAndSelect("session.teacher", "teacher")
+      .leftJoinAndSelect("teacher.user", "user")
+      .loadRelationCountAndMap(
+        "session.enrolledCount",
+        "session.bookings",
+        "booking",
+        (qb) => qb.where("booking.status = :status", { status: "CONFIRMED" }),
+      )
+      .where("session.type = :type", { type: ServiceType.GROUP })
+      .andWhere("session.status IN (:...statuses)", {
+        statuses: ["SCHEDULED", "CANCELLED", "COMPLETED"],
+      });
+
+    // Filter by active status if specified
+    if (filters.isActive !== undefined) {
+      qb.andWhere("groupClass.isActive = :isActive", {
+        isActive: filters.isActive,
+      });
+    }
+
+    if (filters.startDate) {
+      qb.andWhere("session.startAt >= :startDate", {
+        startDate: filters.startDate,
+      });
+    }
+
+    if (filters.endDate) {
+      qb.andWhere("session.startAt <= :endDate", { endDate: filters.endDate });
+    }
+
+    if (filters.levelIds && filters.levelIds.length > 0) {
+      qb.andWhere("level.id IN (:...levelIds)", {
+        levelIds: filters.levelIds,
+      });
+    }
+
+    if (filters.teacherId) {
+      qb.andWhere("session.teacherId = :teacherId", {
+        teacherId: filters.teacherId,
+      });
+    }
+
+    qb.orderBy("session.startAt", "ASC");
+
+    const sessions = (await qb.getMany()) as SessionWithEnrollment[];
+
+    return sessions.map((session) => {
+      const groupClass = session.groupClass;
+      const levels =
+        groupClass?.groupClassLevels?.map((gcl) => ({
+          id: gcl.level.id,
+          code: gcl.level.code,
+          name: gcl.level.name,
+        })) || [];
+
+      return {
+        id: session.id.toString(),
+        title: groupClass?.title || "Group Class",
+        startUtc: session.startAt.toISOString(),
+        endUtc: session.endAt.toISOString(),
+        type: "class" as const,
+        classType: "GROUP" as const,
+        teacherId: session.teacherId.toString(),
+        capacityMax: session.capacityMax,
+        enrolledCount: session.enrolledCount || 0,
+        status: session.status as "SCHEDULED" | "CANCELLED" | "COMPLETED",
+        groupClassId: session.groupClassId || 0,
+        groupClassTitle: groupClass?.title || "Group Class",
+        levels,
+        meetingUrl: session.meetingUrl || undefined,
+        description: groupClass?.description || undefined,
+      };
+    });
+  }
 }

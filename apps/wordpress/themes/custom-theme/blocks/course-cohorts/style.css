@@ -1,0 +1,78 @@
+.course-cohorts {
+  margin: 3rem 0;
+}
+
+.course-cohorts.loading,
+.course-cohorts.empty {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+}
+
+.course-cohort {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  transition: box-shadow 0.2s ease;
+}
+
+.course-cohort:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.course-cohort__meta {
+  margin-bottom: 1rem;
+}
+
+.course-cohort__name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  color: #111827;
+}
+
+.course-cohort__dates {
+  font-size: 1rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.course-cohort__enrollment {
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+.course-cohort__description {
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 1rem 0;
+}
+
+.course-cohort__actions {
+  margin-top: 1.5rem;
+}
+
+.course-cohort__actions .button {
+  display: inline-block;
+  padding: 0.75rem 2rem;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  text-decoration: none;
+}
+
+.course-cohort__actions .button:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.course-cohort__actions .button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}

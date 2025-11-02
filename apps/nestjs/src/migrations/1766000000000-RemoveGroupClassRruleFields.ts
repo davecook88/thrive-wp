@@ -4,10 +4,10 @@ import { MigrationInterface, QueryRunner } from "typeorm";
  * Remove rrule, start_date, and end_date columns from group_class table
  * Each GroupClass now has exactly one Session, so schedule info lives on the Session
  */
-export class RemoveGroupClassRruleFields1730131200000
+export class RemoveGroupClassRruleFields1766000000000
   implements MigrationInterface
 {
-  name = "RemoveGroupClassRruleFields1730131200000";
+  name = "RemoveGroupClassRruleFields1766000000000";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Drop the schedule-related columns from group_class

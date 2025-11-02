@@ -76,7 +76,7 @@ This document provides a high-level overview of the course student view implemen
 
 ## Implementation Order
 
-### Phase 1: Backend Foundation (Days 1-3)
+### Phase 1: Backend Foundation (Days 1-3) ✅ COMPLETE
 **Focus:** Database schema and API endpoints
 
 **Deliverables:**
@@ -90,9 +90,11 @@ This document provides a high-level overview of the course student view implemen
 
 **Testing:** API endpoint tests, migration validation
 
+**Status:** All backend entities, migrations, and API endpoints implemented and tested.
+
 ---
 
-### Phase 2: Course List Block (Day 4)
+### Phase 2: Course List Block (Day 4) ✅ COMPLETE
 **Focus:** Replace static courses-grid pattern with dynamic block
 
 **Deliverables:**
@@ -104,22 +106,53 @@ This document provides a high-level overview of the course student view implemen
 
 **Testing:** Block editor, filter functionality, responsive design
 
+**Status:** Block implemented with all features. Files created:
+- `blocks/course-list/block.json`
+- `blocks/course-list/render.php`
+- `blocks/course-list/index.tsx` (editor)
+- `blocks/course-list/view.tsx` (frontend)
+- `blocks/course-list/components/CourseList.tsx`
+- `blocks/course-list/components/CourseCard.tsx`
+- `blocks/course-list/components/CourseFilters.tsx`
+- `blocks/course-list/style.scss`
+
 ---
 
-### Phase 3: Course Custom Post Type + Blocks (Days 5-6)
+### Phase 3: Course Custom Post Type + Blocks (Days 5-6) ✅ COMPLETE
 **Focus:** Dynamic course detail pages
 
 **Deliverables:**
-- `thrive_course` custom post type
-- Course Header Block
-- Course Cohorts Block
-- Course Sessions Calendar Block
-- Course Details Block
-- `single-thrive_course.php` template
+- ✅ `thrive_course` custom post type - **IMPLEMENTED**
+- ✅ Course Header Block - **IMPLEMENTED**
+- ✅ Course Cohorts Block - **IMPLEMENTED**
+- ✅ Course Sessions Calendar Block - **IMPLEMENTED**
+- ✅ Course Details Block - **IMPLEMENTED**
+- ✅ `single-thrive_course.php` template - **IMPLEMENTED (fully dynamic)**
 
 **Dependencies:** Phase 1 (cohort/session endpoints)
 
 **Testing:** Block functionality, API data loading, template rendering
+
+**Status:** 
+- **CPT Registration:** Custom post type `thrive_course` registered with meta box for course code and custom URL rewrite rules (`/courses/{code}`)
+  - Files: `plugins/thrive-admin/includes/post-types/course.php`, `course-meta.php`
+- **Template:** Fully dynamic template that renders course blocks without requiring WordPress posts
+  - File: `themes/custom-theme/single-thrive_course.php`
+  - Automatically validates course via NestJS API and renders blocks
+- **Course Header Block:** Displays title, description, levels, price, step count
+  - Files: `blocks/course-header/` (block.json, render.php, index.tsx, view.tsx, components/CourseHeader.tsx, style.css)
+- **Course Cohorts Block:** Lists available cohorts with enrollment CTAs
+  - Files: `blocks/course-cohorts/` (block.json, render.php, index.tsx, view.tsx, components/CourseCohorts.tsx, style.css)
+- **Course Sessions Calendar Block:** Embeds thrive-calendar showing course sessions with configurable settings
+  - Files: `blocks/course-sessions-calendar/` (block.json, render.php, index.tsx, view.tsx, components/CourseSessionsCalendar.tsx, style.css)
+- **Course Details Block:** Simple InnerBlocks container for static rich content
+  - Files: `blocks/course-details/` (block.json, render.php, index.tsx, style.css)
+- **URL Pattern:** `/courses/{CODE}` works without needing WordPress posts (e.g., `/courses/FUNC`)
+
+**Key Decision:** Template is **fully dynamic** - no WordPress posts required. The system automatically:
+1. Gets course code from URL
+2. Validates it exists in NestJS
+3. Renders blocks with live API data
 
 ---
 
@@ -282,22 +315,24 @@ Student → /dashboard
 ### Phase Completion Checklist
 
 **Phase 1 Complete When:**
-- [ ] CourseCohort entity created with migrations applied
-- [ ] All API endpoints return correct data structure
-- [ ] TypeScript types defined in shared package
-- [ ] Unit tests pass for cohort services
+- [x] CourseCohort entity created with migrations applied
+- [x] All API endpoints return correct data structure
+- [x] TypeScript types defined in shared package
+- [x] Unit tests pass for cohort services
 
 **Phase 2 Complete When:**
-- [ ] Course List Block visible in block inserter
-- [ ] Block settings control layout/filtering
-- [ ] Level filter works correctly
-- [ ] Responsive on mobile/tablet/desktop
+- [x] Course List Block visible in block inserter
+- [x] Block settings control layout/filtering
+- [x] Level filter works correctly
+- [x] Responsive on mobile/tablet/desktop
 
 **Phase 3 Complete When:**
-- [ ] Custom post type registered
-- [ ] All four course blocks functional
-- [ ] Template renders blocks correctly
-- [ ] Data loads from NestJS API without errors
+- [x] Custom post type registered
+- [x] All four course blocks functional (Header, Cohorts, Sessions Calendar, Details)
+- [x] Template renders blocks correctly (fully dynamic, no WP posts needed)
+- [x] Data loads from NestJS API without errors
+- [x] Course Sessions Calendar Block implemented
+- [x] Course Details Block implemented
 
 **Phase 4 Complete When:**
 - [ ] Student can complete checkout for cohort
@@ -343,6 +378,30 @@ Student → /dashboard
 **Risk 4: Complex Session Selection UX**
 - *Issue:* Wizard could confuse students if many multi-option steps
 - *Mitigation:* Clear UI copy, progress indicators, allow deferral to dashboard
+
+## Implementation Notes
+
+### Fully Dynamic Template Approach
+Instead of requiring WordPress posts for each course, we implemented a fully dynamic template system:
+
+1. **URL Routing:** Custom rewrite rule maps `/courses/{code}` to the template
+2. **API Validation:** Template queries NestJS API to verify course exists
+3. **Block Rendering:** Uses `do_blocks()` to render Course Header and Cohorts blocks directly
+4. **No WP Posts Required:** Content is generated entirely from NestJS data
+
+**Benefits:**
+- Single source of truth (NestJS database)
+- No data synchronization needed
+- Courses appear immediately when added to API
+- Consistent data across all views
+
+**Customization Option:** Designers can still create WordPress posts for specific courses to override the default template and customize layout/content.
+
+### Build Process
+- WordPress theme uses `@wordpress/scripts` for building blocks
+- Run `make watch-wp-themes` for development hot reload
+- Blocks automatically register via theme's `init` hook scanning `blocks/*/block.json`
+- CSS files linked in block.json are auto-enqueued by WordPress
 
 ## Related Documentation
 

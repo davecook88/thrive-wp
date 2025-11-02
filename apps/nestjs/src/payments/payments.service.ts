@@ -406,10 +406,13 @@ export class PaymentsService {
       paymentIntent.metadata || {},
     );
 
-    // Check if this is a package purchase by looking for price_id and product_id
-    const isPackagePurchase = metadata.price_id && metadata.product_id;
+    // Check payment type
+    const productType = metadata.product_type;
 
-    if (isPackagePurchase) {
+    if (productType === "course_enrollment") {
+      // Handle course cohort enrollment
+      await this.handleCourseEnrollment(paymentIntent, metadata);
+    } else if (metadata.price_id && metadata.product_id) {
       // Handle package purchase workflow
       await this.handlePackagePurchase(paymentIntent, metadata);
     } else if (metadata.session_id && metadata.booking_id) {
@@ -734,6 +737,105 @@ export class PaymentsService {
       );
     } catch (error) {
       this.logger.error("Error processing package purchase:", error as Error);
+      throw error;
+    }
+  }
+
+  /**
+   * Handle course cohort enrollment from checkout.session.completed
+   */
+  private async handleCourseEnrollment(
+    paymentIntent: Stripe.PaymentIntent,
+    metadata: ParsedStripeMetadata,
+  ): Promise<void> {
+    this.logger.debug("Handling course enrollment from payment_intent.succeeded");
+
+    const courseProgramId = parseInt(String(metadata.course_program_id), 10);
+    const cohortId = parseInt(String(metadata.cohort_id), 10);
+    const studentId = parseInt(String(metadata.student_id), 10);
+    const stripeProductMapId = parseInt(String(metadata.stripe_product_map_id), 10);
+
+    try {
+      // Use transaction for atomicity
+      await this.studentPackageRepository.manager.transaction(async (tx) => {
+        // Idempotency check: see if package already exists for this payment
+        const existingPackage = await tx.findOne(StudentPackage, {
+          where: { sourcePaymentId: paymentIntent.id },
+        });
+
+        if (existingPackage) {
+          this.logger.log(
+            `Course enrollment package already exists for payment ${paymentIntent.id}, webhook duplicate/retry detected`,
+          );
+          return;
+        }
+
+        // Get the StripeProductMap with allowances
+        const stripeProductMap = await tx.findOne(StripeProductMap, {
+          where: { id: stripeProductMapId },
+          relations: ["allowances"],
+        });
+
+        if (!stripeProductMap) {
+          this.logger.error(
+            `StripeProductMap ${stripeProductMapId} not found for course enrollment`,
+          );
+          return;
+        }
+
+        // Create StudentPackage for course enrollment
+        const studentPackage = new StudentPackage();
+        studentPackage.studentId = studentId;
+        studentPackage.stripeProductMapId = stripeProductMapId;
+        studentPackage.packageName = `${metadata.course_code} - ${metadata.cohort_name}`;
+        studentPackage.totalSessions = 0; // Courses don't use session credits
+        studentPackage.purchasedAt = new Date();
+        studentPackage.expiresAt = null; // Courses don't expire
+        studentPackage.sourcePaymentId = paymentIntent.id;
+        studentPackage.metadata = {
+          courseProgramId,
+          cohortId,
+          courseCode: String(metadata.course_code || ""),
+          cohortName: String(metadata.cohort_name || ""),
+          amountPaid: paymentIntent.amount_received,
+          currency: paymentIntent.currency,
+        };
+
+        const savedPackage = await tx.save(StudentPackage, studentPackage);
+        this.logger.log(
+          `Created course enrollment package ${savedPackage.id} for cohort ${cohortId}`,
+        );
+
+        // Increment cohort enrollment count
+        await tx.query(
+          `UPDATE course_cohort SET current_enrollment = current_enrollment + 1 WHERE id = ?`,
+          [cohortId],
+        );
+
+        // Seed course step progress using the existing service
+        try {
+          await this.courseStepProgressService.seedProgressForCourse(
+            savedPackage.id,
+            courseProgramId,
+            cohortId, // Pass cohortId for linking
+          );
+          this.logger.log(
+            `Seeded course progress for package ${savedPackage.id}, course ${courseProgramId}, cohort ${cohortId}`,
+          );
+        } catch (error) {
+          this.logger.error(
+            `Failed to seed course progress for package ${savedPackage.id}:`,
+            error as Error,
+          );
+          throw error; // Re-throw to rollback transaction
+        }
+      });
+
+      this.logger.log(
+        `Successfully processed course enrollment for student ${studentId}, cohort ${cohortId}`,
+      );
+    } catch (error) {
+      this.logger.error("Error processing course enrollment:", error as Error);
       throw error;
     }
   }

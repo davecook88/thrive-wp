@@ -88,7 +88,7 @@ export class CohortsService {
   }
 
   /**
-   * Get all cohorts for a course program
+   * Get all cohorts for a course program (admin view)
    */
   async findByCourseProgram(
     courseProgramId: number,
@@ -115,6 +115,40 @@ export class CohortsService {
       availableSpots: cohort.maxEnrollment - cohort.currentEnrollment,
       sessionCount: cohort.cohortSessions?.length || 0,
     }));
+  }
+
+  /**
+   * Get public cohorts for a course program with isAvailable flag
+   */
+  async findPublicByCourseProgram(courseProgramId: number) {
+    const cohorts = await this.cohortRepo
+      .createQueryBuilder("cohort")
+      .leftJoinAndSelect("cohort.cohortSessions", "sessions")
+      .where("cohort.courseProgramId = :courseProgramId", { courseProgramId })
+      .orderBy("cohort.startDate", "ASC")
+      .getMany();
+
+    const now = new Date();
+
+    return cohorts.map((cohort) => {
+      const availableSpots = cohort.maxEnrollment - cohort.currentEnrollment;
+      const deadlinePassed = cohort.enrollmentDeadline
+        ? new Date(cohort.enrollmentDeadline) < now
+        : false;
+
+      return {
+        id: cohort.id,
+        name: cohort.name,
+        description: cohort.description,
+        startDate: cohort.startDate,
+        endDate: cohort.endDate,
+        timezone: cohort.timezone,
+        availableSpots,
+        enrollmentDeadline: cohort.enrollmentDeadline?.toISOString() || null,
+        isAvailable: cohort.isActive && availableSpots > 0 && !deadlinePassed,
+        sessions: [], // Populated by findOneDetail if needed
+      };
+    });
   }
 
   /**

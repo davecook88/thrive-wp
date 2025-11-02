@@ -109,6 +109,18 @@ class Thrive_Admin_Bridge_Admin
             return;
         }
 
+        // Enqueue the thrive-calendar web component for group classes page
+        if ($hook === 'thrive-admin_page_thrive-admin-group-classes') {
+            $calendar_bundle = home_url('/assets/calendar/thrive-calendar.js');
+            wp_enqueue_script(
+                'thrive-calendar-wc',
+                $calendar_bundle,
+                [],
+                null,
+                true
+            );
+        }
+
         // Enqueue Vue and our built assets
         $plugin_dir = plugin_dir_path(__FILE__) . '../';
         $assets_dir = $plugin_dir . 'dist/';
@@ -178,7 +190,7 @@ class Thrive_Admin_Bridge_Admin
      */
     public function thrive_admin_module_script_tag($tag, $handle, $src)
     {
-        if (in_array($handle, ['thrive-admin-vue', 'vite-client'], true)) {
+        if (in_array($handle, ['thrive-admin-vue', 'vite-client', 'thrive-calendar-wc'], true)) {
             // Ensure we don't duplicate type attribute
             if (strpos($tag, 'type="module"') === false) {
                 $tag = str_replace('<script ', '<script type="module" ', $tag);

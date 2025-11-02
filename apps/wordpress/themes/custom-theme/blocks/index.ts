@@ -2,6 +2,11 @@
 import "./login-auth/index.tsx";
 // import "./thrive-calendar/index.tsx"; // Commented out - block doesn't exist
 import "./student-calendar/index.tsx";
+import "./course-list/index.tsx";
+import "./course-header/index.tsx";
+import "./course-cohorts/index.tsx";
+import "./course-sessions-calendar/index.tsx";
+import "./course-details/index.tsx";
 import "./private-session-availability-calendar/index.tsx";
 import "./teacher-availability/index.tsx";
 import "./teacher-profile-form/index.tsx";
@@ -19,5 +24,6 @@ import "./teacher-stats-widget/index.tsx";
 import "./student-package-details/index.tsx";
 import "./student-upcoming-sessions/index.tsx";
 import "./student-course-enrollments/index.tsx";
+import "./session-selection-wizard/index.tsx";
 import "./teacher-info/index.tsx";
 import "./teacher-calendar/index.tsx";

@@ -48,6 +48,9 @@ import {
   CourseCohortDetailDto,
   CourseCohortListItemSchema,
   CourseCohortDetailSchema,
+  PublicCourseCohortDto,
+  EnrollmentCheckoutResponseDto,
+  EnrollmentCheckoutResponseSchema,
   CreateGroupClassDto,
 } from "@thrive/shared";
 import {
@@ -792,6 +795,43 @@ export const thriveClient = {
       data as Record<string, unknown>,
       SessionDtoSchema,
     );
+    return result;
+  },
+
+  fetchCourseSessions: async (
+    courseCode: string,
+    futureOnly: boolean = true,
+  ): Promise<ClassEvent[]> => {
+    const params = new URLSearchParams();
+    params.append("futureOnly", String(futureOnly));
+
+    const data = await apiGet<ClassEvent[]>(
+      `/api/course-programs/${encodeURIComponent(courseCode)}/sessions?${params.toString()}`,
+    );
+    return Array.isArray(data) ? data : [];
+  },
+
+  getCohortsByCourseCode: async (
+    courseCode: string,
+  ): Promise<PublicCourseCohortDto[]> => {
+    const data = await apiGet<PublicCourseCohortDto[]>(
+      `/api/course-programs/${encodeURIComponent(courseCode)}/cohorts`,
+    );
+    return Array.isArray(data) ? data : [];
+  },
+
+  enrollInCohort: async (
+    courseCode: string,
+    cohortId: number,
+  ): Promise<EnrollmentCheckoutResponseDto> => {
+    const result = await apiPost<EnrollmentCheckoutResponseDto>(
+      `/api/course-programs/${encodeURIComponent(courseCode)}/cohorts/${cohortId}/enroll`,
+      {},
+      EnrollmentCheckoutResponseSchema,
+    );
+    if (!result) {
+      throw new Error("Failed to create enrollment session");
+    }
     return result;
   },
 } as const;

@@ -21,6 +21,8 @@ if (!defined('ABSPATH')) {
 require_once plugin_dir_path(__FILE__) . 'includes/class-thrive-admin-bridge.php';
 require_once plugin_dir_path(__FILE__) . 'includes/admin/bridge-admin.php';
 require_once plugin_dir_path(__FILE__) . 'includes/api/class-profile-picture-upload.php';
+require_once plugin_dir_path(__FILE__) . 'includes/post-types/course.php';
+require_once plugin_dir_path(__FILE__) . 'includes/post-types/course-meta.php';
 
 function thrive_admin_run_bridge()
 {

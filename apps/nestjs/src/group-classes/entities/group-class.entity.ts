@@ -1,4 +1,11 @@
-import { Entity, Column, Index, OneToMany, OneToOne } from "typeorm";
+import {
+  Entity,
+  Column,
+  Index,
+  OneToMany,
+  OneToOne,
+  JoinColumn,
+} from "typeorm";
 import { BaseEntity } from "../../common/entities/base.entity.js";
 import type { GroupClassTeacher } from "./group-class-teacher.entity.js";
 import type { GroupClassLevel } from "./group-class-level.entity.js";
@@ -46,6 +53,8 @@ export class GroupClass extends BaseEntity {
   @OneToMany("GroupClassLevel", "groupClass")
   groupClassLevels: GroupClassLevel[];
 
-  @OneToOne("Session", (session: Session) => session.groupClass)
-  session: Session | null;
+  @OneToOne("Session", (session: Session) => session.groupClass, {
+    nullable: false,
+  })
+  session: Session;
 }
