@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, DataSource } from "typeorm";
+import { Repository, DataSource, EntityManager } from "typeorm";
 import { StudentCourseStepProgress } from "../entities/student-course-step-progress.entity.js";
 import { CourseStep } from "../entities/course-step.entity.js";
 import { CourseCohortSession } from "../entities/course-cohort-session.entity.js";
@@ -41,14 +41,18 @@ export class CourseStepProgressService {
    * @param studentPackageId - The StudentPackage.id (course purchase)
    * @param courseProgramId - The CourseProgram.id
    * @param cohortId - Optional CourseCohort.id for cohort-based enrollments
+   * @param manager - Optional EntityManager for use within transactions
    */
   async seedProgressForCourse(
     studentPackageId: number,
     courseProgramId: number,
     cohortId?: number,
+    manager?: EntityManager,
   ): Promise<StudentCourseStepProgress[]> {
+    const em = manager || this.courseStepRepo.manager;
+
     // Get all steps for this course
-    const steps = await this.courseStepRepo.find({
+    const steps = await em.find(CourseStep, {
       where: { courseProgramId },
       order: { stepOrder: "ASC" },
     });
@@ -57,6 +61,16 @@ export class CourseStepProgressService {
       throw new NotFoundException(
         `No steps found for course program ${courseProgramId}`,
       );
+    }
+
+    // Check if progress already exists for this package (idempotency)
+    const existingProgress = await em.find(StudentCourseStepProgress, {
+      where: { studentPackageId },
+    });
+
+    if (existingProgress.length > 0) {
+      // Progress already seeded, return existing records
+      return existingProgress;
     }
 
     // Create progress records for all steps
@@ -69,7 +83,7 @@ export class CourseStepProgressService {
       return progress;
     });
 
-    return this.progressRepo.save(progressRecords);
+    return em.save(StudentCourseStepProgress, progressRecords);
   }
 
   /**

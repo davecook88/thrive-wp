@@ -15,11 +15,15 @@ import {
 import { CourseProgramsService } from "../services/course-programs.service.js";
 import { CohortsService } from "../services/cohorts.service.js";
 import { StripeProductService } from "../../common/services/stripe-product.service.js";
+import { CourseEnrollmentService } from "../services/course-enrollment.service.js";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { StudentPackage } from "../../packages/entities/student-package.entity.js";
 import { Student } from "../../students/entities/student.entity.js";
-import { StripeProductMap } from "../../payments/entities/stripe-product-map.entity.js";
+import {
+  ScopeType,
+  StripeProductMap,
+} from "../../payments/entities/stripe-product-map.entity.js";
 import type { Request as ExpressRequest } from "express";
 
 /**
@@ -36,6 +40,7 @@ export class CourseProgramsController {
     private readonly courseProgramsService: CourseProgramsService,
     private readonly cohortsService: CohortsService,
     private readonly stripeProductService: StripeProductService,
+    private readonly courseEnrollmentService: CourseEnrollmentService,
     @InjectRepository(StudentPackage)
     private readonly studentPackageRepo: Repository<StudentPackage>,
     @InjectRepository(Student)
@@ -77,7 +82,9 @@ export class CourseProgramsController {
     );
 
     if (!courseProgram) {
-      throw new NotFoundException(`Course program with code "${code}" not found`);
+      throw new NotFoundException(
+        `Course program with code "${code}" not found`,
+      );
     }
 
     return this.courseProgramsService.enrichWithPricing(courseProgram);
@@ -92,7 +99,9 @@ export class CourseProgramsController {
     const courseProgram = await this.courseProgramsService.findByCode(code);
 
     if (!courseProgram) {
-      throw new NotFoundException(`Course program with code "${code}" not found`);
+      throw new NotFoundException(
+        `Course program with code "${code}" not found`,
+      );
     }
 
     return this.cohortsService.findPublicByCourseProgram(courseProgram.id);
@@ -110,7 +119,9 @@ export class CourseProgramsController {
     const courseProgram = await this.courseProgramsService.findByCode(code);
 
     if (!courseProgram) {
-      throw new NotFoundException(`Course program with code "${code}" not found`);
+      throw new NotFoundException(
+        `Course program with code "${code}" not found`,
+      );
     }
 
     return this.cohortsService.findOneDetail(cohortId);
@@ -181,7 +192,7 @@ export class CourseProgramsController {
       where: {
         studentId: student.id,
         stripeProductMap: {
-          scopeType: "course" as any,
+          scopeType: ScopeType.COURSE,
           scopeId: courseProgram.id,
         },
       },
@@ -195,7 +206,7 @@ export class CourseProgramsController {
     // 5. Get Stripe product mapping for this course
     const stripeMap = await this.stripeProductMapRepo.findOne({
       where: {
-        scopeType: "course" as any,
+        scopeType: ScopeType.COURSE,
         scopeId: courseProgram.id,
         active: true,
       },
@@ -224,11 +235,15 @@ export class CourseProgramsController {
     const stripePrice = prices.data[0];
 
     // 7. Create Stripe Checkout Session
+    // Use request origin for URLs to work across environments
+    const origin =
+      req.headers.origin ||
+      req.headers.referer?.split("/").slice(0, 3).join("/") ||
+      "http://localhost:8080";
     const successUrl =
       body.successUrl ||
-      `${process.env.WP_BASE_URL}/enrollment/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl =
-      body.cancelUrl || `${process.env.WP_BASE_URL}/courses/${code}`;
+      `${origin}/enrollment-success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = body.cancelUrl || `${origin}/courses/${code}`;
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -269,5 +284,39 @@ export class CourseProgramsController {
       sessionId: session.id,
       url: session.url,
     };
+  }
+
+  /**
+   * Get enrollment session information from Stripe session ID
+   * GET /course-programs/enrollment/session/:sessionId
+   *
+   * This endpoint retrieves information about a completed enrollment
+   * after the student returns from Stripe checkout
+   */
+  @Get("enrollment/session/:sessionId")
+  async getEnrollmentSession(
+    @Param("sessionId") sessionId: string,
+    @Request() req: ExpressRequest,
+  ) {
+    // Extract user ID from X-Auth headers (injected by Nginx)
+    const userId = req.headers["x-auth-user-id"] as string;
+
+    if (!userId) {
+      throw new UnauthorizedException("Authentication required");
+    }
+
+    // Get student record
+    const student = await this.studentRepo.findOne({
+      where: { userId: parseInt(userId, 10) },
+    });
+
+    if (!student) {
+      throw new NotFoundException("Student record not found");
+    }
+
+    return this.courseEnrollmentService.getEnrollmentSessionInfo(
+      sessionId,
+      student.id,
+    );
   }
 }

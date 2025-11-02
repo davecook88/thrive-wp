@@ -348,6 +348,7 @@ export class PackagesService {
         stripeProductId: stripeProduct.id,
         active: true,
         scopeType: ScopeType.PACKAGE,
+        scopeId: undefined, // Will be set after save
         metadata: {
           name: dto.name,
           bundle_description:
@@ -356,6 +357,10 @@ export class PackagesService {
       });
 
       const savedMapping = await this.stripeProductMapRepository.save(mapping);
+
+      // Set scopeId to the package ID itself for packages
+      savedMapping.scopeId = savedMapping.id;
+      await this.stripeProductMapRepository.save(savedMapping);
 
       // Create PackageAllowance rows
       const allowances = dto.allowances.map((a) => {

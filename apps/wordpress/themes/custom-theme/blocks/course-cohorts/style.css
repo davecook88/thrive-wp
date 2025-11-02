@@ -76,3 +76,31 @@
   background: #9ca3af;
   cursor: not-allowed;
 }
+
+.course-cohort__actions .button--secondary {
+  background: #f3f4f6;
+  color: #374151;
+  margin-left: 0.5rem;
+}
+
+.course-cohort__actions .button--secondary:hover {
+  background: #e5e7eb;
+}
+
+.enrollment-status {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.enrollment-status__badge {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: #d1fae5;
+  color: #065f46;
+  border: 2px solid #34d399;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}

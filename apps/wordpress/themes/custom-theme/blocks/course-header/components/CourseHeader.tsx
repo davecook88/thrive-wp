@@ -27,6 +27,8 @@ export default function CourseHeader({
 }: CourseHeaderProps) {
   const [course, setCourse] = useState<CourseDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [enrollmentLoading, setEnrollmentLoading] = useState(true);
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -47,6 +49,35 @@ export default function CourseHeader({
     }
   }, [courseCode]);
 
+  // Check if student is enrolled in this course
+  useEffect(() => {
+    const checkEnrollment = async () => {
+      try {
+        const response = await fetch("/api/packages/my-credits", {
+          credentials: "include",
+        });
+        if (response.ok) {
+          const packages = await response.json();
+          // Check if any package has this course code in metadata
+          const enrolled = packages.some(
+            (pkg: any) =>
+              pkg.metadata?.courseCode === courseCode &&
+              pkg.expiresAt === null // Course packages don't expire
+          );
+          setIsEnrolled(enrolled);
+        }
+      } catch (err) {
+        console.error("Error checking enrollment:", err);
+      } finally {
+        setEnrollmentLoading(false);
+      }
+    };
+
+    if (courseCode) {
+      checkEnrollment();
+    }
+  }, [courseCode]);
+
   if (loading) {
     return (
       <div className="course-header loading">Loading course details...</div>
@@ -64,18 +95,26 @@ export default function CourseHeader({
 
   return (
     <div className="course-header">
-      {showLevelBadges && course.levels.length > 0 && (
-        <div className="course-header__badges">
-          {course.levels.map((level) => (
-            <span
-              key={level.id}
-              className={`level-badge level-badge--${level.code.toLowerCase()}`}
-            >
-              {level.name}
-            </span>
-          ))}
-        </div>
-      )}
+      <div className="course-header__badges-row">
+        {showLevelBadges && course.levels.length > 0 && (
+          <div className="course-header__badges">
+            {course.levels.map((level) => (
+              <span
+                key={level.id}
+                className={`level-badge level-badge--${level.code.toLowerCase()}`}
+              >
+                {level.name}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {!enrollmentLoading && isEnrolled && (
+          <span className="enrollment-badge enrollment-badge--enrolled">
+            ✓ Enrolled
+          </span>
+        )}
+      </div>
 
       <h1 className="course-header__title">{course.title}</h1>
 

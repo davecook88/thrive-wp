@@ -18,6 +18,8 @@ export default function CourseCohorts({
   const [cohorts, setCohorts] = useState<PublicCourseCohortDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [enrollmentLoading, setEnrollmentLoading] = useState(true);
 
   useEffect(() => {
     const fetchCohorts = async () => {
@@ -39,6 +41,35 @@ export default function CourseCohorts({
 
     if (courseCode) {
       void fetchCohorts();
+    }
+  }, [courseCode]);
+
+  // Check if student is enrolled in this course
+  useEffect(() => {
+    const checkEnrollment = async () => {
+      try {
+        const response = await fetch("/api/packages/my-credits", {
+          credentials: "include",
+        });
+        if (response.ok) {
+          const packages = await response.json();
+          // Check if any package has this course code in metadata
+          const enrolled = packages.some(
+            (pkg: any) =>
+              pkg.metadata?.courseCode === courseCode &&
+              pkg.expiresAt === null // Course packages don't expire
+          );
+          setIsEnrolled(enrolled);
+        }
+      } catch (err) {
+        console.error("Error checking enrollment:", err);
+      } finally {
+        setEnrollmentLoading(false);
+      }
+    };
+
+    if (courseCode) {
+      checkEnrollment();
     }
   }, [courseCode]);
 
@@ -102,14 +133,23 @@ export default function CourseCohorts({
           )}
 
           <div className="course-cohort__actions">
-            <button
-              type="button"
-              className="button"
-              disabled={!cohort.isAvailable}
-              onClick={() => handleEnroll(cohort.id)}
-            >
-              {!cohort.isAvailable ? "Unavailable" : ctaText}
-            </button>
+            {!enrollmentLoading && isEnrolled ? (
+              <div className="enrollment-status">
+                <span className="enrollment-status__badge">✓ Already Enrolled</span>
+                <a href="/student" className="button button--secondary">
+                  Go to Dashboard
+                </a>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="button"
+                disabled={!cohort.isAvailable}
+                onClick={() => handleEnroll(cohort.id)}
+              >
+                {!cohort.isAvailable ? "Unavailable" : ctaText}
+              </button>
+            )}
           </div>
         </div>
       ))}

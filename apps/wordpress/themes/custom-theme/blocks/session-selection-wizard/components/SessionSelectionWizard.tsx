@@ -25,6 +25,10 @@ export default function SessionSelectionWizard({
   stripeSessionId,
 }: SessionSelectionWizardProps) {
   const [packageId, setPackageId] = useState<number | null>(null);
+  const [courseInfo, setCourseInfo] = useState<{
+    courseCode?: string;
+    cohortName?: string;
+  } | null>(null);
   const [steps, setSteps] = useState<Step[]>([]);
   const [selections, setSelections] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(true);
@@ -44,13 +48,23 @@ export default function SessionSelectionWizard({
         }>(`/course-programs/enrollment/session/${stripeSessionId}`);
 
         setPackageId(sessionData.packageId);
+        setCourseInfo({
+          courseCode: sessionData.courseCode,
+          cohortName: sessionData.cohortName,
+        });
 
-        // Get steps that need booking
-        const stepsData = await thriveClient.request<Step[]>(
-          `/students/me/course-packages/${sessionData.packageId}/unbooked-steps`,
-        );
+        // Try to get steps that need booking (endpoint may not exist yet)
+        try {
+          const stepsData = await thriveClient.request<Step[]>(
+            `/students/me/course-packages/${sessionData.packageId}/unbooked-steps`,
+          );
+          setSteps(stepsData);
+        } catch (stepsError) {
+          console.log("Unbooked steps endpoint not implemented yet");
+          // This is okay - just means we don't have steps to show
+          setSteps([]);
+        }
 
-        setSteps(stepsData);
         setError(null);
       } catch (err: unknown) {
         console.error("Error fetching enrollment data:", err);
@@ -133,13 +147,39 @@ export default function SessionSelectionWizard({
 
   return (
     <div className="session-wizard">
+      {courseInfo && (
+        <div style={{
+          background: "white",
+          padding: "1.5rem",
+          borderRadius: "8px",
+          marginBottom: "2rem",
+          border: "1px solid #e5e7eb"
+        }}>
+          <h2 style={{ margin: "0 0 1rem 0", fontSize: "1.5rem", color: "#1f2937" }}>
+            Enrollment Confirmed! ✅
+          </h2>
+          <div style={{ fontSize: "1rem", color: "#4b5563" }}>
+            <p style={{ margin: "0.5rem 0" }}>
+              <strong>Course:</strong> {courseInfo.courseCode || "Loading..."}
+            </p>
+            <p style={{ margin: "0.5rem 0" }}>
+              <strong>Cohort:</strong> {courseInfo.cohortName || "Loading..."}
+            </p>
+          </div>
+        </div>
+      )}
+
       <h2 className="session-wizard__title">Book Your Sessions</h2>
 
       {stepsNeedingSelection.length === 0 ? (
         <div className="session-wizard__success">
-          <p>All sessions have been automatically booked!</p>
+          <p>
+            {steps.length === 0
+              ? "Your enrollment is complete! You can view your course and book sessions from your dashboard."
+              : "All sessions have been automatically booked!"}
+          </p>
           <button
-            onClick={() => (window.location.href = "/dashboard")}
+            onClick={() => (window.location.href = "/student")}
             className="button"
           >
             Go to Dashboard

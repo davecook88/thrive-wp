@@ -565,6 +565,7 @@ export class CourseProgramsService {
       stripeProductId: product.id,
       active: true,
       scopeType: ScopeType.COURSE,
+      scopeId: id,
       metadata: {
         course_program_id: id,
         course_code: courseProgram.code,

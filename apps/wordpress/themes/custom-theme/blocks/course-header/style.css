@@ -9,10 +9,17 @@
   color: #6b7280;
 }
 
+.course-header__badges-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 .course-header__badges {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1rem;
   flex-wrap: wrap;
 }
 
@@ -72,4 +79,18 @@
 .level-badge--advanced {
   background: #e9d5ff;
   color: #6b21a8;
+}
+
+.enrollment-badge {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.enrollment-badge--enrolled {
+  background: #d1fae5;
+  color: #065f46;
+  border: 2px solid #34d399;
 }

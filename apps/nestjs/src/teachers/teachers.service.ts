@@ -658,7 +658,6 @@ export class TeachersService {
         start_at: Date;
         end_at: Date;
         student_id: number;
-        course_id: number | null;
         meeting_url: string | null;
         student_name: string;
       }[]
@@ -670,7 +669,6 @@ export class TeachersService {
         s.start_at,
         s.end_at,
         b.student_id,
-        s.course_id,
         s.meeting_url,
         concat(first_name,' ',last_name) as student_name
       FROM session s
@@ -696,7 +694,6 @@ export class TeachersService {
           endAt: new Date(nextSessionQuery[0].end_at).toISOString(),
           studentId: nextSessionQuery[0].student_id,
           studentName: nextSessionQuery[0].student_name,
-          courseId: nextSessionQuery[0].course_id,
           meetingUrl: nextSessionQuery[0].meeting_url,
         }
       : null;
@@ -777,7 +774,6 @@ export class TeachersService {
         s.end_at,
         s.status,
         b.student_id,
-        s.course_id,
         s.meeting_url,
         concat(first_name,' ',last_name) as student_name
       FROM session s
@@ -826,7 +822,6 @@ export class TeachersService {
       status: session.status,
       studentId: session.student_id,
       studentName: session.student_name,
-      courseId: session.course_id,
       meetingUrl: session.meeting_url,
     }));
   }

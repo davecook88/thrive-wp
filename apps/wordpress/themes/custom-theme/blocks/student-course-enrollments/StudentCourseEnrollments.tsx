@@ -1,29 +1,14 @@
-import React, { useEffect, useState } from "react";
-
-interface CourseEnrollment {
-  enrollmentId: number;
-  courseId: number;
-  courseName: string;
-  description: string;
-  status: string;
-  enrolledAt: string;
-  startDate: string;
-  endDate: string;
-  totalSessions: number;
-  completedSessions: number;
-  nextSessionAt: string | null;
-}
+import { useEffect, useState } from "react";
+import type { StudentCoursePackage } from "@thrive/shared";
 
 interface StudentCourseEnrollmentsProps {
   showProgress?: boolean;
-  showNextSession?: boolean;
 }
 
 export default function StudentCourseEnrollments({
   showProgress = true,
-  showNextSession = true,
 }: StudentCourseEnrollmentsProps) {
-  const [enrollments, setEnrollments] = useState<CourseEnrollment[]>([]);
+  const [enrollments, setEnrollments] = useState<StudentCoursePackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,16 +44,6 @@ export default function StudentCourseEnrollments({
     }).format(date);
   };
 
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    }).format(date);
-  };
-
   if (loading) {
     return (
       <div className="student-course-enrollments loading">
@@ -98,30 +73,31 @@ export default function StudentCourseEnrollments({
 
   return (
     <div className="student-course-enrollments">
-      <h3>My Courses</h3>
       <div className="enrollments-list">
         {enrollments.map((enrollment) => {
           const progressPercent =
-            enrollment.totalSessions > 0
-              ? (enrollment.completedSessions / enrollment.totalSessions) * 100
+            enrollment.totalSteps > 0
+              ? (enrollment.completedSteps / enrollment.totalSteps) * 100
               : 0;
 
           return (
-            <div key={enrollment.enrollmentId} className="course-card">
+            <div key={enrollment.packageId} className="course-card">
               <div className="course-header">
-                <h4 className="course-name">{enrollment.courseName}</h4>
-                <span className="course-status">{enrollment.status}</span>
+                <h4 className="course-name">
+                  {enrollment.courseCode}: {enrollment.courseTitle}
+                </h4>
               </div>
 
-              {enrollment.description && (
-                <p className="course-description">{enrollment.description}</p>
-              )}
-
-              <div className="course-dates">
-                <span className="course-date">
-                  {formatDate(enrollment.startDate)} -{" "}
-                  {formatDate(enrollment.endDate)}
+              <div className="course-meta">
+                <span className="package-name">{enrollment.packageName}</span>
+                <span className="purchased-date">
+                  Purchased: {formatDate(enrollment.purchasedAt)}
                 </span>
+                {enrollment.expiresAt && (
+                  <span className="expires-date">
+                    Expires: {formatDate(enrollment.expiresAt)}
+                  </span>
+                )}
               </div>
 
               {showProgress && (
@@ -133,21 +109,33 @@ export default function StudentCourseEnrollments({
                     ></div>
                   </div>
                   <div className="progress-text">
-                    {enrollment.completedSessions} of {enrollment.totalSessions} sessions completed
+                    {enrollment.completedSteps} of {enrollment.totalSteps} steps
+                    completed
                   </div>
                 </div>
               )}
 
-              {showNextSession && enrollment.nextSessionAt && (
-                <div className="course-next-session">
-                  <strong>Next session:</strong>{" "}
-                  {formatDateTime(enrollment.nextSessionAt)}
-                </div>
-              )}
+              <div className="course-steps">
+                <h5>Course Steps</h5>
+                <ul className="steps-list">
+                  {enrollment.progress.map((step) => (
+                    <li key={step.stepId} className={`step-item status-${step.status.toLowerCase()}`}>
+                      <span className="step-label">{step.stepLabel}</span>
+                      <span className="step-title">{step.stepTitle}</span>
+                      <span className={`step-status ${step.status.toLowerCase()}`}>
+                        {step.status}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
               <div className="course-actions">
-                <a href={`/courses/${enrollment.courseId}`} className="button">
-                  View Course
+                <a
+                  href={`/courses/${enrollment.courseProgramId}`}
+                  className="button"
+                >
+                  View Course Details
                 </a>
               </div>
             </div>

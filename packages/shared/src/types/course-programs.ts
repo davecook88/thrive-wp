@@ -553,3 +553,14 @@ export const EnrollmentCheckoutResponseSchema = z.object({
 export type EnrollmentCheckoutResponseDto = z.infer<
   typeof EnrollmentCheckoutResponseSchema
 >;
+
+/**
+ * Response schema for student's course enrollments list
+ */
+export const StudentCourseEnrollmentsResponseSchema = z.array(
+  StudentCoursePackageSchema,
+);
+
+export type StudentCourseEnrollmentsResponse = z.infer<
+  typeof StudentCourseEnrollmentsResponseSchema
+>;

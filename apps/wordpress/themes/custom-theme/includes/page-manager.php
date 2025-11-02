@@ -103,6 +103,9 @@ add_action('after_setup_theme', function () {
     ensure_page_exists('Booking Confirmation', 'booking-confirmation', 'booking-confirmation');
     ensure_page_exists('Booking Complete', 'booking-complete', 'booking-complete', 'page-booking-complete.php');
 
+    // Enrollment pages
+    ensure_page_exists('Enrollment Success', 'enrollment-success', 'enrollment-success', 'page-enrollment-success.php');
+
     // User dashboard pages
     ensure_page_exists('Student Dashboard', 'student', 'student');
     ensure_page_exists('Teacher Dashboard', 'teacher', 'teacher');

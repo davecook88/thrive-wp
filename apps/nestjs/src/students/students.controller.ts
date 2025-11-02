@@ -74,4 +74,11 @@ export class StudentsController {
       return sessions;
     }
   }
+
+  @Get("me/enrollments")
+  @UseGuards(StudentGuard)
+  async getMyEnrollments(@Request() req: AuthenticatedRequest) {
+    const userId = req.user.id;
+    return this.studentsService.getStudentEnrollments(userId);
+  }
 }

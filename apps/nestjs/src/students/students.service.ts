@@ -43,6 +43,31 @@ interface CourseCountResult {
   count: string;
 }
 
+interface StudentPackageQueryResult {
+  package_id: string;
+  package_name: string;
+  purchased_at: Date | string;
+  expires_at: Date | string | null;
+  course_program_id: string;
+  course_code: string | null;
+  cohort_name: string | null;
+  course_title: string | null;
+  course_code_from_program: string | null;
+  total_steps: string;
+  completed_steps: string;
+}
+
+interface ProgressQueryResult {
+  step_id: string;
+  step_label: string;
+  step_title: string;
+  step_order: string;
+  status: string;
+  booked_at: Date | string | null;
+  completed_at: Date | string | null;
+  session_id: string | null;
+}
+
 @Injectable()
 export class StudentsService {
   constructor(
@@ -213,9 +238,10 @@ export class StudentsService {
     const coursesQuery = await this.dataSource.query<CourseCountResult[]>(
       `
       SELECT COUNT(*) as count
-      FROM student_course_enrollment
+      FROM student_package
       WHERE student_id = ?
-      AND status = 'ACTIVE'
+      AND JSON_EXTRACT(metadata, '$.courseProgramId') IS NOT NULL
+      AND (expires_at IS NULL OR expires_at > NOW())
       `,
       [student.id],
     );
@@ -304,5 +330,106 @@ export class StudentsService {
       meetingUrl: session.meeting_url,
       status: session.status,
     }));
+  }
+
+  async getStudentEnrollments(userId: number) {
+    const student = await this.findByUserId(userId);
+    if (!student) {
+      return [];
+    }
+
+    // Get course enrollments from student_package with course metadata
+    const enrollments = await this.dataSource.query<
+      StudentPackageQueryResult[]
+    >(
+      `
+      SELECT
+        sp.id as package_id,
+        sp.package_name,
+        sp.purchased_at,
+        sp.expires_at,
+        JSON_UNQUOTE(JSON_EXTRACT(sp.metadata, '$.courseProgramId')) as course_program_id,
+        JSON_UNQUOTE(JSON_EXTRACT(sp.metadata, '$.courseCode')) as course_code,
+        JSON_UNQUOTE(JSON_EXTRACT(sp.metadata, '$.cohortName')) as cohort_name,
+        cp.title as course_title,
+        cp.code as course_code_from_program,
+        COUNT(cs.id) as total_steps,
+        COUNT(scsp.id) as completed_steps
+      FROM student_package sp
+      LEFT JOIN course_program cp ON cp.id = JSON_UNQUOTE(JSON_EXTRACT(sp.metadata, '$.courseProgramId'))
+      LEFT JOIN course_step cs ON cs.course_program_id = cp.id
+      LEFT JOIN student_course_step_progress scsp ON scsp.student_package_id = sp.id 
+        AND scsp.status = 'COMPLETED'
+      WHERE sp.student_id = ?
+        AND JSON_EXTRACT(sp.metadata, '$.courseProgramId') IS NOT NULL
+        AND (sp.expires_at IS NULL OR sp.expires_at > NOW())
+        AND sp.deleted_at IS NULL
+      GROUP BY sp.id, cp.id
+      ORDER BY sp.purchased_at DESC
+      `,
+      [student.id],
+    );
+
+    // Get progress details for each enrollment
+    const enrollmentsWithProgress = await Promise.all(
+      enrollments.map(async (enrollment) => {
+        const progress = await this.dataSource.query<ProgressQueryResult[]>(
+          `
+          SELECT
+            cs.id as step_id,
+            cs.label as step_label,
+            cs.title as step_title,
+            cs.step_order,
+            COALESCE(scsp.status, 'UNBOOKED') as status,
+            scsp.booked_at,
+            scsp.completed_at,
+            scsp.session_id
+          FROM course_step cs
+          LEFT JOIN student_course_step_progress scsp ON scsp.course_step_id = cs.id 
+            AND scsp.student_package_id = ?
+          WHERE cs.course_program_id = ?
+          ORDER BY cs.step_order ASC
+          `,
+          [enrollment.package_id, enrollment.course_program_id],
+        );
+
+        return {
+          packageId: parseInt(enrollment.package_id),
+          packageName: enrollment.package_name,
+          courseProgramId: parseInt(enrollment.course_program_id),
+          courseCode:
+            enrollment.course_code || enrollment.course_code_from_program,
+          courseTitle: enrollment.course_title,
+          purchasedAt:
+            enrollment.purchased_at instanceof Date
+              ? enrollment.purchased_at.toISOString()
+              : enrollment.purchased_at,
+          expiresAt:
+            enrollment.expires_at instanceof Date
+              ? enrollment.expires_at.toISOString()
+              : enrollment.expires_at,
+          progress: progress.map((p) => ({
+            stepId: parseInt(p.step_id),
+            stepLabel: p.step_label,
+            stepTitle: p.step_title,
+            stepOrder: parseInt(p.step_order),
+            status: p.status,
+            bookedAt:
+              p.booked_at instanceof Date
+                ? p.booked_at.toISOString()
+                : p.booked_at,
+            completedAt:
+              p.completed_at instanceof Date
+                ? p.completed_at.toISOString()
+                : p.completed_at,
+            sessionId: p.session_id ? parseInt(p.session_id) : null,
+          })),
+          completedSteps: parseInt(enrollment.completed_steps),
+          totalSteps: parseInt(enrollment.total_steps),
+        };
+      }),
+    );
+
+    return enrollmentsWithProgress;
   }
 }

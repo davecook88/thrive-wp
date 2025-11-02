@@ -498,36 +498,38 @@ export class PaymentsService {
     }
 
     try {
-      // Use a transaction to ensure atomicity and prevent race conditions
-      await this.studentRepository.manager.transaction(async (tx) => {
-        // Find the StripeProductMap for this purchase
-        const productMapping = await tx.findOne(StripeProductMap, {
-          where: {
-            stripeProductId: productId,
-            active: true,
-          },
-          relations: ["allowances"],
-        });
+      // Use a transaction with READ COMMITTED isolation to reduce lock contention
+      await this.studentRepository.manager.transaction(
+        "READ COMMITTED",
+        async (tx) => {
+          // Find the StripeProductMap for this purchase
+          const productMapping = await tx.findOne(StripeProductMap, {
+            where: {
+              stripeProductId: productId,
+              active: true,
+            },
+            relations: ["allowances"],
+          });
 
-        if (!productMapping) {
-          this.logger.error(
-            `No active StripeProductMap found for product ${productId}`,
-          );
-          return;
-        }
+          if (!productMapping) {
+            this.logger.error(
+              `No active StripeProductMap found for product ${productId}`,
+            );
+            return;
+          }
 
-        // Check if package already exists for this payment (idempotency protection)
-        const existingPackage = await tx.findOne(StudentPackage, {
-          where: { sourcePaymentId: paymentIntent.id },
-        });
+          // Check if package already exists for this payment (idempotency protection)
+          const existingPackage = await tx.findOne(StudentPackage, {
+            where: { sourcePaymentId: paymentIntent.id },
+          });
 
-        let savedPackage: StudentPackage;
-        if (existingPackage) {
-          this.logger.log(
-            `Package already exists for payment ${paymentIntent.id}, webhook duplicate/retry detected`,
-          );
-          savedPackage = existingPackage;
-        } else {
+          let savedPackage: StudentPackage;
+          if (existingPackage) {
+            this.logger.log(
+              `Package already exists for payment ${paymentIntent.id}, webhook duplicate/retry detected`,
+            );
+            savedPackage = existingPackage;
+          } else {
           // 1. Create the student package record
           const expiresAt =
             expiresInDays > 0
@@ -578,6 +580,8 @@ export class PaymentsService {
                 await this.courseStepProgressService.seedProgressForCourse(
                   savedPackage.id,
                   allowance.courseProgramId!,
+                  undefined,
+                  tx, // Pass transaction manager
                 );
                 this.logger.log(
                   `Seeded course progress for package ${savedPackage.id}, course ${allowance.courseProgramId}`,
@@ -731,7 +735,8 @@ export class PaymentsService {
             `Created booking ${savedBooking.id} using package credit`,
           );
         }
-      });
+        },
+      );
       this.logger.log(
         `Successfully processed package purchase for user ${userId}`,
       );
@@ -756,19 +761,21 @@ export class PaymentsService {
     const stripeProductMapId = parseInt(String(metadata.stripe_product_map_id), 10);
 
     try {
-      // Use transaction for atomicity
-      await this.studentPackageRepository.manager.transaction(async (tx) => {
-        // Idempotency check: see if package already exists for this payment
-        const existingPackage = await tx.findOne(StudentPackage, {
-          where: { sourcePaymentId: paymentIntent.id },
-        });
+      // Use transaction with READ COMMITTED isolation for atomicity and reduced locking
+      await this.studentPackageRepository.manager.transaction(
+        "READ COMMITTED",
+        async (tx) => {
+          // Idempotency check: see if package already exists for this payment
+          const existingPackage = await tx.findOne(StudentPackage, {
+            where: { sourcePaymentId: paymentIntent.id },
+          });
 
-        if (existingPackage) {
-          this.logger.log(
-            `Course enrollment package already exists for payment ${paymentIntent.id}, webhook duplicate/retry detected`,
-          );
-          return;
-        }
+          if (existingPackage) {
+            this.logger.log(
+              `Course enrollment package already exists for payment ${paymentIntent.id}, webhook duplicate/retry detected`,
+            );
+            return;
+          }
 
         // Get the StripeProductMap with allowances
         const stripeProductMap = await tx.findOne(StripeProductMap, {
@@ -818,6 +825,7 @@ export class PaymentsService {
             savedPackage.id,
             courseProgramId,
             cohortId, // Pass cohortId for linking
+            tx, // Pass transaction manager
           );
           this.logger.log(
             `Seeded course progress for package ${savedPackage.id}, course ${courseProgramId}, cohort ${cohortId}`,
@@ -829,7 +837,8 @@ export class PaymentsService {
           );
           throw error; // Re-throw to rollback transaction
         }
-      });
+        },
+      );
 
       this.logger.log(
         `Successfully processed course enrollment for student ${studentId}, cohort ${cohortId}`,
