@@ -78,6 +78,26 @@ const options: Partial<RequestInit> = {
   credentials: "same-origin",
 };
 
+type AvailabilityRule = {
+  id: number;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+};
+
+type AvailabilityException = {
+  id: number;
+  date: string;
+  isAvailable: boolean;
+  start?: string;
+  end?: string;
+};
+
+type TeacherAvailabilityData = {
+  rules: AvailabilityRule[];
+  exceptions: AvailabilityException[];
+};
+
 // Generic API helper functions
 const apiRequest = async <T>(
   url: string,
@@ -390,6 +410,22 @@ export const thriveClient = {
       "/api/teachers/me/profile",
       data as Record<string, unknown>,
       PublicTeacherSchema,
+    );
+  },
+
+  // Teacher Availability methods
+  getTeacherAvailability: async (): Promise<TeacherAvailabilityData | null> => {
+    return await apiGet<TeacherAvailabilityData>(
+      "/api/teachers/me/availability",
+    );
+  },
+
+  updateTeacherAvailability: async (
+    data: Record<string, unknown>,
+  ): Promise<TeacherAvailabilityData | null> => {
+    return await apiPut<TeacherAvailabilityData>(
+      "/api/teachers/me/availability",
+      data,
     );
   },
 

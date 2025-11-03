@@ -3,12 +3,9 @@ import { Button } from "@wordpress/components";
 
 import RulesSection from "./RulesSection";
 import ExceptionsSection from "./ExceptionsSection";
-import {
-  GetAvailabilityResponse,
-  PreviewAvailabilityResponse,
-  AvailabilityEvent,
-} from "@thrive/shared";
+import { PreviewAvailabilityResponse, AvailabilityEvent } from "@thrive/shared";
 import { ThriveCalendarElement } from "../../../../../shared/calendar";
+import { thriveClient } from "../../../../../shared/thrive";
 
 // Local UI types for component state
 interface Rule {
@@ -31,14 +28,12 @@ interface TeacherAvailabilityProps {
   heading: string;
   helpText: string;
   accentColor: string;
-  showPreviewWeeks: number;
 }
 
 export default function TeacherAvailability({
   heading,
   helpText,
   accentColor,
-  showPreviewWeeks,
 }: TeacherAvailabilityProps) {
   const [rules, setRules] = useState<Rule[]>([]);
   const [exceptions, setExceptions] = useState<Exception[]>([]);
@@ -48,10 +43,8 @@ export default function TeacherAvailability({
   const [calendarElement, setCalendarElement] =
     useState<ThriveCalendarElement | null>(null);
 
-  const API_BASE = "/api";
-
   useEffect(() => {
-    loadAvailability();
+    void loadAvailability();
   }, []);
 
   // Callback ref to capture the calendar element
@@ -138,37 +131,21 @@ export default function TeacherAvailability({
     }
   }, [calendarElement, calendarEvents]);
 
-  const apiCall = async (endpoint: string, options: RequestInit = {}) => {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-      credentials: "same-origin",
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`API call failed: ${response.status} ${error}`);
-    }
-
-    return response.json();
-  };
-
   const loadAvailability = async () => {
     try {
       setLoading(true);
       // Backend shape -> UI shape mapping
-      const data: GetAvailabilityResponse = (await apiCall(
-        "/teachers/me/availability",
-      )) as GetAvailabilityResponse;
+      const typedData = await thriveClient.getTeacherAvailability();
+      if (!typedData) {
+        throw new Error("Failed to load availability");
+      }
+
       const toMinutes = (t: string) => {
         const [h, m] = t.split(":").map(Number);
         return h * 60 + m;
       };
 
-      const mappedRules: Rule[] = (data.rules || []).map((r) => ({
+      const mappedRules: Rule[] = (typedData.rules ?? []).map((r) => ({
         id: String(r.id),
         weekday: String(r.dayOfWeek),
         startTimeMinutes: toMinutes(r.startTime),
@@ -176,7 +153,7 @@ export default function TeacherAvailability({
         kind: "available",
       }));
 
-      const mappedExceptions: Exception[] = (data.exceptions || []).map(
+      const mappedExceptions: Exception[] = (typedData.exceptions ?? []).map(
         (e) => ({
           id: String(e.id),
           date: e.date,
@@ -239,10 +216,7 @@ export default function TeacherAvailability({
         })),
     };
 
-    const result = await apiCall("/teachers/me/availability", {
-      method: "PUT",
-      body: JSON.stringify(payload),
-    });
+    const result = await thriveClient.updateTeacherAvailability(payload);
 
     // Normalize the response by reloading fresh state
     await loadAvailability();
