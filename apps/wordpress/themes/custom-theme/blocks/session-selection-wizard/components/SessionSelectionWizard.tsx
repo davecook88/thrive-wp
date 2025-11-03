@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from "react";
-import { thriveClient, ThriveApiError } from "@thrive/shared";
+import { useEffect, useState } from "react";
 
 interface SessionSelectionWizardProps {
   stripeSessionId: string;
@@ -39,13 +38,25 @@ export default function SessionSelectionWizard({
     const fetchEnrollmentData = async () => {
       try {
         // Get package ID from Stripe session
-        const sessionData = await thriveClient.request<{
+        const sessionResponse = await fetch(
+          `/api/course-programs/enrollment/session/${stripeSessionId}`,
+          {
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+
+        if (!sessionResponse.ok) {
+          throw new Error(`Failed to fetch enrollment data: ${sessionResponse.statusText}`);
+        }
+
+        const sessionData = (await sessionResponse.json()) as {
           packageId: number;
           courseProgramId?: number;
           cohortId?: number;
           courseCode?: string;
           cohortName?: string;
-        }>(`/course-programs/enrollment/session/${stripeSessionId}`);
+        };
 
         setPackageId(sessionData.packageId);
         setCourseInfo({
@@ -55,10 +66,21 @@ export default function SessionSelectionWizard({
 
         // Try to get steps that need booking (endpoint may not exist yet)
         try {
-          const stepsData = await thriveClient.request<Step[]>(
-            `/students/me/course-packages/${sessionData.packageId}/unbooked-steps`,
+          const stepsResponse = await fetch(
+            `/api/students/me/course-packages/${sessionData.packageId}/unbooked-steps`,
+            {
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+            },
           );
-          setSteps(stepsData);
+
+          if (stepsResponse.ok) {
+            const stepsData = (await stepsResponse.json()) as Step[];
+            setSteps(stepsData);
+          } else {
+            console.log("Unbooked steps endpoint not implemented yet");
+            setSteps([]);
+          }
         } catch (stepsError) {
           console.log("Unbooked steps endpoint not implemented yet");
           // This is okay - just means we don't have steps to show
@@ -69,7 +91,7 @@ export default function SessionSelectionWizard({
       } catch (err: unknown) {
         console.error("Error fetching enrollment data:", err);
         const errorMessage =
-          err instanceof ThriveApiError
+          err instanceof Error
             ? err.message
             : "Failed to load enrollment data";
         setError(errorMessage);
@@ -100,20 +122,28 @@ export default function SessionSelectionWizard({
         }),
       );
 
-      await thriveClient.request(
-        `/students/me/course-packages/${packageId}/book-sessions`,
+      const response = await fetch(
+        `/api/students/me/course-packages/${packageId}/book-sessions`,
         {
           method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ selections: selectionsArray }),
         },
       );
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to book sessions: ${response.statusText}`,
+        );
+      }
 
       // Success! Redirect to dashboard
       window.location.href = "/dashboard";
     } catch (err: unknown) {
       console.error("Booking error:", err);
       const errorMessage =
-        err instanceof ThriveApiError
+        err instanceof Error
           ? err.message
           : "Failed to book sessions. Please try again from your dashboard.";
       alert(errorMessage);

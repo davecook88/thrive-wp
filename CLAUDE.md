@@ -135,9 +135,11 @@ Before merging changes that affect runtime contracts or DB schema, ensure:
 Maintainers: Keep this file the canonical truth; when adding features or changing runtime contracts, update `docs/` and the appropriate files in `.github/instructions/` to keep contributors aligned.
 
 
--- 
-## 10. Typing:
+--
+## 10. Typing & API Client
 
 `any` types are strictly forbidden.
-All API calls from the browser MUST be made with the shared thriveClient
-All API types MUST be declared in the shared package - this should cover most types used in the client side code. There should be minimal type declarations in the client side apps. Use API types where possible.
+
+**ThriveClient**: The authoritative API client is located at `apps/wordpress/shared/thrive.ts`. This is the single source of truth for all browser-side API interactions. All blocks and components MUST use this client for API calls.
+
+All API types MUST be declared in the shared package (`@thrive/shared`) - this should cover most types used in the client side code. There should be minimal type declarations in the client side apps. Use API types where possible.

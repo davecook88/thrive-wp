@@ -13,5 +13,4 @@ export * from "./types/waitlists.js";
 export * from "./types/users.js";
 export * from "./types/student-stats.js";
 export * from "./types/course-programs.js";
-export * from "./clients/thriveclient.js";
 export * from "./utils/date.js";
