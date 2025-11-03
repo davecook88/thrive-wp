@@ -1,25 +1,16 @@
 import { useEffect, useState, useRef } from "@wordpress/element";
 import { Button } from "@wordpress/components";
-import type {
-  AvailabilityEvent,
-  ThriveCalendarElement,
-} from "../../../types/calendar";
+
 import RulesSection from "./RulesSection";
 import ExceptionsSection from "./ExceptionsSection";
+import {
+  GetAvailabilityResponse,
+  PreviewAvailabilityResponse,
+  AvailabilityEvent,
+} from "@thrive/shared";
+import { ThriveCalendarElement } from "../../../../../shared/calendar";
 
-// Declare JSX intrinsic element for thrive-calendar web component
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      "thrive-calendar": {
-        view?: "week" | "day" | "month" | "list";
-        date?: string;
-        ref?: React.Ref<ThriveCalendarElement>;
-      };
-    }
-  }
-}
-
+// Local UI types for component state
 interface Rule {
   id?: string;
   weekday: string;
@@ -34,11 +25,6 @@ interface Exception {
   kind: string;
   startTimeMinutes?: number;
   endTimeMinutes?: number;
-}
-
-interface AvailabilityData {
-  rules: Rule[];
-  exceptions: Exception[];
 }
 
 interface TeacherAvailabilityProps {
@@ -100,24 +86,27 @@ export default function TeacherAvailability({
         });
 
         if (!response.ok) {
-          console.error("Failed to fetch availability preview:", response.status);
+          console.error(
+            "Failed to fetch availability preview:",
+            response.status,
+          );
           return;
         }
 
-        const data = (await response.json()) as {
-          windows?: Array<{ start: string; end: string; teacherIds: number[] }>;
-        };
+        const data = (await response.json()) as PreviewAvailabilityResponse;
 
         console.log("Received availability windows:", data.windows);
 
-        const events: AvailabilityEvent[] = (data.windows || []).map((w) => ({
-          id: `avail:${w.start}|${w.end}`,
-          title: "Available",
-          startUtc: w.start,
-          endUtc: w.end,
-          type: "availability" as const,
-          teacherIds: w.teacherIds || [],
-        }));
+        const events: AvailabilityEvent[] = (data.windows || []).map(
+          (w: { start: string; end: string; teacherIds: number[] }) => ({
+            id: `avail:${w.start}|${w.end}`,
+            title: "Available",
+            startUtc: w.start,
+            endUtc: w.end,
+            type: "availability" as const,
+            teacherIds: w.teacherIds,
+          }),
+        );
 
         console.log("Setting calendar events:", events);
         setCalendarEvents(events);
@@ -129,14 +118,14 @@ export default function TeacherAvailability({
     console.log("Attaching range:change listener to calendar");
     calendarElement.addEventListener(
       "range:change",
-      handleRangeChange as EventListener
+      handleRangeChange as EventListener,
     );
 
     return () => {
       console.log("Removing range:change listener from calendar");
       calendarElement.removeEventListener(
         "range:change",
-        handleRangeChange as EventListener
+        handleRangeChange as EventListener,
       );
     };
   }, [calendarElement]);
@@ -171,28 +160,30 @@ export default function TeacherAvailability({
     try {
       setLoading(true);
       // Backend shape -> UI shape mapping
-      const data = await apiCall("/teachers/me/availability");
+      const data: GetAvailabilityResponse = (await apiCall(
+        "/teachers/me/availability",
+      )) as GetAvailabilityResponse;
       const toMinutes = (t: string) => {
         const [h, m] = t.split(":").map(Number);
         return h * 60 + m;
       };
 
-      const mappedRules: Rule[] = (data.rules || []).map((r: any) => ({
+      const mappedRules: Rule[] = (data.rules || []).map((r) => ({
         id: String(r.id),
-        weekday: String(r.weekday),
+        weekday: String(r.dayOfWeek),
         startTimeMinutes: toMinutes(r.startTime),
         endTimeMinutes: toMinutes(r.endTime),
         kind: "available",
       }));
 
       const mappedExceptions: Exception[] = (data.exceptions || []).map(
-        (e: any) => ({
+        (e) => ({
           id: String(e.id),
           date: e.date,
-          kind: e.isBlackout ? "unavailable" : "available",
-          startTimeMinutes: e.startTime ? toMinutes(e.startTime) : undefined,
-          endTimeMinutes: e.endTime ? toMinutes(e.endTime) : undefined,
-        })
+          kind: e.isAvailable ? "available" : "unavailable",
+          startTimeMinutes: e.start ? toMinutes(e.start) : undefined,
+          endTimeMinutes: e.end ? toMinutes(e.end) : undefined,
+        }),
       );
 
       setRules(mappedRules);
@@ -209,7 +200,7 @@ export default function TeacherAvailability({
   // Build DTO and persist full availability snapshot (API uses PUT on the collection)
   const persistAvailability = async (
     nextRules: Rule[],
-    nextExceptions: Exception[]
+    nextExceptions: Exception[],
   ) => {
     const toTime = (mins: number) => {
       // Normalize negative minutes to wrap around within 24 hours
