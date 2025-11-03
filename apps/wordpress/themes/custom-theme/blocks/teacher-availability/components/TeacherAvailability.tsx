@@ -8,20 +8,21 @@ import { ThriveCalendarElement } from "../../../../../shared/calendar";
 import { thriveClient } from "../../../../../shared/thrive";
 
 // Local UI types for component state
+// Maps API DTO fields (dayOfWeek, startTime, endTime) to UI representation (weekday as string, minutes-based times)
 interface Rule {
   id?: string;
-  weekday: string;
-  startTimeMinutes: number;
-  endTimeMinutes: number;
+  weekday: string; // String representation of dayOfWeek (0-6)
+  startTimeMinutes: number; // UI representation: minutes from midnight
+  endTimeMinutes: number; // UI representation: minutes from midnight
   kind: string;
 }
 
 interface Exception {
   id?: string;
   date: string;
-  kind: string;
-  startTimeMinutes?: number;
-  endTimeMinutes?: number;
+  kind: string; // "available" or "unavailable"
+  startTimeMinutes?: number; // UI representation: minutes from midnight
+  endTimeMinutes?: number; // UI representation: minutes from midnight
 }
 
 interface TeacherAvailabilityProps {
