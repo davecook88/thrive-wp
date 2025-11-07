@@ -62,14 +62,19 @@ export const WeeklyAvailabilityRuleSchema = z.object({
   maxBookings: z.number().int().nullable().optional(),
 });
 
+export type WeeklyAvailabilityRule = z.infer<
+  typeof WeeklyAvailabilityRuleSchema
+>;
+
 export const AvailabilityExceptionSchema = z.object({
   id: z.number().int().optional(),
   date: z.string(),
-  start: z.string().datetime().nullable().optional(),
-  end: z.string().datetime().nullable().optional(),
-  isAvailable: z.boolean(),
-  note: z.string().nullable().optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+  isBlackout: z.boolean().optional(),
 });
+
+export type AvailabilityException = z.infer<typeof AvailabilityExceptionSchema>;
 
 export const GetAvailabilityResponseSchema = z.object({
   timezone: z.string(),
@@ -110,9 +115,8 @@ export type PreviewAvailabilityDto = z.infer<typeof PreviewAvailabilitySchema>;
 // Preview for authenticated teacher (no teacherId required)
 export const PreviewMyAvailabilitySchema = PreviewAvailabilitySchema.omit({
   teacherId: true,
-})
-  .extend({})
-  .partial();
+  teacherIds: true,
+});
 export type PreviewMyAvailabilityDto = z.infer<
   typeof PreviewMyAvailabilitySchema
 >;
@@ -137,6 +141,15 @@ export const UpdateTeacherProfileSchema = z.object({
 export type UpdateTeacherProfileDto = z.infer<
   typeof UpdateTeacherProfileSchema
 >;
+
+// Update availability DTO
+export const UpdateAvailabilitySchema = z.object({
+  rules: z.array(WeeklyAvailabilityRuleSchema.omit({ id: true })),
+  exceptions: z
+    .array(AvailabilityExceptionSchema.omit({ id: true }))
+    .optional(),
+});
+export type UpdateAvailabilityDto = z.infer<typeof UpdateAvailabilitySchema>;
 
 // Stats
 export const TeacherStatsSchema = z.object({
