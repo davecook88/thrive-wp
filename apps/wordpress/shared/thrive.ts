@@ -52,6 +52,8 @@ import {
   EnrollmentCheckoutResponseDto,
   EnrollmentCheckoutResponseSchema,
   CreateGroupClassDto,
+  TeacherSessionsResponseSchema,
+  UpdateAvailabilityDto,
 } from "@thrive/shared";
 import {
   PreviewAvailabilityResponseSchema,
@@ -64,6 +66,8 @@ import {
   PackageResponseSchema,
   CreatePackageDto,
   PackageResponseDto,
+  GetAvailabilityResponseSchema,
+  type GetAvailabilityResponse,
 } from "@thrive/shared";
 import {
   BookingResponseSchema,
@@ -76,26 +80,6 @@ import {
 const options: Partial<RequestInit> = {
   headers: { "Content-Type": "application/json" },
   credentials: "same-origin",
-};
-
-type AvailabilityRule = {
-  id: number;
-  dayOfWeek: number;
-  startTime: string;
-  endTime: string;
-};
-
-type AvailabilityException = {
-  id: number;
-  date: string;
-  isAvailable: boolean;
-  start?: string;
-  end?: string;
-};
-
-type TeacherAvailabilityData = {
-  rules: AvailabilityRule[];
-  exceptions: AvailabilityException[];
 };
 
 // Generic API helper functions
@@ -414,19 +398,31 @@ export const thriveClient = {
   },
 
   // Teacher Availability methods
-  getTeacherAvailability: async (): Promise<TeacherAvailabilityData | null> => {
-    return await apiGet<TeacherAvailabilityData>(
+  getTeacherAvailability: async (): Promise<GetAvailabilityResponse | null> => {
+    return await apiGet<GetAvailabilityResponse>(
       "/api/teachers/me/availability",
+      GetAvailabilityResponseSchema,
     );
   },
 
   updateTeacherAvailability: async (
-    data: Record<string, unknown>,
-  ): Promise<TeacherAvailabilityData | null> => {
-    return await apiPut<TeacherAvailabilityData>(
+    data: UpdateAvailabilityDto,
+  ): Promise<GetAvailabilityResponse | null> => {
+    return await apiPut<GetAvailabilityResponse>(
       "/api/teachers/me/availability",
       data,
+      GetAvailabilityResponseSchema,
     );
+  },
+
+  fetchTeacherSessions: async (start: Date, end: Date) => {
+    const data = await apiGet(
+      `/api/teachers/me/sessions?start=${encodeURIComponent(
+        start.toISOString(),
+      )}&end=${encodeURIComponent(end.toISOString())}`,
+      TeacherSessionsResponseSchema,
+    );
+    return data;
   },
 
   // Booking helpers

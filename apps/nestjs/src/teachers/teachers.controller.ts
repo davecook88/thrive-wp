@@ -10,14 +10,17 @@ import {
 } from "@nestjs/common";
 import { TeachersService } from "./teachers.service.js";
 import { TeacherGuard } from "../auth/teacher.guard.js";
+import { ZodValidationPipe } from "nestjs-zod";
 import {
-  UpdateAvailabilityDto,
-  PreviewMyAvailabilityDto,
-} from "./dto/availability.dto.js";
+  UpdateAvailabilitySchema,
+  PreviewMyAvailabilitySchema,
+} from "@thrive/shared";
 import type { Request as ExpressRequest } from "express";
 import type {
   GetAvailabilityResponse,
   PreviewAvailabilityResponse,
+  UpdateAvailabilityDto,
+  PreviewMyAvailabilityDto,
 } from "@thrive/shared";
 
 type AuthenticatedRequest = ExpressRequest & {
@@ -42,7 +45,8 @@ export class TeachersController {
   @Put()
   async updateAvailability(
     @Request() req: AuthenticatedRequest,
-    @Body() dto: UpdateAvailabilityDto,
+    @Body(new ZodValidationPipe(UpdateAvailabilitySchema))
+    dto: UpdateAvailabilityDto,
   ): Promise<GetAvailabilityResponse> {
     const teacherId = req.user.id;
     return await this.teachersService.updateTeacherAvailability(teacherId, dto);
@@ -51,7 +55,8 @@ export class TeachersController {
   @Post("preview")
   async previewAvailability(
     @Request() req: AuthenticatedRequest,
-    @Body() dto: PreviewMyAvailabilityDto,
+    @Body(new ZodValidationPipe(PreviewMyAvailabilitySchema))
+    dto: PreviewMyAvailabilityDto,
   ): Promise<PreviewAvailabilityResponse> {
     const userId = req.user.id;
     const teacherId = await this.teachersService.getTeacherIdByUserId(userId);

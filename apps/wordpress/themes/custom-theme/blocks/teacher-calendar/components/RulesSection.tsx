@@ -2,25 +2,61 @@ import { useState } from "@wordpress/element";
 import { Button } from "@wordpress/components";
 import CustomSelectControl from "./CustomSelectControl";
 import ClockTimePicker from "./ClockTimePicker";
-
-interface Rule {
-  id?: string;
-  weekday: string;
-  startTimeMinutes: number;
-  endTimeMinutes: number;
-  kind: string;
-}
+import { WeeklyAvailabilityRule } from "@thrive/shared";
 
 interface RulesSectionProps {
-  rules: Rule[];
-  onAddRule: (rule: Omit<Rule, "id">) => void;
-  onRemoveRule: (index: number) => void;
+  rules: WeeklyAvailabilityRule[];
+  onAddRule: (rule: Omit<WeeklyAvailabilityRule, "id">) => void | Promise<void>;
+  onRemoveRule: (index: number) => void | Promise<void>;
   accentColor: string;
 }
 
-const toUTC = (mins: number): number => {
-  const timezoneOffset = new Date().getTimezoneOffset();
-  return mins + timezoneOffset;
+// Form state type for UI representation
+interface RuleFormData {
+  dayOfWeek: number;
+  startTimeMinutes: number;
+  endTimeMinutes: number;
+}
+
+// Conversion helpers
+const minutesToTimeString = (minutes: number): string => {
+  // Normalize minutes to be within 0-1439 (24 hours)
+  const normalizedMins = ((minutes % (24 * 60)) + 24 * 60) % (24 * 60);
+  // Create a Date object for today at the local time represented by normalizedMins
+  const now = new Date();
+  const localDate = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    0,
+    normalizedMins,
+  );
+  // Get UTC hours and minutes
+  const utcHours = localDate.getUTCHours();
+  const utcMins = localDate.getUTCMinutes();
+  return `${utcHours.toString().padStart(2, "0")}:${utcMins.toString().padStart(2, "0")}`;
+};
+
+// Convert a "HH:MM" time string that should be interpreted as UTC into a localized time string
+const utcTimeStringToLocal = (time: string): string => {
+  if (!time || typeof time !== "string") {
+    return time;
+  }
+  const parts = time.split(":");
+  if (parts.length < 2) {
+    return time;
+  }
+  const hours = Number.parseInt(parts[0], 10);
+  const minutes = Number.parseInt(parts[1], 10);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+    return time;
+  }
+  // Use a fixed date and interpret the time as UTC, then format to local.
+  const utcDate = new Date(Date.UTC(1970, 0, 1, hours, minutes, 0));
+  return utcDate.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 };
 
 export default function RulesSection({
@@ -29,12 +65,12 @@ export default function RulesSection({
   onRemoveRule,
   accentColor,
 }: RulesSectionProps) {
+  console.log("Rendering RulesSection with rules:", rules);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
-    weekday: "1",
+  const [formData, setFormData] = useState<RuleFormData>({
+    dayOfWeek: 1,
     startTimeMinutes: 9 * 60,
     endTimeMinutes: 17 * 60,
-    kind: "available",
   });
 
   const weekdays = [
@@ -47,41 +83,32 @@ export default function RulesSection({
     { value: "6", label: "Saturday" },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
-    // convert times to UTC
-
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onAddRule({
-      ...formData,
-      startTimeMinutes: toUTC(formData.startTimeMinutes),
-      endTimeMinutes: toUTC(formData.endTimeMinutes),
-    });
+
+    // Convert form data to API format
+    const ruleToSubmit: Omit<WeeklyAvailabilityRule, "id"> = {
+      dayOfWeek: formData.dayOfWeek as 0 | 1 | 2 | 3 | 4 | 5 | 6,
+      startTime: minutesToTimeString(formData.startTimeMinutes),
+      endTime: minutesToTimeString(formData.endTimeMinutes),
+    };
+
+    await onAddRule(ruleToSubmit);
     setShowForm(false);
     setFormData({
-      weekday: "1",
+      dayOfWeek: 1,
       startTimeMinutes: 9 * 60,
       endTimeMinutes: 17 * 60,
-      kind: "available",
     });
   };
 
-  const minutesToTime = (minutes: number) => {
-    // Convert UTC minutes to local time for display
-    const utcDate = new Date();
-    utcDate.setUTCHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
-    const localHours = utcDate.getHours();
-    const localMinutes = utcDate.getMinutes();
-    return `${localHours.toString().padStart(2, "0")}:${localMinutes
-      .toString()
-      .padStart(2, "0")}`;
-  };
-
-  const formatRuleDisplay = (rule: Rule) => {
+  const formatRuleDisplay = (rule: WeeklyAvailabilityRule) => {
     const weekday =
-      weekdays.find((w) => w.value === rule.weekday)?.label || "Unknown";
-    const startTime = minutesToTime(rule.startTimeMinutes);
-    const endTime = minutesToTime(rule.endTimeMinutes);
-    return `${weekday}: ${startTime} - ${endTime}`;
+      weekdays.find((w) => w.value === String(rule.dayOfWeek))?.label ||
+      "Unknown";
+    const startTimeLocal = utcTimeStringToLocal(rule.startTime);
+    const endTimeLocal = utcTimeStringToLocal(rule.endTime);
+    return `${weekday}: ${startTimeLocal} - ${endTimeLocal}`;
   };
 
   return (
@@ -124,7 +151,9 @@ export default function RulesSection({
               <Button
                 variant="secondary"
                 isDestructive
-                onClick={() => onRemoveRule(index)}
+                onClick={() => {
+                  void onRemoveRule(index);
+                }}
                 style={{ fontSize: "12px", padding: "5px 10px" }}
               >
                 Remove
@@ -147,15 +176,19 @@ export default function RulesSection({
         >
           <h5 style={{ marginTop: 0, color: "#374151" }}>Add Weekly Rule</h5>
           <form
-            onSubmit={handleSubmit}
+            onSubmit={(event) => {
+              void handleSubmit(event);
+            }}
             style={{ display: "flex", flexDirection: "column", gap: "10px" }}
           >
             <CustomSelectControl
               label="Day of Week"
-              value={formData.weekday}
+              value={String(formData.dayOfWeek)}
               options={weekdays}
               accentColor={accentColor}
-              onChange={(value) => setFormData({ ...formData, weekday: value })}
+              onChange={(value) =>
+                setFormData({ ...formData, dayOfWeek: Number(value) })
+              }
             />
             <div
               style={{ display: "flex", gap: "16px", alignItems: "flex-end" }}

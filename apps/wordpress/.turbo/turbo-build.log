@@ -1,5 +1,4 @@
 
-
 > @thrive/wordpress@1.0.0 build /Users/davidcook/personal/thrive-wp/apps/wordpress
 > pnpm -r --filter './themes/*' --filter './plugins/*' build
 

@@ -7,7 +7,9 @@ import {
   ParseIntPipe,
 } from "@nestjs/common";
 import { TeachersService } from "./teachers.service.js";
-import { PreviewAvailabilityDto } from "./dto/availability.dto.js";
+import { ZodValidationPipe } from "nestjs-zod";
+import { PreviewAvailabilitySchema } from "@thrive/shared";
+import type { PreviewAvailabilityDto } from "@thrive/shared";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Teacher } from "./entities/teacher.entity.js";
@@ -46,7 +48,13 @@ export class TeachersPublicController {
   }
 
   @Post("availability/preview")
-  async previewAvailabilityForTeachers(@Body() dto: PreviewAvailabilityDto) {
+  async previewAvailabilityForTeachers(
+    @Body(new ZodValidationPipe(PreviewAvailabilitySchema))
+    dto: PreviewAvailabilityDto,
+  ) {
+    if (!dto.teacherIds || dto.teacherIds.length === 0) {
+      throw new Error("teacherIds is required");
+    }
     return this.teachersService.previewTeacherAvailability(dto.teacherIds, dto);
   }
 }

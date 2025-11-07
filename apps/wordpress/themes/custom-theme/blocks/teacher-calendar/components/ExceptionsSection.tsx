@@ -1,17 +1,10 @@
 import { useState } from "@wordpress/element";
 import { Button, TextControl, CheckboxControl } from "@wordpress/components";
-
-interface Exception {
-  id?: string;
-  date: string;
-  kind: string;
-  startTimeMinutes?: number;
-  endTimeMinutes?: number;
-}
+import { AvailabilityException } from "@thrive/shared";
 
 interface ExceptionsSectionProps {
-  exceptions: Exception[];
-  onAddException: (exception: Omit<Exception, "id">) => void;
+  exceptions: AvailabilityException[];
+  onAddException: (exception: Omit<AvailabilityException, "id">) => void;
   onRemoveException: (index: number) => void;
   accentColor: string;
 }
@@ -55,17 +48,23 @@ export default function ExceptionsSection({
       .padStart(2, "0")}`;
   };
 
-  const formatExceptionDisplay = (exception: Exception) => {
-    if (exception.kind === "unavailable") {
+  const formatExceptionDisplay = (exception: AvailabilityException) => {
+    if (exception.isBlackout === true) {
       return `${exception.date}: Blackout`;
     }
     const startTime =
-      exception.startTimeMinutes !== undefined
-        ? minutesToTime(exception.startTimeMinutes)
+      exception.startTime !== undefined
+        ? new Date(exception.startTime).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
         : "All day";
     const endTime =
-      exception.endTimeMinutes !== undefined
-        ? minutesToTime(exception.endTimeMinutes)
+      exception.endTime !== undefined
+        ? new Date(exception.endTime).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
         : "All day";
     return `${exception.date}: ${startTime} - ${endTime}`;
   };

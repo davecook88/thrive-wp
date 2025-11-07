@@ -1,13 +1,19 @@
 import { useEffect, useRef, useState } from "@wordpress/element";
-import type {
-  BaseCalendarEvent,
-  ThriveCalendarElement,
+import type { BaseCalendarEvent } from "@thrive/shared/calendar";
+import { isBookingEvent } from "@thrive/shared/calendar";
+import RulesSection from "./RulesSection";
+import ExceptionsSection from "./ExceptionsSection";
+import { thriveClient } from "../../../../../shared/thrive";
+import {
   CalendarEventClickEvent,
   CalendarRangeChangeEvent,
-} from "@thrive/shared/calendar";
-import { isBookingEvent } from "@thrive/shared/calendar";
-import RulesSection from "../../teacher-availability/components/RulesSection";
-import ExceptionsSection from "../../teacher-availability/components/ExceptionsSection";
+  ThriveCalendarElement,
+} from "../../../../../shared/calendar";
+import {
+  AvailabilityException,
+  UpdateAvailabilityDto,
+  WeeklyAvailabilityRule,
+} from "@thrive/shared";
 
 interface TeacherCalendarProps {
   view: "week" | "day" | "month" | "list";
@@ -17,22 +23,6 @@ interface TeacherCalendarProps {
 }
 
 type CalendarMode = "availability" | "classes";
-
-interface Rule {
-  id?: string;
-  weekday: string;
-  startTimeMinutes: number;
-  endTimeMinutes: number;
-  kind: string;
-}
-
-interface Exception {
-  id?: string;
-  date: string;
-  kind: string;
-  startTimeMinutes?: number;
-  endTimeMinutes?: number;
-}
 
 export default function TeacherCalendar({
   view,
@@ -49,66 +39,42 @@ export default function TeacherCalendar({
   } | null>(null);
 
   // Availability management state
-  const [rules, setRules] = useState<Rule[]>([]);
-  const [exceptions, setExceptions] = useState<Exception[]>([]);
+  const [rules, setRules] = useState<WeeklyAvailabilityRule[]>([]);
+  const [exceptions, setExceptions] = useState<AvailabilityException[]>([]);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
 
   // Fetch data based on current mode and range
   const fetchData = async (start: Date, end: Date) => {
     if (mode === "classes") {
-      // Fetch teacher's scheduled classes
-      const response = await fetch(
-        `/api/teachers/me/sessions?start=${start.toISOString()}&end=${end.toISOString()}`,
-        {
-          credentials: "include",
-        },
-      );
-
-      if (response.ok) {
-        const sessions = await response.json();
-        const calendarEvents: BaseCalendarEvent[] = sessions.map(
-          (session: any) => ({
+      // Fetch teacher's scheduled classes using thriveClient
+      try {
+        const sessions = await thriveClient.fetchTeacherSessions(start, end);
+        const calendarEvents: BaseCalendarEvent[] =
+          sessions?.map((session) => ({
             id: `session-${session.id}`,
-            title: `Class with ${session.studentName}`,
-            start: new Date(session.startAt).toISOString(),
-            end: new Date(session.endAt).toISOString(),
+            title: `Class with ${session.student_name}`,
+            startUtc: session.start_at,
+            endUtc: session.end_at,
             type: "booking" as const,
-            bookingId: session.id,
-            studentName: session.studentName,
-            classType: session.classType,
-          }),
-        );
+            studentId: String(session.student_id),
+            description: `${session.class_type} class`,
+          })) ?? [];
         setEvents(calendarEvents);
+      } catch (error) {
+        console.error("Failed to load teacher sessions:", error);
+        setEvents([]);
       }
     } else {
       // Fetch teacher's availability windows
-      const response = await fetch(
-        `/api/teachers/me/availability/preview?start=${start.toISOString()}&end=${end.toISOString()}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            start: start.toISOString(),
-            end: end.toISOString(),
-          }),
-        },
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        const availabilityEvents: BaseCalendarEvent[] = data.windows.map(
-          (window: any, index: number) => ({
-            id: `availability-${index}`,
-            title: "Available",
-            start: window.start,
-            end: window.end,
-            type: "availability" as const,
-          }),
+      try {
+        const availabilityEvents = await thriveClient.fetchAvailabilityPreview(
+          start,
+          end,
         );
         setEvents(availabilityEvents);
+      } catch (error) {
+        console.error("Failed to load availability preview:", error);
+        setEvents([]);
       }
     }
   };
@@ -117,37 +83,24 @@ export default function TeacherCalendar({
   const loadAvailability = async () => {
     try {
       setAvailabilityLoading(true);
-      const response = await fetch("/api/teachers/me/availability", {
-        credentials: "include",
-      });
+      const data = await thriveClient.getTeacherAvailability();
 
-      if (response.ok) {
-        const data = await response.json();
-        const toMinutes = (t: string) => {
-          const [h, m] = t.split(":").map(Number);
-          return h * 60 + m;
-        };
-
-        const mappedRules: Rule[] = (data.rules || []).map((r: any) => ({
-          id: String(r.id),
-          weekday: String(r.weekday),
-          startTimeMinutes: toMinutes(r.startTime),
-          endTimeMinutes: toMinutes(r.endTime),
-          kind: "available",
+      if (data) {
+        const mappedExceptions: AvailabilityException[] = (
+          data.exceptions || []
+        ).map((e) => ({
+          id: e.id,
+          date: e.date,
+          isBlackout: e.isBlackout,
+          startTimeMinutes: undefined,
+          endTimeMinutes: undefined,
         }));
 
-        const mappedExceptions: Exception[] = (data.exceptions || []).map(
-          (e: any) => ({
-            id: String(e.id),
-            date: e.date,
-            kind: e.isBlackout ? "unavailable" : "available",
-            startTimeMinutes: e.startTime ? toMinutes(e.startTime) : undefined,
-            endTimeMinutes: e.endTime ? toMinutes(e.endTime) : undefined,
-          }),
-        );
-
-        setRules(mappedRules);
+        setRules(data.rules || []);
         setExceptions(mappedExceptions);
+      } else {
+        setRules([]);
+        setExceptions([]);
       }
     } catch (error) {
       console.error("Failed to load availability:", error);
@@ -160,59 +113,34 @@ export default function TeacherCalendar({
 
   // Persist availability changes
   const persistAvailability = async (
-    nextRules: Rule[],
-    nextExceptions: Exception[],
+    nextRules: WeeklyAvailabilityRule[],
+    nextExceptions: AvailabilityException[],
   ) => {
-    const toTime = (mins: number) => {
-      const normalizedMins = ((mins % (24 * 60)) + 24 * 60) % (24 * 60);
-      const utcHours = Math.floor(normalizedMins / 60);
-      const utcMinutes = ((normalizedMins % 60) + 60) % 60;
-      return `${utcHours.toString().padStart(2, "0")}:${utcMinutes
-        .toString()
-        .padStart(2, "0")}`;
-    };
-
-    const payload = {
+    const payload: UpdateAvailabilityDto = {
       rules: nextRules.map((r) => ({
-        weekday: Number(r.weekday),
-        startTime: toTime(r.startTimeMinutes),
-        endTime: toTime(r.endTimeMinutes),
+        dayOfWeek: r.dayOfWeek,
+        startTime: r.startTime,
+        endTime: r.endTime,
       })),
       exceptions: nextExceptions
-        .filter((e) => e.kind === "unavailable")
+        .filter((e) => e.isBlackout)
         .map((e) => ({
           date: e.date,
-          startTime:
-            typeof e.startTimeMinutes === "number"
-              ? toTime(e.startTimeMinutes)
-              : undefined,
-          endTime:
-            typeof e.endTimeMinutes === "number"
-              ? toTime(e.endTimeMinutes)
-              : undefined,
           isBlackout: true,
         })),
     };
 
-    await fetch("/api/teachers/me/availability", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      body: JSON.stringify(payload),
-    });
-
+    await thriveClient.updateTeacherAvailability(payload);
     await loadAvailability();
 
     // Refresh calendar preview
     if (currentRange) {
-      fetchData(currentRange.from, currentRange.until);
+      void fetchData(currentRange.from, currentRange.until);
     }
   };
 
   // Availability handlers
-  const handleAddRule = async (rule: Omit<Rule, "id">) => {
+  const handleAddRule = async (rule: Omit<WeeklyAvailabilityRule, "id">) => {
     try {
       const next = [...rules, rule];
       setRules(next);
@@ -240,8 +168,10 @@ export default function TeacherCalendar({
     }
   };
 
-  const handleAddException = async (exception: Omit<Exception, "id">) => {
-    if (exception.kind !== "unavailable") {
+  const handleAddException = async (
+    exception: Omit<AvailabilityException, "id">,
+  ) => {
+    if (exception.isBlackout !== true) {
       alert("Custom availability exceptions are not supported yet.");
       return;
     }
@@ -275,10 +205,10 @@ export default function TeacherCalendar({
   // Refetch when mode changes
   useEffect(() => {
     if (mode === "availability") {
-      loadAvailability();
+      void loadAvailability();
     }
     if (currentRange) {
-      fetchData(currentRange.from, currentRange.until);
+      void fetchData(currentRange.from, currentRange.until);
     }
   }, [mode]);
 
@@ -286,7 +216,7 @@ export default function TeacherCalendar({
   useEffect(() => {
     const calendar = calendarRef.current;
     if (calendar) {
-      calendar.events = events as BaseCalendarEvent[];
+      calendar.events = events;
     }
   }, [events]);
 
@@ -309,13 +239,13 @@ export default function TeacherCalendar({
         const from = new Date(detail.fromDate);
         const until = new Date(detail.untilDate);
         setCurrentRange({ from, until });
-        fetchData(from, until);
+        void fetchData(from, until);
       }
     };
 
     const handleRefreshCalendar = () => {
       if (currentRange) {
-        fetchData(currentRange.from, currentRange.until);
+        void fetchData(currentRange.from, currentRange.until);
       }
     };
 
@@ -503,8 +433,8 @@ export default function TeacherCalendar({
               />
               <ExceptionsSection
                 exceptions={exceptions}
-                onAddException={handleAddException}
-                onRemoveException={handleRemoveException}
+                onAddException={(i) => void handleAddException(i)}
+                onRemoveException={(i) => void handleRemoveException(i)}
                 accentColor="#10b981"
               />
             </>

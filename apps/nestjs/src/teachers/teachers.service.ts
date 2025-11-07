@@ -10,19 +10,24 @@ import {
   TeacherAvailability,
   TeacherAvailabilityKind,
 } from "./entities/teacher-availability.entity.js";
-import {
+import type {
   UpdateAvailabilityDto,
   PreviewAvailabilityDto,
-  AvailabilityRuleDto,
   PreviewMyAvailabilityDto,
-} from "./dto/availability.dto.js";
+} from "@thrive/shared";
 import type {
   GetAvailabilityResponse,
   PreviewAvailabilityResponse,
   PublicTeacherDto,
 } from "@thrive/shared";
 
-// (local transient shapes are replaced by shared types)
+// Type aliases for local use
+type AvailabilityRuleDto = {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  maxBookings?: number | null;
+};
 
 @Injectable()
 export class TeachersService {
@@ -69,10 +74,9 @@ export class TeachersService {
     const exceptions: Array<{
       id: number;
       date: string;
-      start?: string | null;
-      end?: string | null;
-      isAvailable: boolean;
-      note?: string | null;
+      startTime?: string;
+      endTime?: string;
+      isBlackout?: boolean;
     }> = [];
 
     for (const avail of availabilities) {
@@ -88,10 +92,13 @@ export class TeachersService {
         exceptions.push({
           id: avail.id,
           date: avail.startAt!.toISOString().split("T")[0],
-          start: avail.startAt ? avail.startAt.toISOString() : null,
-          end: avail.endAt ? avail.endAt.toISOString() : null,
-          isAvailable: false,
-          note: null,
+          startTime: avail.startAt
+            ? avail.startAt.toISOString().split("T")[1].substring(0, 5)
+            : undefined,
+          endTime: avail.endAt
+            ? avail.endAt.toISOString().split("T")[1].substring(0, 5)
+            : undefined,
+          isBlackout: true,
         });
       }
     }
@@ -137,7 +144,7 @@ export class TeachersService {
         await manager.save(TeacherAvailability, {
           teacherId: teacher.id,
           kind: TeacherAvailabilityKind.RECURRING,
-          weekday: rule.weekday,
+          weekday: rule.dayOfWeek,
           startTimeMinutes: startMinutes,
           endTimeMinutes: endMinutes,
           isActive: true,
@@ -182,16 +189,6 @@ export class TeachersService {
     teacherIds: number[],
     dto: PreviewAvailabilityDto | PreviewMyAvailabilityDto,
   ): Promise<PreviewAvailabilityResponse> {
-    // Check if all teachers exist
-    for (const teacherId of teacherIds) {
-      const teacher = await this.teacherRepository.findOne({
-        where: { id: teacherId },
-      });
-      if (!teacher) {
-        throw new NotFoundException("Teacher not found");
-      }
-    }
-
     const where: FindOptionsWhere<TeacherAvailability> = teacherIds
       ? { teacherId: In(teacherIds), isActive: true }
       : { isActive: true };
@@ -534,10 +531,10 @@ export class TeachersService {
     const byWeekday: Record<number, AvailabilityRuleDto[]> = {};
 
     for (const rule of rules) {
-      if (!byWeekday[rule.weekday]) {
-        byWeekday[rule.weekday] = [];
+      if (!byWeekday[rule.dayOfWeek]) {
+        byWeekday[rule.dayOfWeek] = [];
       }
-      byWeekday[rule.weekday].push(rule);
+      byWeekday[rule.dayOfWeek].push(rule);
     }
 
     for (const weekdayRules of Object.values(byWeekday)) {
@@ -552,7 +549,7 @@ export class TeachersService {
 
         if (current.endTime > next.startTime) {
           throw new BadRequestException(
-            `Overlapping rules for weekday ${current.weekday}`,
+            `Overlapping rules for weekday ${current.dayOfWeek}`,
           );
         }
       }
@@ -816,13 +813,13 @@ export class TeachersService {
 
     return sessions.map((session) => ({
       id: session.id,
-      classType: session.class_type,
-      startAt: new Date(session.start_at).toISOString(),
-      endAt: new Date(session.end_at).toISOString(),
+      class_type: session.class_type,
+      start_at: new Date(session.start_at).toISOString(),
+      end_at: new Date(session.end_at).toISOString(),
       status: session.status,
-      studentId: session.student_id,
-      studentName: session.student_name,
-      meetingUrl: session.meeting_url,
+      student_id: session.student_id,
+      student_name: session.student_name,
+      meeting_url: session.meeting_url,
     }));
   }
 }
