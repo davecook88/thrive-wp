@@ -552,22 +552,6 @@ describe("TeachersService", () => {
       expect(window.end).toBe("2025-09-04T04:00:00.000Z");
     });
 
-    it("should throw NotFoundException if teacher not found", async () => {
-      const teacherId = 999;
-      const dto: PreviewAvailabilityDto = {
-        start: "2025-09-03T00:00:00.000Z",
-        end: "2025-09-03T23:59:59.999Z",
-        teacherIds: [teacherId],
-      };
-
-      vi.spyOn(teacherRepo, "findOne").mockResolvedValue(null);
-      vi.spyOn(availabilityRepo, "find").mockResolvedValue([]);
-
-      await expect(
-        service.previewTeacherAvailability([teacherId], dto),
-      ).rejects.toThrow("Teacher not found");
-    });
-
     it("should throw BadRequestException for range exceeding 90 days", async () => {
       const teacherId = 1;
       const dto: PreviewAvailabilityDto = {

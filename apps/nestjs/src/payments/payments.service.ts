@@ -5,8 +5,8 @@ import {
   Logger,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
+import { Repository, DataSource } from "typeorm";
 import Stripe from "stripe";
 import type { CreatePaymentIntentDto } from "@thrive/shared";
 import { Student } from "../students/entities/student.entity.js";
@@ -69,6 +69,7 @@ export class PaymentsService {
     private studentPackageRepository: Repository<StudentPackage>,
     @InjectRepository(PackageUse)
     private packageUseRepository: Repository<PackageUse>,
+    @InjectDataSource() private readonly dataSource: DataSource,
     private configService: ConfigService,
     private sessionsService: SessionsService,
     private packagesService: PackagesService,
@@ -138,98 +139,102 @@ export class PaymentsService {
     confirmed?: boolean,
     allowanceId?: number,
   ) {
-    // Resolve student.id from userId
-    const student = await this.studentRepository.findOne({
-      where: { userId: studentUserId },
-    });
-    if (!student) throw new NotFoundException("Student not found");
+    return this.dataSource.transaction(async (manager) => {
+      // Resolve student.id from userId
+      const student = await manager.findOne(Student, {
+        where: { userId: studentUserId },
+      });
+      if (!student) throw new NotFoundException("Student not found");
 
-    // Fetch session with teacher relation for tier validation
-    const session = await this.sessionRepository.findOne({
-      where: { id: sessionId },
-      relations: ["teacher"],
-    });
-    if (!session) throw new NotFoundException("Session not found");
+      // Fetch session with teacher relation for tier validation
+      const session = await manager.findOne(Session, {
+        where: { id: sessionId },
+        relations: ["teacher"],
+      });
+      if (!session) throw new NotFoundException("Session not found");
 
-    // Fetch package for tier validation
-    const pkg = await this.studentPackageRepository.findOne({
-      where: { id: packageId, studentId: student.id },
-      relations: ["stripeProductMap", "stripeProductMap.allowances"],
-    });
-    if (!pkg) throw new NotFoundException("Package not found");
+      // Fetch package for tier validation
+      const pkg = await manager.findOne(StudentPackage, {
+        where: { id: packageId, studentId: student.id },
+        relations: ["stripeProductMap", "stripeProductMap.allowances"],
+      });
+      if (!pkg) throw new NotFoundException("Package not found");
 
-    // Tier validation: Check if package contains a compatible allowance
-    const { canUse, allowance } = canUsePackageForSession({
-      pkg,
-      session,
-      allowanceId,
-    });
+      // Tier validation: Check if package contains a compatible allowance
+      const { canUse, allowance } = canUsePackageForSession({
+        pkg,
+        session,
+        allowanceId,
+      });
 
-    if (!canUse || !allowance) {
-      throw new BadRequestException(
-        "This package cannot be used for this session type",
-      );
-    }
-
-    // Cross-tier validation: Require confirmation for higher-tier credits
-    const { isCrossTier } = isCrossTierBooking(pkg, session, allowance.id);
-    if (isCrossTier) {
-      if (!confirmed) {
-        const warningMessage = getCrossTierWarningMessage(
-          pkg,
-          session,
-          allowance.id,
-        );
+      if (!canUse || !allowance) {
         throw new BadRequestException(
-          `Cross-tier booking requires confirmation. ${warningMessage}`,
+          "This package cannot be used for this session type",
         );
       }
-    }
 
-    // Calculate credits required based on session duration using the allowance's credit unit
-    const sessionDurationMinutes = Math.round(
-      (session.endAt.getTime() - session.startAt.getTime()) / 60000,
-    );
-    const creditsCost = calculateCreditsRequired(
-      sessionDurationMinutes,
-      allowance.creditUnitMinutes,
-    );
+      // Cross-tier validation: Require confirmation for higher-tier credits
+      const { isCrossTier } = isCrossTierBooking(pkg, session, allowance.id);
+      if (isCrossTier) {
+        if (!confirmed) {
+          const warningMessage = getCrossTierWarningMessage(
+            pkg,
+            session,
+            allowance.id,
+          );
+          throw new BadRequestException(
+            `Cross-tier booking requires confirmation. ${warningMessage}`,
+          );
+        }
+      }
 
-    // Use package (create package_use) with calculated credits
-    const { package: updatedPkg, use } =
-      await this.packagesService.usePackageForSession(
-        student.id,
-        packageId,
-        sessionId,
-        {
-          usedBy: student.id,
-          creditsUsed: creditsCost,
-          serviceType: session.type,
-          allowanceId: allowance.id,
-        },
+      // Calculate credits required based on session duration using the allowance's credit unit
+      const sessionDurationMinutes = Math.round(
+        (session.endAt.getTime() - session.startAt.getTime()) / 60000,
+      );
+      const creditsCost = calculateCreditsRequired(
+        sessionDurationMinutes,
+        allowance.creditUnitMinutes,
       );
 
-    // Create booking referencing package
-    const booking = this.bookingRepository.create({
-      sessionId,
-      studentId: student.id,
-      status: BookingStatus.CONFIRMED,
-      acceptedAt: new Date(),
-      studentPackageId: updatedPkg.id,
-      creditsCost,
+      // Use package (create package_use) with calculated credits
+      const { package: updatedPkg, use } =
+        await this.packagesService.usePackageForSession(
+          student.id,
+          packageId,
+          sessionId,
+          {
+            usedBy: student.id,
+            creditsUsed: creditsCost,
+            serviceType: session.type,
+            allowanceId: allowance.id,
+          },
+          manager,
+        );
+
+      // Create booking referencing package
+      const booking = manager.create(Booking, {
+        sessionId,
+        studentId: student.id,
+        status: BookingStatus.CONFIRMED,
+        acceptedAt: new Date(),
+        studentPackageId: updatedPkg.id,
+        creditsCost,
+      });
+
+      const saved = await manager.save(booking);
+
+      // Link package_use.booking_id to created booking within the transaction
+      if (use && use.id) {
+        await manager.update(
+          "package_use",
+          { id: use.id },
+          { bookingId: saved.id },
+        );
+      }
+
+      return saved;
     });
-
-    const saved = await this.bookingRepository.save(booking);
-
-    // Link package_use.booking_id to created booking (best effort)
-    try {
-      await this.packagesService.linkUseToBooking(use.id, saved.id);
-    } catch (e) {
-      // log but don't fail booking
-      this.logger.warn("Failed to link package use to booking", e as Error);
-    }
-
-    return saved;
   }
 
   async createPaymentIntent(
@@ -530,211 +535,211 @@ export class PaymentsService {
             );
             savedPackage = existingPackage;
           } else {
-          // 1. Create the student package record
-          const expiresAt =
-            expiresInDays > 0
-              ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
-              : null;
+            // 1. Create the student package record
+            const expiresAt =
+              expiresInDays > 0
+                ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
+                : null;
 
-          const studentPackage = tx.create(StudentPackage, {
-            studentId: student.id,
-            stripeProductMapId: productMapping.id,
-            packageName: stripeProduct.name,
-            totalSessions: credits,
-            purchasedAt: new Date(),
-            expiresAt,
-            sourcePaymentId: paymentIntent.id,
-            stripeProductMap: productMapping,
-            metadata: {
-              stripeProductId: stripeProduct.id,
-              stripePriceId: stripePrice.id,
-              amountPaid: paymentIntent.amount_received,
-              currency: paymentIntent.currency,
-              credit_unit_minutes: creditUnitMinutes,
-              teacher_tier:
-                Number.isFinite(teacherTier) && teacherTier > 0
-                  ? teacherTier
-                  : undefined,
-              service_type: serviceType,
-            },
-          });
+            const studentPackage = tx.create(StudentPackage, {
+              studentId: student.id,
+              stripeProductMapId: productMapping.id,
+              packageName: stripeProduct.name,
+              totalSessions: credits,
+              purchasedAt: new Date(),
+              expiresAt,
+              sourcePaymentId: paymentIntent.id,
+              stripeProductMap: productMapping,
+              metadata: {
+                stripeProductId: stripeProduct.id,
+                stripePriceId: stripePrice.id,
+                amountPaid: paymentIntent.amount_received,
+                currency: paymentIntent.currency,
+                credit_unit_minutes: creditUnitMinutes,
+                teacher_tier:
+                  Number.isFinite(teacherTier) && teacherTier > 0
+                    ? teacherTier
+                    : undefined,
+                service_type: serviceType,
+              },
+            });
 
-          savedPackage = await tx.save(StudentPackage, studentPackage);
-          this.logger.log(
-            `Created student package ${savedPackage.id} with ${credits} credits`,
-          );
-
-          // Seed course progress for COURSE allowances
-          if (
-            productMapping.allowances &&
-            productMapping.allowances.length > 0
-          ) {
-            const courseAllowances = productMapping.allowances.filter(
-              (allowance) =>
-                allowance.serviceType === ServiceType.COURSE &&
-                allowance.courseProgramId,
+            savedPackage = await tx.save(StudentPackage, studentPackage);
+            this.logger.log(
+              `Created student package ${savedPackage.id} with ${credits} credits`,
             );
 
-            for (const allowance of courseAllowances) {
-              try {
-                await this.courseStepProgressService.seedProgressForCourse(
-                  savedPackage.id,
-                  allowance.courseProgramId!,
-                  undefined,
-                  tx, // Pass transaction manager
-                );
-                this.logger.log(
-                  `Seeded course progress for package ${savedPackage.id}, course ${allowance.courseProgramId}`,
-                );
-              } catch (error) {
-                this.logger.error(
-                  `Failed to seed course progress for package ${savedPackage.id}, course ${allowance.courseProgramId}:`,
-                  error as Error,
-                );
-                // Don't throw - continue processing other courses
+            // Seed course progress for COURSE allowances
+            if (
+              productMapping.allowances &&
+              productMapping.allowances.length > 0
+            ) {
+              const courseAllowances = productMapping.allowances.filter(
+                (allowance) =>
+                  allowance.serviceType === ServiceType.COURSE &&
+                  allowance.courseProgramId,
+              );
+
+              for (const allowance of courseAllowances) {
+                try {
+                  await this.courseStepProgressService.seedProgressForCourse(
+                    savedPackage.id,
+                    allowance.courseProgramId!,
+                    undefined,
+                    tx, // Pass transaction manager
+                  );
+                  this.logger.log(
+                    `Seeded course progress for package ${savedPackage.id}, course ${allowance.courseProgramId}`,
+                  );
+                } catch (error) {
+                  this.logger.error(
+                    `Failed to seed course progress for package ${savedPackage.id}, course ${allowance.courseProgramId}:`,
+                    error as Error,
+                  );
+                  // Don't throw - continue processing other courses
+                }
               }
             }
           }
-        }
 
-        // 2. If there's a session to book, use the package credit immediately
-        if (sessionId) {
-          // Lock the session to prevent race conditions
-          const session = await tx.findOne(Session, {
-            where: { id: sessionId },
-            lock: { mode: "pessimistic_write" },
-          });
+          // 2. If there's a session to book, use the package credit immediately
+          if (sessionId) {
+            // Lock the session to prevent race conditions
+            const session = await tx.findOne(Session, {
+              where: { id: sessionId },
+              lock: { mode: "pessimistic_write" },
+            });
 
-          if (!session) {
-            this.logger.warn(
-              `Session ${sessionId} not found for package booking`,
-            );
-            return;
-          }
+            if (!session) {
+              this.logger.warn(
+                `Session ${sessionId} not found for package booking`,
+              );
+              return;
+            }
 
-          // Check if this is for an EXISTING booking (group/course sessions)
-          const bookingId = metadata.booking_id
-            ? parseInt(String(metadata.booking_id), 10)
-            : null;
+            // Check if this is for an EXISTING booking (group/course sessions)
+            const bookingId = metadata.booking_id
+              ? parseInt(String(metadata.booking_id), 10)
+              : null;
 
-          if (bookingId) {
-            // EXISTING BOOKING PATH: For group/course sessions with pre-created bookings
+            if (bookingId) {
+              // EXISTING BOOKING PATH: For group/course sessions with pre-created bookings
+              const existingBooking = await tx.findOne(Booking, {
+                where: {
+                  id: bookingId,
+                  sessionId,
+                  studentId: student.id,
+                },
+              });
+
+              if (
+                existingBooking &&
+                existingBooking.status === BookingStatus.PENDING
+              ) {
+                // Promote PENDING → CONFIRMED for existing booking
+                existingBooking.status = BookingStatus.CONFIRMED;
+                existingBooking.acceptedAt = new Date();
+                existingBooking.studentPackageId = savedPackage.id;
+                existingBooking.creditsCost = 1;
+                await tx.save(Booking, existingBooking);
+
+                // Create package use record to deduct credits
+                const packageUse = tx.create(PackageUse, {
+                  studentPackageId: savedPackage.id,
+                  bookingId: existingBooking.id,
+                  sessionId,
+                  usedAt: new Date(),
+                  usedBy: student.id,
+                  creditsUsed: 1,
+                });
+                await tx.save(PackageUse, packageUse);
+
+                // Update session status if it's DRAFT
+                if (session.status === SessionStatus.DRAFT) {
+                  session.status = SessionStatus.SCHEDULED;
+                  await tx.save(Session, session);
+                }
+
+                this.logger.log(
+                  `Promoted existing booking ${bookingId} to CONFIRMED using package and deducted 1 credit`,
+                );
+                return;
+              }
+            }
+
+            // DRAFT SESSION PATH: For private sessions
+            if (session.status !== SessionStatus.DRAFT) {
+              this.logger.warn(
+                `Session ${sessionId} is not in DRAFT status and no existing booking found`,
+              );
+              return;
+            }
+
+            // Create package use record (remaining balance is computed from these records)
+            const packageUse = tx.create(PackageUse, {
+              studentPackageId: savedPackage.id,
+              sessionId,
+              usedAt: new Date(),
+              usedBy: student.id,
+              creditsUsed: 1,
+            });
+            const savedPackageUse = await tx.save(PackageUse, packageUse);
+
+            // Find existing booking (any status) to prevent duplicates
             const existingBooking = await tx.findOne(Booking, {
               where: {
-                id: bookingId,
                 sessionId,
                 studentId: student.id,
               },
             });
 
-            if (
-              existingBooking &&
-              existingBooking.status === BookingStatus.PENDING
-            ) {
-              // Promote PENDING → CONFIRMED for existing booking
-              existingBooking.status = BookingStatus.CONFIRMED;
-              existingBooking.acceptedAt = new Date();
-              existingBooking.studentPackageId = savedPackage.id;
-              existingBooking.creditsCost = 1;
-              await tx.save(Booking, existingBooking);
-
-              // Create package use record to deduct credits
-              const packageUse = tx.create(PackageUse, {
-                studentPackageId: savedPackage.id,
-                bookingId: existingBooking.id,
-                sessionId,
-                usedAt: new Date(),
-                usedBy: student.id,
-                creditsUsed: 1,
-              });
-              await tx.save(PackageUse, packageUse);
-
-              // Update session status if it's DRAFT
-              if (session.status === SessionStatus.DRAFT) {
-                session.status = SessionStatus.SCHEDULED;
-                await tx.save(Session, session);
+            let savedBooking: Booking;
+            if (existingBooking) {
+              if ([BookingStatus.PENDING].includes(existingBooking.status)) {
+                // Update existing draft booking to confirmed status with package info
+                existingBooking.status = BookingStatus.CONFIRMED;
+                existingBooking.acceptedAt = new Date();
+                existingBooking.studentPackageId = savedPackage.id;
+                existingBooking.creditsCost = 1;
+                savedBooking = await tx.save(Booking, existingBooking);
+                this.logger.log(
+                  `Updated existing draft booking ${savedBooking.id} to confirmed status using package credit`,
+                );
+              } else {
+                // Booking already exists and is confirmed - webhook duplicate/retry
+                this.logger.log(
+                  `Booking already exists for session ${sessionId} and student ${student.id} with status ${existingBooking.status}, skipping creation`,
+                );
+                savedBooking = existingBooking;
               }
-
-              this.logger.log(
-                `Promoted existing booking ${bookingId} to CONFIRMED using package and deducted 1 credit`,
-              );
-              return;
-            }
-          }
-
-          // DRAFT SESSION PATH: For private sessions
-          if (session.status !== SessionStatus.DRAFT) {
-            this.logger.warn(
-              `Session ${sessionId} is not in DRAFT status and no existing booking found`,
-            );
-            return;
-          }
-
-          // Create package use record (remaining balance is computed from these records)
-          const packageUse = tx.create(PackageUse, {
-            studentPackageId: savedPackage.id,
-            sessionId,
-            usedAt: new Date(),
-            usedBy: student.id,
-            creditsUsed: 1,
-          });
-          const savedPackageUse = await tx.save(PackageUse, packageUse);
-
-          // Find existing booking (any status) to prevent duplicates
-          const existingBooking = await tx.findOne(Booking, {
-            where: {
-              sessionId,
-              studentId: student.id,
-            },
-          });
-
-          let savedBooking: Booking;
-          if (existingBooking) {
-            if ([BookingStatus.PENDING].includes(existingBooking.status)) {
-              // Update existing draft booking to confirmed status with package info
-              existingBooking.status = BookingStatus.CONFIRMED;
-              existingBooking.acceptedAt = new Date();
-              existingBooking.studentPackageId = savedPackage.id;
-              existingBooking.creditsCost = 1;
-              savedBooking = await tx.save(Booking, existingBooking);
-              this.logger.log(
-                `Updated existing draft booking ${savedBooking.id} to confirmed status using package credit`,
-              );
             } else {
-              // Booking already exists and is confirmed - webhook duplicate/retry
+              // Create new confirmed booking using credits
+              const booking = tx.create(Booking, {
+                sessionId,
+                studentId: student.id,
+                status: BookingStatus.CONFIRMED,
+                acceptedAt: new Date(),
+                studentPackageId: savedPackage.id,
+                creditsCost: 1,
+              });
+              savedBooking = await tx.save(Booking, booking);
               this.logger.log(
-                `Booking already exists for session ${sessionId} and student ${student.id} with status ${existingBooking.status}, skipping creation`,
+                `Created new confirmed booking ${savedBooking.id} using package credit`,
               );
-              savedBooking = existingBooking;
             }
-          } else {
-            // Create new confirmed booking using credits
-            const booking = tx.create(Booking, {
-              sessionId,
-              studentId: student.id,
-              status: BookingStatus.CONFIRMED,
-              acceptedAt: new Date(),
-              studentPackageId: savedPackage.id,
-              creditsCost: 1,
-            });
-            savedBooking = await tx.save(Booking, booking);
+
+            // Link the package use to the booking
+            savedPackageUse.bookingId = savedBooking.id;
+            await tx.save(PackageUse, savedPackageUse);
+
+            // Update session status
+            session.status = SessionStatus.SCHEDULED;
+            await tx.save(Session, session);
+
             this.logger.log(
-              `Created new confirmed booking ${savedBooking.id} using package credit`,
+              `Created booking ${savedBooking.id} using package credit`,
             );
           }
-
-          // Link the package use to the booking
-          savedPackageUse.bookingId = savedBooking.id;
-          await tx.save(PackageUse, savedPackageUse);
-
-          // Update session status
-          session.status = SessionStatus.SCHEDULED;
-          await tx.save(Session, session);
-
-          this.logger.log(
-            `Created booking ${savedBooking.id} using package credit`,
-          );
-        }
         },
       );
       this.logger.log(
@@ -753,12 +758,17 @@ export class PaymentsService {
     paymentIntent: Stripe.PaymentIntent,
     metadata: ParsedStripeMetadata,
   ): Promise<void> {
-    this.logger.debug("Handling course enrollment from payment_intent.succeeded");
+    this.logger.debug(
+      "Handling course enrollment from payment_intent.succeeded",
+    );
 
     const courseProgramId = parseInt(String(metadata.course_program_id), 10);
     const cohortId = parseInt(String(metadata.cohort_id), 10);
     const studentId = parseInt(String(metadata.student_id), 10);
-    const stripeProductMapId = parseInt(String(metadata.stripe_product_map_id), 10);
+    const stripeProductMapId = parseInt(
+      String(metadata.stripe_product_map_id),
+      10,
+    );
 
     try {
       // Use transaction with READ COMMITTED isolation for atomicity and reduced locking
@@ -777,66 +787,66 @@ export class PaymentsService {
             return;
           }
 
-        // Get the StripeProductMap with allowances
-        const stripeProductMap = await tx.findOne(StripeProductMap, {
-          where: { id: stripeProductMapId },
-          relations: ["allowances"],
-        });
+          // Get the StripeProductMap with allowances
+          const stripeProductMap = await tx.findOne(StripeProductMap, {
+            where: { id: stripeProductMapId },
+            relations: ["allowances"],
+          });
 
-        if (!stripeProductMap) {
-          this.logger.error(
-            `StripeProductMap ${stripeProductMapId} not found for course enrollment`,
-          );
-          return;
-        }
+          if (!stripeProductMap) {
+            this.logger.error(
+              `StripeProductMap ${stripeProductMapId} not found for course enrollment`,
+            );
+            return;
+          }
 
-        // Create StudentPackage for course enrollment
-        const studentPackage = new StudentPackage();
-        studentPackage.studentId = studentId;
-        studentPackage.stripeProductMapId = stripeProductMapId;
-        studentPackage.packageName = `${metadata.course_code} - ${metadata.cohort_name}`;
-        studentPackage.totalSessions = 0; // Courses don't use session credits
-        studentPackage.purchasedAt = new Date();
-        studentPackage.expiresAt = null; // Courses don't expire
-        studentPackage.sourcePaymentId = paymentIntent.id;
-        studentPackage.metadata = {
-          courseProgramId,
-          cohortId,
-          courseCode: String(metadata.course_code || ""),
-          cohortName: String(metadata.cohort_name || ""),
-          amountPaid: paymentIntent.amount_received,
-          currency: paymentIntent.currency,
-        };
-
-        const savedPackage = await tx.save(StudentPackage, studentPackage);
-        this.logger.log(
-          `Created course enrollment package ${savedPackage.id} for cohort ${cohortId}`,
-        );
-
-        // Increment cohort enrollment count
-        await tx.query(
-          `UPDATE course_cohort SET current_enrollment = current_enrollment + 1 WHERE id = ?`,
-          [cohortId],
-        );
-
-        // Seed course step progress using the existing service
-        try {
-          await this.courseStepProgressService.seedProgressForCourse(
-            savedPackage.id,
+          // Create StudentPackage for course enrollment
+          const studentPackage = new StudentPackage();
+          studentPackage.studentId = studentId;
+          studentPackage.stripeProductMapId = stripeProductMapId;
+          studentPackage.packageName = `${metadata.course_code} - ${metadata.cohort_name}`;
+          studentPackage.totalSessions = 0; // Courses don't use session credits
+          studentPackage.purchasedAt = new Date();
+          studentPackage.expiresAt = null; // Courses don't expire
+          studentPackage.sourcePaymentId = paymentIntent.id;
+          studentPackage.metadata = {
             courseProgramId,
-            cohortId, // Pass cohortId for linking
-            tx, // Pass transaction manager
-          );
+            cohortId,
+            courseCode: String(metadata.course_code || ""),
+            cohortName: String(metadata.cohort_name || ""),
+            amountPaid: paymentIntent.amount_received,
+            currency: paymentIntent.currency,
+          };
+
+          const savedPackage = await tx.save(StudentPackage, studentPackage);
           this.logger.log(
-            `Seeded course progress for package ${savedPackage.id}, course ${courseProgramId}, cohort ${cohortId}`,
+            `Created course enrollment package ${savedPackage.id} for cohort ${cohortId}`,
           );
-        } catch (error) {
-          this.logger.error(
-            `Failed to seed course progress for package ${savedPackage.id}:`,
-            error as Error,
+
+          // Increment cohort enrollment count
+          await tx.query(
+            `UPDATE course_cohort SET current_enrollment = current_enrollment + 1 WHERE id = ?`,
+            [cohortId],
           );
-          throw error; // Re-throw to rollback transaction
-        }
+
+          // Seed course step progress using the existing service
+          try {
+            await this.courseStepProgressService.seedProgressForCourse(
+              savedPackage.id,
+              courseProgramId,
+              cohortId, // Pass cohortId for linking
+              tx, // Pass transaction manager
+            );
+            this.logger.log(
+              `Seeded course progress for package ${savedPackage.id}, course ${courseProgramId}, cohort ${cohortId}`,
+            );
+          } catch (error) {
+            this.logger.error(
+              `Failed to seed course progress for package ${savedPackage.id}:`,
+              error as Error,
+            );
+            throw error; // Re-throw to rollback transaction
+          }
         },
       );
 

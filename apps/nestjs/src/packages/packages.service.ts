@@ -5,8 +5,8 @@ import {
 } from "@nestjs/common";
 import type { CreatePackageDto } from "@thrive/shared";
 import { ConfigService } from "@nestjs/config";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
+import { Repository, DataSource, EntityManager } from "typeorm";
 import Stripe from "stripe";
 import {
   PackageResponseDto,
@@ -70,6 +70,7 @@ export class PackagesService {
     private readonly studentRepo: Repository<Student>,
     @InjectRepository(Session)
     private readonly sessionRepo: Repository<Session>,
+    @InjectDataSource() private readonly dataSource: DataSource,
 
     private readonly sessionsService: SessionsService,
     private readonly stripeProductService: StripeProductService,
@@ -493,19 +494,29 @@ export class PackagesService {
       usedBy?: number;
       allowanceId?: number;
     },
+    transactionManager?: EntityManager,
   ): Promise<{ package: StudentPackage; use: PackageUse }> {
     const { serviceType, creditsUsed = 1, usedBy, allowanceId } = options || {};
 
     // Load with uses for balance computation (pessimistic lock)
-    const pkg = await PackageQueryBuilder.buildStudentPackageWithUsesQuery(
-      this.pkgRepo,
-      studentId,
-      packageId,
-    )
-      .leftJoinAndSelect("sp.stripeProductMap", "spm")
-      .leftJoinAndSelect("spm.allowances", "allowances")
-      .setLock("pessimistic_write")
-      .getOne();
+    const queryBuilder = transactionManager
+      ? transactionManager
+          .createQueryBuilder(StudentPackage, "sp")
+          .leftJoinAndSelect("sp.uses", "uses", "uses.deleted_at IS NULL")
+          .leftJoinAndSelect("sp.stripeProductMap", "spm")
+          .leftJoinAndSelect("spm.allowances", "allowances")
+          .where("sp.id = :packageId", { packageId })
+          .andWhere("sp.student_id = :studentId", { studentId })
+          .andWhere("sp.deleted_at IS NULL")
+      : PackageQueryBuilder.buildStudentPackageWithUsesQuery(
+          this.pkgRepo,
+          studentId,
+          packageId,
+        )
+          .leftJoinAndSelect("sp.stripeProductMap", "spm")
+          .leftJoinAndSelect("spm.allowances", "allowances");
+
+    const pkg = await queryBuilder.setLock("pessimistic_write").getOne();
 
     if (!pkg) {
       throw new NotFoundException("Package not found");
@@ -531,7 +542,7 @@ export class PackagesService {
 
       if (allowanceRemaining < creditsUsed) {
         throw new BadRequestException(
-          `Insufficient credits for this allowance (${allowanceRemaining} remaining)`,
+          `Insufficient credits for this allowance. Required: ${creditsUsed}, Available: ${allowanceRemaining}`,
         );
       }
     } else {
@@ -542,7 +553,9 @@ export class PackagesService {
       );
 
       if (remaining < creditsUsed) {
-        throw new BadRequestException("Insufficient credits");
+        throw new BadRequestException(
+          `Insufficient credits. Required: ${creditsUsed}, Available: ${remaining}`,
+        );
       }
     }
 
@@ -562,16 +575,12 @@ export class PackagesService {
       allowanceId: allowanceId || null,
     });
 
-    await this.useRepo.save(use);
+    const savedUse = await (transactionManager
+      ? transactionManager.save(use)
+      : this.useRepo.save(use));
 
-    // Reload to verify
-    const updated = await PackageQueryBuilder.buildStudentPackageWithUsesQuery(
-      this.pkgRepo,
-      studentId,
-      packageId,
-    ).getOne();
-
-    return { package: updated!, use };
+    // Return the locked package (no need to reload within the same transaction)
+    return { package: pkg, use: savedUse };
   }
 
   async linkUseToBooking(useId: number, bookingId: number) {

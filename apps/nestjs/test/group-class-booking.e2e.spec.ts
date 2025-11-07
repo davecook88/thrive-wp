@@ -12,6 +12,13 @@ import { Teacher } from "../src/teachers/entities/teacher.entity.js";
 import { Booking } from "../src/payments/entities/booking.entity.js";
 import { Level } from "../src/levels/entities/level.entity.js";
 import { runMigrations } from "./setup.js";
+import { StudentPackage } from "../src/packages/entities/student-package.entity.js";
+import { PackageAllowance } from "../src/packages/entities/package-allowance.entity.js";
+import {
+  StripeProductMap,
+  ScopeType,
+} from "../src/payments/entities/stripe-product-map.entity.js";
+import { ServiceType } from "@thrive/shared";
 import * as z from "zod";
 
 import {
@@ -129,65 +136,6 @@ describe("Group Class Booking (e2e)", () => {
     }
   }
 
-  it("should create a group class, generate sessions, and see them as available", async () => {
-    // Create a group class
-    const groupClassRes = await request(getHttpServer(app))
-      .post("/group-classes")
-      .set("Cookie", `thrive_sess=${testAdminToken}`)
-      .send({
-        title: "Test Group Class",
-        description: "A test group class",
-        levelIds: [testLevel!.id],
-        capacityMax: 10,
-        teacherIds: [testTeacher.id],
-        primaryTeacherId: testTeacher.id,
-        rrule: "FREQ=WEEKLY;COUNT=5;BYDAY=MO",
-        startDate: "2025-01-06",
-        sessionStartTime: "10:00",
-        sessionDuration: 60,
-      })
-      .expect(201);
-
-    // Validate response with zod schema
-    const groupClassParse = CreateGroupClassResponseSchema.safeParse(
-      groupClassRes.body,
-    );
-    if (!groupClassParse.success) {
-      throw new Error(
-        `Invalid CreateGroupClassResponse: ${groupClassParse.error.message}`,
-      );
-    }
-    const groupClassData = groupClassParse.data;
-
-    // Generate sessions
-    await request(getHttpServer(app))
-      .post(`/group-classes/${groupClassData.id}/generate-sessions`)
-      .expect(201);
-
-    // Check if sessions are available
-    const response = await request(getHttpServer(app)).get(
-      "/group-classes/available",
-    );
-
-    if (!response.ok) {
-      console.log("Error response:", response.status, response.body);
-      throw new Error("Failed to fetch available sessions");
-    }
-    // Validate response with zod schema
-    const availableSessionsParse = z
-      .array(SessionWithEnrollmentResponseSchema)
-      .safeParse(response.body);
-    if (!availableSessionsParse.success) {
-      throw new Error(
-        `Invalid AvailableSessionsResponse: ${availableSessionsParse.error.message}`,
-      );
-    }
-    const availableSessionsData = availableSessionsParse.data;
-
-    expect(availableSessionsData).toBeInstanceOf(Array);
-    expect(availableSessionsData.length).toBeGreaterThan(0);
-  });
-
   describe("POST /bookings", () => {
     it("should allow a student to book a group class session", async () => {
       // 1. Create a group class
@@ -203,28 +151,27 @@ describe("Group Class Booking (e2e)", () => {
           primaryTeacherId: testTeacher.id,
           rrule: "FREQ=WEEKLY;COUNT=1;BYDAY=MO",
           startDate: "2025-01-06",
+          endDate: "2025-01-06",
           sessionStartTime: "10:00",
           sessionDuration: 60,
         })
         .expect(201);
 
-      // Validate response with zod schema
-      const groupClassParse = CreateGroupClassResponseSchema.safeParse(
-        groupClassRes.body,
-      );
+      // Validate response with zod schema. The service may return an array
+      // when creating recurring groups; normalize to a single object.
+      const rawGroupClassBody: unknown = groupClassRes.body;
+      const createdGroupClassObj: unknown = Array.isArray(rawGroupClassBody)
+        ? (rawGroupClassBody as unknown[])[0]
+        : rawGroupClassBody;
+      const groupClassParse =
+        CreateGroupClassResponseSchema.safeParse(createdGroupClassObj);
       if (!groupClassParse.success) {
         throw new Error(
           `Invalid CreateGroupClassResponse: ${groupClassParse.error.message}`,
         );
       }
-      const groupClassData = groupClassParse.data;
 
-      // 2. Generate sessions
-      await request(getHttpServer(app))
-        .post(`/group-classes/${groupClassData.id}/generate-sessions`)
-        .expect(201);
-
-      // 3. Get available sessions
+      // 2. Get available sessions
       const availableSessionsRes = await request(getHttpServer(app))
         .get("/group-classes/available")
         .expect(200);
@@ -251,15 +198,52 @@ describe("Group Class Booking (e2e)", () => {
         throw new Error("No available session to book");
       }
 
-      // 4. Book the session as the student
+      // 4. Create a minimal student package & allowance and book the session as the student
+      const stripeProductMapRepo = dataSource.getRepository(StripeProductMap);
+      const packageAllowanceRepo = dataSource.getRepository(PackageAllowance);
+      const studentPackageRepo = dataSource.getRepository(StudentPackage);
+
+      const stripeProductMap: StripeProductMap =
+        await stripeProductMapRepo.save({
+          serviceKey: `TEST_GROUP_${Date.now()}`,
+          stripeProductId: `prod_test_group_${Date.now()}`,
+          active: true,
+          scopeType: ScopeType.PACKAGE,
+          scopeId: undefined,
+          metadata: { name: "Test Group Package" },
+        });
+
+      const allowance = await packageAllowanceRepo.save({
+        stripeProductMapId: stripeProductMap.id,
+        serviceType: ServiceType.GROUP,
+        teacherTier: testTeacher.tier,
+        credits: 10,
+        creditUnitMinutes: 60,
+      });
+
+      const studentPackage = await studentPackageRepo.save({
+        studentId: testStudent!.id,
+        stripeProductMapId: stripeProductMap.id,
+        packageName: "Test Package",
+        totalSessions: 10,
+        purchasedAt: new Date(),
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      });
+
+      // Update mapping to point to the created student package
+      stripeProductMap.scopeId = studentPackage.id;
+      await stripeProductMapRepo.save(stripeProductMap);
+
       const bookingRes = await request(getHttpServer(app))
         .post("/bookings")
         .set("x-auth-user-id", testUser.id.toString())
         .send({
           sessionId: sessionToBook.id,
-          // No payment intent or package, assuming free for now
-        })
-        .expect(201);
+          studentPackageId: studentPackage.id,
+          allowanceId: allowance.id,
+        });
+      console.log("Booking response (1):", bookingRes.status, bookingRes.body);
+      expect(bookingRes.status).toBe(201);
 
       // Validate response with zod schema
       const bookingParse = CreateBookingResponseSchema.safeParse(
@@ -317,22 +301,25 @@ describe("Group Class Booking (e2e)", () => {
           primaryTeacherId: testTeacher.id,
           rrule: "FREQ=WEEKLY;COUNT=1;BYDAY=WE",
           startDate: "2025-01-08",
+          endDate: "2025-01-08",
           sessionStartTime: "12:00",
           sessionDuration: 60,
         })
         .expect(201);
+      // Validate response (may be array when created from rrule); normalize
+      const rawCreatedBody: unknown = groupClassRes.body;
+      const createdGroupClassObj2: unknown = Array.isArray(rawCreatedBody)
+        ? (rawCreatedBody as unknown[])[0]
+        : rawCreatedBody;
       const createdGroupClassParse = CreateGroupClassResponseSchema.safeParse(
-        groupClassRes.body,
+        createdGroupClassObj2,
       );
       if (!createdGroupClassParse.success) {
         throw new Error(
           `Invalid CreateGroupClassResponse: ${createdGroupClassParse.error.message}`,
         );
       }
-      const createdGroupClass = createdGroupClassParse.data;
-      await request(getHttpServer(app))
-        .post(`/group-classes/${createdGroupClass.id}/generate-sessions`)
-        .expect(201);
+      // Sessions are created at GroupClass creation time when rrule + startDate + endDate are provided
       const availableSessionsRes = await request(getHttpServer(app))
         .get("/group-classes/available")
         .expect(200);
@@ -347,12 +334,55 @@ describe("Group Class Booking (e2e)", () => {
       const availableSessionsData = availableSessionsParse.data;
       const sessionToBook = availableSessionsData[0];
 
-      // First student books the only spot
-      await request(getHttpServer(app))
+      // First student books the only spot (create package & allowance first)
+      const stripeProductMapRepo2 = dataSource.getRepository(StripeProductMap);
+      const packageAllowanceRepo2 = dataSource.getRepository(PackageAllowance);
+      const studentPackageRepo2 = dataSource.getRepository(StudentPackage);
+
+      const stripeProductMap2: StripeProductMap =
+        await stripeProductMapRepo2.save({
+          serviceKey: `TEST_GROUP_${Date.now()}_2`,
+          stripeProductId: `prod_test_group_${Date.now()}_2`,
+          active: true,
+          scopeType: ScopeType.PACKAGE,
+          scopeId: undefined,
+          metadata: { name: "Test Group Package 2" },
+        });
+
+      const allowance2 = await packageAllowanceRepo2.save({
+        stripeProductMapId: stripeProductMap2.id,
+        serviceType: ServiceType.GROUP,
+        teacherTier: testTeacher.tier,
+        credits: 10,
+        creditUnitMinutes: 60,
+      });
+
+      const studentPackage2 = await studentPackageRepo2.save({
+        studentId: testStudent!.id,
+        stripeProductMapId: stripeProductMap2.id,
+        packageName: "Test Package 2",
+        totalSessions: 10,
+        purchasedAt: new Date(),
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      });
+
+      stripeProductMap2.scopeId = studentPackage2.id;
+      await stripeProductMapRepo2.save(stripeProductMap2);
+
+      const bookingRes2 = await request(getHttpServer(app))
         .post("/bookings")
         .set("x-auth-user-id", testUser.id.toString())
-        .send({ sessionId: sessionToBook.id })
-        .expect(201);
+        .send({
+          sessionId: sessionToBook.id,
+          studentPackageId: studentPackage2.id,
+          allowanceId: allowance2.id,
+        });
+      console.log(
+        "Booking response (2):",
+        bookingRes2.status,
+        bookingRes2.body,
+      );
+      expect(bookingRes2.status).toBe(201);
 
       // Second student tries to book
       const secondUser = await userRepository.save({

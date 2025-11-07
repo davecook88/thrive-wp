@@ -502,15 +502,24 @@ export class BookingsService {
         cancelledByStudent: true,
       });
 
-      // Refund credits if applicable
+      // Refund credits if applicable. Remaining credits are computed from
+      // PackageUse records, so create a refund PackageUse with negative
+      // creditsUsed rather than trying to increment a non-existent column.
       if (booking.studentPackageId && policy.refundCreditsOnCancel) {
-        // Increment remaining sessions on the package
-        await manager.increment(
-          StudentPackage,
-          { id: booking.studentPackageId },
-          "remainingSessions",
-          booking.creditsCost || 1,
-        );
+        const refundUse: Partial<PackageUse> = {
+          studentPackageId: booking.studentPackageId,
+          bookingId: booking.id,
+          sessionId: booking.sessionId,
+          creditsUsed: -(booking.creditsCost || 1),
+          usedAt: new Date(),
+          usedBy: studentId,
+          note: "Refund for cancellation",
+          allowanceId: null,
+          serviceType: booking.session.type,
+        };
+
+        await manager.save(PackageUse, refundUse as PackageUse);
+
         creditRefunded = true;
         refundedToPackageId = booking.studentPackageId;
       }

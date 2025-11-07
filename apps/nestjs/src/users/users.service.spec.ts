@@ -6,6 +6,7 @@ import { UsersService } from "./users.service.js";
 import { User } from "./entities/user.entity.js";
 import { Admin } from "./entities/admin.entity.js";
 import { Teacher } from "../teachers/entities/teacher.entity.js";
+import type { PublicTeacherDto } from "@thrive/shared";
 
 // Mock entity types for testing
 type MockUser = {
@@ -40,6 +41,7 @@ type MockTeacher = {
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;
+  toPublicDto?: () => PublicTeacherDto;
 };
 
 // Loosely-typed query builder mock to avoid TS friction
@@ -315,6 +317,23 @@ describe("UsersService", () => {
           isActive: true,
           createdAt: new Date(),
           updatedAt: new Date(),
+          toPublicDto: vi.fn().mockReturnValue({
+            id: 1,
+            userId: 1,
+            tier: 10,
+            bio: null,
+            avatarUrl: null,
+            languagesSpoken: [],
+            birthplace: {},
+            currentLocation: {},
+            specialties: [],
+            displayName: "Teacher",
+            initials: "T",
+            isActive: true,
+            yearsExperience: null,
+            levels: [],
+            rating: null,
+          }),
         },
       };
 
@@ -330,6 +349,23 @@ describe("UsersService", () => {
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
+        toPublicDto: vi.fn().mockReturnValue({
+          id: 1,
+          userId: 1,
+          tier: 10,
+          bio: null,
+          avatarUrl: null,
+          languagesSpoken: [],
+          birthplace: {},
+          currentLocation: {},
+          specialties: [],
+          displayName: "Teacher",
+          initials: "T",
+          isActive: true,
+          yearsExperience: null,
+          levels: [],
+          rating: null,
+        }),
       };
 
       const createSpy = vi.spyOn(teacherRepo, "create");

@@ -81,15 +81,6 @@ describe("GroupClassesService", () => {
     expect(service).toBeDefined();
   });
 
-  describe("generateSessions", () => {
-    it.skip("should parse RRULE strings correctly (skipped - rrule import issues in test)", () => {
-      // Note: RRULE functionality works in the service but has import issues in tests
-      // This is tested via integration tests instead
-      const rruleString = "FREQ=WEEKLY;BYDAY=MO,WE,FR;COUNT=6";
-      expect(rruleString).toBeDefined();
-    });
-  });
-
   describe("getAvailableSessions", () => {
     it("should return sessions with enrollment count and computed fields", async () => {
       // Mock session data with enrolledCount added by loadRelationCountAndMap
@@ -173,11 +164,11 @@ describe("GroupClassesService", () => {
     it("should apply level filter correctly", async () => {
       mockQueryBuilder.getMany.mockResolvedValue([]);
 
-      await service.getAvailableSessions({ levelId: 3 });
+      await service.getAvailableSessions({ levelIds: [3] });
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        "level.id = :levelId",
-        { levelId: 3 },
+        "level.id IN (:...levelIds)",
+        { levelIds: [3] },
       );
     });
 

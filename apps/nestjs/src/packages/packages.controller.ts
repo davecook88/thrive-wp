@@ -1,6 +1,8 @@
 import {
   Controller,
   Get,
+  Post,
+  Body,
   Param,
   Req,
   Query,
@@ -11,8 +13,22 @@ import {
 } from "@nestjs/common";
 import { Request } from "express";
 import { ServiceType } from "@thrive/shared";
+import { ZodValidationPipe } from "nestjs-zod";
+import { z } from "zod";
 import { PackagesService } from "./packages.service.js";
 import { StudentsService } from "../students/students.service.js";
+
+// Local schema for POST /packages/:id/use
+const UsePackagePayloadSchema = z.object({
+  bookingData: z.object({
+    teacherId: z.number().int().positive(),
+    startAt: z.string().datetime(),
+    endAt: z.string().datetime(),
+  }),
+  allowanceId: z.number().int().positive(),
+});
+
+type UsePackagePayloadDto = z.infer<typeof UsePackagePayloadSchema>;
 
 interface AuthenticatedRequest extends Request {
   headers: Request["headers"] & {
@@ -123,6 +139,26 @@ export class PackagesController {
       student.id,
       serviceType,
       teacherTier,
+    );
+  }
+
+  @Post(":id/use")
+  async usePackage(
+    @Param("id", ParseIntPipe) packageId: number,
+    @Body(new ZodValidationPipe(UsePackagePayloadSchema))
+    body: UsePackagePayloadDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const userId = req.headers["x-auth-user-id"];
+    if (!userId) {
+      throw new UnauthorizedException("User ID not found in auth headers");
+    }
+
+    return this.packagesService.createAndBookSession(
+      parseInt(userId, 10),
+      packageId,
+      body.bookingData,
+      body.allowanceId,
     );
   }
 }

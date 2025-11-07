@@ -23,6 +23,12 @@ import {
   CancellationPolicy,
   PenaltyType,
 } from "../src/policies/entities/cancellation-policy.entity.js";
+import {
+  StripeProductMap,
+  ScopeType,
+} from "../src/payments/entities/stripe-product-map.entity.js";
+import { PackageAllowance } from "../src/packages/entities/package-allowance.entity.js";
+import { PackageUse } from "../src/packages/entities/package-use.entity.js";
 import { runMigrations } from "./setup.js";
 import { getHttpServer } from "./utils/get-httpserver.js";
 import {
@@ -41,6 +47,9 @@ describe("Credit Tier System Integration (e2e)", () => {
   let teacherRepository: Repository<Teacher>;
   let sessionRepository: Repository<Session>;
   let packageRepository: Repository<StudentPackage>;
+  let stripeProductMapRepository: Repository<StripeProductMap>;
+  let packageAllowanceRepository: Repository<PackageAllowance>;
+  let packageUseRepository: Repository<PackageUse>;
   let cancellationPolicyRepository: Repository<CancellationPolicy>;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let bookingRepository: Repository<Booking>;
@@ -69,6 +78,9 @@ describe("Credit Tier System Integration (e2e)", () => {
     teacherRepository = dataSource.getRepository(Teacher);
     sessionRepository = dataSource.getRepository(Session);
     packageRepository = dataSource.getRepository(StudentPackage);
+    stripeProductMapRepository = dataSource.getRepository(StripeProductMap);
+    packageAllowanceRepository = dataSource.getRepository(PackageAllowance);
+    packageUseRepository = dataSource.getRepository(PackageUse);
     bookingRepository = dataSource.getRepository(Booking);
     cancellationPolicyRepository = dataSource.getRepository(CancellationPolicy);
 
@@ -197,19 +209,42 @@ describe("Credit Tier System Integration (e2e)", () => {
     serviceType: ServiceType,
     teacherTier: number = 0,
     durationMinutes: number = 60,
+    credits: number = 10,
   ): Promise<StudentPackage> {
-    return await packageRepository.save({
+    // Create StripeProductMap
+    const stripeProductMap: StripeProductMap =
+      await stripeProductMapRepository.save({
+        serviceKey: `TEST_${serviceType}_${teacherTier}_${durationMinutes}`,
+        stripeProductId: `prod_test_${serviceType}_${teacherTier}_${durationMinutes}`,
+        active: true,
+        scopeType: ScopeType.PACKAGE,
+        scopeId: undefined,
+        metadata: {
+          name: `${serviceType} Package`,
+        },
+      });
+
+    // Create PackageAllowance
+    await packageAllowanceRepository.save({
+      stripeProductMapId: stripeProductMap.id,
+      serviceType,
+      teacherTier,
+      credits,
+      creditUnitMinutes: durationMinutes as 15 | 30 | 45 | 60,
+    });
+
+    // Create StudentPackage linked to the StripeProductMap
+    const p = await packageRepository.save({
       studentId: testStudent.id,
+      stripeProductMapId: stripeProductMap.id,
       packageName: `${serviceType} Package`,
       totalSessions: 10,
       purchasedAt: new Date(),
       expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
-      metadata: {
-        service_type: serviceType,
-        teacher_tier: String(teacherTier),
-        duration_minutes: String(durationMinutes),
-      },
     });
+    stripeProductMap.scopeId = p.id;
+    await stripeProductMapRepository.save(stripeProductMap);
+    return p;
   }
 
   describe("GET /packages/compatible-for-session/:sessionId", () => {
@@ -314,7 +349,23 @@ describe("Credit Tier System Integration (e2e)", () => {
 
     it("should exclude packages with no remaining sessions", async () => {
       const session = await createSession(ServiceType.PRIVATE, standardTeacher);
-      await createPackage(ServiceType.PRIVATE, 0, 60); // No remaining sessions
+      const pkg = await createPackage(ServiceType.PRIVATE, 0, 60, 1); // Create with 1 credit
+
+      // Get the allowance for this package
+      const allowance = await packageAllowanceRepository.findOne({
+        where: { stripeProductMapId: pkg.stripeProductMapId },
+      });
+
+      // Consume the credit by creating a PackageUse record
+      await packageUseRepository.save({
+        studentPackageId: pkg.id,
+        allowanceId: allowance!.id,
+        serviceType: ServiceType.PRIVATE,
+        creditsUsed: 1,
+        usedAt: new Date(),
+        usedBy: testUser.id,
+        note: "Test usage to exhaust package",
+      });
 
       const response = await request(getHttpServer(app))
         .get(`/packages/compatible-for-session/${session.id}`)
@@ -532,7 +583,7 @@ describe("Credit Tier System Integration (e2e)", () => {
         standardTeacher,
         60,
       );
-      const package30min = await createPackage(ServiceType.PRIVATE, 0, 30); // Only 1 credit
+      const package30min = await createPackage(ServiceType.PRIVATE, 0, 30, 1); // Only 1 credit
 
       const response = await request(getHttpServer(app))
         .post("/payments/book-with-package")
@@ -714,7 +765,7 @@ describe("Credit Tier System Integration (e2e)", () => {
   describe("Edge Cases", () => {
     it("should handle concurrent booking attempts with last credit", async () => {
       const session = await createSession(ServiceType.PRIVATE, standardTeacher);
-      const pkg = await createPackage(ServiceType.PRIVATE, 0, 60); // Only 1 credit
+      const pkg = await createPackage(ServiceType.PRIVATE, 0, 60, 1); // Only 1 credit
 
       // First booking should succeed
       await request(getHttpServer(app))
@@ -739,32 +790,6 @@ describe("Credit Tier System Integration (e2e)", () => {
           sessionId: session2.id,
         })
         .expect(400);
-    });
-
-    it("should handle package with missing metadata gracefully", async () => {
-      const session = await createSession(ServiceType.PRIVATE, standardTeacher);
-      const pkgNoMetadata = await packageRepository.save({
-        studentId: testStudent.id,
-        packageName: "No Metadata Package",
-        totalSessions: 10,
-        purchasedAt: new Date(),
-        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-        metadata: null, // Missing metadata
-      });
-
-      // Should default to PRIVATE tier and allow booking
-      const response = await request(getHttpServer(app))
-        .post("/payments/book-with-package")
-        .set("x-auth-user-id", testUser.id.toString())
-        .send({
-          packageId: pkgNoMetadata.id,
-          sessionId: session.id,
-        })
-        .expect(201);
-
-      const body = BookingResponseSchema.parse(response.body);
-
-      expect(body.status).toBe(BookingStatus.CONFIRMED);
     });
   });
 });

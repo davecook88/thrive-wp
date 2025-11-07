@@ -4,20 +4,46 @@ import { INestApplication } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import request from "supertest";
 import jwt from "jsonwebtoken";
+import { getHttpServer } from "./utils/get-httpserver.js";
+import { StripeProductService } from "../src/common/services/stripe-product.service.js";
+import { PaymentsService } from "../src/payments/payments.service.js";
 import { AppModule } from "../src/app.module.js";
 import { resetDatabase } from "./utils/reset-db.js";
 import { execInsert } from "./utils/query-helpers.js";
 import { runMigrations } from "./setup.js";
+import Stripe from "stripe";
 
 describe("Course Cohort Enrollment (e2e)", () => {
   let app: INestApplication;
   let dataSource: DataSource;
 
+  let moduleFixture: TestingModule;
   beforeAll(async () => {
     await runMigrations();
-    const moduleFixture: TestingModule = await Test.createTestingModule({
+
+    // Provide a mocked StripeProductService so tests don't call external Stripe
+    const mockStripeService = {
+      getStripeClient: () => ({
+        prices: {
+          list: () => ({ data: [{ id: "price_test_1" }] }),
+        },
+        checkout: {
+          sessions: {
+            create: () => ({
+              id: "cs_test_1",
+              url: "https://checkout.test/1",
+            }),
+          },
+        },
+      }),
+    } as unknown as StripeProductService;
+
+    moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(StripeProductService)
+      .useValue(mockStripeService)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix("api");
@@ -27,7 +53,9 @@ describe("Course Cohort Enrollment (e2e)", () => {
   }, 30000);
 
   afterAll(async () => {
-    await app.close();
+    if (app && typeof app.close === "function") {
+      await app.close();
+    }
   });
 
   describe("POST /api/course-programs/:code/cohorts/:cohortId/enroll", () => {
@@ -38,6 +66,7 @@ describe("Course Cohort Enrollment (e2e)", () => {
     let courseProgramId: number;
     let courseStepId: number;
     let groupClassId: number;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let sessionId: number;
     let courseStepOptionId: number;
     let cohortId: number;
@@ -78,18 +107,43 @@ describe("Course Cohort Enrollment (e2e)", () => {
       }
       studentId = rows[0].id;
 
-      // Create JWT token for student
-      accessToken = jwt.sign(
-        { userId: studentUserId, role: "student" },
-        process.env.SESSION_SECRET || "test-secret",
-        { expiresIn: "1h" },
-      );
+      // Create JWT token for student (match shape expected by StudentGuard)
+      const payload = {
+        sub: studentUserId.toString(),
+        email: studentEmail,
+        name: "Jane Smith",
+        firstName: "Jane",
+        lastName: "Smith",
+        roles: ["student"],
+        sid: `test-session-${Date.now()}`,
+        type: "access",
+      } as const;
+
+      const secret =
+        process.env.SESSION_SECRET || "dev_insecure_secret_change_me";
+      accessToken = jwt.sign(payload, secret, {
+        algorithm: "HS256",
+        expiresIn: "1h",
+      });
 
       // Create course program
       courseProgramId = await execInsert(
         dataSource,
         "INSERT INTO course_program (code, title, description, timezone, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())",
         ["TEST101", "Test Course", "A test course", "America/New_York", true],
+      );
+
+      // Create a stripe_product_map for this course so the controller can find a product mapping
+      await execInsert(
+        dataSource,
+        `INSERT INTO stripe_product_map (service_key, stripe_product_id, active, scope_type, scope_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
+        [
+          `course_TEST101_${Date.now()}`,
+          `prod_test_${courseProgramId}`,
+          true,
+          "course",
+          courseProgramId,
+        ],
       );
 
       // Create course step
@@ -156,59 +210,98 @@ describe("Course Cohort Enrollment (e2e)", () => {
     });
 
     it("should successfully enroll a student in a cohort", async () => {
-      const response = await request(app.getHttpServer())
+      // Call enroll endpoint — it should return a Stripe checkout session (mocked)
+      const response = await request(getHttpServer(app))
         .post(`/api/course-programs/TEST101/cohorts/${cohortId}/enroll`)
-        .set("Cookie", [`thrive_sess=${accessToken}`])
+        .set("Cookie", `thrive_sess=${accessToken}`)
+        .set("x-auth-user-id", studentUserId.toString())
+        .send({})
         .expect(201);
 
-      // Verify response contains cohort details
-      expect(response.body).toHaveProperty("id", cohortId);
-      expect(response.body).toHaveProperty("courseCode", "TEST101");
-      expect(response.body).toHaveProperty("name", "Test Cohort");
-      expect(response.body).toHaveProperty("sessions");
-      expect(Array.isArray(response.body.sessions)).toBe(true);
-      expect(response.body.sessions.length).toBe(1);
+      // Verify response is the checkout session (mock)
+      expect(response.body).toHaveProperty("sessionId", "cs_test_1");
+      expect(response.body).toHaveProperty("url", "https://checkout.test/1");
 
-      // Verify session details
-      const session = response.body.sessions[0];
-      expect(session).toHaveProperty("stepLabel", "Step 1");
-      expect(session).toHaveProperty("stepTitle", "First Step");
-      expect(session).toHaveProperty("groupClassName", "Test Group Class");
-      expect(session).toHaveProperty("sessionDateTime");
+      // Simulate Stripe webhook: payment_intent.succeeded -> PaymentsService should create StudentPackage + increment cohort
+      const paymentsService =
+        moduleFixture.get<PaymentsService>(PaymentsService);
 
-      // Verify enrollment was created in database
-      const enrollments = await dataSource.query(
-        "SELECT * FROM course_enrollment WHERE cohort_id = ? AND student_id = ?",
-        [cohortId, studentId],
+      const fakePaymentIntent = {
+        id: `pi_test_${Date.now()}`,
+        amount_received: 1000,
+        currency: "usd",
+        metadata: {
+          product_type: "course_enrollment",
+          course_program_id: courseProgramId.toString(),
+          cohort_id: cohortId.toString(),
+          student_id: studentId.toString(),
+          stripe_product_map_id: String(
+            (
+              await dataSource.query<
+                {
+                  id: number;
+                }[]
+              >(
+                "SELECT id FROM stripe_product_map WHERE scope_type = ? AND scope_id = ?",
+                ["course", courseProgramId],
+              )
+            )[0].id,
+          ),
+          course_code: "TEST101",
+          cohort_name: "Test Cohort",
+        },
+      } as unknown as Stripe.PaymentIntentSucceededEvent["data"]["object"];
+      await paymentsService.handleStripeEvent({
+        type: "payment_intent.succeeded",
+        data: { object: fakePaymentIntent },
+      } as unknown as Stripe.Event);
+
+      // Verify a student_package (course enrollment) was created
+      const packages = await dataSource.query<
+        {
+          id: number;
+          student_id: number;
+          stripe_product_map_id: number;
+        }[]
+      >(
+        "SELECT * FROM student_package WHERE student_id = ? AND stripe_product_map_id = ?",
+        [studentId, fakePaymentIntent.metadata.stripe_product_map_id],
       );
-      expect(enrollments.length).toBe(1);
-      expect(enrollments[0].status).toBe("active");
+      expect(packages.length).toBeGreaterThan(0);
 
       // Verify cohort current_enrollment was incremented
-      const cohorts = await dataSource.query(
-        "SELECT current_enrollment FROM course_cohort WHERE id = ?",
-        [cohortId],
-      );
+      const cohorts = await dataSource.query<
+        {
+          id: number;
+          current_enrollment: number;
+        }[]
+      >("SELECT current_enrollment FROM course_cohort WHERE id = ?", [
+        cohortId,
+      ]);
       expect(cohorts[0].current_enrollment).toBe(1);
     });
 
     it("should return 401 when not authenticated", async () => {
-      await request(app.getHttpServer())
+      await request(getHttpServer(app))
         .post(`/api/course-programs/TEST101/cohorts/${cohortId}/enroll`)
         .expect(401);
     });
 
     it("should return 404 when cohort does not exist", async () => {
-      await request(app.getHttpServer())
+      await request(getHttpServer(app))
         .post(`/api/course-programs/TEST101/cohorts/99999/enroll`)
-        .set("Cookie", [`thrive_sess=${accessToken}`])
+        .set("Cookie", `thrive_sess=${accessToken}`)
+        .set("x-auth-user-id", studentUserId.toString())
+        .send({})
         .expect(404);
     });
 
     it("should return 404 when course code does not match", async () => {
-      await request(app.getHttpServer())
+      await request(getHttpServer(app))
         .post(`/api/course-programs/WRONG/cohorts/${cohortId}/enroll`)
-        .set("Cookie", [`thrive_sess=${accessToken}`])
+        .set("Cookie", `thrive_sess=${accessToken}`)
+        .set("x-auth-user-id", studentUserId.toString())
+        .send({})
         .expect(404);
     });
   });
@@ -219,6 +312,7 @@ describe("Course Cohort Enrollment (e2e)", () => {
     let courseProgramId: number;
     let courseStepId: number;
     let groupClassId: number;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let sessionId: number;
     let courseStepOptionId: number;
     let cohortId: number;
@@ -241,7 +335,13 @@ describe("Course Cohort Enrollment (e2e)", () => {
       courseProgramId = await execInsert(
         dataSource,
         "INSERT INTO course_program (code, title, description, timezone, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())",
-        ["TEST202", "Test Course 2", "Another test course", "America/New_York", true],
+        [
+          "TEST202",
+          "Test Course 2",
+          "Another test course",
+          "America/New_York",
+          true,
+        ],
       );
 
       // Create course step
@@ -308,7 +408,21 @@ describe("Course Cohort Enrollment (e2e)", () => {
     });
 
     it("should return cohort details with sessions", async () => {
-      const response = await request(app.getHttpServer())
+      const response: {
+        body: {
+          id: number;
+          courseCode: string;
+          courseTitle: string;
+          name: string;
+          sessions: Array<{
+            stepLabel: string;
+            stepTitle: string;
+            groupClassName: string;
+            sessionDateTime: string;
+            durationMinutes: number;
+          }>;
+        };
+      } = await request(getHttpServer(app))
         .get(`/api/course-programs/TEST202/cohorts/${cohortId}`)
         .expect(200);
 
@@ -330,7 +444,7 @@ describe("Course Cohort Enrollment (e2e)", () => {
     });
 
     it("should return 404 when cohort does not exist", async () => {
-      await request(app.getHttpServer())
+      await request(getHttpServer(app))
         .get(`/api/course-programs/TEST202/cohorts/99999`)
         .expect(404);
     });

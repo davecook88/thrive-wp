@@ -62,3 +62,14 @@ export const CancelBookingSchema = z.object({
 });
 
 export type CancelBookingDto = z.infer<typeof CancelBookingSchema>;
+
+export const UsePackagePayloadSchema = z.object({
+  bookingData: z.object({
+    teacherId: z.number().int().positive(),
+    startAt: z.string().datetime(),
+    endAt: z.string().datetime(),
+  }),
+  allowanceId: z.number().int().positive(),
+});
+
+export type UsePackagePayloadDto = z.infer<typeof UsePackagePayloadSchema>;

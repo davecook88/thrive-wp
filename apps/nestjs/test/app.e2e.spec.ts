@@ -3,6 +3,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { AppModule } from "../src/app.module.js";
+import { getHttpServer } from "./utils/get-httpserver.js";
 
 describe("AppController (e2e)", () => {
   let app: INestApplication;

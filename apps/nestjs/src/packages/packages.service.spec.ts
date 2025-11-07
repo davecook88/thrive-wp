@@ -14,10 +14,12 @@ import { Session } from "../sessions/entities/session.entity.js";
 import { Booking } from "../payments/entities/booking.entity.js";
 import { SessionsService } from "../sessions/services/sessions.service.js";
 import { PackageQueryBuilder } from "./utils/package-query-builder.js";
+import { StripeProductService } from "../common/services/stripe-product.service.js";
+import { ScopeType } from "../payments/entities/stripe-product-map.entity.js";
+import { ServiceType } from "@thrive/shared";
 
 describe("PackagesService", () => {
   let service: PackagesService;
-  let packageRepo: Repository<StudentPackage>;
   let useRepo: Repository<PackageUse>;
 
   const mockStripeProductMapRepo = {
@@ -78,6 +80,10 @@ describe("PackagesService", () => {
     save: vi.fn(),
   };
 
+  const mockStripeProductService = {
+    createProductWithPrice: vi.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -121,6 +127,10 @@ describe("PackagesService", () => {
           },
         },
         {
+          provide: StripeProductService,
+          useValue: mockStripeProductService,
+        },
+        {
           provide: DataSource,
           useValue: {},
         },
@@ -128,9 +138,6 @@ describe("PackagesService", () => {
     }).compile();
 
     service = module.get<PackagesService>(PackagesService);
-    packageRepo = module.get<Repository<StudentPackage>>(
-      getRepositoryToken(StudentPackage),
-    );
     useRepo = module.get<Repository<PackageUse>>(
       getRepositoryToken(PackageUse),
     );
@@ -163,23 +170,44 @@ describe("PackagesService", () => {
           createdAt: now,
           updatedAt: now,
           deletedAt: null,
+          stripeProductMapId: 1,
           uses: [{ creditsUsed: 1 }, { creditsUsed: 1 }], // 2 credits used, so 5 - 2 = 3 remaining
         },
       ];
 
-      // Mock the query builder chain
-      const mockQueryBuilder = {
-        leftJoinAndSelect: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        andWhere: vi.fn().mockReturnThis(),
+      // Mock PackageQueryBuilder.buildActiveStudentPackagesQuery
+      vi.spyOn(
+        PackageQueryBuilder,
+        "buildActiveStudentPackagesQuery",
+      ).mockReturnValue({
         orderBy: vi.fn().mockReturnThis(),
         getMany: vi
           .fn()
           .mockResolvedValue(mockPackages as unknown as StudentPackage[]),
+      } as unknown as SelectQueryBuilder<StudentPackage>);
+
+      // Mock stripeProductMapRepository.findOne to return mapping with allowances
+      const mockStripeProductMap = {
+        id: 1,
+        serviceKey: "BUNDLE_PREMIUM",
+        stripeProductId: "prod_test123",
+        active: true,
+        scopeType: ScopeType.PACKAGE,
+        scopeId: null,
+        metadata: {},
+        allowances: [
+          {
+            id: 1,
+            serviceType: ServiceType.PRIVATE,
+            teacherTier: 10,
+            credits: 5,
+            creditUnitMinutes: 30,
+          },
+        ],
       };
 
-      vi.spyOn(packageRepo, "createQueryBuilder").mockReturnValue(
-        mockQueryBuilder as unknown as SelectQueryBuilder<StudentPackage>,
+      vi.spyOn(mockStripeProductMapRepo, "findOne").mockResolvedValue(
+        mockStripeProductMap as unknown as StripeProductMap,
       );
 
       const result = await service.getActivePackagesForStudent(1);
@@ -187,25 +215,28 @@ describe("PackagesService", () => {
       expect(result.packages).toHaveLength(1);
       expect(result.packages[0].remainingSessions).toBe(3);
       expect(result.totalRemaining).toBe(3);
-      // New metadata-derived fields should exist (null when absent)
-      expect(result.packages[0]).toHaveProperty("creditUnitMinutes");
-      expect(result.packages[0]).toHaveProperty("teacherTier");
-      expect(result.packages[0]).toHaveProperty("serviceType");
+      // Check allowances structure
+      expect(result.packages[0]).toHaveProperty("allowances");
+      expect(result.packages[0].allowances).toHaveLength(1);
+      expect(result.packages[0].allowances[0]).toHaveProperty(
+        "serviceType",
+        "PRIVATE",
+      );
+      expect(result.packages[0].allowances[0]).toHaveProperty(
+        "teacherTier",
+        10,
+      );
     });
 
     it("should filter out expired packages", async () => {
-      // Mock the query builder chain - should return empty array for expired packages
-      const mockQueryBuilder = {
-        leftJoinAndSelect: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        andWhere: vi.fn().mockReturnThis(),
+      // Mock PackageQueryBuilder.buildActiveStudentPackagesQuery to return empty array
+      vi.spyOn(
+        PackageQueryBuilder,
+        "buildActiveStudentPackagesQuery",
+      ).mockReturnValue({
         orderBy: vi.fn().mockReturnThis(),
         getMany: vi.fn().mockResolvedValue([]), // Query filters out expired packages
-      };
-
-      vi.spyOn(packageRepo, "createQueryBuilder").mockReturnValue(
-        mockQueryBuilder as unknown as SelectQueryBuilder<StudentPackage>,
-      );
+      } as unknown as SelectQueryBuilder<StudentPackage>);
 
       const result = await service.getActivePackagesForStudent(1);
 
@@ -227,6 +258,7 @@ describe("PackagesService", () => {
           expiresAt: null,
           sourcePaymentId: null,
           metadata: null,
+          stripeProductMapId: 1,
           createdAt: now,
           updatedAt: now,
           deletedAt: null,
@@ -234,19 +266,39 @@ describe("PackagesService", () => {
         },
       ];
 
-      // Mock the query builder chain
-      const mockQueryBuilder = {
-        leftJoinAndSelect: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        andWhere: vi.fn().mockReturnThis(),
+      // Mock PackageQueryBuilder.buildActiveStudentPackagesQuery
+      vi.spyOn(
+        PackageQueryBuilder,
+        "buildActiveStudentPackagesQuery",
+      ).mockReturnValue({
         orderBy: vi.fn().mockReturnThis(),
         getMany: vi
           .fn()
           .mockResolvedValue(mockPackages as unknown as StudentPackage[]),
+      } as unknown as SelectQueryBuilder<StudentPackage>);
+
+      // Mock stripeProductMapRepository.findOne to return mapping with allowances
+      const mockStripeProductMap = {
+        id: 1,
+        serviceKey: "BUNDLE_PREMIUM",
+        stripeProductId: "prod_test123",
+        active: true,
+        scopeType: ScopeType.PACKAGE,
+        scopeId: null,
+        metadata: {},
+        allowances: [
+          {
+            id: 1,
+            serviceType: ServiceType.PRIVATE,
+            teacherTier: 10,
+            credits: 5,
+            creditUnitMinutes: 30,
+          },
+        ],
       };
 
-      vi.spyOn(packageRepo, "createQueryBuilder").mockReturnValue(
-        mockQueryBuilder as unknown as SelectQueryBuilder<StudentPackage>,
+      vi.spyOn(mockStripeProductMapRepo, "findOne").mockResolvedValue(
+        mockStripeProductMap as unknown as StripeProductMap,
       );
 
       const result = await service.getActivePackagesForStudent(1);
@@ -274,9 +326,11 @@ describe("PackagesService", () => {
         createdAt: now,
         updatedAt: now,
         deletedAt: null,
+        stripeProductMap: {
+          id: 1,
+          allowances: [],
+        },
       };
-
-      const mockLockedPackage = { ...mockPackage, remainingSessions: 1 };
 
       const mockPackageUse = {
         id: 1,
@@ -291,31 +345,21 @@ describe("PackagesService", () => {
         deletedAt: null,
       };
 
-      // Mock the query builder chain for the first call (with lock)
+      // Mock PackageQueryBuilder.buildStudentPackageWithUsesQuery
       const mockQueryBuilderWithLock = {
         leftJoinAndSelect: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        andWhere: vi.fn().mockReturnThis(),
         setLock: vi.fn().mockReturnThis(),
         getOne: vi
           .fn()
           .mockResolvedValue(mockPackage as unknown as StudentPackage),
       };
 
-      // Mock the query builder chain for the second call (without lock)
-      const mockQueryBuilderWithoutLock = {
-        leftJoinAndSelect: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        andWhere: vi.fn().mockReturnThis(),
-        getOne: vi
-          .fn()
-          .mockResolvedValue(mockLockedPackage as unknown as StudentPackage),
-      };
-
-      // Mock createQueryBuilder to return different builders based on context
-      mockPackageRepo.createQueryBuilder
-        .mockReturnValueOnce(mockQueryBuilderWithLock)
-        .mockReturnValueOnce(mockQueryBuilderWithoutLock);
+      vi.spyOn(
+        PackageQueryBuilder,
+        "buildStudentPackageWithUsesQuery",
+      ).mockReturnValue(
+        mockQueryBuilderWithLock as unknown as SelectQueryBuilder<StudentPackage>,
+      );
 
       // Mock useRepo methods
       mockUseRepo.create.mockReturnValue(
@@ -340,6 +384,7 @@ describe("PackagesService", () => {
         PackageQueryBuilder,
         "buildStudentPackageWithUsesQuery",
       ).mockReturnValue({
+        leftJoinAndSelect: vi.fn().mockReturnThis(),
         setLock: vi.fn().mockReturnThis(),
         getOne: vi.fn().mockResolvedValue(null),
       } as unknown as SelectQueryBuilder<StudentPackage>);
@@ -360,6 +405,10 @@ describe("PackagesService", () => {
         expiresAt: null,
         sourcePaymentId: null,
         metadata: null,
+        stripeProductMap: {
+          id: 1,
+          allowances: [],
+        },
         uses: [
           { creditsUsed: 1 },
           { creditsUsed: 1 },
@@ -373,6 +422,7 @@ describe("PackagesService", () => {
         PackageQueryBuilder,
         "buildStudentPackageWithUsesQuery",
       ).mockReturnValue({
+        leftJoinAndSelect: vi.fn().mockReturnThis(),
         setLock: vi.fn().mockReturnThis(),
         getOne: vi
           .fn()
@@ -398,6 +448,10 @@ describe("PackagesService", () => {
         expiresAt: pastDate, // expired
         sourcePaymentId: null,
         metadata: null,
+        stripeProductMap: {
+          id: 1,
+          allowances: [],
+        },
         uses: [],
       };
 
@@ -405,6 +459,7 @@ describe("PackagesService", () => {
         PackageQueryBuilder,
         "buildStudentPackageWithUsesQuery",
       ).mockReturnValue({
+        leftJoinAndSelect: vi.fn().mockReturnThis(),
         setLock: vi.fn().mockReturnThis(),
         getOne: vi
           .fn()

@@ -13,3 +13,5 @@ export interface ExceptionRule {
   startTimeMinutes?: number; // UI representation: minutes from midnight
   endTimeMinutes?: number; // UI representation: minutes from midnight
 }
+
+export type CalendarMode = "availability" | "classes";

@@ -9,10 +9,12 @@ import { PaymentsService } from "../src/payments/payments.service.js";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { StudentPackage } from "../src/packages/entities/student-package.entity.js";
 import { PackageUse } from "../src/packages/entities/package-use.entity.js";
+import { PackageAllowance } from "../src/packages/entities/package-allowance.entity.js";
 import { Student } from "../src/students/entities/student.entity.js";
 import { Session } from "../src/sessions/entities/session.entity.js";
 import { Booking } from "../src/payments/entities/booking.entity.js";
 import { User } from "../src/users/entities/user.entity.js";
+import { StripeProductMap } from "../src/payments/entities/stripe-product-map.entity.js";
 import { BookingStatus } from "../src/payments/entities/booking.entity.js";
 import {
   SessionStatus,
@@ -21,6 +23,10 @@ import {
 import { ServiceType } from "../src/common/types/class-types.js";
 import type supertest from "supertest";
 import { Teacher } from "../src/teachers/entities/teacher.entity.js";
+import {
+  TeacherAvailability,
+  TeacherAvailabilityKind,
+} from "../src/teachers/entities/teacher-availability.entity.js";
 import { AppModule } from "../src/app.module.js";
 import { resetDatabase } from "./utils/reset-db.js";
 import { runMigrations } from "./setup.js";
@@ -37,11 +43,14 @@ describe("Package Booking (e2e)", () => {
   let paymentsService: PaymentsService;
   let studentPackageRepository: Repository<StudentPackage>;
   let packageUseRepository: Repository<PackageUse>;
+  let stripeProductMapRepository: Repository<StripeProductMap>;
+  let packageAllowanceRepository: Repository<PackageAllowance>;
   let studentRepository: Repository<Student>;
   let sessionRepository: Repository<Session>;
   let bookingRepository: Repository<Booking>;
   let userRepository: Repository<User>;
   let teacherRepository: Repository<Teacher>;
+  let teacherAvailabilityRepository: Repository<TeacherAvailability>;
   let testTeacherId: number;
 
   // Test data
@@ -60,10 +69,14 @@ describe("Package Booking (e2e)", () => {
         TypeOrmModule.forFeature([
           StudentPackage,
           PackageUse,
+          StripeProductMap,
+          PackageAllowance,
           Student,
           Session,
           Booking,
           User,
+          Teacher,
+          TeacherAvailability,
         ]),
         AppModule,
       ],
@@ -90,6 +103,12 @@ describe("Package Booking (e2e)", () => {
     packageUseRepository = moduleFixture.get<Repository<PackageUse>>(
       "PackageUseRepository",
     );
+    stripeProductMapRepository = moduleFixture.get<
+      Repository<StripeProductMap>
+    >("StripeProductMapRepository");
+    packageAllowanceRepository = moduleFixture.get<
+      Repository<PackageAllowance>
+    >("PackageAllowanceRepository");
     studentRepository =
       moduleFixture.get<Repository<Student>>("StudentRepository");
     sessionRepository =
@@ -99,6 +118,9 @@ describe("Package Booking (e2e)", () => {
     userRepository = moduleFixture.get<Repository<User>>("UserRepository");
     teacherRepository =
       moduleFixture.get<Repository<Teacher>>("TeacherRepository");
+    teacherAvailabilityRepository = moduleFixture.get<
+      Repository<TeacherAvailability>
+    >("TeacherAvailabilityRepository");
 
     // Set up test data
     await setupTestData();
@@ -162,16 +184,35 @@ describe("Package Booking (e2e)", () => {
     }
     testTeacherId = savedTeacher.id;
 
-    // Create test session
+    // Create teacher availability for testing
+    // Create ONE_OFF availability for tomorrow (wider window to accommodate milliseconds)
+    const tomorrow = new Date(Date.now() + 86400000);
+    const tomorrowMinusBuffer = new Date(tomorrow.getTime() - 60000); // 1 minute before
+    const tomorrowPlusHourPlusBuffer = new Date(
+      tomorrow.getTime() + 3600000 + 60000,
+    ); // 1 hour + 1 minute after
+
+    const availability = teacherAvailabilityRepository.create({
+      teacherId: testTeacherId,
+      kind: TeacherAvailabilityKind.ONE_OFF,
+      startAt: tomorrowMinusBuffer,
+      endAt: tomorrowPlusHourPlusBuffer,
+      weekday: null,
+      startTimeMinutes: null,
+      endTimeMinutes: null,
+      isActive: true,
+    });
+    await teacherAvailabilityRepository.save(availability);
+
+    // Create test session (30 minutes, matching the allowance creditUnitMinutes)
     const sessionPartial: Partial<Session> = {
       teacherId: testTeacherId,
       startAt: new Date(Date.now() + 86400000),
-      endAt: new Date(Date.now() + 86400000 + 3600000),
+      endAt: new Date(Date.now() + 86400000 + 1800000), // +30 minutes
       status: SessionStatus.SCHEDULED,
       visibility: SessionVisibility.PUBLIC,
       type: ServiceType.PRIVATE,
       capacityMax: 1,
-      courseId: null,
       createdFromAvailabilityId: null,
       requiresEnrollment: false,
       meetingUrl: null,
@@ -182,8 +223,30 @@ describe("Package Booking (e2e)", () => {
     testSessionId = savedSession.id;
 
     // Create test package
+    // First, create StripeProductMap
+    const stripeProductMap = stripeProductMapRepository.create({
+      serviceKey: "TEST_PRIVATE_5PACK",
+      stripeProductId: "prod_test_private_5",
+      active: true,
+      metadata: {},
+    });
+    const savedProductMap =
+      await stripeProductMapRepository.save(stripeProductMap);
+
+    // Then create PackageAllowance linked to the product map
+    const packageAllowance = packageAllowanceRepository.create({
+      stripeProductMapId: savedProductMap.id,
+      serviceType: ServiceType.PRIVATE,
+      teacherTier: 10, // Match the teacher's tier
+      credits: 5,
+      creditUnitMinutes: 30,
+    });
+    await packageAllowanceRepository.save(packageAllowance);
+
+    // Now create the student package
     const studentPackage = studentPackageRepository.create({
       studentId: testStudentId,
+      stripeProductMapId: savedProductMap.id,
       packageName: "5-class test pack",
       totalSessions: 5,
       purchasedAt: new Date(),
@@ -228,7 +291,7 @@ describe("Package Booking (e2e)", () => {
       expect(creditsBody.packages).toHaveLength(1);
       const pkg = creditsBody.packages[0];
       expect(pkg.packageName).toBe("5-class test pack");
-      expect(creditsBody.totalRemaining).toBe(3);
+      expect(creditsBody.totalRemaining).toBe(5);
     });
 
     it("should return 401 when user not authenticated", async () => {
@@ -330,8 +393,7 @@ describe("Package Booking (e2e)", () => {
     it("should successfully create session and book with package", async () => {
       const futureStart = new Date(Date.now() + 86400000); // tomorrow
       const futureEnd = new Date(futureStart.getTime() + 3600000); // +1 hour
-
-      const response = await request(httpServer)
+      const res = await request(httpServer)
         .post(`/packages/${testPackageId}/use`)
         .set("x-auth-user-id", testUserId.toString())
         .send({
@@ -341,11 +403,51 @@ describe("Package Booking (e2e)", () => {
             endAt: futureEnd.toISOString(),
           },
           allowanceId: 1, // assuming allowance ID 1 exists
-        })
-        .expect(201);
+        });
 
-      expect(response.body.session).toBeDefined();
-      expect(response.body.booking).toBeDefined();
+      expect(res.statusCode).toBe(201);
+
+      const response = res as supertest.Response & {
+        body: {
+          session: {
+            id: number;
+            teacherId: number;
+            startAt: string;
+            endAt: string;
+            status: SessionStatus;
+            visibility: SessionVisibility;
+            type: ServiceType;
+            capacityMax: number;
+          };
+          booking: {
+            id: number;
+            status: BookingStatus;
+            studentPackageId: number;
+            creditsCost: number;
+          };
+        };
+      };
+      // Validate booking shape using shared schema
+      const body = response.body as unknown as {
+        session: unknown;
+        booking: unknown;
+      };
+      const bookingBody = BookingResponseSchema.parse(body.booking);
+      expect(bookingBody.id).toBeDefined();
+      expect(bookingBody.status).toBe(BookingStatus.CONFIRMED);
+
+      // Validate session minimal fields
+      const sessionBody = body.session as {
+        id?: number;
+        teacherId?: number;
+        type?: ServiceType;
+        status?: SessionStatus;
+      };
+      expect(sessionBody).toBeDefined();
+      expect(sessionBody.id).toBeDefined();
+      expect(sessionBody.teacherId).toBe(testTeacherId);
+      expect(sessionBody.type).toBe(ServiceType.PRIVATE);
+      expect(sessionBody.status).toBe(SessionStatus.SCHEDULED);
     });
   });
 
@@ -360,7 +462,6 @@ describe("Package Booking (e2e)", () => {
         visibility: SessionVisibility.PUBLIC,
         type: ServiceType.PRIVATE,
         capacityMax: 1,
-        courseId: null,
         createdFromAvailabilityId: null,
         requiresEnrollment: false,
         meetingUrl: null,
