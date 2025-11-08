@@ -95,7 +95,7 @@
     </div>
 
     <!-- Schedule Type -->
-    <div>
+    <div v-if="!hideRecurringOption">
       <h4 class="text-md font-medium text-gray-900 mb-3">Schedule Type *</h4>
       <div class="flex gap-4">
         <label class="flex items-center cursor-pointer">
@@ -349,6 +349,10 @@ export default defineComponent({
     courseContext: {
       type: Object as PropType<{ courseProgramId: number; stepId: number } | null>,
       default: null,
+    },
+    hideRecurringOption: {
+      type: Boolean,
+      default: false,
     },
   },
   emits: ['submit', 'cancel'],

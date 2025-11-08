@@ -5,153 +5,39 @@
     @click.self="$emit('close')"
   >
     <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-      <div class="px-6 py-4 border-b border-gray-200">
-        <div class="flex items-center justify-between">
-          <div>
-            <h3 class="text-lg font-semibold text-gray-900">
-              Assign Sessions: {{ cohort.name }}
-            </h3>
-            <p class="text-sm text-gray-600 mt-1">
-              Course: {{ course.title }}
-            </p>
-          </div>
-          <button
-            @click="$emit('close')"
-            class="text-gray-400 hover:text-gray-500"
-          >
-            <span class="sr-only">Close</span>
-            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      </div>
+      <AssignSessionsModalHeader
+        :course="course"
+        :cohort="cohort"
+        :active-tab="activeTab"
+        @close="$emit('close')"
+        @tab-change="activeTab = $event"
+      />
 
       <div class="px-6 py-4">
         <!-- Loading State -->
-        <div v-if="loading" class="text-center py-8">
-          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p class="mt-2 text-gray-600">Loading cohort details...</p>
-        </div>
+        <AssignSessionsLoadingState v-if="loading" message="Loading cohort details..." />
 
         <!-- Error State -->
-        <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-md p-4">
-          <p class="text-red-800">{{ error }}</p>
-        </div>
+        <AssignSessionsErrorState v-else-if="error" :error="error" />
 
-        <!-- Step Assignment List -->
-        <div v-else class="space-y-4">
-          <div class="bg-blue-50 border border-blue-200 rounded-md p-3">
-            <p class="text-sm text-blue-800">
-              Assign a group class session to each course step. Students enrolling in this cohort will automatically be assigned these sessions.
-            </p>
-          </div>
+        <!-- SELECT EXISTING TAB -->
+        <AssignSessionsSelectTab
+          v-else-if="activeTab === 'select'"
+          :course="course"
+          :cohort-detail="cohortDetail"
+          :assigning="assigning"
+          @assign-session="handleAssignSession"
+          @remove-session="handleRemoveSession"
+        />
 
-          <div
-            v-for="step in course.steps"
-            :key="step.id"
-            class="border border-gray-200 rounded-lg p-4"
-          >
-            <div class="flex items-start justify-between mb-3">
-              <div>
-                <div class="flex items-center gap-2">
-                  <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">
-                    {{ step.stepOrder }}
-                  </span>
-                  <h4 class="text-sm font-medium text-gray-900">
-                    {{ step.label }}: {{ step.title }}
-                  </h4>
-                  <span
-                    v-if="!step.isRequired"
-                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800"
-                  >
-                    Optional
-                  </span>
-                </div>
-                <p v-if="step.description" class="text-xs text-gray-500 mt-1 ml-8">
-                  {{ step.description }}
-                </p>
-              </div>
-            </div>
-
-            <!-- Currently Assigned Session -->
-            <div v-if="getAssignedSession(step.id)" class="ml-8 mb-3 bg-green-50 border border-green-200 rounded-md p-3">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm font-medium text-green-900">
-                    Currently Assigned: {{ getAssignedSession(step.id)?.groupClassName }}
-                  </p>
-                  <p class="text-xs text-green-700 mt-1">
-                    {{ formatSessionTime(getAssignedSession(step.id)!) }}
-                  </p>
-                </div>
-                <button
-                  @click="handleRemoveSession(step.id)"
-                  class="text-red-600 hover:text-red-800 text-xs font-medium"
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
-
-            <!-- Available Options -->
-            <div class="ml-8 space-y-2">
-              <label class="block text-xs font-medium text-gray-700 mb-2">
-                {{ getAssignedSession(step.id) ? 'Change to:' : 'Select Session:' }}
-              </label>
-              <div v-if="step.options.length === 0" class="text-sm text-gray-500 italic">
-                No group class options available for this step. Add options in "Manage Steps" first.
-              </div>
-              <div v-else class="space-y-2">
-                <button
-                  v-for="option in step.options"
-                  :key="option.id"
-                  @click="handleAssignSession(step.id, option.id)"
-                  :disabled="assigning"
-                  class="w-full text-left px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 hover:border-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <p class="text-sm font-medium text-gray-900">
-                        {{ option.groupClassName }}
-                      </p>
-                      <p class="text-xs text-gray-600 mt-0.5">
-                        {{ formatSessionTime(option) }}
-                      </p>
-                    </div>
-                    <div class="text-xs text-gray-500">
-                      {{ option.availableSeats }} seats available
-                    </div>
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Summary -->
-          <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-900">
-                  Assignment Progress
-                </p>
-                <p class="text-xs text-gray-600 mt-1">
-                  {{ assignedCount }} of {{ course.steps.length }} steps have sessions assigned
-                </p>
-              </div>
-              <div
-                :class="[
-                  'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium',
-                  assignedCount === course.steps.length
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-yellow-100 text-yellow-800'
-                ]"
-              >
-                {{ assignedCount === course.steps.length ? 'Complete' : 'Incomplete' }}
-              </div>
-            </div>
-          </div>
-        </div>
+        <!-- CREATE NEW TAB -->
+        <AssignSessionsCreateTab
+          v-else-if="activeTab === 'create'"
+          :course="course"
+          :levels="levels"
+          :teachers="teachers"
+          @session-created="handleNewSessionCreated"
+        />
       </div>
 
       <div class="px-6 py-4 border-t border-gray-200 flex justify-end">
@@ -173,11 +59,24 @@ import type {
   CourseProgramDetailDto,
   CourseCohortListItemDto,
   CourseCohortDetailDto,
-  StepOptionDetailDto
+  LevelDto,
+  PublicTeacherDto
 } from '@thrive/shared';
+import AssignSessionsModalHeader from './assign-sessions/AssignSessionsModalHeader.vue';
+import AssignSessionsLoadingState from './assign-sessions/AssignSessionsLoadingState.vue';
+import AssignSessionsErrorState from './assign-sessions/AssignSessionsErrorState.vue';
+import AssignSessionsSelectTab from './assign-sessions/AssignSessionsSelectTab.vue';
+import AssignSessionsCreateTab from './assign-sessions/AssignSessionsCreateTab.vue';
 
 export default defineComponent({
   name: 'AssignSessionsModal',
+  components: {
+    AssignSessionsModalHeader,
+    AssignSessionsLoadingState,
+    AssignSessionsErrorState,
+    AssignSessionsSelectTab,
+    AssignSessionsCreateTab
+  },
   props: {
     course: {
       type: Object as PropType<CourseProgramDetailDto | null>,
@@ -194,6 +93,10 @@ export default defineComponent({
     const assigning = ref(false);
     const error = ref<string | null>(null);
     const cohortDetail = ref<CourseCohortDetailDto | null>(null);
+    const activeTab = ref<'select' | 'create'>('select');
+    const selectedStepForCreation = ref<number | null>(null);
+    const levels = ref<LevelDto[]>([]);
+    const teachers = ref<PublicTeacherDto[]>([]);
 
     const loadCohortDetails = async () => {
       if (!props.cohort) return;
@@ -210,15 +113,27 @@ export default defineComponent({
       }
     };
 
-    const getAssignedSession = (stepId: number) => {
-      if (!cohortDetail.value) return null;
-      return cohortDetail.value.sessions.find(s => s.courseStepId === stepId) ?? null
+    const loadLevelsAndTeachers = async () => {
+      try {
+        const [fetchedLevels, fetchedTeachers] = await Promise.all([
+          thriveClient.fetchLevels(),
+          thriveClient.fetchTeachers(),
+        ]);
+        levels.value = fetchedLevels;
+        teachers.value = fetchedTeachers;
+      } catch (err: any) {
+        console.error('Failed to load levels or teachers:', err);
+      }
     };
 
-    const assignedCount = computed(() => {
-      if (!cohortDetail.value || !props.course) return 0;
-      return cohortDetail.value.sessions.length;
-    });
+    const handleNewSessionCreated = async (createdGroupClass: any) => {
+      // After the session is created and auto-attached to the step,
+      // refresh cohort details and return to the select tab
+      await loadCohortDetails();
+      activeTab.value = 'select';
+      selectedStepForCreation.value = null;
+      emit('sessions-updated');
+    };
 
     const handleAssignSession = async (stepId: number, optionId: number) => {
       if (!props.cohort) return;
@@ -263,33 +178,31 @@ export default defineComponent({
       }
     };
 
-    const formatSessionTime = (option: StepOptionDetailDto|CourseCohortDetailDto["sessions"][number]|null) => {
-      if (!option || !option.dayOfWeek || !option.startTime) {
-        return 'Schedule TBD';
-      }
-
-      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const dayName = days[option.dayOfWeek];
-
-      return `${dayName}s at ${option.startTime} (${option.timezone || 'UTC'})`;
-    };
-
     watch(() => props.cohort, (newCohort) => {
       if (newCohort) {
         loadCohortDetails();
       }
     }, { immediate: true });
 
+    watch(() => activeTab.value, (newTab) => {
+      // Load levels and teachers when switching to create tab
+      if (newTab === 'create' && levels.value.length === 0) {
+        loadLevelsAndTeachers();
+      }
+    });
+
     return {
       loading,
       assigning,
       error,
       cohortDetail,
-      assignedCount,
-      getAssignedSession,
+      activeTab,
+      selectedStepForCreation,
+      levels,
+      teachers,
       handleAssignSession,
       handleRemoveSession,
-      formatSessionTime
+      handleNewSessionCreated
     };
   }
 });

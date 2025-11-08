@@ -22,6 +22,7 @@
           :mode="isEdit ? 'edit' : 'create'"
           :default-values="defaultValues"
           :course-context="courseContext"
+          :hide-recurring-option="hideRecurringOption"
           @submit="handleSubmit"
           @cancel="$emit('close')"
         />
@@ -66,6 +67,10 @@ export default defineComponent({
     courseContext: {
       type: Object as PropType<{ courseProgramId: number; stepId: number } | null>,
       default: null,
+    },
+    hideRecurringOption: {
+      type: Boolean,
+      default: false,
     },
   },
   emits: ['close', 'save'],

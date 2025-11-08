@@ -54,7 +54,7 @@
               required
               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
-            <p class="mt-1 text-xs text-gray-500">First session date</p>
+            <p class="mt-1 text-xs text-gray-500">First session date (UTC)</p>
           </div>
           <div>
             <label for="endDate" class="block text-sm font-medium text-gray-700">
@@ -68,29 +68,8 @@
               :min="form.startDate"
               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
-            <p class="mt-1 text-xs text-gray-500">Last session date</p>
+            <p class="mt-1 text-xs text-gray-500">Last session date (UTC)</p>
           </div>
-        </div>
-
-        <!-- Timezone -->
-        <div>
-          <label for="timezone" class="block text-sm font-medium text-gray-700">
-            Timezone
-          </label>
-          <select
-            id="timezone"
-            v-model="form.timezone"
-            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-          >
-            <option value="America/New_York">America/New York (EST/EDT)</option>
-            <option value="America/Chicago">America/Chicago (CST/CDT)</option>
-            <option value="America/Denver">America/Denver (MST/MDT)</option>
-            <option value="America/Los_Angeles">America/Los Angeles (PST/PDT)</option>
-            <option value="Europe/London">Europe/London (GMT/BST)</option>
-            <option value="Europe/Paris">Europe/Paris (CET/CEST)</option>
-            <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
-            <option value="Australia/Sydney">Australia/Sydney (AEDT/AEST)</option>
-          </select>
         </div>
 
         <!-- Maximum Enrollment -->
@@ -174,7 +153,6 @@ interface CohortForm {
   description: string;
   startDate: string;
   endDate: string;
-  timezone: string;
   maxEnrollment: number;
   enrollmentDeadline: string;
   isActive: boolean;
@@ -202,7 +180,6 @@ export default defineComponent({
       description: '',
       startDate: '',
       endDate: '',
-      timezone: 'America/New_York',
       maxEnrollment: 30,
       enrollmentDeadline: '',
       isActive: true
@@ -213,7 +190,6 @@ export default defineComponent({
       form.description = '';
       form.startDate = '';
       form.endDate = '';
-      form.timezone = props.course?.timezone || 'America/New_York';
       form.maxEnrollment = 30;
       form.enrollmentDeadline = '';
       form.isActive = true;
@@ -224,7 +200,6 @@ export default defineComponent({
       form.description = cohort.description || '';
       form.startDate = cohort.startDate;
       form.endDate = cohort.endDate;
-      form.timezone = cohort.timezone;
       form.maxEnrollment = cohort.maxEnrollment;
       form.enrollmentDeadline = cohort.enrollmentDeadline
         ? new Date(cohort.enrollmentDeadline).toISOString().slice(0, 16)
@@ -244,7 +219,6 @@ export default defineComponent({
           description: form.description || null,
           startDate: form.startDate,
           endDate: form.endDate,
-          timezone: form.timezone,
           maxEnrollment: form.maxEnrollment,
           enrollmentDeadline: form.enrollmentDeadline
             ? new Date(form.enrollmentDeadline).toISOString()
@@ -273,12 +247,6 @@ export default defineComponent({
         populateForm(newCohort);
       } else {
         resetForm();
-      }
-    }, { immediate: true });
-
-    watch(() => props.course, (newCourse) => {
-      if (newCourse && !props.cohort) {
-        form.timezone = newCourse.timezone;
       }
     }, { immediate: true });
 
