@@ -10,7 +10,7 @@
       v-for="step in course.steps"
       :key="step.id"
       :step="step"
-      :assigned-session="getAssignedSession(step.id)"
+      :assigned-sessions="getAssignedSessions(step.id)"
       :assigning="assigning"
       @assign-session="handleAssignSession"
       @remove-session="handleRemoveSession"
@@ -56,15 +56,15 @@ export default defineComponent({
     }
   },
   methods: {
-    getAssignedSession(stepId: number) {
-      if (!this.cohortDetail) return null;
-      return this.cohortDetail.sessions.find(s => s.courseStepId === stepId) ?? null;
+    getAssignedSessions(stepId: number) {
+      if (!this.cohortDetail) return [];
+      return this.cohortDetail.sessions.filter(s => s.courseStepId === stepId);
     },
     handleAssignSession(stepId: number, optionId: number) {
       this.$emit('assign-session', stepId, optionId);
     },
-    handleRemoveSession(stepId: number) {
-      this.$emit('remove-session', stepId);
+    handleRemoveSession(stepId: number, optionId: number) {
+      this.$emit('remove-session', stepId, optionId);
     }
   }
 });

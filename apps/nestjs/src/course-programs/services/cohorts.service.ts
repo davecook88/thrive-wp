@@ -107,7 +107,6 @@ export class CohortsService {
       description: cohort.description,
       startDate: cohort.startDate,
       endDate: cohort.endDate,
-      timezone: cohort.timezone,
       maxEnrollment: cohort.maxEnrollment,
       currentEnrollment: cohort.currentEnrollment,
       enrollmentDeadline: cohort.enrollmentDeadline?.toISOString() || null,
@@ -123,9 +122,14 @@ export class CohortsService {
   async findPublicByCourseProgram(courseProgramId: number) {
     const cohorts = await this.cohortRepo
       .createQueryBuilder("cohort")
-      .leftJoinAndSelect("cohort.cohortSessions", "sessions")
+      .leftJoinAndSelect("cohort.cohortSessions", "cohortSessions")
+      .leftJoinAndSelect("cohortSessions.courseStep", "courseStep")
+      .leftJoinAndSelect("cohortSessions.courseStepOption", "courseStepOption")
+      .leftJoinAndSelect("courseStepOption.groupClass", "groupClass")
+      .leftJoinAndSelect("groupClass.session", "session")
       .where("cohort.courseProgramId = :courseProgramId", { courseProgramId })
       .orderBy("cohort.startDate", "ASC")
+      .addOrderBy("courseStep.stepOrder", "ASC")
       .getMany();
 
     const now = new Date();
@@ -136,17 +140,37 @@ export class CohortsService {
         ? new Date(cohort.enrollmentDeadline) < now
         : false;
 
+      // Map cohort sessions with full details
+      const sessions = cohort.cohortSessions.map((cs) => {
+        const session = cs.courseStepOption.groupClass.session;
+        return {
+          id: cs.id,
+          cohortId: cs.cohortId,
+          courseStepId: cs.courseStepId,
+          courseStepOptionId: cs.courseStepOptionId,
+          stepLabel: cs.courseStep.label,
+          stepTitle: cs.courseStep.title,
+          stepOrder: cs.courseStep.stepOrder,
+          groupClassName: cs.courseStepOption.groupClass.title,
+          sessionDateTime: session?.startAt.toISOString() || "",
+          durationMinutes: session
+            ? Math.floor(
+                (session.endAt.getTime() - session.startAt.getTime()) / 60000,
+              )
+            : 60,
+        };
+      });
+
       return {
         id: cohort.id,
         name: cohort.name,
         description: cohort.description,
         startDate: cohort.startDate,
         endDate: cohort.endDate,
-        timezone: cohort.timezone,
         availableSpots,
         enrollmentDeadline: cohort.enrollmentDeadline?.toISOString() || null,
         isAvailable: cohort.isActive && availableSpots > 0 && !deadlinePassed,
-        sessions: [], // Populated by findOneDetail if needed
+        sessions,
       };
     });
   }
@@ -204,7 +228,6 @@ export class CohortsService {
       description: cohort.description,
       startDate: cohort.startDate,
       endDate: cohort.endDate,
-      timezone: cohort.timezone,
       maxEnrollment: cohort.maxEnrollment,
       currentEnrollment: cohort.currentEnrollment,
       enrollmentDeadline: cohort.enrollmentDeadline?.toISOString() || null,

@@ -1,0 +1,317 @@
+/* Course Detail Block Styles */
+
+.course-detail {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* Hero Section */
+.course-detail__hero {
+  margin-bottom: 3rem;
+}
+
+.course-detail__badges-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.course-detail__badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.level-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.enrollment-badge--enrolled {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background-color: #10b981;
+  color: white;
+}
+
+.course-detail__title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0.5rem 0;
+  color: #111827;
+}
+
+.course-detail__description {
+  font-size: 1.125rem;
+  line-height: 1.75;
+  color: #6b7280;
+  margin: 1rem 0;
+}
+
+.course-detail__meta {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  margin-top: 1.5rem;
+}
+
+.course-detail__steps,
+.course-detail__price {
+  font-size: 1rem;
+  color: #374151;
+}
+
+.course-detail__price {
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: #111827;
+}
+
+/* Schedule Selector Section */
+.course-detail__schedules {
+  margin-bottom: 3rem;
+}
+
+.course-detail__section-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: #111827;
+}
+
+.course-detail__schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.course-detail__schedule-card {
+  border: 2px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: white;
+}
+
+.course-detail__schedule-card:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.course-detail__schedule-card--selected {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+}
+
+.course-detail__schedule-card--unavailable {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #f9fafb;
+}
+
+.course-detail__schedule-card--unavailable:hover {
+  border-color: #e5e7eb;
+  box-shadow: none;
+  transform: none;
+}
+
+.course-detail__schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.course-detail__schedule-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  color: #111827;
+}
+
+.course-detail__schedule-check {
+  font-size: 1.5rem;
+  color: #3b82f6;
+}
+
+.course-detail__schedule-dates {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+}
+
+.course-detail__schedule-description {
+  font-size: 0.875rem;
+  color: #374151;
+  margin: 0.75rem 0;
+  line-height: 1.5;
+}
+
+.course-detail__schedule-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.course-detail__schedule-spots {
+  font-size: 0.875rem;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.course-detail__schedule-spots--full {
+  color: #ef4444;
+}
+
+.course-detail__schedule-unavailable {
+  font-size: 0.875rem;
+  color: #ef4444;
+  font-weight: 600;
+}
+
+/* Calendar Section */
+.course-detail__calendar {
+  margin-bottom: 3rem;
+}
+
+.course-detail__calendar-loading,
+.course-detail__calendar-empty {
+  padding: 3rem;
+  text-align: center;
+  color: #6b7280;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+/* CTA Section */
+.course-detail__cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  background-color: #f9fafb;
+  border-radius: 0.75rem;
+  text-align: center;
+}
+
+.course-detail__enrolled {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.course-detail__enrolled-message {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #10b981;
+  margin: 0;
+}
+
+.course-detail__cta-hint {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* Buttons */
+.button {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  font-size: 1rem;
+}
+
+.button--primary {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.button--primary:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.button--secondary {
+  background-color: white;
+  color: #3b82f6;
+  border: 2px solid #3b82f6;
+}
+
+.button--secondary:hover {
+  background-color: #eff6ff;
+}
+
+.button--large {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Loading and Error States */
+.course-detail--loading,
+.course-detail--error {
+  padding: 3rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.course-detail__error,
+.course-detail__empty {
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .course-detail__title {
+    font-size: 2rem;
+  }
+
+  .course-detail__section-title {
+    font-size: 1.5rem;
+  }
+
+  .course-detail__schedule-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .course-detail__meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+/* Block Editor Preview */
+.course-detail-block-editor .components-placeholder {
+  min-height: 200px;
+}

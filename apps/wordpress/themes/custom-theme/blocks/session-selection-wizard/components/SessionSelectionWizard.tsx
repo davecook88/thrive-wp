@@ -17,7 +17,10 @@ interface StepOption {
   groupClassId: number;
   groupClassName: string;
   capacityMax: number;
+  spotsAvailable?: number;
   isActive: boolean;
+  startAt?: string;
+  endAt?: string;
 }
 
 export default function SessionSelectionWizard({
@@ -47,7 +50,9 @@ export default function SessionSelectionWizard({
         );
 
         if (!sessionResponse.ok) {
-          throw new Error(`Failed to fetch enrollment data: ${sessionResponse.statusText}`);
+          throw new Error(
+            `Failed to fetch enrollment data: ${sessionResponse.statusText}`,
+          );
         }
 
         const sessionData = (await sessionResponse.json()) as {
@@ -77,11 +82,23 @@ export default function SessionSelectionWizard({
           if (stepsResponse.ok) {
             const stepsData = (await stepsResponse.json()) as Step[];
             setSteps(stepsData);
+
+            // Auto-select single-option steps
+            const initialSelections: Record<number, number> = {};
+            stepsData.forEach((step) => {
+              if (step.options.length === 1) {
+                initialSelections[step.stepId] =
+                  step.options[0].courseStepOptionId;
+              }
+            });
+            if (Object.keys(initialSelections).length > 0) {
+              setSelections(initialSelections);
+            }
           } else {
             console.log("Unbooked steps endpoint not implemented yet");
             setSteps([]);
           }
-        } catch (stepsError) {
+        } catch {
           console.log("Unbooked steps endpoint not implemented yet");
           // This is okay - just means we don't have steps to show
           setSteps([]);
@@ -91,9 +108,7 @@ export default function SessionSelectionWizard({
       } catch (err: unknown) {
         console.error("Error fetching enrollment data:", err);
         const errorMessage =
-          err instanceof Error
-            ? err.message
-            : "Failed to load enrollment data";
+          err instanceof Error ? err.message : "Failed to load enrollment data";
         setError(errorMessage);
       } finally {
         setLoading(false);
@@ -133,13 +148,11 @@ export default function SessionSelectionWizard({
       );
 
       if (!response.ok) {
-        throw new Error(
-          `Failed to book sessions: ${response.statusText}`,
-        );
+        throw new Error(`Failed to book sessions: ${response.statusText}`);
       }
 
-      // Success! Redirect to dashboard
-      window.location.href = "/dashboard";
+      // Success! Redirect to student dashboard
+      window.location.href = "/student";
     } catch (err: unknown) {
       console.error("Booking error:", err);
       const errorMessage =
@@ -153,8 +166,8 @@ export default function SessionSelectionWizard({
   };
 
   const handleSkip = () => {
-    // Allow skipping, can book later from dashboard
-    window.location.href = "/dashboard";
+    // Allow skipping, can book later from student dashboard
+    window.location.href = "/student";
   };
 
   if (loading) {
@@ -173,19 +186,29 @@ export default function SessionSelectionWizard({
   }
 
   const stepsNeedingSelection = steps.filter((step) => step.options.length > 1);
-  const allSelected = stepsNeedingSelection.every((step) => selections[step.stepId]);
+  const allSelected = stepsNeedingSelection.every(
+    (step) => selections[step.stepId],
+  );
 
   return (
     <div className="session-wizard">
       {courseInfo && (
-        <div style={{
-          background: "white",
-          padding: "1.5rem",
-          borderRadius: "8px",
-          marginBottom: "2rem",
-          border: "1px solid #e5e7eb"
-        }}>
-          <h2 style={{ margin: "0 0 1rem 0", fontSize: "1.5rem", color: "#1f2937" }}>
+        <div
+          style={{
+            background: "white",
+            padding: "1.5rem",
+            borderRadius: "8px",
+            marginBottom: "2rem",
+            border: "1px solid #e5e7eb",
+          }}
+        >
+          <h2
+            style={{
+              margin: "0 0 1rem 0",
+              fontSize: "1.5rem",
+              color: "#1f2937",
+            }}
+          >
             Enrollment Confirmed! ✅
           </h2>
           <div style={{ fontSize: "1rem", color: "#4b5563" }}>
@@ -229,44 +252,89 @@ export default function SessionSelectionWizard({
                 </h3>
 
                 <div className="wizard-step__options">
-                  {step.options.map((option) => (
-                    <label
-                      key={option.courseStepOptionId}
-                      className={`option-card ${
-                        selections[step.stepId] === option.courseStepOptionId
-                          ? "option-card--selected"
-                          : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name={`step-${step.stepId}`}
-                        value={option.courseStepOptionId}
-                        checked={
+                  {step.options.map((option) => {
+                    const formatDateTime = (isoString?: string) => {
+                      if (!isoString) return "";
+                      const date = new Date(isoString);
+                      return new Intl.DateTimeFormat("en-US", {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                        timeZoneName: "short",
+                      }).format(date);
+                    };
+
+                    const spotsAvailable =
+                      option.spotsAvailable !== undefined
+                        ? option.spotsAvailable
+                        : option.capacityMax;
+                    const isFull = spotsAvailable === 0;
+
+                    return (
+                      <label
+                        key={option.courseStepOptionId}
+                        className={`option-card ${
                           selections[step.stepId] === option.courseStepOptionId
-                        }
-                        onChange={() =>
-                          handleSelectionChange(
-                            step.stepId,
-                            option.courseStepOptionId,
-                          )
-                        }
-                      />
-                      <div className="option-card__content">
-                        <div className="option-card__name">
-                          {option.groupClassName}
-                        </div>
-                        <div className="option-card__capacity">
-                          Capacity: {option.capacityMax} students
-                        </div>
-                        {!option.isActive && (
-                          <div className="option-card__inactive">
-                            (Currently inactive)
+                            ? "option-card--selected"
+                            : ""
+                        } ${isFull ? "option-card--full" : ""}`}
+                      >
+                        <input
+                          type="radio"
+                          name={`step-${step.stepId}`}
+                          value={option.courseStepOptionId}
+                          checked={
+                            selections[step.stepId] ===
+                            option.courseStepOptionId
+                          }
+                          disabled={isFull}
+                          onChange={() =>
+                            handleSelectionChange(
+                              step.stepId,
+                              option.courseStepOptionId,
+                            )
+                          }
+                        />
+                        <div className="option-card__content">
+                          <div className="option-card__name">
+                            {option.groupClassName}
                           </div>
-                        )}
-                      </div>
-                    </label>
-                  ))}
+                          {option.startAt && (
+                            <div className="option-card__time">
+                              📅 {formatDateTime(option.startAt)}
+                            </div>
+                          )}
+                          <div
+                            className="option-card__capacity"
+                            style={{
+                              color: isFull
+                                ? "#dc2626"
+                                : spotsAvailable < 3
+                                  ? "#f59e0b"
+                                  : "#10b981",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {isFull ? (
+                              "🔒 Session Full"
+                            ) : (
+                              <>
+                                ✓ {spotsAvailable}{" "}
+                                {spotsAvailable === 1 ? "spot" : "spots"} left
+                              </>
+                            )}
+                          </div>
+                          {!option.isActive && (
+                            <div className="option-card__inactive">
+                              (Currently inactive)
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -277,7 +345,7 @@ export default function SessionSelectionWizard({
               Book Later
             </button>
             <button
-              onClick={handleSubmit}
+              onClick={() => void handleSubmit()}
               disabled={!allSelected || submitting}
               className="button button--primary"
             >

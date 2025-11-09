@@ -1,0 +1,46 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "custom-theme/course-detail",
+  "title": "Course Detail Page",
+  "category": "thrive",
+  "icon": "welcome-learn-more",
+  "description": "Complete course detail page with schedule selection and enrollment",
+  "keywords": [
+    "course",
+    "detail",
+    "enrollment",
+    "cohort",
+    "calendar"
+  ],
+  "attributes": {
+    "showDescription": {
+      "type": "boolean",
+      "default": true
+    },
+    "showLevelBadges": {
+      "type": "boolean",
+      "default": true
+    },
+    "showPrice": {
+      "type": "boolean",
+      "default": true
+    },
+    "showStepCount": {
+      "type": "boolean",
+      "default": true
+    },
+    "defaultView": {
+      "type": "string",
+      "default": "week",
+      "enum": ["week", "month"]
+    },
+    "calendarHeight": {
+      "type": "number",
+      "default": 600
+    }
+  },
+  "editorScript": "custom-theme-blocks",
+  "style": "file:./style.css",
+  "render": "file:./render.php"
+}

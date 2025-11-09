@@ -7,8 +7,9 @@ import "./course-header/index.tsx";
 import "./course-cohorts/index.tsx";
 import "./course-sessions-calendar/index.tsx";
 import "./course-details/index.tsx";
+import "./course-detail/index.tsx";
 import "./private-session-availability-calendar/index.tsx";
-import "./teacher-availability/index.tsx";
+// import "./teacher-availability/index.tsx"; // Commented out - block doesn't exist
 import "./teacher-profile-form/index.tsx";
 // import "./thrive-calendar-context/index.tsx"; // Commented out - block doesn't exist
 import "./selected-event-modal/index.tsx";

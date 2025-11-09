@@ -117,7 +117,25 @@ export class AdminCourseProgramsController {
 
   @Get("steps/:stepId/options")
   async listOptions(@Param("stepId", ParseIntPipe) stepId: number) {
-    return this.courseStepsService.listOptions(stepId);
+    const options = await this.courseStepsService.listOptions(stepId);
+
+    // Transform to StepOptionDetailDto format
+    return options.map((option) => ({
+      id: option.id,
+      groupClassId: option.groupClassId,
+      groupClassName: option.groupClass.title,
+      isActive: option.isActive,
+      maxStudents: option.groupClass.capacityMax,
+      availableSeats: option.groupClass.capacityMax,
+      // Session info with times in UTC - client handles timezone conversion
+      session: option.groupClass.session
+        ? {
+            id: option.groupClass.session.id,
+            startAt: option.groupClass.session.startAt.toISOString(),
+            endAt: option.groupClass.session.endAt.toISOString(),
+          }
+        : undefined,
+    }));
   }
 
   // ==================== PUBLISHING ====================

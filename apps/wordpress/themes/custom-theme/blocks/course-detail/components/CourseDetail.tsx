@@ -1,0 +1,455 @@
+import React, { useEffect, useState, useRef } from "react";
+import { thriveClient } from "../../../../../shared/thrive";
+import {
+  PublicCourseCohortDto,
+  CourseProgramDetailDto,
+} from "@thrive/shared";
+import type { ClassEvent } from "@thrive/shared/types/events";
+
+interface CourseDetailProps {
+  showDescription: boolean;
+  showLevelBadges: boolean;
+  showPrice: boolean;
+  showStepCount: boolean;
+  defaultView: "week" | "month";
+  calendarHeight: number;
+  courseCode: string;
+}
+
+interface ThriveCalendarElement extends HTMLElement {
+  events: ClassEvent[];
+}
+
+export default function CourseDetail({
+  showDescription,
+  showLevelBadges,
+  showPrice,
+  showStepCount,
+  defaultView,
+  calendarHeight,
+  courseCode,
+}: CourseDetailProps) {
+  // Course data
+  const [course, setCourse] = useState<CourseProgramDetailDto | null>(null);
+  const [courseLoading, setCourseLoading] = useState(true);
+  const [courseError, setCourseError] = useState<string | null>(null);
+
+  // Cohorts data
+  const [cohorts, setCohorts] = useState<PublicCourseCohortDto[]>([]);
+  const [cohortsLoading, setCohortsLoading] = useState(true);
+  const [cohortsError, setCohortsError] = useState<string | null>(null);
+
+  // Selected cohort and its sessions
+  const [selectedCohortId, setSelectedCohortId] = useState<number | null>(null);
+  const [calendarEvents, setCalendarEvents] = useState<ClassEvent[]>([]);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+
+  // Enrollment state
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [enrollmentLoading, setEnrollmentLoading] = useState(true);
+  const [enrolling, setEnrolling] = useState(false);
+
+  const calendarRef = useRef<ThriveCalendarElement | null>(null);
+
+  // Fetch course details
+  useEffect(() => {
+    const fetchCourse = async () => {
+      try {
+        const response = await fetch(`/api/course-programs/${courseCode}`);
+        if (!response.ok) throw new Error("Course not found");
+        const data: CourseProgramDetailDto = await response.json();
+        setCourse(data);
+        setCourseError(null);
+      } catch (err) {
+        console.error("Error fetching course:", err);
+        setCourseError(
+          err instanceof Error ? err.message : "Failed to load course",
+        );
+      } finally {
+        setCourseLoading(false);
+      }
+    };
+
+    if (courseCode) {
+      void fetchCourse();
+    }
+  }, [courseCode]);
+
+  // Fetch cohorts
+  useEffect(() => {
+    const fetchCohorts = async () => {
+      try {
+        const data = await thriveClient.getCohortsByCourseCode(courseCode);
+        setCohorts(data);
+        setCohortsError(null);
+
+        // Auto-select first available cohort
+        if (data.length > 0 && selectedCohortId === null) {
+          const firstAvailable = data.find((c) => c.isAvailable);
+          if (firstAvailable) {
+            setSelectedCohortId(firstAvailable.id);
+          } else if (data[0]) {
+            setSelectedCohortId(data[0].id);
+          }
+        }
+      } catch (err: unknown) {
+        console.error("Error fetching cohorts:", err);
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : "Failed to load schedules";
+        setCohortsError(errorMessage);
+      } finally {
+        setCohortsLoading(false);
+      }
+    };
+
+    if (courseCode) {
+      void fetchCohorts();
+    }
+  }, [courseCode, selectedCohortId]);
+
+  // Check if student is enrolled
+  useEffect(() => {
+    const checkEnrollment = async () => {
+      try {
+        const response = await fetch("/api/packages/my-credits", {
+          credentials: "include",
+        });
+        if (response.ok) {
+          const packages = await response.json();
+          const enrolled = packages.some(
+            (pkg: { metadata?: { courseCode?: string }; expiresAt: string | null }) =>
+              pkg.metadata?.courseCode === courseCode &&
+              pkg.expiresAt === null,
+          );
+          setIsEnrolled(enrolled);
+        }
+      } catch (err) {
+        console.error("Error checking enrollment:", err);
+      } finally {
+        setEnrollmentLoading(false);
+      }
+    };
+
+    if (courseCode) {
+      void checkEnrollment();
+    }
+  }, [courseCode]);
+
+  // Fetch calendar events for selected cohort
+  useEffect(() => {
+    const fetchCohortSessions = async () => {
+      if (!selectedCohortId) {
+        setCalendarEvents([]);
+        return;
+      }
+
+      const selectedCohort = cohorts.find((c) => c.id === selectedCohortId);
+
+      if (!selectedCohort) {
+        setCalendarEvents([]);
+        return;
+      }
+
+      if (!selectedCohort.sessions || selectedCohort.sessions.length === 0) {
+        setCalendarEvents([]);
+        return;
+      }
+
+      setCalendarLoading(true);
+
+      try {
+        // Convert cohort sessions to calendar events
+        const events: ClassEvent[] = selectedCohort.sessions.map((session) => {
+          const startTime = new Date(session.sessionDateTime);
+          const endTime = new Date(
+            startTime.getTime() + session.durationMinutes * 60000,
+          );
+
+          return {
+            id: `session-${session.id}`,
+            type: "class" as const,
+            title: session.stepLabel,
+            description: session.stepTitle,
+            startUtc: startTime.toISOString(),
+            endUtc: endTime.toISOString(),
+            serviceType: "COURSE" as const,
+            status: "SCHEDULED" as const,
+            capacityMax: 0,
+            sessionId: session.id.toString(),
+          };
+        });
+
+        setCalendarEvents(events);
+      } catch (err) {
+        console.error("Error processing cohort sessions:", err);
+        setCalendarEvents([]);
+      } finally {
+        setCalendarLoading(false);
+      }
+    };
+
+    void fetchCohortSessions();
+  }, [selectedCohortId, cohorts]);
+
+  // Update calendar web component when events change
+  useEffect(() => {
+    if (calendarRef.current && calendarEvents.length > 0) {
+      calendarRef.current.events = calendarEvents;
+    }
+  }, [calendarEvents]);
+
+  // Handle enrollment
+  const handleEnroll = async () => {
+    if (!selectedCohortId) {
+      alert("Please select a schedule first");
+      return;
+    }
+
+    setEnrolling(true);
+    try {
+      const { url } = await thriveClient.enrollInCohort(
+        courseCode,
+        selectedCohortId,
+      );
+      window.location.href = url; // Redirect to Stripe checkout
+    } catch (err: unknown) {
+      console.error("Enrollment error:", err);
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to start enrollment process";
+      alert(message);
+      setEnrolling(false);
+    }
+  };
+
+  // Utility functions
+  const formatPrice = (cents: number | null) => {
+    if (cents === null) return "Price TBA";
+    return `$${(cents / 100).toFixed(0)}`;
+  };
+
+  const formatDate = (isoDate: string) => {
+    const date = new Date(isoDate);
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).format(date);
+  };
+
+  // Loading state
+  if (courseLoading || cohortsLoading) {
+    return (
+      <div className="course-detail course-detail--loading">
+        <p>Loading course details...</p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (courseError || !course) {
+    return (
+      <div className="course-detail course-detail--error">
+        <p>{courseError || "Course not found"}</p>
+      </div>
+    );
+  }
+
+  const selectedCohort = cohorts.find((c) => c.id === selectedCohortId);
+
+  return (
+    <div className="course-detail">
+      {/* Course Hero Section */}
+      <div className="course-detail__hero">
+        <div className="course-detail__badges-row">
+          {showLevelBadges && course.levels && course.levels.length > 0 && (
+            <div className="course-detail__badges">
+              {course.levels.map((level) => (
+                <span
+                  key={level.id}
+                  className={`level-badge level-badge--${level.code.toLowerCase()}`}
+                >
+                  {level.name}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {!enrollmentLoading && isEnrolled && (
+            <span className="enrollment-badge enrollment-badge--enrolled">
+              ✓ Enrolled
+            </span>
+          )}
+        </div>
+
+        <h1 className="course-detail__title">{course.title}</h1>
+
+        {showDescription && course.description && (
+          <p className="course-detail__description">{course.description}</p>
+        )}
+
+        <div className="course-detail__meta">
+          {showStepCount && course.steps && (
+            <span className="course-detail__steps">
+              {course.steps.length}{" "}
+              {course.steps.length === 1 ? "session" : "sessions"}
+            </span>
+          )}
+
+          {showPrice && (
+            <span className="course-detail__price">
+              {formatPrice(course.priceInCents)}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Schedule Selector Section */}
+      <div className="course-detail__schedules">
+        <h2 className="course-detail__section-title">Select a Schedule</h2>
+
+        {cohortsError ? (
+          <div className="course-detail__error">{cohortsError}</div>
+        ) : cohorts.length === 0 ? (
+          <div className="course-detail__empty">
+            <p>No schedules available at this time.</p>
+          </div>
+        ) : (
+          <div className="course-detail__schedule-grid">
+            {cohorts.map((cohort) => (
+              <div
+                key={cohort.id}
+                className={`course-detail__schedule-card ${
+                  selectedCohortId === cohort.id
+                    ? "course-detail__schedule-card--selected"
+                    : ""
+                } ${
+                  !cohort.isAvailable
+                    ? "course-detail__schedule-card--unavailable"
+                    : ""
+                }`}
+                onClick={() =>
+                  cohort.isAvailable && setSelectedCohortId(cohort.id)
+                }
+                role="button"
+                tabIndex={0}
+                onKeyPress={(e) => {
+                  if (
+                    cohort.isAvailable &&
+                    (e.key === "Enter" || e.key === " ")
+                  ) {
+                    setSelectedCohortId(cohort.id);
+                  }
+                }}
+              >
+                <div className="course-detail__schedule-header">
+                  <h3 className="course-detail__schedule-name">
+                    {cohort.name}
+                  </h3>
+                  {selectedCohortId === cohort.id && (
+                    <span className="course-detail__schedule-check">✓</span>
+                  )}
+                </div>
+
+                <div className="course-detail__schedule-dates">
+                  {formatDate(cohort.startDate)} — {formatDate(cohort.endDate)}
+                </div>
+
+                {cohort.description && (
+                  <p className="course-detail__schedule-description">
+                    {cohort.description}
+                  </p>
+                )}
+
+                <div className="course-detail__schedule-meta">
+                  {cohort.availableSpots > 0 ? (
+                    <span className="course-detail__schedule-spots">
+                      {cohort.availableSpots} spots remaining
+                    </span>
+                  ) : (
+                    <span className="course-detail__schedule-spots course-detail__schedule-spots--full">
+                      Full
+                    </span>
+                  )}
+
+                  {!cohort.isAvailable && (
+                    <span className="course-detail__schedule-unavailable">
+                      Unavailable
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Calendar Section */}
+      {selectedCohort && (
+        <div className="course-detail__calendar">
+          <h2 className="course-detail__section-title">
+            Schedule for {selectedCohort.name}
+          </h2>
+
+          {calendarLoading ? (
+            <div className="course-detail__calendar-loading">
+              <p>Loading calendar...</p>
+            </div>
+          ) : calendarEvents.length === 0 ? (
+            <div className="course-detail__calendar-empty">
+              <p>No sessions scheduled yet.</p>
+            </div>
+          ) : (
+            <thrive-calendar
+              ref={calendarRef}
+              view={defaultView}
+              view-height={calendarHeight}
+              show-classes
+              show-bookings={false}
+              readonly
+            />
+          )}
+        </div>
+      )}
+
+      {/* Enrollment CTA */}
+      {!enrollmentLoading && (
+        <div className="course-detail__cta">
+          {isEnrolled ? (
+            <div className="course-detail__enrolled">
+              <p className="course-detail__enrolled-message">
+                You are already enrolled in this course!
+              </p>
+              <a href="/student" className="button button--secondary">
+                Go to My Dashboard
+              </a>
+            </div>
+          ) : (
+            <>
+              {selectedCohort && (
+                <button
+                  type="button"
+                  className="button button--primary button--large"
+                  onClick={handleEnroll}
+                  disabled={!selectedCohort.isAvailable || enrolling}
+                >
+                  {enrolling
+                    ? "Processing..."
+                    : `Enroll in ${selectedCohort.name}`}
+                </button>
+              )}
+              {!selectedCohort && cohorts.length > 0 && (
+                <p className="course-detail__cta-hint">
+                  Select a schedule above to enroll
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

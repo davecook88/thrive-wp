@@ -768,9 +768,10 @@ export const thriveClient = {
   removeCohortSession: async (
     cohortId: number,
     courseStepId: number,
+    courseStepOptionId: number,
   ): Promise<void> => {
     await apiRequest(
-      `/api/admin/cohorts/${cohortId}/sessions/${courseStepId}`,
+      `/api/admin/cohorts/${cohortId}/sessions/${courseStepId}/${courseStepOptionId}`,
       { method: "DELETE" },
     );
   },

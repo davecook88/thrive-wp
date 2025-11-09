@@ -118,14 +118,14 @@ export class CourseEnrollmentService {
     const stripePriceId = prices.data[0].id;
 
     // 6. Create Stripe checkout session
-    const baseUrl = this.configService.get<string>("WP_BASE_URL") ||
-                    this.configService.get<string>("app.wpBaseUrl");
+    const baseUrl =
+      this.configService.get<string>("WP_BASE_URL") ||
+      this.configService.get<string>("app.wpBaseUrl");
 
     const successUrl =
       dto.successUrl ||
       `${baseUrl}/enrollment/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl =
-      dto.cancelUrl || `${baseUrl}/courses/${courseCode}`;
+    const cancelUrl = dto.cancelUrl || `${baseUrl}/courses/${courseCode}`;
 
     const session = await this.stripe.checkout.sessions.create({
       mode: "payment",
@@ -171,7 +171,8 @@ export class CourseEnrollmentService {
 
   async getEnrollmentSessionInfo(stripeSessionId: string, studentId: number) {
     // Retrieve the Stripe session
-    const session = await this.stripe.checkout.sessions.retrieve(stripeSessionId);
+    const session =
+      await this.stripe.checkout.sessions.retrieve(stripeSessionId);
 
     // Verify this session belongs to the requesting student
     if (session.metadata?.student_id !== studentId.toString()) {

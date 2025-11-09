@@ -89,14 +89,14 @@ export default function StudentCourseEnrollments({
               </div>
 
               <div className="course-meta">
-                <span className="package-name">{enrollment.packageName}</span>
-                <span className="purchased-date">
-                  Purchased: {formatDate(enrollment.purchasedAt)}
-                </span>
+                <div className="package-name">📦 {enrollment.packageName}</div>
+                <div className="purchased-date">
+                  📅 Purchased: {formatDate(enrollment.purchasedAt)}
+                </div>
                 {enrollment.expiresAt && (
-                  <span className="expires-date">
-                    Expires: {formatDate(enrollment.expiresAt)}
-                  </span>
+                  <div className="expires-date">
+                    ⏰ Expires: {formatDate(enrollment.expiresAt)}
+                  </div>
                 )}
               </div>
 
@@ -119,10 +119,15 @@ export default function StudentCourseEnrollments({
                 <h5>Course Steps</h5>
                 <ul className="steps-list">
                   {enrollment.progress.map((step) => (
-                    <li key={step.stepId} className={`step-item status-${step.status.toLowerCase()}`}>
+                    <li
+                      key={step.stepId}
+                      className={`step-item status-${step.status.toLowerCase()}`}
+                    >
                       <span className="step-label">{step.stepLabel}</span>
                       <span className="step-title">{step.stepTitle}</span>
-                      <span className={`step-status ${step.status.toLowerCase()}`}>
+                      <span
+                        className={`step-status ${step.status.toLowerCase()}`}
+                      >
                         {step.status}
                       </span>
                     </li>

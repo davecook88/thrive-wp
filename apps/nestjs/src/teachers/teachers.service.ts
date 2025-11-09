@@ -64,6 +64,8 @@ export class TeachersService {
       order: { createdAt: "ASC" },
     });
 
+    console.log("Fetched availabilities count:", availabilities.length);
+
     const rules: Array<{
       id: number;
       dayOfWeek: 0 | 1 | 2 | 3 | 4 | 5 | 6;
@@ -102,6 +104,8 @@ export class TeachersService {
         });
       }
     }
+
+    console.log("Mapped rules and exceptions:", { rules, exceptions });
 
     // Minimal: attach timezone. System stores times as UTC.
     return { timezone: "UTC", rules, exceptions };
@@ -182,7 +186,7 @@ export class TeachersService {
       }
     });
 
-    return this.getTeacherAvailability(teacher.id);
+    return this.getTeacherAvailability(teacher.userId);
   }
 
   async previewTeacherAvailability(
@@ -195,7 +199,6 @@ export class TeachersService {
     const availabilities = await this.availabilityRepository.find({
       where,
     });
-    console.log("Found availabilities:", availabilities);
     const windows: { start: string; end: string; teacherIds: number[] }[] = [];
     const startDate = new Date(dto.start);
     const endDate = new Date(dto.end);
@@ -232,6 +235,10 @@ export class TeachersService {
       sessionsByTeacher.set(s.teacherId, arr);
     }
 
+    console.log("sessionsByTeacher:", {
+      sessionsByTeacher: JSON.stringify(Object.fromEntries(sessionsByTeacher)),
+    });
+
     // Process each day in the range
     const currentDate = new Date(startDate);
     while (currentDate <= endDate) {
@@ -245,6 +252,7 @@ export class TeachersService {
       // advance by one day in UTC to avoid local timezone shifting weekdays
       currentDate.setUTCDate(currentDate.getUTCDate() + 1);
     }
+    console.log("Generated preview windows:", windows);
     // Convert windows shape to include `available` boolean and optional reason
     const converted = windows.map((w) => ({
       start: w.start,

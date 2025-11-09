@@ -326,6 +326,10 @@ export class GroupClassesService {
       const createdGroupClasses: GroupClass[] = [];
 
       for (const sessionDto of dto.sessions) {
+        const sessionDuration = dto.sessionDuration || 60; // default 60 minutes
+        const startAt = new Date(sessionDto.startAt);
+        const endAt = new Date(startAt.getTime() + sessionDuration * 60000);
+
         // Create GroupClass
         const groupClass = this.groupClassesRepository.create({
           title: dto.title,
@@ -343,8 +347,8 @@ export class GroupClassesService {
         // Create the single session for this GroupClass
         await createSession(
           savedGroupClass.id,
-          new Date(sessionDto.startAt),
-          new Date(sessionDto.endAt),
+          startAt,
+          endAt,
         );
 
         createdGroupClasses.push(savedGroupClass);
@@ -415,7 +419,16 @@ export class GroupClassesService {
     // Cast to SessionWithEnrollment because loadRelationCountAndMap adds enrolledCount at runtime
     const sessions = (await qb.getMany()) as SessionWithEnrollment[];
 
-    return sessions.map(
+    // Deduplicate sessions since leftJoinAndSelect on multiple groupClassLevels creates duplicate rows
+    const sessionMap = new Map<number, SessionWithEnrollment>();
+    for (const session of sessions) {
+      if (!sessionMap.has(session.id)) {
+        sessionMap.set(session.id, session);
+      }
+    }
+    const uniqueSessions = Array.from(sessionMap.values());
+
+    return uniqueSessions.map(
       (session) =>
         ({
           id: session.id,
@@ -541,7 +554,16 @@ export class GroupClassesService {
 
     const sessions = (await qb.getMany()) as SessionWithEnrollment[];
 
-    return sessions.map((session) => {
+    // Deduplicate sessions since leftJoinAndSelect on multiple groupClassLevels creates duplicate rows
+    const sessionMap = new Map<number, SessionWithEnrollment>();
+    for (const session of sessions) {
+      if (!sessionMap.has(session.id)) {
+        sessionMap.set(session.id, session);
+      }
+    }
+    const uniqueSessions = Array.from(sessionMap.values());
+
+    return uniqueSessions.map((session) => {
       const groupClass = session.groupClass;
       const levels =
         groupClass?.groupClassLevels?.map((gcl) => ({

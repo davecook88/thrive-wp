@@ -69,9 +69,24 @@
   background: #eff6ff;
 }
 
+.option-card--full {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f3f4f6;
+}
+
+.option-card--full:hover {
+  border-color: #e5e7eb;
+  background: #f3f4f6;
+}
+
 .option-card input[type="radio"] {
   position: absolute;
   opacity: 0;
+}
+
+.option-card input[type="radio"]:disabled {
+  cursor: not-allowed;
 }
 
 .option-card__content {
@@ -83,6 +98,12 @@
 .option-card__name {
   font-weight: 600;
   color: #111827;
+}
+
+.option-card__time {
+  font-size: 0.875rem;
+  color: #4b5563;
+  font-weight: 500;
 }
 
 .option-card__capacity {

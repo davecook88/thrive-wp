@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, DataSource, EntityManager } from "typeorm";
 import { StudentCourseStepProgress } from "../entities/student-course-step-progress.entity.js";
@@ -6,6 +10,7 @@ import { CourseStep } from "../entities/course-step.entity.js";
 import { CourseCohortSession } from "../entities/course-cohort-session.entity.js";
 import { CourseStepOption } from "../entities/course-step-option.entity.js";
 import { StudentPackage } from "../../packages/entities/student-package.entity.js";
+import { BookingStatus } from "../../payments/entities/booking.entity.js";
 
 /**
  * CourseStepProgressService manages student progress through course steps.
@@ -275,22 +280,46 @@ export class CourseStepProgressService {
           cohortId,
           courseStepId: progress.courseStepId,
         },
-        relations: ["courseStepOption", "courseStepOption.groupClass"],
+        relations: [
+          "courseStepOption",
+          "courseStepOption.groupClass",
+          "courseStepOption.groupClass.session",
+          "courseStepOption.groupClass.session.bookings",
+        ],
       });
 
       if (cohortSessions.length > 0) {
+        const options = cohortSessions.map((cs) => {
+          const groupClass = cs.courseStepOption.groupClass;
+          const session = groupClass?.session;
+
+          // Count confirmed bookings for this session
+          const confirmedBookings =
+            session?.bookings?.filter(
+              (b) => b.status === BookingStatus.CONFIRMED,
+            ).length || 0;
+
+          const capacityMax = groupClass?.capacityMax || 0;
+          const spotsAvailable = Math.max(0, capacityMax - confirmedBookings);
+
+          return {
+            courseStepOptionId: cs.courseStepOptionId,
+            groupClassId: cs.courseStepOption.groupClassId,
+            groupClassName: groupClass?.title || "Unknown",
+            capacityMax,
+            spotsAvailable,
+            isActive: groupClass?.isActive || false,
+            startAt: session?.startAt?.toISOString(),
+            endAt: session?.endAt?.toISOString(),
+          };
+        });
+
         steps.push({
           stepId: progress.courseStepId,
           stepLabel: progress.courseStep.label,
           stepTitle: progress.courseStep.title,
           stepOrder: progress.courseStep.stepOrder,
-          options: cohortSessions.map((cs) => ({
-            courseStepOptionId: cs.courseStepOptionId,
-            groupClassId: cs.courseStepOption.groupClassId,
-            groupClassName: cs.courseStepOption.groupClass?.title || "Unknown",
-            capacityMax: cs.courseStepOption.groupClass?.capacityMax || 0,
-            isActive: cs.courseStepOption.groupClass?.isActive || false,
-          })),
+          options,
         });
       }
     }

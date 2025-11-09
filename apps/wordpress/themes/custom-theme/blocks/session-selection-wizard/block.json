@@ -12,6 +12,7 @@
   },
   "textdomain": "custom-theme",
   "editorScript": "file:./index.js",
+  "render": "file:./render.php",
   "viewScript": "file:./view.js",
   "style": "file:./style.css"
 }

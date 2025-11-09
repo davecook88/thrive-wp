@@ -70,15 +70,6 @@ export class CourseCohort extends BaseEntity {
   endDate: string;
 
   @Column({
-    name: "timezone",
-    type: "varchar",
-    length: 64,
-    default: "America/New_York",
-    comment: "Timezone for cohort (inherits from course by default)",
-  })
-  timezone: string;
-
-  @Column({
     name: "max_enrollment",
     type: "smallint",
     unsigned: true,

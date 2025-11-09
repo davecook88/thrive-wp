@@ -157,7 +157,7 @@ export default defineComponent({
       }
     };
 
-    const handleRemoveSession = async (stepId: number) => {
+    const handleRemoveSession = async (stepId: number, optionId: number) => {
       if (!props.cohort) return;
 
       if (!confirm('Are you sure you want to remove this session assignment?')) {
@@ -168,7 +168,7 @@ export default defineComponent({
       error.value = null;
 
       try {
-        await thriveClient.removeCohortSession(props.cohort.id, stepId);
+        await thriveClient.removeCohortSession(props.cohort.id, stepId, optionId);
         await loadCohortDetails();
         emit('sessions-updated');
       } catch (err: any) {

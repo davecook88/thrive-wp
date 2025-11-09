@@ -251,7 +251,7 @@ export class CourseStepsService {
   async listOptions(courseStepId: number): Promise<CourseStepOption[]> {
     return this.stepOptionRepo.find({
       where: { courseStepId },
-      relations: ["groupClass"],
+      relations: ["groupClass", "groupClass.session"],
       order: { id: "ASC" },
     });
   }

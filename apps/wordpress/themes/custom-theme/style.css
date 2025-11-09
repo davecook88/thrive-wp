@@ -924,3 +924,140 @@ body {
 .student-course-enrollments.empty .button:hover {
   background: #2563eb;
 }
+
+/* ========================================
+   Navigation Styling
+   ======================================== */
+
+/* Main navigation container */
+.wp-block-navigation {
+  display: flex;
+  align-items: center;
+}
+
+/* Navigation list */
+.wp-block-navigation__container {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 0.5rem;
+}
+
+/* Navigation link wrapper */
+.wp-block-navigation-item {
+  position: relative;
+  margin: 0;
+}
+
+/* Navigation links */
+.wp-block-navigation-item a {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.625rem 1rem;
+  color: #4b5563;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9375rem;
+  border-radius: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  letter-spacing: -0.3px;
+}
+
+/* Navigation links hover state */
+.wp-block-navigation-item a:hover {
+  color: var(--wp--preset--color--primary, #3b82f6);
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
+/* Navigation links active/focus state */
+.wp-block-navigation-item a:focus {
+  outline: 2px solid var(--wp--preset--color--primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+/* Navigation links current/active page */
+.wp-block-navigation-item.current-menu-item > a,
+.wp-block-navigation-item.current_page_item > a {
+  color: var(--wp--preset--color--primary, #3b82f6);
+  font-weight: 600;
+}
+
+.wp-block-navigation-item.current-menu-item > a::after,
+.wp-block-navigation-item.current_page_item > a::after {
+  content: "";
+  position: absolute;
+  bottom: -0.625rem;
+  left: 1rem;
+  right: 1rem;
+  height: 3px;
+  background-color: var(--wp--preset--color--primary, #3b82f6);
+  border-radius: 999px;
+  transition: all 0.2s ease;
+}
+
+/* Submenu styling */
+.wp-block-navigation-submenu > .wp-block-navigation__submenu-container {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 200px;
+  margin-top: 0.5rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  list-style: none;
+  padding: 0.5rem 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease,
+    transform 0.2s ease;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.wp-block-navigation-submenu:hover > .wp-block-navigation__submenu-container {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Submenu items */
+.wp-block-navigation__submenu-container .wp-block-navigation-item a {
+  padding: 0.75rem 1.25rem;
+  width: 100%;
+  font-size: 0.9375rem;
+}
+
+.wp-block-navigation__submenu-container .wp-block-navigation-item:hover a {
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
+/* Header spacing adjustments */
+.has-background-background-color.has-background {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Improve header flex layout */
+.wp-block-group[style*="space-between"] {
+  gap: 2rem;
+}
+
+/* Site title styling */
+.wp-block-site-title {
+  font-size: 1.5rem !important;
+  letter-spacing: -0.5px;
+  font-weight: 700 !important;
+}
+
+.wp-block-site-title a {
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.wp-block-site-title a:hover {
+  opacity: 0.85;
+}

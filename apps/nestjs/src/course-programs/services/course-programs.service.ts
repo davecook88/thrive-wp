@@ -135,6 +135,7 @@ export class CourseProgramsService {
         .leftJoinAndSelect("cp.steps", "step")
         .leftJoinAndSelect("step.options", "option")
         .leftJoinAndSelect("option.groupClass", "groupClass")
+        .leftJoinAndSelect("groupClass.session", "session")
         .leftJoinAndSelect("cp.courseProgramLevels", "cpl")
         .leftJoinAndSelect("cpl.level", "level")
         .orderBy("step.stepOrder", "ASC")
@@ -176,6 +177,7 @@ export class CourseProgramsService {
         .leftJoinAndSelect("cp.steps", "step")
         .leftJoinAndSelect("step.options", "option")
         .leftJoinAndSelect("option.groupClass", "groupClass")
+        .leftJoinAndSelect("groupClass.session", "session")
         .leftJoinAndSelect("cp.courseProgramLevels", "cpl")
         .leftJoinAndSelect("cpl.level", "level")
         .orderBy("step.stepOrder", "ASC")
@@ -402,13 +404,26 @@ export class CourseProgramsService {
       title: step.title,
       description: step.description,
       isRequired: step.isRequired,
-      options: (step.options || []).map((option) => ({
-        id: option.id,
-        groupClassId: option.groupClassId,
-        groupClassName: option.groupClass?.title || "",
-        isActive: Boolean(option.isActive),
-        maxStudents: option.groupClass?.capacityMax,
-      })),
+      options: (step.options || []).map((option) => {
+        const session = option.groupClass?.session;
+        // Session info with times in UTC - client handles timezone conversion
+        return {
+          id: option.id,
+          groupClassId: option.groupClassId,
+          groupClassName: option.groupClass?.title || "",
+          isActive: Boolean(option.isActive),
+          maxStudents: option.groupClass?.capacityMax,
+          availableSeats: option.groupClass?.capacityMax,
+          currentEnrollment: 0,
+          session: session
+            ? {
+                id: session.id,
+                startAt: session.startAt.toISOString(),
+                endAt: session.endAt.toISOString(),
+              }
+            : undefined,
+        };
+      }),
     }));
 
     const baseData = {

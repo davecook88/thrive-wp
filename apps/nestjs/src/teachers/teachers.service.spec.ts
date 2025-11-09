@@ -9,12 +9,13 @@ import {
   TeacherAvailability,
   TeacherAvailabilityKind,
 } from "./entities/teacher-availability.entity.js";
-import {
-  UpdateAvailabilityDto,
-  PreviewAvailabilityDto,
-} from "./dto/availability.dto.js";
+
 import { Session } from "../sessions/entities/session.entity.js";
-import { GetAvailabilityResponse } from "@thrive/shared";
+import {
+  GetAvailabilityResponse,
+  PreviewAvailabilityDto,
+  UpdateAvailabilityDto,
+} from "@thrive/shared";
 
 // Mock types
 type MockTeacher = {
@@ -98,7 +99,7 @@ describe("TeachersService", () => {
       const dto: UpdateAvailabilityDto = {
         rules: [
           {
-            weekday: 3, // Wednesday
+            dayOfWeek: 3, // Wednesday
             startTime: "18:00",
             endTime: "04:00", // Spans to next day
           },
@@ -148,12 +149,14 @@ describe("TeachersService", () => {
       // Mock getTeacherAvailability
 
       vi.spyOn(service as any, "getTeacherAvailability").mockResolvedValue({
+        timezone: "UTC",
         rules: [
           {
             id: 1,
-            weekday: 3,
+            dayOfWeek: 3,
             startTime: "18:00",
             endTime: "04:00",
+            maxBookings: null,
           },
         ],
         exceptions: [],
@@ -162,12 +165,14 @@ describe("TeachersService", () => {
       const result = await service.updateTeacherAvailability(teacherId, dto);
 
       expect(result).toEqual({
+        timezone: "UTC",
         rules: [
           {
             id: 1,
-            weekday: 3,
+            dayOfWeek: 3,
             startTime: "18:00",
             endTime: "04:00",
+            maxBookings: null,
           },
         ],
         exceptions: [],
@@ -189,7 +194,7 @@ describe("TeachersService", () => {
       const dto: UpdateAvailabilityDto = {
         rules: [
           {
-            weekday: 1,
+            dayOfWeek: 1,
             startTime: "09:00",
             endTime: "17:00",
           },
@@ -229,12 +234,14 @@ describe("TeachersService", () => {
       );
 
       vi.spyOn(service as any, "getTeacherAvailability").mockResolvedValue({
+        timezone: "UTC",
         rules: [
           {
             id: 1,
-            weekday: 1,
+            dayOfWeek: 1,
             startTime: "09:00",
             endTime: "17:00",
+            maxBookings: null,
           },
         ],
         exceptions: [],
@@ -243,12 +250,14 @@ describe("TeachersService", () => {
       const result = await service.updateTeacherAvailability(teacherId, dto);
 
       expect(result).toEqual({
+        timezone: "UTC",
         rules: [
           {
             id: 1,
-            weekday: 1,
+            dayOfWeek: 1,
             startTime: "09:00",
             endTime: "17:00",
+            maxBookings: null,
           },
         ],
         exceptions: [],
@@ -313,6 +322,7 @@ describe("TeachersService", () => {
       );
 
       vi.spyOn(service as any, "getTeacherAvailability").mockResolvedValue({
+        timezone: "UTC",
         rules: [],
         exceptions: [
           {
@@ -328,6 +338,7 @@ describe("TeachersService", () => {
       const result = await service.updateTeacherAvailability(teacherId, dto);
 
       expect(result).toEqual({
+        timezone: "UTC",
         rules: [],
         exceptions: [
           {

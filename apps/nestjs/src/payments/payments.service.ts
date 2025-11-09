@@ -31,6 +31,8 @@ import {
 import { SessionsService } from "../sessions/services/sessions.service.js";
 import { PackagesService } from "../packages/packages.service.js";
 import { CourseStepProgressService } from "../course-programs/services/course-step-progress.service.js";
+import { CourseProgram } from "../course-programs/entities/course-program.entity.js";
+import { CourseCohort } from "../course-programs/entities/course-cohort.entity.js";
 import { StudentPackage } from "../packages/entities/student-package.entity.js";
 import { PackageUse } from "../packages/entities/package-use.entity.js";
 import {
@@ -800,11 +802,32 @@ export class PaymentsService {
             return;
           }
 
+          // Fetch course program and cohort to get their names
+          const courseProgram = await tx.findOne(CourseProgram, {
+            where: { id: courseProgramId },
+          });
+
+          if (!courseProgram) {
+            this.logger.error(
+              `CourseProgram ${courseProgramId} not found for enrollment`,
+            );
+            return;
+          }
+
+          const cohort = await tx.findOne(CourseCohort, {
+            where: { id: cohortId },
+          });
+
+          if (!cohort) {
+            this.logger.error(`Cohort ${cohortId} not found for enrollment`);
+            return;
+          }
+
           // Create StudentPackage for course enrollment
           const studentPackage = new StudentPackage();
           studentPackage.studentId = studentId;
           studentPackage.stripeProductMapId = stripeProductMapId;
-          studentPackage.packageName = `${metadata.course_code} - ${metadata.cohort_name}`;
+          studentPackage.packageName = `${courseProgram.code} - ${cohort.name}`;
           studentPackage.totalSessions = 0; // Courses don't use session credits
           studentPackage.purchasedAt = new Date();
           studentPackage.expiresAt = null; // Courses don't expire
@@ -812,8 +835,8 @@ export class PaymentsService {
           studentPackage.metadata = {
             courseProgramId,
             cohortId,
-            courseCode: String(metadata.course_code || ""),
-            cohortName: String(metadata.cohort_name || ""),
+            courseCode: courseProgram.code,
+            cohortName: cohort.name,
             amountPaid: paymentIntent.amount_received,
             currency: paymentIntent.currency,
           };

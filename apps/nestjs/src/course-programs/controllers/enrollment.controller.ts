@@ -65,6 +65,9 @@ export class EnrollmentController {
     });
     if (!student) throw new Error("Student not found");
 
-    return this.enrollmentService.getEnrollmentSessionInfo(sessionId, student.id);
+    return this.enrollmentService.getEnrollmentSessionInfo(
+      sessionId,
+      student.id,
+    );
   }
 }

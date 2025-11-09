@@ -22,42 +22,55 @@
       </div>
     </div>
 
-    <!-- Currently Assigned Session -->
-    <div v-if="assignedSession" class="ml-8 mb-3 bg-green-50 border border-green-200 rounded-md p-3">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-green-900">
-            Currently Assigned: {{ assignedSession.groupClassName }}
-          </p>
-          <p class="text-xs text-green-700 mt-1">
-            {{ formatSessionTime(assignedSession) }}
-          </p>
+    <!-- Currently Assigned Sessions -->
+    <div v-if="assignedSessions.length > 0" class="ml-8 mb-3 space-y-2">
+      <div v-for="session in assignedSessions" :key="session.id" class="bg-green-50 border border-green-200 rounded-md p-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-green-900">
+              {{ session.groupClassName }}
+            </p>
+            <p class="text-xs text-green-700 mt-1">
+              {{ formatSessionTime(session) }}
+            </p>
+          </div>
+          <button
+            @click="$emit('remove-session', step.id, session.courseStepOptionId)"
+            class="text-red-600 hover:text-red-800 text-xs font-medium"
+          >
+            Remove
+          </button>
         </div>
-        <button
-          @click="$emit('remove-session', step.id)"
-          class="text-red-600 hover:text-red-800 text-xs font-medium"
-        >
-          Remove
-        </button>
       </div>
     </div>
 
     <!-- Available Options -->
-    <div class="ml-8 space-y-2">
-      <label class="block text-xs font-medium text-gray-700 mb-2">
-        {{ assignedSession ? 'Change to:' : 'Select Session:' }}
-      </label>
-      <div v-if="step.options.length === 0" class="text-sm text-gray-500 italic">
-        No group class options available for this step. Add options in "Manage Steps" first.
+    <div class="ml-8">
+      <div v-if="assignedSessions.length > 0" class="mb-3">
+        <button
+          @click="showAddAnother = !showAddAnother"
+          class="flex items-center gap-2 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+        >
+          <span>{{ showAddAnother ? '▼' : '▶' }}</span>
+          <span>Add another session</span>
+        </button>
       </div>
-      <div v-else class="space-y-2">
-        <AssignSessionsSessionOption
-          v-for="option in step.options"
-          :key="option.id"
-          :option="option"
-          :disabled="assigning"
-          @select="handleOptionSelect"
-        />
+      <div v-if="assignedSessions.length === 0 || showAddAnother" class="space-y-2">
+        <label v-if="assignedSessions.length === 0" class="block text-xs font-medium text-gray-700 mb-2">
+          Select Session:
+        </label>
+        <div v-if="step.options.length === 0" class="text-sm text-gray-500 italic">
+          No group class options available for this step. Add options in "Manage Steps" first.
+        </div>
+        <div v-else class="space-y-2">
+          <AssignSessionsSessionOption
+            v-for="option in step.options"
+            :key="option.id"
+            :option="option"
+            :disabled="assigning"
+            @select="handleOptionSelect"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -78,9 +91,9 @@ export default defineComponent({
       type: Object as PropType<CourseProgramDetailDto['steps'][number]>,
       required: true
     },
-    assignedSession: {
-      type: Object as PropType<CourseCohortDetailDto['sessions'][number] | null>,
-      default: null
+    assignedSessions: {
+      type: Array as PropType<CourseCohortDetailDto['sessions']>,
+      default: () => []
     },
     assigning: {
       type: Boolean,
@@ -88,6 +101,11 @@ export default defineComponent({
     }
   },
   emits: ['assign-session', 'remove-session'],
+  data() {
+    return {
+      showAddAnother: false
+    };
+  },
   methods: {
     handleOptionSelect(optionId: number) {
       this.$emit('assign-session', this.step.id, optionId);

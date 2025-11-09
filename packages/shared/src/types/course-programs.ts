@@ -225,20 +225,24 @@ export type CourseProgramListResponseDto = z.infer<
 
 /**
  * Step option detail (group class schedule info)
+ * Note: Each group class has exactly one session with specific date/time
  */
 export const StepOptionDetailSchema = z.object({
   id: z.number(),
   groupClassId: z.number(),
   groupClassName: z.string(),
   isActive: z.preprocess((val) => Boolean(val), z.boolean()),
-  // Include relevant GroupClass fields
-  dayOfWeek: z.number().optional(),
-  startTime: z.string().optional(),
-  endTime: z.string().optional(),
-  timezone: z.string().optional(),
   maxStudents: z.number().optional(),
   currentEnrollment: z.number().optional(),
   availableSeats: z.number().optional(),
+  // Session info - stored in UTC, client formats in user's local timezone
+  session: z
+    .object({
+      id: z.number(),
+      startAt: z.string().describe("ISO 8601 datetime of session start (UTC)"),
+      endAt: z.string().describe("ISO 8601 datetime of session end (UTC)"),
+    })
+    .optional(),
 });
 
 export type StepOptionDetailDto = z.infer<typeof StepOptionDetailSchema>;
@@ -391,11 +395,6 @@ export const CreateCourseCohortSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "End date must be in YYYY-MM-DD format")
     .describe("Last session date of cohort"),
 
-  timezone: z
-    .string()
-    .default("America/New_York")
-    .describe("Timezone for cohort"),
-
   maxEnrollment: z
     .number()
     .int()
@@ -407,7 +406,7 @@ export const CreateCourseCohortSchema = z.object({
     .string()
     .optional()
     .nullable()
-    .describe("Last datetime student can enroll (ISO 8601 format)"),
+    .describe("Last datetime student can enroll (ISO 8601 format, stored in UTC)"),
 
   isActive: z
     .boolean()
@@ -472,7 +471,6 @@ export const CourseCohortListItemSchema = z.object({
   description: z.string().nullable(),
   startDate: z.string(),
   endDate: z.string(),
-  timezone: z.string(),
   maxEnrollment: z.number(),
   currentEnrollment: z.number(),
   enrollmentDeadline: z.string().nullable(),
@@ -497,7 +495,6 @@ export const CourseCohortDetailSchema = z.object({
   description: z.string().nullable(),
   startDate: z.string(),
   endDate: z.string(),
-  timezone: z.string(),
   maxEnrollment: z.number(),
   currentEnrollment: z.number(),
   enrollmentDeadline: z.string().nullable(),
@@ -517,7 +514,6 @@ export const PublicCourseCohortSchema = z.object({
   description: z.string().nullable(),
   startDate: z.string(),
   endDate: z.string(),
-  timezone: z.string(),
   availableSpots: z.number(),
   enrollmentDeadline: z.string().nullable(),
   isAvailable: z

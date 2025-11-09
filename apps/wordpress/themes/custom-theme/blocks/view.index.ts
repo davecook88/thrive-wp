@@ -6,6 +6,7 @@ import "./course-list/view";
 import "./course-header/view";
 import "./course-cohorts/view";
 import "./course-sessions-calendar/view";
+import "./course-detail/view";
 import "./private-session-availability-calendar/view";
 import "./selected-event-modal/view";
 // import "./teacher-picker/view"; // Removed - block deleted

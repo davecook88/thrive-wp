@@ -38,20 +38,12 @@ if (is_wp_error($api_response) || wp_remote_retrieve_response_code($api_response
 
 ?>
 
-<main id="main" class="site-main course-detail">
-    <article class="course-page">
-        <div class="entry-content">
-            <?php
-            // Render Course Header block
-            echo do_blocks('<!-- wp:custom-theme/course-header /-->');
-
-            // Render Course Cohorts block
-            echo do_blocks('<!-- wp:custom-theme/course-cohorts /-->');
-
-            // TODO: Add Course Sessions Calendar block when implemented
-            // echo do_blocks('<!-- wp:custom-theme/course-sessions-calendar /-->');
-            ?>
-        </div>
+<main id="main" class="site-main course-page">
+    <article class="course-page-content">
+        <?php
+        // Render Course Detail block (includes hero, schedule selector, calendar, and CTA)
+        echo do_blocks('<!-- wp:custom-theme/course-detail /-->');
+        ?>
     </article>
 </main>
 
