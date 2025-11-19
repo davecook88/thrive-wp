@@ -15,6 +15,8 @@ import { TeacherGuard } from "../src/auth/teacher.guard.js";
 import { resetDatabase } from "./utils/reset-db.js";
 import { execInsert } from "./utils/query-helpers.js";
 import { runMigrations } from "./setup.js";
+import { GoogleStrategy } from "../src/auth/strategies/google.strategy.js";
+import { StripeProductService } from "../src/common/services/stripe-product.service.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
@@ -30,6 +32,17 @@ describe("Course Materials (e2e)", () => {
     moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
     })
+      .overrideProvider(GoogleStrategy)
+      .useValue({
+        validate: () => ({ userId: 1, email: "test@example.com" }),
+      })
+      .overrideProvider(StripeProductService)
+      .useValue({
+        createProductAndPrice: () => ({
+          product: { id: "prod_123" },
+          price: { id: "price_123" },
+        }),
+      })
       .overrideGuard(AdminGuard)
       .useValue({
         canActivate: (context: ExecutionContext) => {
@@ -42,7 +55,11 @@ describe("Course Materials (e2e)", () => {
       .useValue({
         canActivate: (context: ExecutionContext) => {
           const req = context.switchToHttp().getRequest();
-          req.user = req.user || { id: 200, email: "student@example.com", roles: ["student"] };
+          req.user = req.user || {
+            id: 200,
+            email: "student@example.com",
+            roles: ["student"],
+          };
           return true;
         },
       })
@@ -50,7 +67,11 @@ describe("Course Materials (e2e)", () => {
       .useValue({
         canActivate: (context: ExecutionContext) => {
           const req = context.switchToHttp().getRequest();
-          req.user = req.user || { id: 600, email: "teacher@example.com", roles: ["teacher"] };
+          req.user = req.user || {
+            id: 600,
+            email: "teacher@example.com",
+            roles: ["teacher"],
+          };
           return true;
         },
       })
@@ -61,20 +82,7 @@ describe("Course Materials (e2e)", () => {
 
     dataSource = moduleFixture.get(DataSource);
     await resetDatabase(dataSource);
-  }, 60000);
 
-  afterAll(async () => {
-    if (app) {
-      await app.close();
-    }
-  });
-
-  let adminToken: string;
-  let adminUserId: number;
-  let courseProgramId: number;
-  let courseStepId: number;
-
-  beforeAll(async () => {
     // Create Admin User
     adminUserId = 100;
     await dataSource.query(
@@ -104,7 +112,18 @@ describe("Course Materials (e2e)", () => {
       "INSERT INTO course_step (course_program_id, step_order, label, title, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())",
       [courseProgramId, 1, "STEP-1", "Step 1"],
     );
+  }, 60000);
+
+  afterAll(async () => {
+    if (app) {
+      await app.close();
+    }
   });
+
+  let adminToken: string;
+  let adminUserId: number;
+  let courseProgramId: number;
+  let courseStepId: number;
 
   describe("POST /course-materials", () => {
     it("should create a file material", async () => {
@@ -199,7 +218,11 @@ describe("Course Materials (e2e)", () => {
         .get(`/course-materials/step/${courseStepId}`)
         .set("Cookie", [`thrive_sess=${adminToken}`]);
 
-      const materialId = (materials.body as Any)[0].id;
+      if (!Array.isArray(materials.body) || materials.body.length === 0) {
+        throw new Error("No materials found");
+      }
+      const first = materials.body[0] as { id: number };
+      const materialId = first.id;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response = await request(app.getHttpServer() as any)
@@ -219,10 +242,16 @@ describe("Course Materials (e2e)", () => {
         .get(`/course-materials/step/${courseStepId}`)
         .set("Cookie", [`thrive_sess=${adminToken}`]);
 
-      const questionMaterial = (materials.body as Any).find(
+      if (!Array.isArray(materials.body)) {
+        throw new Error("Expected array of materials");
+      }
+      const questionMaterial = materials.body.find(
         (m: Any) => m.type === "question",
       );
-      const materialId = questionMaterial.id;
+      if (!questionMaterial) {
+        throw new Error("No question material found");
+      }
+      const materialId = (questionMaterial as { id: number }).id;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response = await request(app.getHttpServer() as any)
@@ -247,7 +276,11 @@ describe("Course Materials (e2e)", () => {
         .get(`/course-materials/step/${courseStepId}`)
         .set("Cookie", [`thrive_sess=${adminToken}`]);
 
-      const materialId = (materials.body as Any)[0].id;
+      if (!Array.isArray(materials.body) || materials.body.length === 0) {
+        throw new Error("No materials found");
+      }
+      const first = materials.body[0] as { id: number };
+      const materialId = first.id;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response = await request(app.getHttpServer() as any)
@@ -289,18 +322,28 @@ describe("Course Materials (e2e)", () => {
         process.env.SESSION_SECRET || "dev_secret",
       );
 
+      // Create a package first
+      const packageId = await execInsert(
+        dataSource,
+        "INSERT INTO package (code, title, description, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())",
+        ["PKG-001", "Test Package", "Test Package Description"],
+      );
+
       // Create a student package
       studentPackageId = await execInsert(
         dataSource,
         "INSERT INTO student_package (student_id, package_id, enrollment_date, created_at, updated_at) VALUES (?, ?, NOW(), NOW(), NOW())",
-        [studentUserId, 1], // Assuming package 1 exists or create it
+        [studentUserId, packageId],
       );
 
       // Get a material ID from the previously created materials
-      const materials = await dataSource.query(
+      const materials = (await dataSource.query(
         "SELECT id FROM course_step_material LIMIT 1",
-      );
-      materialId = materials[0].id;
+      )) as unknown;
+      if (Array.isArray(materials) && materials.length > 0) {
+        const first = materials[0] as { id: number };
+        materialId = first.id;
+      }
     });
 
     it("should update material progress to in_progress", async () => {
@@ -391,11 +434,12 @@ describe("Course Materials (e2e)", () => {
       );
 
       // Get a question ID from the material we created
-      const questions = await dataSource.query(
+      const questions = (await dataSource.query(
         "SELECT id FROM material_question LIMIT 1",
-      );
-      if (questions.length > 0) {
-        questionId = questions[0].id;
+      )) as unknown;
+      if (Array.isArray(questions) && questions.length > 0) {
+        const first = questions[0] as { id: number };
+        questionId = first.id;
       }
     });
 
@@ -531,11 +575,12 @@ describe("Course Materials (e2e)", () => {
       );
 
       // Create an answer to assess
-      const answers = await dataSource.query(
+      const answers = (await dataSource.query(
         "SELECT id FROM student_answer WHERE status = 'pending_assessment' LIMIT 1",
-      );
-      if (answers.length > 0) {
-        answerId = answers[0].id;
+      )) as unknown;
+      if (Array.isArray(answers) && answers.length > 0) {
+        const first = answers[0] as { id: number };
+        answerId = first.id;
       }
     });
 

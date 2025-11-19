@@ -33,3 +33,4 @@ export { RemoveCohortsTimezone1767000000000 } from "./1767000000000-RemoveCohort
 export { ConsolidateCourseBookings1768000000000 } from "./1768000000000-ConsolidateCourseBookings.js";
 export { RemoveCourseCohortDates1769000000000 } from "./1769000000000-RemoveCourseCohortDates.js";
 export { RemoveCourseProgramTimezone1770000000000 } from "./1770000000000-RemoveCourseProgramTimezone.js";
+export { CreateCourseAndSessionMaterialEntities1767511092496 } from "./1767511092496-CreateCourseAndSessionMaterialEntities.js";
