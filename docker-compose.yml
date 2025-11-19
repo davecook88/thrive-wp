@@ -50,26 +50,19 @@ services:
   nestjs:
     build:
       context: .
-      dockerfile: docker/nestjs.Dockerfile
-      target: development  # Use development stage
+      dockerfile: docker/nestjs.Dockerfile.dev
     command: sh -c "cd /app/apps/nestjs && pnpm exec nest start --watch"
     working_dir: /app
     volumes:
-      # Mount source files for hot reload
-      - ./apps/nestjs/src:/app/apps/nestjs/src:cached
-      - ./apps/nestjs/test:/app/apps/nestjs/test:cached
-      - ./apps/nestjs/package.json:/app/apps/nestjs/package.json:cached
-      - ./apps/nestjs/tsconfig.json:/app/apps/nestjs/tsconfig.json:cached
-      - ./apps/nestjs/nest-cli.json:/app/apps/nestjs/nest-cli.json:cached
-      # Mount shared package for hot reload
-      - ./packages/shared/src:/app/packages/shared/src:cached
-      - ./packages/shared/dist:/app/packages/shared/dist:cached
-      - ./packages/shared/package.json:/app/packages/shared/package.json:cached
-      - ./packages/shared/tsconfig.json:/app/packages/shared/tsconfig.json:cached
-      # Mount workspace config
-      - ./package.json:/app/package.json:cached
-      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml:cached
-      # DON'T mount node_modules - let the image's built node_modules with symlinks be used
+      # Mount source directories for hot-reloading
+      - ./apps/nestjs:/app/apps/nestjs:cached
+      - ./packages/shared:/app/packages/shared:cached
+      # The new Dockerfile copies the entire codebase, but we override
+      # the node_modules directories with empty anonymous volumes to ensure
+      # the container's node_modules are used, not the host's.
+      - /app/node_modules
+      - /app/apps/nestjs/node_modules
+      - /app/packages/shared/node_modules
     env_file:
       - ./apps/nestjs/.env
     environment:

@@ -1,5 +1,7 @@
 # Platform Architecture & Engineering Guide
 
+# Platform Architecture & Engineering Guide
+
 This document is the canonical reference for the hybrid WordPress + NestJS platform. It summarizes runtime contracts, deployment expectations, auth flows, database patterns, and links to operational guidance and deeper design notes located in the `docs/` folder and the `.github/instructions/` directory.
 
 ---
@@ -12,19 +14,14 @@ Services
 - NestJS API — business logic & auth authority; dev endpoint: `http://localhost:3000`.
 - MariaDB — persistent data store (internal 3306).
 
-All services are intended to run on a single VPS in Docker. Use `pnpm install` and then `docker-compose up --build` to start the environment.
+All services are intended to run on a single VPS in Docker. Use `make run` or `docker-compose up --build` to start the environment.
 
 File layout (simplified)
 
 ```
-pnpm-workspace.yaml
-turbo.json
 docker-compose.yml
-apps/
-├── nestjs/
-└── wordpress/
-packages/
-└── shared/
+nestjs/
+wordpress/
 nginx/
 docs/
 .github/instructions/
@@ -76,24 +73,22 @@ fetch('/api/classes', { method: 'POST', headers: { 'Content-Type': 'application/
 ---
 ## 4. Database & Schema Notes
 
-- Core tables: `user`, `admin`, `teacher`, `teacher_availability`, and related scheduling tables. (Note: schemas and migrations live in `apps/nestjs/src/migrations`.)
+- Core tables: `user`, `admin`, `teacher`, `teacher_availability`, and related scheduling tables. (Note: schemas and migrations live in `nestjs/src/migrations`.)
 - Use TypeORM migrations for schema changes. Follow idempotent migration patterns.
 - Role detection is implemented as a single UNION query for performance.
 
 ---
 ## 5. Development Workflow & Commands
 
-- Install dependencies: `pnpm install`
-- Start the full stack in dev mode: `pnpm dev` (uses Turborepo to run all apps)
-- Build all apps for production: `pnpm build` (uses Turborepo)
+- Start the full stack: `make run` or `docker-compose up --build`.
 - View logs:
     - Nginx: `docker-compose logs -f web`
     - WordPress: `docker-compose logs -f wordpress`
     - NestJS: `docker-compose logs -f nestjs`
 
-Plugin/theme development: files under `apps/wordpress/plugins/` and `apps/wordpress/themes/custom-theme/` are mounted as volumes and change immediately in the container.
+Plugin/theme development: files under `wordpress/plugins/` and `wordpress/themes/custom-theme/` are mounted as volumes and change immediately in the container.
 
-NestJS dev: The `pnpm dev` command runs `nest start --watch`, providing hot-reloading.
+NestJS dev: `pnpm run start:dev` (inside the Nest container) for hot reload if configured.
 
 ---
 ## 6. Related design docs (in `docs/`)
@@ -103,7 +98,6 @@ The repository contains additional, focused design notes and plans. Refer to the
 - `docs/gutenberg-calendar-block.md` — design and implementation notes for the calendar Gutenberg block.
 - `docs/reusable-calendar-plan.md` — plan for reusability and data flow of calendar components.
 - `docs/teachers-section-plan.md` — UX and data model for the teachers admin section.
-- `docs/thrive-calendar-context.md` — canonical data shape and context for calendar features.
 - `docs/thrive-modal-architecture.md` — modal design used by block editor and runtime (referenced by block implementations).
 
 When updating blocks, update the relevant doc in `docs/` and update this file if the runtime contract changes.
@@ -111,7 +105,7 @@ When updating blocks, update the relevant doc in `docs/` and update this file if
 ---
 ## 7. Authoritative instruction files
 
-Operational and architecture guidance is maintained under `.github/instructions/`. Keep these files in sync with `GEMINI.md`.
+Operational and architecture guidance is maintained under `.github/instructions/`. Keep these files in sync with `CLAUDE.md`.
 
 - `.github/instructions/nestjs.instructions.md` — NestJS architecture, patterns, and deployment notes.
 - `.github/instructions/nginx.instructions.md` — Nginx/reverse proxy responsibilities and configuration guidance.
@@ -127,26 +121,25 @@ These files are referenced from the Copilot instruction set for contributors and
 Before merging changes that affect runtime contracts or DB schema, ensure:
 
 1. PHP static analysis (phpstan) passes.
-2. TypeScript builds and tests pass for all workspace packages (`pnpm build` and `pnpm test`).
+2. TypeScript builds and tests pass for NestJS and web components.
 3. Relevant TypeORM migrations are included and tested.
 4. Update `GEMINI.md` and the related `.github/instructions/*` file(s) if the contract changes.
 
 ---
 ## 9. Roadmap (short)
 
+1. Refresh token rotation & silent renew.
+2. Fine-grained permissions service.
+3. Payments integration (Stripe).
 
 Maintainers: Keep this file the canonical truth; when adding features or changing runtime contracts, update `docs/` and the appropriate files in `.github/instructions/` to keep contributors aligned.
 
 
-## General
+--
+## 10. Typing & API Client
 
-Imports must look like this
-```typescript
-import { AuthService } from '../auth/auth.service.js';
-import { User } from '../users/entities/user.entity.js';
-import { Admin } from '../courses/entities/admin.entity.js';
-import { Teacher } from '../teachers/entities/teacher.entity.js';
-import { SomeType } from '@thrive/shared/types';
-```
+`any` types are strictly forbidden.
 
-NEVER use "any" types
+**ThriveClient**: The authoritative API client is located at `apps/wordpress/shared/thrive.ts`. This is the single source of truth for all browser-side API interactions. All blocks and components MUST use this client for API calls.
+
+All API types MUST be declared in the shared package (`@thrive/shared`) - this should cover most types used in the client side code. There should be minimal type declarations in the client side apps. Use API types where possible.

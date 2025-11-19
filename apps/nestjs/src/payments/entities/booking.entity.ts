@@ -32,6 +32,20 @@ export enum BookingStatus {
 }
 
 /**
+ * Enumeration of booking types.
+ */
+export enum BookingType {
+  /** Standard drop-in class booking */
+  DROP_IN = "DROP_IN",
+
+  /** Course step session booking (part of a course program) */
+  COURSE_STEP = "COURSE_STEP",
+
+  /** Workshop or special event booking */
+  WORKSHOP = "WORKSHOP",
+}
+
+/**
  * Booking entity represents a student's seat in a session.
  */
 @Entity("booking")
@@ -159,4 +173,29 @@ export class Booking extends BaseEntity {
     comment: "Whether the booking was cancelled by the student (vs admin)",
   })
   cancelledByStudent: boolean;
+
+  @Column({
+    name: "booking_type",
+    type: "enum",
+    enum: BookingType,
+    default: BookingType.DROP_IN,
+    comment: "Type of booking (drop-in, course step, workshop)",
+  })
+  bookingType: BookingType;
+
+  @Column({
+    name: "course_step_id",
+    type: "int",
+    nullable: true,
+    comment: "FK to course_step.id for COURSE_STEP bookings",
+  })
+  courseStepId: number | null;
+
+  @Column({
+    name: "metadata",
+    type: "json",
+    nullable: true,
+    comment: "Additional booking metadata (extensible)",
+  })
+  metadata: Record<string, any> | null;
 }

@@ -142,6 +142,9 @@ importers:
       '@types/jest':
         specifier: ^30.0.0
         version: 30.0.0
+      '@types/jsonwebtoken':
+        specifier: ^9.0.10
+        version: 9.0.10
       '@types/node':
         specifier: ^22.10.7
         version: 22.18.10
@@ -154,6 +157,9 @@ importers:
       '@types/passport-local':
         specifier: ^1.0.38
         version: 1.0.38
+      '@types/qs':
+        specifier: ^6.14.0
+        version: 6.14.0
       '@types/stripe':
         specifier: ^8.0.416
         version: 8.0.417(@types/node@22.18.10)

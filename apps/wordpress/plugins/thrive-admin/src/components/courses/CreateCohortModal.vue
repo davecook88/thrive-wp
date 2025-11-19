@@ -41,35 +41,11 @@
           ></textarea>
         </div>
 
-        <!-- Date Range -->
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label for="startDate" class="block text-sm font-medium text-gray-700">
-              Start Date *
-            </label>
-            <input
-              id="startDate"
-              v-model="form.startDate"
-              type="date"
-              required
-              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            />
-            <p class="mt-1 text-xs text-gray-500">First session date (UTC)</p>
-          </div>
-          <div>
-            <label for="endDate" class="block text-sm font-medium text-gray-700">
-              End Date *
-            </label>
-            <input
-              id="endDate"
-              v-model="form.endDate"
-              type="date"
-              required
-              :min="form.startDate"
-              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            />
-            <p class="mt-1 text-xs text-gray-500">Last session date (UTC)</p>
-          </div>
+        <!-- Info: Dates are calculated from sessions -->
+        <div class="bg-blue-50 border border-blue-200 rounded-md p-3">
+          <p class="text-sm text-blue-800">
+            <strong>Note:</strong> Cohort start and end dates are automatically calculated from the sessions you assign to this cohort. Assign sessions first, then the dates will be derived from the session schedule.
+          </p>
         </div>
 
         <!-- Maximum Enrollment -->
@@ -151,8 +127,6 @@ import type { CourseProgramDetailDto, CourseCohortListItemDto } from '@thrive/sh
 interface CohortForm {
   name: string;
   description: string;
-  startDate: string;
-  endDate: string;
   maxEnrollment: number;
   enrollmentDeadline: string;
   isActive: boolean;
@@ -178,8 +152,6 @@ export default defineComponent({
     const form: CohortForm = reactive({
       name: '',
       description: '',
-      startDate: '',
-      endDate: '',
       maxEnrollment: 30,
       enrollmentDeadline: '',
       isActive: true
@@ -188,8 +160,6 @@ export default defineComponent({
     const resetForm = () => {
       form.name = '';
       form.description = '';
-      form.startDate = '';
-      form.endDate = '';
       form.maxEnrollment = 30;
       form.enrollmentDeadline = '';
       form.isActive = true;
@@ -198,8 +168,6 @@ export default defineComponent({
     const populateForm = (cohort: CourseCohortListItemDto) => {
       form.name = cohort.name;
       form.description = cohort.description || '';
-      form.startDate = cohort.startDate;
-      form.endDate = cohort.endDate;
       form.maxEnrollment = cohort.maxEnrollment;
       form.enrollmentDeadline = cohort.enrollmentDeadline
         ? new Date(cohort.enrollmentDeadline).toISOString().slice(0, 16)
@@ -217,8 +185,6 @@ export default defineComponent({
         const payload = {
           name: form.name,
           description: form.description || null,
-          startDate: form.startDate,
-          endDate: form.endDate,
           maxEnrollment: form.maxEnrollment,
           enrollmentDeadline: form.enrollmentDeadline
             ? new Date(form.enrollmentDeadline).toISOString()

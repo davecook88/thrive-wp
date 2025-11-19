@@ -1,8 +1,14 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { StudentCoursePackage } from "@thrive/shared";
 
 interface StudentCourseEnrollmentsProps {
   showProgress?: boolean;
+}
+
+interface StepAction {
+  stepId: number;
+  action: "book" | "modify" | "none";
+  canModify: boolean;
 }
 
 export default function StudentCourseEnrollments({
@@ -11,29 +17,86 @@ export default function StudentCourseEnrollments({
   const [enrollments, setEnrollments] = useState<StudentCoursePackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [stepActions, setStepActions] = useState<Map<number, StepAction>>(
+    new Map(),
+  );
 
-  useEffect(() => {
-    const fetchEnrollments = async () => {
-      try {
-        const response = await fetch("/api/students/me/enrollments", {
-          credentials: "include",
+  // Extract fetch logic into a reusable function
+  const fetchEnrollments = useCallback(async () => {
+    try {
+      const response = await fetch("/api/students/me/enrollments", {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch enrollments");
+      }
+
+      const data = (await response.json()) as StudentCoursePackage[];
+      setEnrollments(data);
+
+      // Determine action for each step
+      const actions = new Map<number, StepAction>();
+      data.forEach((enrollment) => {
+        enrollment.progress.forEach((step) => {
+          let action: "book" | "modify" | "none" = "none";
+          let canModify = false;
+
+          if (step.status === "UNBOOKED") {
+            action = "book";
+          } else if (step.status === "BOOKED") {
+            // Check if cancellation window is still open
+            // For now, we'll assume it's modifiable if booked
+            // This can be enhanced with actual cancellation window logic
+            canModify = true;
+            action = "modify";
+          }
+
+          actions.set(step.stepId, {
+            stepId: step.stepId,
+            action,
+            canModify,
+          });
         });
+      });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch enrollments");
-        }
+      setStepActions(actions);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-        const data = await response.json();
-        setEnrollments(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
-      } finally {
-        setLoading(false);
+  // Initial fetch on mount
+  useEffect(() => {
+    void fetchEnrollments();
+  }, [fetchEnrollments]);
+
+  // Listen for step booking events to auto-refresh
+  useEffect(() => {
+    const handleStepBooked = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        packageId: number;
+        stepId: number;
+        success: boolean;
+      }>;
+
+      if (customEvent.detail.success) {
+        // Refetch enrollments to show updated status
+        void fetchEnrollments();
       }
     };
 
-    fetchEnrollments();
-  }, []);
+    document.addEventListener("thrive-course:stepBooked", handleStepBooked);
+
+    return () => {
+      document.removeEventListener(
+        "thrive-course:stepBooked",
+        handleStepBooked,
+      );
+    };
+  }, [fetchEnrollments]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -42,6 +105,44 @@ export default function StudentCourseEnrollments({
       day: "numeric",
       year: "numeric",
     }).format(date);
+  };
+
+  const handleBookStep = (
+    packageId: number,
+    stepId: number,
+    stepLabel: string,
+    stepTitle: string,
+  ) => {
+    // Open the course step booking modal
+    const event = new CustomEvent("thrive-course:bookStep", {
+      detail: {
+        packageId,
+        stepId,
+        stepLabel,
+        stepTitle,
+        isModifying: false,
+      },
+    });
+    document.dispatchEvent(event);
+  };
+
+  const handleModifyStep = (
+    packageId: number,
+    stepId: number,
+    stepLabel: string,
+    stepTitle: string,
+  ) => {
+    // Open the course step booking modal in modify mode
+    const event = new CustomEvent("thrive-course:bookStep", {
+      detail: {
+        packageId,
+        stepId,
+        stepLabel,
+        stepTitle,
+        isModifying: true,
+      },
+    });
+    document.dispatchEvent(event);
   };
 
   if (loading) {
@@ -82,31 +183,34 @@ export default function StudentCourseEnrollments({
 
           return (
             <div key={enrollment.packageId} className="course-card">
-              <div className="course-header">
-                <h4 className="course-name">
-                  {enrollment.courseCode}: {enrollment.courseTitle}
-                </h4>
-              </div>
-
-              <div className="course-meta">
-                <div className="package-name">📦 {enrollment.packageName}</div>
-                <div className="purchased-date">
-                  📅 Purchased: {formatDate(enrollment.purchasedAt)}
+              <div className="course-card-header">
+                <div className="course-card-title-group">
+                  <h4 className="course-card-title">
+                    {enrollment.courseTitle}
+                  </h4>
+                  <p className="course-card-package">
+                    {enrollment.packageName}
+                  </p>
                 </div>
-                {enrollment.expiresAt && (
-                  <div className="expires-date">
-                    ⏰ Expires: {formatDate(enrollment.expiresAt)}
-                  </div>
-                )}
+                <div className="course-card-meta">
+                  <span className="course-card-date">
+                    Purchased: {formatDate(enrollment.purchasedAt)}
+                  </span>
+                  {enrollment.expiresAt && (
+                    <span className="course-card-date">
+                      Expires: {formatDate(enrollment.expiresAt)}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {showProgress && (
-                <div className="course-progress">
+                <div className="course-card-progress">
                   <div className="progress-bar-container">
                     <div
                       className="progress-bar"
                       style={{ width: `${progressPercent}%` }}
-                    ></div>
+                    />
                   </div>
                   <div className="progress-text">
                     {enrollment.completedSteps} of {enrollment.totalSteps} steps
@@ -115,30 +219,70 @@ export default function StudentCourseEnrollments({
                 </div>
               )}
 
-              <div className="course-steps">
-                <h5>Course Steps</h5>
-                <ul className="steps-list">
-                  {enrollment.progress.map((step) => (
-                    <li
-                      key={step.stepId}
-                      className={`step-item status-${step.status.toLowerCase()}`}
-                    >
-                      <span className="step-label">{step.stepLabel}</span>
-                      <span className="step-title">{step.stepTitle}</span>
-                      <span
-                        className={`step-status ${step.status.toLowerCase()}`}
-                      >
-                        {step.status}
-                      </span>
-                    </li>
-                  ))}
+              <div className="course-card-body">
+                <h5 className="course-steps-title">Course Steps</h5>
+                <ul className="course-steps-list">
+                  {enrollment.progress.map((step) => {
+                    const action = stepActions.get(step.stepId);
+                    // TODO: The Change Session button should not be available if there are no session options available.
+                    const canModify = action?.canModify ?? false;
+
+                    return (
+                      <li key={step.stepId} className="course-step">
+                        <div className="course-step-info">
+                          <span className="course-step-label">
+                            {step.stepLabel}
+                          </span>
+                          <span className="course-step-title">
+                            {step.stepTitle}
+                          </span>
+                        </div>
+                        <div className="course-step-status">
+                          <span
+                            className={`status-badge status-${step.status.toLowerCase()}`}
+                          >
+                            {step.status}
+                          </span>
+                          {action && action.action !== "none" && (
+                            <button
+                              className={`button step-action-btn step-action-${action.action}`}
+                              disabled={
+                                action.action === "modify" && !canModify
+                              }
+                              onClick={() => {
+                                if (action.action === "book") {
+                                  handleBookStep(
+                                    enrollment.packageId,
+                                    step.stepId,
+                                    step.stepLabel,
+                                    step.stepTitle,
+                                  );
+                                } else if (action.action === "modify") {
+                                  handleModifyStep(
+                                    enrollment.packageId,
+                                    step.stepId,
+                                    step.stepLabel,
+                                    step.stepTitle,
+                                  );
+                                }
+                              }}
+                            >
+                              {action.action === "book"
+                                ? "Book Session"
+                                : "Change Session"}
+                            </button>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
 
-              <div className="course-actions">
+              <div className="course-card-footer">
                 <a
                   href={`/courses/${enrollment.courseProgramId}`}
-                  className="button"
+                  className="button button-secondary"
                 >
                   View Course Details
                 </a>

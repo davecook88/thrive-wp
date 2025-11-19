@@ -29,11 +29,6 @@ export const CreateCourseProgramSchema = z.object({
     .nullable()
     .describe("Marketing description"),
 
-  timezone: z
-    .string()
-    .default("America/New_York")
-    .describe("Default timezone for scheduling recommendations"),
-
   isActive: z
     .boolean()
     .default(true)
@@ -44,6 +39,13 @@ export const CreateCourseProgramSchema = z.object({
     .optional()
     .default([])
     .describe("Array of level IDs appropriate for this course"),
+
+  heroImageUrl: z
+    .string()
+    .url()
+    .optional()
+    .nullable()
+    .describe("URL to course hero image"),
 });
 
 export type CreateCourseProgramDto = z.infer<typeof CreateCourseProgramSchema>;
@@ -181,7 +183,6 @@ export const CourseProgramListItemSchema = z.object({
   title: z.string(),
   description: z.string().nullable(),
   heroImageUrl: z.string().nullable().describe("URL to course hero image"),
-  timezone: z.string(),
   // could be 1, should be transformed to boolean
   isActive: z.preprocess((val) => Boolean(val), z.boolean()),
   stepCount: z.number().describe("Number of steps in this course"),
@@ -286,7 +287,6 @@ export const CourseProgramDetailSchema = z.object({
   description: z.string().nullable(),
   heroImageUrl: z.string().nullable().describe("URL to course hero image"),
   slug: z.string().nullable().describe("URL-friendly slug"),
-  timezone: z.string(),
   isActive: z.preprocess((val) => Boolean(val), z.boolean()),
   stripeProductId: z.string().nullable(),
   stripePriceId: z.string().nullable(),
@@ -385,16 +385,6 @@ export const CreateCourseCohortSchema = z.object({
     .nullable()
     .describe("Optional cohort-specific description"),
 
-  startDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Start date must be in YYYY-MM-DD format")
-    .describe("First session date of cohort"),
-
-  endDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "End date must be in YYYY-MM-DD format")
-    .describe("Last session date of cohort"),
-
   maxEnrollment: z
     .number()
     .int()
@@ -406,7 +396,7 @@ export const CreateCourseCohortSchema = z.object({
     .string()
     .optional()
     .nullable()
-    .describe("Last datetime student can enroll (ISO 8601 format, stored in UTC)"),
+    .describe("Last datetime student can enroll (ISO 8601 format, stored in UTC). Note: start date is derived from the first assigned session"),
 
   isActive: z
     .boolean()
@@ -469,14 +459,20 @@ export const CourseCohortListItemSchema = z.object({
   courseProgramId: z.number(),
   name: z.string(),
   description: z.string().nullable(),
-  startDate: z.string(),
-  endDate: z.string(),
   maxEnrollment: z.number(),
   currentEnrollment: z.number(),
   enrollmentDeadline: z.string().nullable(),
   isActive: z.preprocess((val) => Boolean(val), z.boolean()),
   availableSpots: z.number().describe("maxEnrollment - currentEnrollment"),
   sessionCount: z.number().describe("Number of sessions assigned to cohort"),
+  startDate: z
+    .string()
+    .nullable()
+    .describe("First session start date (derived from assigned sessions)"),
+  endDate: z
+    .string()
+    .nullable()
+    .describe("Last session start date (derived from assigned sessions)"),
 });
 
 export type CourseCohortListItemDto = z.infer<
@@ -493,14 +489,20 @@ export const CourseCohortDetailSchema = z.object({
   courseTitle: z.string(),
   name: z.string(),
   description: z.string().nullable(),
-  startDate: z.string(),
-  endDate: z.string(),
   maxEnrollment: z.number(),
   currentEnrollment: z.number(),
   enrollmentDeadline: z.string().nullable(),
   isActive: z.preprocess((val) => Boolean(val), z.boolean()),
   availableSpots: z.number(),
   sessions: z.array(CohortSessionDetailSchema),
+  startDate: z
+    .string()
+    .nullable()
+    .describe("First session start date (derived from assigned sessions)"),
+  endDate: z
+    .string()
+    .nullable()
+    .describe("Last session start date (derived from assigned sessions)"),
 });
 
 export type CourseCohortDetailDto = z.infer<typeof CourseCohortDetailSchema>;
@@ -512,8 +514,6 @@ export const PublicCourseCohortSchema = z.object({
   id: z.number(),
   name: z.string(),
   description: z.string().nullable(),
-  startDate: z.string(),
-  endDate: z.string(),
   availableSpots: z.number(),
   enrollmentDeadline: z.string().nullable(),
   isAvailable: z
@@ -522,6 +522,14 @@ export const PublicCourseCohortSchema = z.object({
       "True if spots available and deadline not passed and cohort is active",
     ),
   sessions: z.array(CohortSessionDetailSchema),
+  startDate: z
+    .string()
+    .nullable()
+    .describe("First session start date (derived from assigned sessions)"),
+  endDate: z
+    .string()
+    .nullable()
+    .describe("Last session start date (derived from assigned sessions)"),
 });
 
 export type PublicCourseCohortDto = z.infer<typeof PublicCourseCohortSchema>;

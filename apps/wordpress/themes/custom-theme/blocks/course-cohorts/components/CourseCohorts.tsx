@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { thriveClient } from "../../../../../shared/thrive";
-import { PublicCourseCohortDto, ThriveApiError } from "@thrive/shared";
+import { PublicCourseCohortDto } from "@thrive/shared";
 
 interface CourseCohortsProps {
   courseCode: string;
@@ -29,11 +29,8 @@ export default function CourseCohorts({
         setError(null);
       } catch (err: unknown) {
         console.error("Error fetching cohorts:", err);
-        const errorMessage =
-          err instanceof ThriveApiError
-            ? err.message
-            : "Failed to load cohorts";
-        setError(errorMessage);
+
+        setError("Failed to load cohorts");
       } finally {
         setLoading(false);
       }
@@ -48,16 +45,21 @@ export default function CourseCohorts({
   useEffect(() => {
     const checkEnrollment = async () => {
       try {
-        const response = await fetch("/api/packages/my-credits", {
-          credentials: "include",
-        });
-        if (response.ok) {
-          const packages = await response.json();
-          // Check if any package has this course code in metadata
-          const enrolled = packages.some(
-            (pkg: any) =>
-              pkg.metadata?.courseCode === courseCode &&
-              pkg.expiresAt === null // Course packages don't expire
+        const response = await thriveClient.fetchStudentCredits();
+        if (response) {
+          // Check if any package has an allowance for this course
+          const enrolled = response.packages.some(
+            (pkg) =>
+              pkg.expiresAt === null && // Course packages don't expire
+              pkg.allowances.some((allowance) => {
+                // Parse courseCode to get the course program ID
+                const courseProgramId = parseInt(courseCode, 10);
+                return (
+                  allowance.courseProgramId === courseProgramId &&
+                  allowance.remainingCredits !== undefined &&
+                  allowance.remainingCredits > 0
+                );
+              }),
           );
           setIsEnrolled(enrolled);
         }
@@ -69,7 +71,7 @@ export default function CourseCohorts({
     };
 
     if (courseCode) {
-      checkEnrollment();
+      void checkEnrollment();
     }
   }, [courseCode]);
 
@@ -89,10 +91,7 @@ export default function CourseCohorts({
         window.location.href = url; // Redirect to Stripe checkout
       } catch (err: unknown) {
         console.error("Enrollment error:", err);
-        const message =
-          err instanceof ThriveApiError
-            ? err.message
-            : "Failed to start enrollment process";
+        const message = "Failed to start enrollment process";
         alert(message);
       }
     })();
@@ -135,7 +134,9 @@ export default function CourseCohorts({
           <div className="course-cohort__actions">
             {!enrollmentLoading && isEnrolled ? (
               <div className="enrollment-status">
-                <span className="enrollment-status__badge">✓ Already Enrolled</span>
+                <span className="enrollment-status__badge">
+                  ✓ Already Enrolled
+                </span>
                 <a href="/student" className="button button--secondary">
                   Go to Dashboard
                 </a>

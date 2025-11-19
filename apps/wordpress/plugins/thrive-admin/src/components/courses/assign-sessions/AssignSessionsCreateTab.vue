@@ -36,6 +36,7 @@
         :default-values="getDefaultValuesForStep(selectedStep)"
         :auto-attach-to-course-step="{ stepId: selectedStep }"
         :course-context="{ courseProgramId: course.id, stepId: selectedStep }"
+        :cohort-context="cohort"
         hide-recurring-option
         @save="handleNewSessionCreated"
         @close="selectedStep = null"
@@ -46,7 +47,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, type PropType } from 'vue';
-import type { CourseProgramDetailDto, LevelDto, PublicTeacherDto } from '@thrive/shared';
+import type { CourseProgramDetailDto, CourseCohortDetailDto, LevelDto, PublicTeacherDto } from '@thrive/shared';
 import GroupClassModal from '../../GroupClassModal.vue';
 
 export default defineComponent({
@@ -58,6 +59,10 @@ export default defineComponent({
     course: {
       type: Object as PropType<CourseProgramDetailDto>,
       required: true
+    },
+    cohort: {
+      type: Object as PropType<CourseCohortDetailDto | null>,
+      default: null
     },
     levels: {
       type: Array as PropType<LevelDto[]>,

@@ -3,6 +3,7 @@ import { BaseEntity } from "../../common/entities/base.entity.js";
 import { StudentPackage } from "../../packages/entities/student-package.entity.js";
 import { CourseStep } from "./course-step.entity.js";
 import type { CourseCohort } from "./course-cohort.entity.js";
+import type { Booking } from "../../payments/entities/booking.entity.js";
 
 /**
  * StudentCourseStepProgress tracks a student's progress through individual course steps.
@@ -54,7 +55,28 @@ export class StudentCourseStepProgress extends BaseEntity {
   })
   status: "UNBOOKED" | "BOOKED" | "COMPLETED" | "MISSED" | "CANCELLED";
 
-  @Column({ name: "session_id", type: "int", nullable: true })
+  @Column({
+    name: "booking_id",
+    type: "int",
+    nullable: true,
+    comment: "FK to booking.id - links to the actual booking entity",
+  })
+  bookingId?: number;
+
+  @ManyToOne("Booking", {
+    onDelete: "SET NULL",
+    eager: false,
+  })
+  @JoinColumn({ name: "booking_id" })
+  booking?: Booking;
+
+  @Column({
+    name: "session_id",
+    type: "int",
+    nullable: true,
+    comment:
+      "DEPRECATED: Use booking.sessionId instead. Kept for backward compatibility.",
+  })
   sessionId?: number;
 
   // Note: Session relation is intentionally not defined to avoid circular dependency

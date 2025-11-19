@@ -34,6 +34,7 @@
         <AssignSessionsCreateTab
           v-else-if="activeTab === 'create'"
           :course="course"
+          :cohort="cohortDetail"
           :levels="levels"
           :teachers="teachers"
           @session-created="handleNewSessionCreated"

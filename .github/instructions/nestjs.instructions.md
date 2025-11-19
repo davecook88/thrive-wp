@@ -25,6 +25,20 @@ This app will share the WP MySQL db for now but it should be treated as if it we
   - This ensures consistency across the database schema and prevents naming conflicts
 - All migrations must be exported from the `src/migrations/index.ts` file for TypeORM CLI compatibility
 
+### Timezone Handling (UTC Convention)
+
+**All session times and scheduling datetimes are stored in UTC.** The NestJS API must never include course-level or user-level timezone configuration—all timestamps are UTC-based.
+
+- **API Responses**: All datetime fields in API responses must be serialized as ISO 8601 strings in UTC (e.g., `"2025-01-15T14:30:00Z"`).
+- **Service Layer**: Services calculate and manipulate times using UTC. Do not perform timezone conversions in the backend.
+- **Client Responsibility**: Frontend applications (WordPress, React, etc.) are responsible for converting UTC times to the user's local timezone for display using browser APIs or libraries.
+- **Entity Definitions**: Course and scheduling entities do not include timezone fields. All times reference UTC only.
+
+This approach ensures:
+- Consistency across regions and deployments
+- Simplified backend scheduling logic
+- Flexible client-side presentation to support user preferences
+
 ## Authentication System
 
 ### Architecture

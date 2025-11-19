@@ -185,8 +185,10 @@ export default function SessionSelectionWizard({
     );
   }
 
+  // Steps that need user selection (more than 1 option)
   const stepsNeedingSelection = steps.filter((step) => step.options.length > 1);
-  const allSelected = stepsNeedingSelection.every(
+  // All unbooked steps (including those with single options that are auto-selected)
+  const allSelected = steps.every(
     (step) => selections[step.stepId],
   );
 
@@ -224,13 +226,9 @@ export default function SessionSelectionWizard({
 
       <h2 className="session-wizard__title">Book Your Sessions</h2>
 
-      {stepsNeedingSelection.length === 0 ? (
+      {steps.length === 0 ? (
         <div className="session-wizard__success">
-          <p>
-            {steps.length === 0
-              ? "Your enrollment is complete! You can view your course and book sessions from your dashboard."
-              : "All sessions have been automatically booked!"}
-          </p>
+          <p>Your enrollment is complete! You can view your course and book sessions from your dashboard.</p>
           <button
             onClick={() => (window.location.href = "/student")}
             className="button"
@@ -245,7 +243,7 @@ export default function SessionSelectionWizard({
           </p>
 
           <div className="session-wizard__steps">
-            {stepsNeedingSelection.map((step) => (
+            {steps.map((step) => (
               <div key={step.stepId} className="wizard-step">
                 <h3 className="wizard-step__title">
                   {step.stepLabel}: {step.stepTitle}

@@ -48,12 +48,23 @@ import {
   CourseCohortDetailDto,
   CourseCohortListItemSchema,
   CourseCohortDetailSchema,
+  // Course booking types
+  UnbookedCourseStep,
+  CourseStepBookingResponse,
+  BulkCourseStepBookingResponse,
+  BookStepSessionRequest,
+  ChangeStepSessionRequest,
+  CancelStepBookingRequest,
+  BulkBookSessionsRequest,
   PublicCourseCohortDto,
   EnrollmentCheckoutResponseDto,
   EnrollmentCheckoutResponseSchema,
   CreateGroupClassDto,
   TeacherSessionsResponseSchema,
   UpdateAvailabilityDto,
+  // Student stats types
+  StudentStatsResponseSchema,
+  type StudentStatsResponseDto,
 } from "@thrive/shared";
 import {
   PreviewAvailabilityResponseSchema,
@@ -259,6 +270,12 @@ export const thriveClient = {
         StudentPackageMyCreditsResponseSchema,
       );
     },
+  getStudentStats: async (): Promise<StudentStatsResponseDto | null> => {
+    return await apiGet<StudentStatsResponseDto>(
+      "/api/students/me/stats",
+      StudentStatsResponseSchema,
+    );
+  },
   fetchAvailableGroupSessions: async ({
     levelIds,
     startDate,
@@ -866,5 +883,86 @@ export const thriveClient = {
       throw new Error("Failed to create enrollment session");
     }
     return result;
+  },
+
+  // ==================== Course Step Booking Methods ====================
+
+  /**
+   * Get unbooked steps with available session options for a course package
+   */
+  getUnbookedCourseSteps: async (
+    packageId: number,
+  ): Promise<UnbookedCourseStep[]> => {
+    const data = await apiGet<UnbookedCourseStep[]>(
+      `/api/students/me/course-packages/${packageId}/unbooked-steps`,
+    );
+    return Array.isArray(data) ? data : [];
+  },
+
+  /**
+   * Book a single course step session
+   */
+  bookCourseStepSession: async (
+    packageId: number,
+    stepId: number,
+    courseStepOptionId: number,
+  ): Promise<CourseStepBookingResponse> => {
+    const result = await apiPost<CourseStepBookingResponse>(
+      `/api/students/me/course-packages/${packageId}/steps/${stepId}/book-session`,
+      { courseStepOptionId } satisfies BookStepSessionRequest,
+    );
+    if (!result) {
+      throw new Error("Failed to book course step session");
+    }
+    return result;
+  },
+
+  /**
+   * Change an existing course step session booking
+   */
+  changeCourseStepSession: async (
+    packageId: number,
+    stepId: number,
+    courseStepOptionId: number,
+  ): Promise<CourseStepBookingResponse> => {
+    const result = await apiPost<CourseStepBookingResponse>(
+      `/api/students/me/course-packages/${packageId}/steps/${stepId}/change-session`,
+      { courseStepOptionId } satisfies ChangeStepSessionRequest,
+    );
+    if (!result) {
+      throw new Error("Failed to change course step session");
+    }
+    return result;
+  },
+
+  /**
+   * Bulk book multiple course step sessions (used after purchase)
+   */
+  bulkBookCourseStepSessions: async (
+    packageId: number,
+    selections: { courseStepId: number; courseStepOptionId: number }[],
+  ): Promise<BulkCourseStepBookingResponse> => {
+    const result = await apiPost<BulkCourseStepBookingResponse>(
+      `/api/students/me/course-packages/${packageId}/book-sessions`,
+      { selections } satisfies BulkBookSessionsRequest,
+    );
+    if (!result) {
+      throw new Error("Failed to book course step sessions");
+    }
+    return result;
+  },
+
+  /**
+   * Cancel a course step booking
+   */
+  cancelCourseStepBooking: async (
+    packageId: number,
+    stepId: number,
+    reason?: string,
+  ): Promise<void> => {
+    await apiDelete(
+      `/api/students/me/course-packages/${packageId}/steps/${stepId}/booking`,
+      reason ? ({ reason } satisfies CancelStepBookingRequest) : undefined,
+    );
   },
 } as const;

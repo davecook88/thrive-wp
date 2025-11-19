@@ -29,3 +29,7 @@ export { SimplifyCourseProgramSchema1763000000000 } from "./1763000000000-Simpli
 export { AddCourseProgramLevels1764000000000 } from "./1764000000000-AddCourseProgramLevels.js";
 export { AddCourseCohorts1765000000000 } from "./1765000000000-AddCourseCohorts.js";
 export { RemoveGroupClassRruleFields1766000000000 } from "./1766000000000-RemoveGroupClassRruleFields.js";
+export { RemoveCohortsTimezone1767000000000 } from "./1767000000000-RemoveCohortsTimezone.js";
+export { ConsolidateCourseBookings1768000000000 } from "./1768000000000-ConsolidateCourseBookings.js";
+export { RemoveCourseCohortDates1769000000000 } from "./1769000000000-RemoveCourseCohortDates.js";
+export { RemoveCourseProgramTimezone1770000000000 } from "./1770000000000-RemoveCourseProgramTimezone.js";

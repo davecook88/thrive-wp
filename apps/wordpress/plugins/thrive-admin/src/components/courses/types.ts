@@ -4,9 +4,9 @@ export interface CourseForm {
   code: string;
   title: string;
   description: string;
-  timezone: string;
   isActive: boolean;
   levelIds: number[];
+  heroImageUrl: string | null;
 }
 
 export interface CourseStepForm {

@@ -3,6 +3,7 @@ import "./teacher-profile-form/view";
 import "./student-calendar/view";
 import "./student-class-credits/view";
 import "./course-list/view";
+import "./course-list/style.scss";
 import "./course-header/view";
 import "./course-cohorts/view";
 import "./course-sessions-calendar/view";

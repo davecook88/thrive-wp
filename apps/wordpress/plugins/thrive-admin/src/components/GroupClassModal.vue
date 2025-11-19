@@ -22,6 +22,7 @@
           :mode="isEdit ? 'edit' : 'create'"
           :default-values="defaultValues"
           :course-context="courseContext"
+          :cohort-context="cohortContext"
           :hide-recurring-option="hideRecurringOption"
           @submit="handleSubmit"
           @cancel="$emit('close')"
@@ -36,7 +37,7 @@ import { defineComponent, ref, computed, PropType } from 'vue';
 import { GroupClass } from './GroupClasses.vue';
 import GroupClassFormComponent from './shared/GroupClassFormComponent.vue';
 import { thriveClient } from '@wp-shared/thrive';
-import { LevelDto, PublicTeacherDto } from '@thrive/shared';
+import { LevelDto, PublicTeacherDto, CourseCohortDetailDto } from '@thrive/shared';
 
 export default defineComponent({
   name: 'GroupClassModal',
@@ -66,6 +67,10 @@ export default defineComponent({
     },
     courseContext: {
       type: Object as PropType<{ courseProgramId: number; stepId: number } | null>,
+      default: null,
+    },
+    cohortContext: {
+      type: Object as PropType<CourseCohortDetailDto | null>,
       default: null,
     },
     hideRecurringOption: {

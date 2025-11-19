@@ -43,6 +43,15 @@ export { CourseProgramLevel } from "./course-programs/entities/course-program-le
 export { CourseCohort } from "./course-programs/entities/course-cohort.entity.js";
 export { CourseCohortSession } from "./course-programs/entities/course-cohort-session.entity.js";
 
+// Course Materials
+export { CourseStepMaterial } from "./course-materials/entities/course-step-material.entity.js";
+export { MaterialQuestion } from "./course-materials/entities/material-question.entity.js";
+export { StudentCourseStepMaterialProgress } from "./course-materials/entities/student-course-step-material-progress.entity.js";
+export { StudentAnswer } from "./course-materials/entities/student-answer.entity.js";
+
+// Session Materials
+export { SessionMaterial } from "./session-materials/entities/session-material.entity.js";
+
 // Levels
 export { Level } from "./levels/entities/level.entity.js";
 

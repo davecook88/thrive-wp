@@ -168,20 +168,11 @@
               ></textarea>
             </div>
 
-            <div>
-              <label for="timezone" class="block text-sm font-medium text-gray-700">Timezone</label>
-              <select
-                id="timezone"
-                v-model="form.timezone"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="America/New_York">America/New York</option>
-                <option value="America/Los_Angeles">America/Los Angeles</option>
-                <option value="America/Chicago">America/Chicago</option>
-                <option value="America/Denver">America/Denver</option>
-                <option value="Europe/London">Europe/London</option>
-              </select>
-            </div>
+            <MediaPicker
+              v-model="form.heroImageUrl"
+              label="Course Hero Image"
+              placeholder="No image selected"
+            />
 
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Student Levels *</label>
@@ -265,6 +256,7 @@ import type { CourseProgramDetailDto } from '@thrive/shared';
 import ManageStepsModal from './ManageStepsModal.vue';
 import ManageCohortsModal from './ManageCohortsModal.vue';
 import PublishCourseModal from './PublishCourseModal.vue';
+import MediaPicker from '../shared/MediaPicker.vue';
 import type { CourseForm } from './types';
 
 export default defineComponent({
@@ -272,7 +264,8 @@ export default defineComponent({
   components: {
     ManageStepsModal,
     ManageCohortsModal,
-    PublishCourseModal
+    PublishCourseModal,
+    MediaPicker
   },
   setup() {
     const activeTab = ref<'list' | 'create' | 'edit'>('list');
@@ -290,9 +283,9 @@ export default defineComponent({
       code: '',
       title: '',
       description: '',
-      timezone: 'America/New_York',
       isActive: true,
-      levelIds: []
+      levelIds: [],
+      heroImageUrl: null
     });
 
     const loadLevels = async () => {
@@ -343,9 +336,9 @@ export default defineComponent({
       form.code = course.code;
       form.title = course.title;
       form.description = course.description || '';
-      form.timezone = course.timezone;
       form.isActive = course.isActive;
       form.levelIds = course.levels?.map(l => l.id) || [];
+      form.heroImageUrl = course.heroImageUrl || null;
       activeTab.value = 'edit';
     };
 
@@ -408,9 +401,9 @@ export default defineComponent({
       form.code = '';
       form.title = '';
       form.description = '';
-      form.timezone = 'America/New_York';
       form.isActive = true;
       form.levelIds = [];
+      form.heroImageUrl = null;
     };
 
     const openPublishModal = (course: CourseProgramDetailDto) => {
@@ -444,6 +437,18 @@ export default defineComponent({
 
     const onCohortsUpdated = async () => {
       await loadCourses();
+
+      // Refresh the selected course details to ensure we have the latest steps/options
+      if (selectedCourseForCohorts.value) {
+        try {
+          const fullCourse = await thriveClient.getCourseProgram(selectedCourseForCohorts.value.id);
+          if (fullCourse) {
+            selectedCourseForCohorts.value = fullCourse;
+          }
+        } catch (err) {
+          console.error('Failed to refresh course details:', err);
+        }
+      }
     };
 
     onMounted(() => {

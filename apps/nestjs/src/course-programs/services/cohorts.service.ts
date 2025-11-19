@@ -37,6 +37,7 @@ export class CohortsService {
 
   /**
    * Create a new cohort for a course program
+   * Note: Start and end dates are dynamically calculated from assigned sessions
    */
   async create(
     courseProgramId: number,
@@ -67,18 +68,16 @@ export class CohortsService {
       );
     }
 
-    // Validate dates
-    const startDate = new Date(input.startDate);
-    const endDate = new Date(input.endDate);
-
-    if (endDate <= startDate) {
-      throw new BadRequestException("End date must be after start date");
-    }
-
-    // Create cohort
+    // Create cohort without start/end dates (they will be derived from sessions)
     const cohort = this.cohortRepo.create({
       courseProgramId,
-      ...input,
+      name: input.name,
+      description: input.description,
+      maxEnrollment: input.maxEnrollment,
+      enrollmentDeadline: input.enrollmentDeadline
+        ? new Date(input.enrollmentDeadline)
+        : null,
+      isActive: input.isActive ?? true,
     });
 
     const savedCohort = await this.cohortRepo.save(cohort);
@@ -95,29 +94,42 @@ export class CohortsService {
   ): Promise<CourseCohortListItemDto[]> {
     const cohorts = await this.cohortRepo
       .createQueryBuilder("cohort")
-      .leftJoinAndSelect("cohort.cohortSessions", "sessions")
+      .leftJoinAndSelect("cohort.cohortSessions", "cohortSessions")
+      .leftJoinAndSelect("cohortSessions.courseStepOption", "courseStepOption")
+      .leftJoinAndSelect("courseStepOption.groupClass", "groupClass")
+      .leftJoinAndSelect("groupClass.session", "session")
       .where("cohort.courseProgramId = :courseProgramId", { courseProgramId })
-      .orderBy("cohort.startDate", "ASC")
       .getMany();
 
-    return cohorts.map((cohort) => ({
-      id: cohort.id,
-      courseProgramId: cohort.courseProgramId,
-      name: cohort.name,
-      description: cohort.description,
-      startDate: cohort.startDate,
-      endDate: cohort.endDate,
-      maxEnrollment: cohort.maxEnrollment,
-      currentEnrollment: cohort.currentEnrollment,
-      enrollmentDeadline: cohort.enrollmentDeadline?.toISOString() || null,
-      isActive: cohort.isActive,
-      availableSpots: cohort.maxEnrollment - cohort.currentEnrollment,
-      sessionCount: cohort.cohortSessions?.length || 0,
-    }));
+    const mappedCohorts = cohorts.map((cohort) => {
+      const { startDate, endDate } = this.calculateCohortDates(cohort);
+
+      return {
+        id: cohort.id,
+        courseProgramId: cohort.courseProgramId,
+        name: cohort.name,
+        description: cohort.description,
+        maxEnrollment: cohort.maxEnrollment,
+        currentEnrollment: cohort.currentEnrollment,
+        enrollmentDeadline: cohort.enrollmentDeadline?.toISOString() || null,
+        isActive: cohort.isActive,
+        availableSpots: cohort.maxEnrollment - cohort.currentEnrollment,
+        sessionCount: cohort.cohortSessions?.length || 0,
+        startDate,
+        endDate,
+      } as CourseCohortListItemDto;
+    });
+
+    return mappedCohorts.sort((a, b) => {
+      if (!a.startDate) return 1;
+      if (!b.startDate) return -1;
+      return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+    });
   }
 
   /**
-   * Get public cohorts for a course program with isAvailable flag
+   * Get public cohorts for a course program with isAvailable flag.
+   * Filters out cohorts that have already started.
    */
   async findPublicByCourseProgram(courseProgramId: number) {
     const cohorts = await this.cohortRepo
@@ -128,17 +140,18 @@ export class CohortsService {
       .leftJoinAndSelect("courseStepOption.groupClass", "groupClass")
       .leftJoinAndSelect("groupClass.session", "session")
       .where("cohort.courseProgramId = :courseProgramId", { courseProgramId })
-      .orderBy("cohort.startDate", "ASC")
       .addOrderBy("courseStep.stepOrder", "ASC")
       .getMany();
 
     const now = new Date();
 
-    return cohorts.map((cohort) => {
+    const mappedCohorts = cohorts.map((cohort) => {
+      const { startDate, endDate } = this.calculateCohortDates(cohort);
       const availableSpots = cohort.maxEnrollment - cohort.currentEnrollment;
       const deadlinePassed = cohort.enrollmentDeadline
         ? new Date(cohort.enrollmentDeadline) < now
         : false;
+      const cohortStarted = startDate ? new Date(startDate) <= now : false;
 
       // Map cohort sessions with full details
       const sessions = cohort.cohortSessions.map((cs) => {
@@ -165,13 +178,23 @@ export class CohortsService {
         id: cohort.id,
         name: cohort.name,
         description: cohort.description,
-        startDate: cohort.startDate,
-        endDate: cohort.endDate,
         availableSpots,
         enrollmentDeadline: cohort.enrollmentDeadline?.toISOString() || null,
-        isAvailable: cohort.isActive && availableSpots > 0 && !deadlinePassed,
+        isAvailable:
+          cohort.isActive &&
+          availableSpots > 0 &&
+          !deadlinePassed &&
+          !cohortStarted,
         sessions,
+        startDate,
+        endDate,
       };
+    });
+
+    return mappedCohorts.sort((a, b) => {
+      if (!a.startDate) return 1;
+      if (!b.startDate) return -1;
+      return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
     });
   }
 
@@ -219,6 +242,8 @@ export class CohortsService {
         };
       });
 
+    const { startDate, endDate } = this.calculateCohortDates(cohort);
+
     return {
       id: cohort.id,
       courseProgramId: cohort.courseProgramId,
@@ -226,15 +251,15 @@ export class CohortsService {
       courseTitle: cohort.courseProgram.title,
       name: cohort.name,
       description: cohort.description,
-      startDate: cohort.startDate,
-      endDate: cohort.endDate,
       maxEnrollment: cohort.maxEnrollment,
       currentEnrollment: cohort.currentEnrollment,
       enrollmentDeadline: cohort.enrollmentDeadline?.toISOString() || null,
       isActive: cohort.isActive,
       availableSpots: cohort.maxEnrollment - cohort.currentEnrollment,
       sessions,
-    };
+      startDate,
+      endDate,
+    } as CourseCohortDetailDto;
   }
 
   /**
@@ -268,18 +293,18 @@ export class CohortsService {
       }
     }
 
-    // Validate dates if both are provided
-    if (input.startDate && input.endDate) {
-      const startDate = new Date(input.startDate);
-      const endDate = new Date(input.endDate);
+    // Update cohort (note: startDate and endDate are not in the DTO anymore, they're calculated)
+    const updatable = {
+      name: input.name,
+      description: input.description,
+      maxEnrollment: input.maxEnrollment,
+      enrollmentDeadline: input.enrollmentDeadline
+        ? new Date(input.enrollmentDeadline)
+        : undefined,
+      isActive: input.isActive,
+    };
 
-      if (endDate <= startDate) {
-        throw new BadRequestException("End date must be after start date");
-      }
-    }
-
-    // Update cohort
-    Object.assign(cohort, input);
+    Object.assign(cohort, updatable);
     await this.cohortRepo.save(cohort);
 
     return this.findOneDetail(cohortId);
@@ -395,5 +420,40 @@ export class CohortsService {
     }
 
     await this.cohortSessionRepo.softRemove(cohortSession);
+  }
+
+  /**
+   * Calculate cohort start and end dates from assigned sessions
+   * Returns ISO strings or null if no sessions are assigned
+   */
+  private calculateCohortDates(
+    cohort: CourseCohort & { cohortSessions: any[] },
+  ): { startDate: string | null; endDate: string | null } {
+    if (!cohort.cohortSessions || cohort.cohortSessions.length === 0) {
+      return { startDate: null, endDate: null };
+    }
+
+    // Extract session start times from cohort sessions
+    const sessionDates = cohort.cohortSessions
+      .map((cs) => {
+        const session = cs.courseStepOption?.groupClass?.session;
+        return session?.startAt ? new Date(session.startAt) : null;
+      })
+      .filter((date) => date !== null) as Date[];
+
+    if (sessionDates.length === 0) {
+      return { startDate: null, endDate: null };
+    }
+
+    // Find min and max dates
+    const startDate = new Date(
+      Math.min(...sessionDates.map((d) => d.getTime())),
+    );
+    const endDate = new Date(Math.max(...sessionDates.map((d) => d.getTime())));
+
+    return {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    };
   }
 }

@@ -15,10 +15,11 @@ import type { StudentCourseStepProgress } from "./student-course-step-progress.e
  * CourseCohort entity represents a pre-packaged set of sessions for a course program.
  *
  * A cohort is a specific offering of a course with:
- * - Fixed start and end dates
  * - Pre-selected sessions for each course step
  * - Maximum enrollment capacity
  * - Enrollment deadline
+ *
+ * Start and end dates are dynamically calculated from the assigned sessions.
  *
  * Students enroll in a cohort (not individual sessions), which simplifies:
  * - Student decision-making
@@ -28,7 +29,6 @@ import type { StudentCourseStepProgress } from "./student-course-step-progress.e
  */
 @Entity("course_cohort")
 @Index(["courseProgramId"])
-@Index(["startDate"])
 @Index(["isActive"])
 @Index(["courseProgramId", "name"], { unique: true })
 export class CourseCohort extends BaseEntity {
@@ -54,20 +54,6 @@ export class CourseCohort extends BaseEntity {
     comment: "Optional cohort-specific description",
   })
   description: string | null;
-
-  @Column({
-    name: "start_date",
-    type: "date",
-    comment: "First session date of cohort",
-  })
-  startDate: string;
-
-  @Column({
-    name: "end_date",
-    type: "date",
-    comment: "Last session date of cohort",
-  })
-  endDate: string;
 
   @Column({
     name: "max_enrollment",

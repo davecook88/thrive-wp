@@ -10,6 +10,11 @@ import type { CourseProgramLevel } from "./course-program-level.entity.js";
  * - Stripe product info now stored in StripeProductMap (not here)
  * - Enrollments tracked via StudentPackage (not separate enrollment table)
  * - Course purchases grant PackageAllowances that reference this entity
+ *
+ * Timezone handling:
+ * - All session times are stored in UTC in the database
+ * - Client applications are responsible for displaying times in user's local timezone
+ * - No course-level timezone configuration is maintained
  */
 @Entity("course_program")
 @Index(["code"], { unique: true })
@@ -38,15 +43,6 @@ export class CourseProgram extends BaseEntity {
     comment: "Marketing description",
   })
   description: string | null;
-
-  @Column({
-    name: "timezone",
-    type: "varchar",
-    length: 64,
-    default: "America/New_York",
-    comment: "Default timezone for scheduling",
-  })
-  timezone: string;
 
   @Column({
     name: "is_active",

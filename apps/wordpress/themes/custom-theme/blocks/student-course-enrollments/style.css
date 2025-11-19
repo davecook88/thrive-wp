@@ -122,8 +122,7 @@
 }
 
 .step-item {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
   align-items: center;
   gap: 1rem;
   padding: 1rem 1.25rem;
@@ -131,6 +130,14 @@
   border-radius: 8px;
   border-left: 4px solid #ccc;
   transition: all 0.2s ease;
+}
+
+.step-info {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
 }
 
 .step-item:hover {
@@ -227,5 +234,49 @@
 .course-actions .button:hover {
   background: #1976d2;
   transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
+}
+
+/* Step Action Button Styles */
+.step-action-btn {
+  padding: 0.5rem 1rem;
+  background: #ff9800;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.step-action-btn:hover {
+  background: #fb8c00;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
+}
+
+.step-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.step-action-book {
+  background: #ff9800;
+}
+
+.step-action-book:hover {
+  background: #fb8c00;
+  box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
+}
+
+.step-action-modify {
+  background: #2196f3;
+}
+
+.step-action-modify:hover {
+  background: #1976d2;
   box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
 }

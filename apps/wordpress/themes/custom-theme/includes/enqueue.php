@@ -19,11 +19,27 @@ function custom_theme_styles()
         array(),
         null
     );
+
+    // Course List block styles (compiled from blocks/course-list/style.scss)
+    wp_enqueue_style(
+        'custom-theme-course-list',
+        get_template_directory_uri() . '/build/style-index.ts.css',
+        array(),
+        wp_get_theme()->get('Version')
+    );
 }
 add_action('wp_enqueue_scripts', 'custom_theme_styles');
 
 function custom_theme_scripts()
 {
+    wp_enqueue_script(
+        'thrive-active-nav',
+        get_template_directory_uri() . '/js/active-nav.js',
+        array(),
+        wp_get_theme()->get('Version'),
+        true
+    );
+
     wp_enqueue_script(
         'thrive-auth-refresh',
         get_template_directory_uri() . '/js/auth-refresh.js',

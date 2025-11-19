@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from "react";
-import {
-  thriveClient,
-  StudentStatsResponseDto,
-  ThriveApiError,
-} from "@thrive/shared";
+import { StudentStatsResponseDto } from "@thrive/shared";
+import { thriveClient } from "../../../../shared/thrive";
 
 interface StudentStatsWidgetProps {
   showNextSession?: boolean;
@@ -24,14 +21,16 @@ export default function StudentStatsWidget({
 
   useEffect(() => {
     setLoading(true);
-    thriveClient
+    void thriveClient
       .getStudentStats()
-      .then((res) => setStats(res))
-      .catch((err: ThriveApiError) => {
-        setError(err.message || "Unknown error");
-      })
-      .finally(() => {
+      .then((res) => {
+        setStats(res);
         setLoading(false);
+      })
+      .catch((err) => {
+        setError(
+          err instanceof Error ? err.message : "Failed to load student stats",
+        );
       });
   }, []);
 

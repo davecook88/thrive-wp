@@ -109,6 +109,11 @@ class Thrive_Admin_Bridge_Admin
             return;
         }
 
+        // Enqueue WordPress media library (needed for media picker in courses)
+        if ($hook === 'thrive-admin_page_thrive-admin-courses') {
+            wp_enqueue_media();
+        }
+
         // Enqueue the thrive-calendar web component for group classes page
         if ($hook === 'thrive-admin_page_thrive-admin-group-classes') {
             $calendar_bundle = home_url('/assets/calendar/thrive-calendar.js');

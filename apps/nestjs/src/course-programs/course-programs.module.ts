@@ -10,9 +10,12 @@ import {
   CourseCohortSession,
 } from "./entities/index.js";
 import { GroupClass } from "../group-classes/entities/group-class.entity.js";
+import { Booking } from "../payments/entities/booking.entity.js";
+import { Session } from "../sessions/entities/session.entity.js";
 import { CourseProgramsService } from "./services/course-programs.service.js";
 import { CourseStepsService } from "./services/course-steps.service.js";
 import { CourseStepProgressService } from "./services/course-step-progress.service.js";
+import { CourseStepBookingService } from "./services/course-step-booking.service.js";
 import { CohortsService } from "./services/cohorts.service.js";
 import { CourseEnrollmentService } from "./services/course-enrollment.service.js";
 import {
@@ -41,6 +44,8 @@ import { Student } from "../students/entities/student.entity.js";
       CourseCohort,
       CourseCohortSession,
       GroupClass,
+      Booking,
+      Session,
       User,
       Admin,
       Teacher,
@@ -59,6 +64,7 @@ import { Student } from "../students/entities/student.entity.js";
     CourseProgramsService,
     CourseStepsService,
     CourseStepProgressService,
+    CourseStepBookingService,
     CohortsService,
     CourseEnrollmentService,
     AuthService,
@@ -68,6 +74,7 @@ import { Student } from "../students/entities/student.entity.js";
     CourseProgramsService,
     CourseStepsService,
     CourseStepProgressService,
+    CourseStepBookingService,
     CohortsService,
   ],
 })

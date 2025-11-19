@@ -121,6 +121,11 @@
 
     <!-- One-off Sessions -->
     <div v-if="form.scheduleType === 'oneoff'" class="space-y-3">
+      <div v-if="enrollmentDeadlineDate" class="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-3">
+        <p class="text-sm text-yellow-800">
+          <strong>Note:</strong> Sessions must be scheduled after the enrollment deadline: {{ enrollmentDeadlineDate.toLocaleString() }}
+        </p>
+      </div>
       <div class="flex justify-between items-center">
         <h4 class="text-md font-medium text-gray-900">Sessions</h4>
         <button
@@ -155,6 +160,10 @@
           @update:duration="(val: number) => session.duration = val"
         />
 
+        <p v-if="isSessionBeforeDeadline(session)" class="text-sm text-red-600 mt-1 px-1">
+          Session cannot be before enrollment deadline.
+        </p>
+
         <div v-if="getSessionEndAt(session) !== '—'" class="bg-blue-50 border border-blue-200 rounded-md p-3">
           <p class="text-sm text-blue-900">
             <span class="font-medium">End Time:</span> {{ getSessionEndAt(session) }}
@@ -165,6 +174,11 @@
 
     <!-- Recurring Schedule -->
     <div v-if="form.scheduleType === 'recurring'" class="space-y-4">
+      <div v-if="enrollmentDeadlineDate" class="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-3">
+        <p class="text-sm text-yellow-800">
+          <strong>Note:</strong> Start date must be after the enrollment deadline: {{ enrollmentDeadlineDate.toLocaleString() }}
+        </p>
+      </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Days of Week *</label>
         <div class="flex flex-wrap gap-2">
@@ -248,6 +262,9 @@
             required
             class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           />
+          <p v-if="isRecurringStartBeforeDeadline" class="text-sm text-red-600 mt-1">
+            Start date cannot be before enrollment deadline.
+          </p>
         </div>
 
         <div>
@@ -292,7 +309,7 @@
 </template>
 
 <script lang="ts">
-import { LevelDto, PublicTeacherDto } from '@thrive/shared';
+import { LevelDto, PublicTeacherDto, CourseCohortDetailDto } from '@thrive/shared';
 import { defineComponent, ref, computed, PropType, watch } from 'vue';
 import ClassDateTimePicker from './ClassDateTimePicker.vue';
 
@@ -350,6 +367,10 @@ export default defineComponent({
       type: Object as PropType<{ courseProgramId: number; stepId: number } | null>,
       default: null,
     },
+    cohortContext: {
+      type: Object as PropType<CourseCohortDetailDto | null>,
+      default: null,
+    },
     hideRecurringOption: {
       type: Boolean,
       default: false,
@@ -357,8 +378,6 @@ export default defineComponent({
   },
   emits: ['submit', 'cancel'],
   setup(props, { emit }) {
-
-    console.log("GroupClassFormComponent props teachers:", props.teachers);
 
     watch(() => props.teachers, (teachers) => {
       console.log('Teacher IDs changed:', teachers);
@@ -462,14 +481,28 @@ export default defineComponent({
 
       if (form.value.scheduleType === 'recurring') {
         console.log("Form validity (recurring):", form.value.recurring);
-        return form.value.recurring.daysOfWeek.length > 0 &&
+        const basicValid = form.value.recurring.daysOfWeek.length > 0 &&
                form.value.recurring.startTime &&
                form.value.recurring.startDate &&
                form.value.recurring.endDate;
+        
+        if (!basicValid) return false;
+        
+        // Check deadline
+        if (isRecurringStartBeforeDeadline.value) return false;
+        
+        return true;
       } else {
         console.log("Form validity (oneoff):", form.value.sessions);
-        return form.value.sessions.length > 0 &&
+        const basicValid = form.value.sessions.length > 0 &&
                form.value.sessions.every(s => s.startAt && s.duration);
+               
+        if (!basicValid) return false;
+        
+        // Check deadline for all sessions
+        if (form.value.sessions.some(s => isSessionBeforeDeadline(s))) return false;
+        
+        return true;
       }
     });
 
@@ -495,6 +528,27 @@ export default defineComponent({
       submitting.value = true;
 
       try {
+        // Validation: Check enrollment deadline
+        if (props.cohortContext?.enrollmentDeadline) {
+          const deadline = new Date(props.cohortContext.enrollmentDeadline);
+          
+          if (form.value.scheduleType === 'recurring') {
+             const startDate = new Date(form.value.recurring.startDate);
+             if (startDate < deadline) {
+               throw new Error(`Start date must be after enrollment deadline (${deadline.toLocaleDateString()})`);
+             }
+          } else {
+             for (const session of form.value.sessions) {
+               if (session.startAt) {
+                 const sessionStart = new Date(session.startAt);
+                 if (sessionStart < deadline) {
+                   throw new Error(`All sessions must be after enrollment deadline (${deadline.toLocaleDateString()})`);
+                 }
+               }
+             }
+          }
+        }
+
         const payload: any = {
           title: form.value.title,
           description: form.value.description || null,
@@ -520,6 +574,18 @@ export default defineComponent({
               endAt: endDate.toISOString().slice(0, 16),
             };
           });
+
+          // Dynamic calculation of start/end dates for one-off sessions
+          if (payload.sessions.length > 0) {
+             // Sort sessions by start time
+             const sortedSessions = [...payload.sessions].sort((a: any, b: any) => 
+               new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+             );
+             
+             payload.startDate = sortedSessions[0].startAt.split('T')[0]; // YYYY-MM-DD
+             const lastSession = sortedSessions[sortedSessions.length - 1];
+             payload.endDate = lastSession.endAt.split('T')[0];
+          }
         }
 
         // Add course context if provided
@@ -535,6 +601,23 @@ export default defineComponent({
       }
     };
 
+    const enrollmentDeadlineDate = computed(() => {
+      if (props.cohortContext?.enrollmentDeadline) {
+        return new Date(props.cohortContext.enrollmentDeadline);
+      }
+      return null;
+    });
+
+    const isSessionBeforeDeadline = (session: Session) => {
+      if (!session.startAt || !enrollmentDeadlineDate.value) return false;
+      return new Date(session.startAt) < enrollmentDeadlineDate.value;
+    };
+
+    const isRecurringStartBeforeDeadline = computed(() => {
+      if (!form.value.recurring.startDate || !enrollmentDeadlineDate.value) return false;
+      return new Date(form.value.recurring.startDate) < enrollmentDeadlineDate.value;
+    });
+
     return {
       form,
       submitting,
@@ -548,6 +631,9 @@ export default defineComponent({
       removeSession,
       handleSubmit,
       getSessionEndAt,
+      enrollmentDeadlineDate,
+      isSessionBeforeDeadline,
+      isRecurringStartBeforeDeadline,
     };
   },
 });

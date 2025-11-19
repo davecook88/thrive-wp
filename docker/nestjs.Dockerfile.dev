@@ -1,0 +1,27 @@
+# Use the official Node.js 20 image.
+FROM node:20-alpine AS base
+# Enable pnpm
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+
+# Create a development stage that focuses on caching dependencies
+FROM base AS development
+
+WORKDIR /app
+
+# Copy root dependency definition files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+# Copy app and package specific dependency definitions
+# This ensures that if only code changes, we don't need to re-install
+COPY apps/nestjs/package.json ./apps/nestjs/
+COPY packages/shared/package.json ./packages/shared/
+
+# Install all dependencies. This is the longest step and will be cached
+# as long as the package.json and lock files don't change.
+RUN pnpm install --frozen-lockfile
+
+# Copy the rest of the monorepo source code
+COPY . .
+
+# The command to run the app will be provided by docker-compose
+CMD ["echo", "This image is intended for development with docker-compose. Please provide a command."]

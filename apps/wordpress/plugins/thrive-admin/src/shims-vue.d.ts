@@ -20,5 +20,12 @@ declare global {
     };
     // Minimal jQuery presence used only for WP admin-ready event
     jQuery?: any;
+    // WordPress global object for media picker and other functionality
+    wp?: {
+      media: ((options?: any) => any) & {
+        frame?: any;
+        frames?: { [key: string]: any };
+      };
+    };
   }
 }

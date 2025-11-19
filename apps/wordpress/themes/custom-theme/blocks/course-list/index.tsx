@@ -9,6 +9,7 @@ import {
   RadioControl,
 } from "@wordpress/components";
 import { InspectorControls, useBlockProps } from "@wordpress/block-editor";
+import "./style.scss";
 
 type Attrs = {
   columns?: number;
