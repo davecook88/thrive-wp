@@ -65,6 +65,18 @@ import {
   // Student stats types
   StudentStatsResponseSchema,
   type StudentStatsResponseDto,
+  DashboardSummarySchema,
+  type DashboardSummaryDto,
+  // Course materials types
+  CourseStepMaterialDto,
+  CourseStepMaterialDtoSchema,
+  CreateCourseStepMaterialDto,
+  StudentCourseStepMaterialProgressDto,
+  StudentCourseStepMaterialProgressDtoSchema,
+  StudentAnswerDto,
+  StudentAnswerDtoSchema,
+  UpdateProgressDto,
+  SubmitAnswerDto,
 } from "@thrive/shared";
 import {
   PreviewAvailabilityResponseSchema,
@@ -93,6 +105,44 @@ const options: Partial<RequestInit> = {
   credentials: "same-origin",
 };
 
+// Track if we're currently refreshing to prevent multiple concurrent refresh attempts
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+// Refresh the access token using the refresh token cookie
+const refreshAccessToken = async (): Promise<boolean> => {
+  // If already refreshing, return the existing promise
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch("/api/auth/refresh", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+      });
+      // 204 No Content is a success response from /auth/refresh
+      if (res.status === 204) {
+        console.log("Token refreshed successfully");
+        return true;
+      }
+      console.warn("Token refresh failed with status:", res.status);
+      return false;
+    } catch (err) {
+      console.error("Token refresh failed:", err);
+      return false;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+};
+
 // Generic API helper functions
 const apiRequest = async <T>(
   url: string,
@@ -101,6 +151,26 @@ const apiRequest = async <T>(
 ): Promise<T | null> => {
   try {
     const res = await fetch(url, { ...options, ...requestOptions });
+
+    // If we get a 401, try refreshing the token and retrying once
+    if (res.status === 401) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        // Token was refreshed, retry the original request
+        try {
+          const retryRes = await fetch(url, { ...options, ...requestOptions });
+          if (!retryRes.ok) return null;
+          const raw = (await retryRes.json()) as unknown;
+          return schema ? schema.parse(raw) : (raw as T);
+        } catch (err) {
+          console.error(`API request retry failed for ${url}:`, err);
+          return null;
+        }
+      }
+      // Refresh failed, authentication is invalid
+      return null;
+    }
+
     if (!res.ok) return null;
     const raw = (await res.json()) as unknown;
     return schema ? schema.parse(raw) : (raw as T);
@@ -142,6 +212,15 @@ const apiPut = async <T>(
 ): Promise<T | null> => {
   const body = data ? JSON.stringify(data) : undefined;
   return apiRequest<T>(url, { method: "PUT", body }, schema);
+};
+
+const apiDelete = async <T>(
+  url: string,
+  data?: Record<string, unknown> | undefined,
+  schema?: z.ZodSchema<T>,
+): Promise<T | null> => {
+  const body = data ? JSON.stringify(data) : undefined;
+  return apiRequest<T>(url, { method: "DELETE", body }, schema);
 };
 
 export interface TeacherLocation {
@@ -274,6 +353,12 @@ export const thriveClient = {
     return await apiGet<StudentStatsResponseDto>(
       "/api/students/me/stats",
       StudentStatsResponseSchema,
+    );
+  },
+  getDashboardSummary: async (): Promise<DashboardSummaryDto | null> => {
+    return await apiGet<DashboardSummaryDto>(
+      "/api/students/me/dashboard-summary",
+      DashboardSummarySchema,
     );
   },
   fetchAvailableGroupSessions: async ({
@@ -964,5 +1049,120 @@ export const thriveClient = {
       `/api/students/me/course-packages/${packageId}/steps/${stepId}/booking`,
       reason ? ({ reason } satisfies CancelStepBookingRequest) : undefined,
     );
+  },
+
+  // ==================== Course Materials Methods ====================
+
+  /**
+   * Get all materials for a course step
+   */
+  getCourseStepMaterials: async (
+    stepId: number,
+  ): Promise<CourseStepMaterialDto[]> => {
+    const data = await apiGet<CourseStepMaterialDto[]>(
+      `/api/course-materials/step/${stepId}`,
+      z.array(CourseStepMaterialDtoSchema),
+    );
+    return Array.isArray(data) ? data : [];
+  },
+
+  /**
+   * Get student's progress for a course step's materials
+   */
+  getCourseStepProgress: async (
+    courseStepId: number,
+  ): Promise<StudentCourseStepMaterialProgressDto[]> => {
+    const data = await apiGet<StudentCourseStepMaterialProgressDto[]>(
+      `/api/course-materials/progress/${courseStepId}`,
+      z.array(StudentCourseStepMaterialProgressDtoSchema),
+    );
+    return Array.isArray(data) ? data : [];
+  },
+
+  /**
+   * Update student's progress on a material
+   */
+  updateMaterialProgress: async (
+    data: UpdateProgressDto,
+  ): Promise<StudentCourseStepMaterialProgressDto | null> => {
+    return await apiPost<StudentCourseStepMaterialProgressDto>(
+      `/api/course-materials/progress`,
+      data as Record<string, unknown>,
+      StudentCourseStepMaterialProgressDtoSchema,
+    );
+  },
+
+  /**
+   * Submit an answer to a question
+   */
+  submitAnswer: async (
+    data: SubmitAnswerDto,
+  ): Promise<StudentAnswerDto | null> => {
+    return await apiPost<StudentAnswerDto>(
+      `/api/course-materials/answers/submit`,
+      data as Record<string, unknown>,
+      StudentAnswerDtoSchema,
+    );
+  },
+
+  /**
+   * Get all answers submitted by the current student
+   */
+  getMyAnswers: async (): Promise<StudentAnswerDto[]> => {
+    const data = await apiGet<StudentAnswerDto[]>(
+      `/api/course-materials/my-answers`,
+      z.array(StudentAnswerDtoSchema),
+    );
+    return Array.isArray(data) ? data : [];
+  },
+
+  /**
+   * Get the student's enrollment package ID for a specific course step
+   */
+  getEnrollmentForStep: async (
+    stepId: number,
+  ): Promise<{ studentPackageId: number } | null> => {
+    return await apiGet<{ studentPackageId: number } | null>(
+      `/api/course-materials/step/${stepId}/enrollment`,
+      z
+        .object({
+          studentPackageId: z.number(),
+        })
+        .nullable(),
+    );
+  },
+
+  /**
+   * Create a new course material
+   */
+  createCourseMaterial: async (
+    data: CreateCourseStepMaterialDto,
+  ): Promise<CourseStepMaterialDto | null> => {
+    return await apiPost<CourseStepMaterialDto>(
+      `/api/course-materials`,
+      data as Record<string, unknown>,
+      CourseStepMaterialDtoSchema,
+    );
+  },
+
+  /**
+   * Update an existing course material
+   */
+  updateCourseMaterial: async (
+    materialId: number,
+    data: Partial<CreateCourseStepMaterialDto>,
+  ): Promise<CourseStepMaterialDto | null> => {
+    return await apiPatch<CourseStepMaterialDto>(
+      `/api/course-materials/${materialId}`,
+      data as Record<string, unknown>,
+      CourseStepMaterialDtoSchema,
+    );
+  },
+
+  /**
+   * Delete a course material
+   */
+  deleteCourseMaterial: async (materialId: number): Promise<void> => {
+    await apiDelete(`/api/course-materials/${materialId}`);
   },
 } as const;

@@ -2,6 +2,7 @@
 import "./login-auth/index.tsx";
 // import "./thrive-calendar/index.tsx"; // Commented out - block doesn't exist
 import "./student-calendar/index.tsx";
+import "./course-materials/index.tsx";
 import "./course-list/index.tsx";
 import "./course-header/index.tsx";
 import "./course-cohorts/index.tsx";

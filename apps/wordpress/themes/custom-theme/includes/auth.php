@@ -9,6 +9,8 @@ function thrive_hydrate_user_from_proxy(): void
     $ctx = ThriveAuthContext::fromJson($rawHeader);
     if ($ctx !== null) {
         $GLOBALS['thrive_auth_context'] = $ctx;
+        // Sync user to WP database and log them in
+        $ctx->applyToWordPress();
     }
 }
 add_action('init', 'thrive_hydrate_user_from_proxy', 1);

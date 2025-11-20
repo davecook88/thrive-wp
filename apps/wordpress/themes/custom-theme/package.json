@@ -17,7 +17,8 @@
     "zod": "^4.1.5"
   },
   "scripts": {
-    "build": "wp-scripts build ./blocks/index.ts ./blocks/view.index.ts",
-    "start": "wp-scripts start ./blocks/index.ts ./blocks/view.index.ts"
+    "build": "wp-scripts build ./blocks/index.ts ./blocks/view.index.ts ./admin/admin-course-materials.tsx",
+    "start": "wp-scripts start ./blocks/index.ts ./blocks/view.index.ts ./admin/admin-course-materials.tsx",
+    "test:e2e": "playwright test"
   }
 }

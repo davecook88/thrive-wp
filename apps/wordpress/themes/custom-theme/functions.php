@@ -19,6 +19,7 @@ $files = array(
     'block-patterns.php',
     'blocks.php',
     'auth.php',
+    'admin-menu.php',
 );
 
 foreach ($files as $file) {

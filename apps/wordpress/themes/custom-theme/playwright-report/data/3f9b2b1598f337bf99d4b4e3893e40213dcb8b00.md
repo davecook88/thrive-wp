@@ -1,0 +1,88 @@
+# Page snapshot
+
+```yaml
+- navigation "Toolbar":
+  - menu:
+    - group:
+      - menuitem "About WordPress"
+    - group:
+      - menuitem " thrive-in-spanish"
+  - menu:
+    - group:
+      - menuitem "Howdy, Test Student"
+    - group:
+      - menuitem " Search":
+        - text: 
+        - textbox "Search"
+        - text: Search
+- link "Skip to content":
+  - /url: "#wp--skip-link--target"
+- banner:
+  - paragraph:
+    - link "thrive-in-spanish":
+      - /url: http://localhost:8080
+  - navigation:
+    - list:
+      - listitem:
+        - link "Home":
+          - /url: /
+      - listitem:
+        - link "My Courses":
+          - /url: /my-courses
+      - listitem:
+        - link "Schedule":
+          - /url: /schedule
+      - listitem:
+        - link "Booking":
+          - /url: /booking
+      - listitem:
+        - link "Student Dashboard":
+          - /url: /student
+  - button "Sign out Test Student"
+- main:
+  - heading "Classes Attended" [level=3]
+  - text: "0"
+  - heading "Upcoming Sessions" [level=3]
+  - text: "0"
+  - heading "Active Courses" [level=3]
+  - text: "0"
+  - heading "My Courses" [level=2]
+  - heading "You're not enrolled in any courses yet" [level=3]
+  - paragraph: Browse our available courses and start learning today!
+  - link "Browse Courses":
+    - /url: /courses
+  - heading "Upcoming Sessions" [level=2]
+  - text: 📅
+  - paragraph: No upcoming sessions scheduled.
+  - link "Book your next class →":
+    - /url: /booking
+  - heading "Quick Actions" [level=2]
+  - link "Book a Session":
+    - /url: /booking
+  - link "Browse Teachers":
+    - /url: /teachers
+  - link "Buy More Credits":
+    - /url: /packages
+  - heading "My Schedule" [level=2]
+  - button "📅 My Sessions"
+  - button "➕ Book More"
+  - text: 👁️ Viewing your scheduled sessions
+  - toolbar "Calendar toolbar":
+    - button "📅 Today"
+    - button "←"
+    - text: Nov 16, 2025 - Nov 22
+    - button "→"
+  - grid "Calendar grid": UTC-6 Sun 16 Mon 17 Tue 18 Wed 19 Thu 20 Fri 21 Sat 22 12 AM 1 AM 2 AM 3 AM 4 AM 5 AM 6 AM 7 AM 8 AM 9 AM 10 AM 11 AM 12 PM 1 PM 2 PM 3 PM 4 PM 5 PM 6 PM 7 PM 8 PM 9 PM 10 PM 11 PM
+  - heading "My Packages" [level=2]
+  - text: 📦
+  - heading "No active packages found" [level=3]
+  - paragraph: You don't have any active class packages. Purchase one to start booking sessions.
+  - link "Purchase a Package":
+    - /url: /packages
+- contentinfo:
+  - heading "thrive-in-spanish" [level=3]:
+    - link "thrive-in-spanish":
+      - /url: http://localhost:8080
+  - paragraph: Learn Spanish with confidence
+  - paragraph: © 2025 Thrive in Spanish. All rights reserved.
+```

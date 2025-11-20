@@ -1,0 +1,215 @@
+.course-package-detail {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
+
+.course-package-detail__header {
+  margin-bottom: 3rem;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  color: var(--wp--preset--color--gray-600);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.back-link:hover {
+  color: var(--wp--preset--color--primary);
+  text-decoration: underline;
+}
+
+.header-content {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  align-items: flex-start;
+}
+
+.header-image {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.header-info h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+.cohort-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--wp--preset--color--gray-700);
+  margin: 0 0 0.25rem 0;
+}
+
+.cohort-dates {
+  color: var(--wp--preset--color--gray-600);
+  margin: 0 0 1rem 0;
+}
+
+.level-badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.level-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--wp--preset--color--gray-100);
+  color: var(--wp--preset--color--gray-800);
+}
+
+.progress-overview {
+  background: var(--wp--preset--color--gray-50);
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.progress-overview h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background: var(--wp--preset--color--gray-200);
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--wp--preset--color--primary);
+  transition: width 0.3s ease;
+}
+
+.progress-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+  color: var(--wp--preset--color--gray-700);
+}
+
+.unbooked-warning {
+  color: var(--wp--preset--color--orange-600);
+  font-weight: 600;
+}
+
+.course-package-detail__steps {
+  margin-bottom: 3rem;
+}
+
+.steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.step-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  border: 1px solid var(--wp--preset--color--gray-200);
+  border-radius: 8px;
+  align-items: flex-start;
+}
+
+.step-item__status {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.step-status--completed { color: var(--wp--preset--color--green-600); }
+.step-status--booked { color: var(--wp--preset--color--blue-600); }
+.step-status--unbooked { color: var(--wp--preset--color--gray-400); }
+.step-status--missed { color: var(--wp--preset--color--red-600); }
+.step-status--cancelled { color: var(--wp--preset--color--gray-500); }
+
+.step-item__content {
+  flex-grow: 1;
+}
+
+.step-item__title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+}
+
+.step-item__session {
+  background: var(--wp--preset--color--blue-50);
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+}
+
+.step-item__session p {
+  margin: 0 0 0.5rem 0;
+}
+
+.step-item__session p:last-child {
+  margin-bottom: 0;
+}
+
+.step-item__completed {
+  color: var(--wp--preset--color--green-700);
+  font-size: 0.875rem;
+  margin: 0.5rem 0 0 0;
+}
+
+.step-item__unbooked {
+  color: var(--wp--preset--color--gray-500);
+  font-style: italic;
+  margin: 0.5rem 0 0 0;
+}
+
+.course-package-detail__actions {
+  text-align: center;
+  padding-top: 2rem;
+  border-top: 1px solid var(--wp--preset--color--gray-200);
+}
+
+.button--large {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+}
+
+/* Loading and Error states */
+.course-package-detail.loading,
+.course-package-detail.error {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.course-package-detail.error p {
+  color: var(--wp--preset--color--red-600);
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+  }
+
+  .header-image {
+    width: 100%;
+    height: 200px;
+  }
+}

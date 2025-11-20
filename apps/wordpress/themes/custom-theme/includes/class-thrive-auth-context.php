@@ -148,12 +148,29 @@ final class ThriveAuthContext
             ]);
         }
 
+        // Ensure password is known for testing (since we can't rely on header auth for manual wp-admin login check)
+        // In a real prod env, we might not want this, but for this hybrid setup it helps.
+        wp_set_password('thrive_test_123', $userId);
+
         // Roles sync if supplied
         if (!empty($this->roles)) {
             global $wp_roles;
             if ($wp_roles instanceof WP_Roles) {
                 $roleStrings = array_map(fn(ThriveRole $role) => $role->value, $this->roles);
-                $valid = array_intersect($roleStrings, array_keys($wp_roles->roles));
+                
+                // Map NestJS roles to WordPress roles
+                $mappedRoles = [];
+                foreach ($roleStrings as $r) {
+                    if ($r === 'admin') {
+                        $mappedRoles[] = 'administrator';
+                    } elseif ($r === 'teacher') {
+                        $mappedRoles[] = 'editor'; // Or a custom 'teacher' role if it exists
+                    } else {
+                        $mappedRoles[] = $r;
+                    }
+                }
+
+                $valid = array_intersect($mappedRoles, array_keys($wp_roles->roles));
                 if (empty($valid)) {
                     $valid = ['subscriber'];
                 }

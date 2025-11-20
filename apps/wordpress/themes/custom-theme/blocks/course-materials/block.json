@@ -1,0 +1,22 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "thrive/student-course-materials",
+    "version": "0.1.0",
+    "title": "Student Course Materials",
+    "category": "thrive",
+    "icon": "book",
+    "description": "Displays course materials and progress for students.",
+    "supports": {
+        "html": false
+    },
+    "textdomain": "thrive",
+    "editorScript": "file:./index.tsx",
+    "render": "file:./render.php",
+    "attributes": {
+        "courseStepId": {
+            "type": "number",
+            "default": 0
+        }
+    }
+}

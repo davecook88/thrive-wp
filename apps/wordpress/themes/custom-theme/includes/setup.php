@@ -52,7 +52,7 @@ function custom_theme_create_role_based_navigations()
         'admin-menu' => array(
             'title' => 'Admin Menu',
             'content' => '<!-- wp:navigation-link {"label":"Home","url":"/"} /-->
-<!-- wp:navigation-link {"label":"Dashboard","url":"/admin-dashboard"} /-->
+<!-- wp:navigation-link {"label":"Dashboard","url":"/wp-admin/admin.php?page=thrive-admin-dashboard"} /-->
 <!-- wp:navigation-link {"label":"Users","url":"/users"} /-->
 <!-- wp:navigation-link {"label":"Settings","url":"/settings"} /-->'
         )
@@ -271,5 +271,78 @@ add_action('init', function () {
         }
     }
 }, 99);
+
+/**
+ * Rewrite rules for Course Package Detail view
+ * URL: /dashboard/courses/{packageId}
+ */
+function custom_theme_course_package_rewrites() {
+    add_rewrite_rule(
+        '^dashboard/courses/([0-9]+)/?$',
+        'index.php?course_package_view=1&package_id=$matches[1]',
+        'top'
+    );
+}
+add_action('init', 'custom_theme_course_package_rewrites');
+
+function custom_theme_course_package_query_vars($vars) {
+    $vars[] = 'course_package_view';
+    $vars[] = 'package_id';
+    return $vars;
+}
+add_filter('query_vars', 'custom_theme_course_package_query_vars');
+
+function custom_theme_course_package_template($template) {
+    if (get_query_var('course_package_view')) {
+        $new_template = locate_template(array('page-course-package-detail.php'));
+        if ('' != $new_template) {
+            return $new_template;
+        }
+    }
+    return $template;
+}
+add_filter('template_include', 'custom_theme_course_package_template');
+
+/**
+ * Rewrite rules for Course Step view
+ * URL: /course/{course-slug}/step-{step-id}
+ */
+function custom_theme_course_step_rewrites() {
+    add_rewrite_rule(
+        '^course/([^/]+)/step-([0-9]+)/?$',
+        'index.php?course_step_view=1&course_slug=$matches[1]&step_id=$matches[2]',
+        'top'
+    );
+}
+add_action('init', 'custom_theme_course_step_rewrites');
+
+/**
+ * Flush rewrite rules on theme activation
+ */
+function custom_theme_flush_rewrites_on_activation() {
+    custom_theme_course_step_rewrites();
+    custom_theme_course_package_rewrites();
+    flush_rewrite_rules();
+}
+add_action('after_switch_theme', 'custom_theme_flush_rewrites_on_activation');
+
+function custom_theme_course_step_query_vars($vars) {
+    $vars[] = 'course_step_view';
+    $vars[] = 'course_slug';
+    $vars[] = 'step_id';
+    return $vars;
+}
+add_filter('query_vars', 'custom_theme_course_step_query_vars');
+
+function custom_theme_course_step_template($template) {
+    if (get_query_var('course_step_view')) {
+        $new_template = locate_template(array('page-course-step.php'));
+        if ('' != $new_template) {
+            return $new_template;
+        }
+    }
+    return $template;
+}
+add_filter('template_include', 'custom_theme_course_step_template');
 
 ?>

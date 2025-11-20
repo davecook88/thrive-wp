@@ -93,9 +93,48 @@ export default function StudentPackageDetails({
 
   if (!packagesData || packagesData.packages.length === 0) {
     return (
-      <div className="student-package-details empty">
-        <p>No active packages found.</p>
-        <a href="/booking" className="button">
+      <div
+        style={{
+          textAlign: "center",
+          padding: "40px 20px",
+          background: "var(--wp--preset--color--gray-50)",
+          borderRadius: 12,
+          border: "1px dashed var(--wp--preset--color--gray-300)",
+        }}
+      >
+        <div style={{ fontSize: 40, marginBottom: 16 }}>📦</div>
+        <h3
+          style={{
+            fontSize: 18,
+            fontWeight: 600,
+            marginBottom: 8,
+            color: "var(--wp--preset--color--gray-800)",
+          }}
+        >
+          No active packages found
+        </h3>
+        <p
+          style={{
+            color: "var(--wp--preset--color--gray-600)",
+            marginBottom: 24,
+          }}
+        >
+          You don't have any active class packages. Purchase one to start booking
+          sessions.
+        </p>
+        <a
+          href="/packages"
+          className="wp-block-button__link"
+          style={{
+            display: "inline-block",
+            background: "var(--wp--preset--color--accent)",
+            color: "white",
+            padding: "10px 20px",
+            borderRadius: 6,
+            textDecoration: "none",
+            fontWeight: 500,
+          }}
+        >
           Purchase a Package
         </a>
       </div>

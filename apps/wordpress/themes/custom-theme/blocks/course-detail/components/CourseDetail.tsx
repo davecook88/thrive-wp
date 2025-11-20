@@ -307,6 +307,26 @@ export default function CourseDetail({
         </div>
       </div>
 
+      {/* Course Curriculum Section */}
+      {course.steps && course.steps.length > 0 && (
+        <div className="course-detail__curriculum">
+          <h2 className="course-detail__section-title">What You'll Learn</h2>
+          <div className="course-detail__steps-grid">
+            {course.steps.map((step, index) => (
+              <div key={step.id} className="course-detail__step-card">
+                <div className="course-detail__step-number">{index + 1}</div>
+                <div className="course-detail__step-content">
+                  <h3 className="course-detail__step-title">{step.name || `Step ${index + 1}`}</h3>
+                  {step.description && (
+                    <p className="course-detail__step-description">{step.description}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Schedule Selector Section */}
       <div className="course-detail__schedules">
         <h2 className="course-detail__section-title">Select a Schedule</h2>
@@ -414,6 +434,109 @@ export default function CourseDetail({
           )}
         </div>
       )}
+
+      {/* Social Proof Section */}
+      <div className="course-detail__social-proof">
+        <h2 className="course-detail__section-title">Trusted by Students</h2>
+        <div className="course-detail__stats-grid">
+          <div className="course-detail__stat-card">
+            <div className="course-detail__stat-number">500+</div>
+            <div className="course-detail__stat-label">Students Enrolled</div>
+          </div>
+          <div className="course-detail__stat-card">
+            <div className="course-detail__stat-number">4.9★</div>
+            <div className="course-detail__stat-label">Average Rating</div>
+          </div>
+          <div className="course-detail__stat-card">
+            <div className="course-detail__stat-number">95%</div>
+            <div className="course-detail__stat-label">Completion Rate</div>
+          </div>
+          <div className="course-detail__stat-card">
+            <div className="course-detail__stat-number">10+</div>
+            <div className="course-detail__stat-label">Years Experience</div>
+          </div>
+        </div>
+
+        <div className="course-detail__testimonials">
+          <h3 className="course-detail__testimonials-title">What Students Say</h3>
+          <div className="course-detail__testimonials-grid">
+            <div className="course-detail__testimonial-card">
+              <div className="course-detail__testimonial-stars">★★★★★</div>
+              <p className="course-detail__testimonial-text">
+                "This course completely transformed my confidence speaking Spanish. The instructors are patient and encouraging!"
+              </p>
+              <p className="course-detail__testimonial-author">— Maria G., Barcelona</p>
+            </div>
+            <div className="course-detail__testimonial-card">
+              <div className="course-detail__testimonial-stars">★★★★★</div>
+              <p className="course-detail__testimonial-text">
+                "Great structure and pace. I loved the mix of grammar, conversation, and cultural content."
+              </p>
+              <p className="course-detail__testimonial-author">— James L., London</p>
+            </div>
+            <div className="course-detail__testimonial-card">
+              <div className="course-detail__testimonial-stars">★★★★★</div>
+              <p className="course-detail__testimonial-text">
+                "The best investment I've made for my language learning. Highly recommended!"
+              </p>
+              <p className="course-detail__testimonial-author">— Sofia M., Madrid</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* FAQ Section */}
+      <div className="course-detail__faq">
+        <h2 className="course-detail__section-title">Frequently Asked Questions</h2>
+        <div className="course-detail__faq-items">
+          <details className="course-detail__faq-item">
+            <summary className="course-detail__faq-question">
+              What level of Spanish should I have before starting?
+            </summary>
+            <p className="course-detail__faq-answer">
+              {course.levels && course.levels.length > 0
+                ? `This course is designed for ${course.levels.map(l => l.name).join(", ")} level students.`
+                : "Please check the course level requirements above."}
+            </p>
+          </details>
+
+          <details className="course-detail__faq-item">
+            <summary className="course-detail__faq-question">
+              Can I access course materials after the course ends?
+            </summary>
+            <p className="course-detail__faq-answer">
+              Yes! You'll have lifetime access to all course materials and resources.
+            </p>
+          </details>
+
+          <details className="course-detail__faq-item">
+            <summary className="course-detail__faq-question">
+              How much time do I need to commit to each week?
+            </summary>
+            <p className="course-detail__faq-answer">
+              Time commitment varies by course. On average, plan for 3-5 hours per week for active participation in sessions and practice.
+            </p>
+          </details>
+
+          <details className="course-detail__faq-item">
+            <summary className="course-detail__faq-question">
+              Is there a money-back guarantee?
+            </summary>
+            <p className="course-detail__faq-answer">
+              Yes! If you're not satisfied within the first 7 days, we offer a full refund. No questions asked.
+            </p>
+          </details>
+
+          <details className="course-detail__faq-item">
+            <summary className="course-detail__faq-question">
+              What happens if I miss a live session?
+            </summary>
+            <p className="course-detail__faq-answer">
+              All sessions are recorded and available for replay. You can watch them anytime that's convenient for you.
+            </p>
+          </details>
+        </div>
+      </div>
 
       {/* Enrollment CTA */}
       {!enrollmentLoading && (

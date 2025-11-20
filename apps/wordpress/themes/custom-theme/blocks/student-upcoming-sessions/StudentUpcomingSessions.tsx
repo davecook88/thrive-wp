@@ -75,10 +75,34 @@ export default function StudentUpcomingSessions({
 
   if (sessions.length === 0) {
     return (
-      <div className="student-upcoming-sessions empty">
-        <p>No upcoming sessions scheduled.</p>
-        <a href="/booking" className="button">
-          Book a Session
+      <div
+        style={{
+          textAlign: "center",
+          padding: "32px 16px",
+          background: "var(--wp--preset--color--gray-50)",
+          borderRadius: 8,
+          border: "1px dashed var(--wp--preset--color--gray-300)",
+        }}
+      >
+        <div style={{ fontSize: 32, marginBottom: 12 }}>📅</div>
+        <p
+          style={{
+            fontWeight: 500,
+            color: "var(--wp--preset--color--gray-700)",
+            marginBottom: 16,
+          }}
+        >
+          No upcoming sessions scheduled.
+        </p>
+        <a
+          href="/booking"
+          style={{
+            color: "var(--wp--preset--color--accent)",
+            fontWeight: 600,
+            textDecoration: "none",
+          }}
+        >
+          Book your next class →
         </a>
       </div>
     );

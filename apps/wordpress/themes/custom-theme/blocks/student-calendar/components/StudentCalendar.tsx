@@ -283,6 +283,18 @@ export default function StudentCalendar({
     );
   };
 
+  const getDayHeaders = (start: Date) => {
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start);
+      d.setDate(d.getDate() + i);
+      days.push(d);
+    }
+    return days;
+  };
+
+  const dayHeaders = currentRange ? getDayHeaders(currentRange.from) : [];
+
   return (
     <div
       className="student-calendar-wrapper"
@@ -311,6 +323,20 @@ export default function StudentCalendar({
               toggleTeacher={toggleTeacher}
             />
           </div>
+        </div>
+      )}
+
+      {/* Calendar Component */}
+      {view === "week" && dayHeaders.length > 0 && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "50px repeat(7, 1fr)",
+            marginBottom: 8,
+            paddingLeft: 10, // Align with calendar time labels
+          }}
+        >
+          <div /> {/* Time column spacer */}
         </div>
       )}
 

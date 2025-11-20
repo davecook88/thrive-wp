@@ -1,0 +1,17 @@
+{
+    "apiVersion": 3,
+    "name": "custom-theme/student-dashboard-hero",
+    "title": "Student Dashboard Hero",
+    "category": "widgets",
+    "icon": "admin-users",
+    "description": "Personalized hero section for student dashboard",
+    "keywords": [
+        "student",
+        "dashboard",
+        "hero"
+    ],
+    "textdomain": "custom-theme",
+    "editorScript": "file:./index.tsx",
+    "render": "file:./render.php",
+    "viewScript": "file:./view.tsx"
+}

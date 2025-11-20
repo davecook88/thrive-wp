@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 
 interface SessionSelectionWizardProps {
-  stripeSessionId: string;
+  stripeSessionId?: string;
+  packageId?: number;
+  onComplete?: () => void;
 }
 
 interface Step {
@@ -25,8 +27,10 @@ interface StepOption {
 
 export default function SessionSelectionWizard({
   stripeSessionId,
+  packageId: propPackageId,
+  onComplete,
 }: SessionSelectionWizardProps) {
-  const [packageId, setPackageId] = useState<number | null>(null);
+  const [packageId, setPackageId] = useState<number | null>(propPackageId || null);
   const [courseInfo, setCourseInfo] = useState<{
     courseCode?: string;
     cohortName?: string;
@@ -40,39 +44,54 @@ export default function SessionSelectionWizard({
   useEffect(() => {
     const fetchEnrollmentData = async () => {
       try {
-        // Get package ID from Stripe session
-        const sessionResponse = await fetch(
-          `/api/course-programs/enrollment/session/${stripeSessionId}`,
-          {
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-          },
-        );
+        let currentPackageId = propPackageId;
 
-        if (!sessionResponse.ok) {
-          throw new Error(
-            `Failed to fetch enrollment data: ${sessionResponse.statusText}`,
+        // If we have a stripe session, fetch the package ID from it
+        if (stripeSessionId && !currentPackageId) {
+          const sessionResponse = await fetch(
+            `/api/course-programs/enrollment/session/${stripeSessionId}`,
+            {
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+            },
           );
+
+          if (!sessionResponse.ok) {
+            throw new Error(
+              `Failed to fetch enrollment data: ${sessionResponse.statusText}`,
+            );
+          }
+
+          const sessionData = (await sessionResponse.json()) as {
+            packageId: number;
+            courseProgramId?: number;
+            cohortId?: number;
+            courseCode?: string;
+            cohortName?: string;
+          };
+
+          currentPackageId = sessionData.packageId;
+          setPackageId(currentPackageId);
+          setCourseInfo({
+            courseCode: sessionData.courseCode,
+            cohortName: sessionData.cohortName,
+          });
         }
 
-        const sessionData = (await sessionResponse.json()) as {
-          packageId: number;
-          courseProgramId?: number;
-          cohortId?: number;
-          courseCode?: string;
-          cohortName?: string;
-        };
-
-        setPackageId(sessionData.packageId);
-        setCourseInfo({
-          courseCode: sessionData.courseCode,
-          cohortName: sessionData.cohortName,
-        });
+        if (!currentPackageId) {
+           // If we didn't get a package ID from props or stripe session, we can't proceed
+           // But if we are just loading initially and propPackageId might be null, we should wait?
+           // Actually, if propPackageId is passed, we use it. If not, and no stripeSessionId, it's an error or we wait.
+           if (!stripeSessionId) {
+             throw new Error("No package ID or Stripe session provided");
+           }
+           return; 
+        }
 
         // Try to get steps that need booking (endpoint may not exist yet)
         try {
           const stepsResponse = await fetch(
-            `/api/students/me/course-packages/${sessionData.packageId}/unbooked-steps`,
+            `/api/students/me/course-packages/${currentPackageId}/unbooked-steps`,
             {
               credentials: "include",
               headers: { "Content-Type": "application/json" },
@@ -115,10 +134,8 @@ export default function SessionSelectionWizard({
       }
     };
 
-    if (stripeSessionId) {
-      void fetchEnrollmentData();
-    }
-  }, [stripeSessionId]);
+    void fetchEnrollmentData();
+  }, [stripeSessionId, propPackageId]);
 
   const handleSelectionChange = (stepId: number, optionId: number) => {
     setSelections((prev) => ({ ...prev, [stepId]: optionId }));
@@ -151,8 +168,12 @@ export default function SessionSelectionWizard({
         throw new Error(`Failed to book sessions: ${response.statusText}`);
       }
 
-      // Success! Redirect to student dashboard
-      window.location.href = "/student";
+      // Success!
+      if (onComplete) {
+        onComplete();
+      } else {
+        window.location.href = "/student";
+      }
     } catch (err: unknown) {
       console.error("Booking error:", err);
       const errorMessage =
@@ -166,8 +187,12 @@ export default function SessionSelectionWizard({
   };
 
   const handleSkip = () => {
-    // Allow skipping, can book later from student dashboard
-    window.location.href = "/student";
+    if (onComplete) {
+      onComplete();
+    } else {
+      // Allow skipping, can book later from student dashboard
+      window.location.href = "/student";
+    }
   };
 
   if (loading) {

@@ -19,6 +19,10 @@ function custom_theme_register_block_patterns()
             'self-paced-section' => '/patterns/self-paced-section.php',
             'diego-section' => '/patterns/diego-section.php',
             'complete-page' => '/patterns/complete-page.php',
+            'features-grid' => '/patterns/features-grid.php',
+            'learning-path' => '/patterns/learning-path.php',
+            'testimonials' => '/patterns/testimonials.php',
+            'teacher-spotlight' => '/patterns/teacher-spotlight.php',
         ];
 
         foreach ($patterns as $name => $relpath) {
