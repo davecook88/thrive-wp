@@ -25,7 +25,8 @@
     "shared/**/*.ts",
     "shared/index.ts",
     "nestjs/src/**/*.ts",
-    "types/**/*.d.ts"
+    "types/**/*.d.ts",
+    "tests/**/*.ts"
   ],
   "files": ["eslint.config.mjs"],
   "exclude": ["node_modules", "vendor", "wordpress/vendor", "_logs_wp"]

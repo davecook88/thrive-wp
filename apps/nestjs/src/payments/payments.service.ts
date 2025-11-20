@@ -1042,6 +1042,18 @@ export class PaymentsService {
 
       // For GROUP/COURSE sessions, create booking only (session already exists)
       if (metadata.session_id) {
+        // Verify student exists before creating booking
+        const student = await this.studentRepository.findOne({
+          where: { id: studentId },
+        });
+
+        if (!student) {
+          this.logger.warn(
+            `Student ${studentId} not found; cannot create booking for session ${sessionId}`,
+          );
+          return;
+        }
+
         // Use transaction for booking creation to ensure consistency
         await this.sessionRepository.manager.transaction(
           async (transactionalEntityManager) => {

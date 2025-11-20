@@ -7,6 +7,7 @@ import { StudentCourseStepMaterialProgress } from "./entities/student-course-ste
 import { CourseMaterialsController } from "./course-materials.controller.js";
 import { CourseMaterialsService } from "./course-materials.service.js";
 import { CourseStep } from "../course-programs/entities/course-step.entity.js";
+import { StudentPackage } from "../packages/entities/student-package.entity.js";
 import { AuthModule } from "../auth/auth.module.js";
 
 @Module({
@@ -17,6 +18,7 @@ import { AuthModule } from "../auth/auth.module.js";
       StudentAnswer,
       StudentCourseStepMaterialProgress,
       CourseStep,
+      StudentPackage,
     ]),
     AuthModule,
   ],

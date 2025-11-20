@@ -118,6 +118,15 @@ export class CourseMaterialsController {
     return this.courseMaterialsService.getStudentAnswers(user.id);
   }
 
+  @Get("step/:stepId/enrollment")
+  @UseGuards(StudentGuard)
+  getEnrollmentForStep(
+    @Param("stepId", ParseIntPipe) stepId: number,
+    @CurrentUser() user: User,
+  ) {
+    return this.courseMaterialsService.getEnrollmentForStep(user.id, stepId);
+  }
+
   // Teacher Endpoints
   @Get("assessment/queue")
   @UseGuards(TeacherGuard)

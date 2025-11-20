@@ -31,6 +31,11 @@
                 "coverage/**"
             ]
         },
+        "test:e2e": {
+            "dependsOn": [
+                "^build"
+            ]
+        },
         "type-check": {
             "dependsOn": [
                 "^build"

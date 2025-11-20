@@ -7,12 +7,6 @@ console.log(
   "[TEST SETUP] Loading .env.test from:",
   path.resolve(currentDir, ".env.test"),
 );
-const result = config({
-  path: path.resolve(currentDir, ".env.test"),
-  override: true,
-});
-console.log("[TEST SETUP] dotenv result:", result);
-console.log("[TEST SETUP] DB_HOST after dotenv:", process.env.DB_HOST);
 
 console.log("process.env.DB_HOST:", process.env.DB_HOST);
 import { MigrationTestDataSource } from "../src/migration-test-data-source.js";
@@ -22,14 +16,10 @@ let migrated = false;
 const setup = async () => {
   console.log("\n[TEST SETUP] Running database migrations...\n");
   if (migrated) return;
-  console.log(
-    "MigrationTestDataSource.options:",
-    MigrationTestDataSource.options,
-  );
+
   // Safety: verify migration DS targeting a test DB
   const targetDb = (MigrationTestDataSource.options as { database?: string })
     .database;
-  console.log("Target DB for migrations:", targetDb);
   if (!targetDb || !/test/i.test(String(targetDb))) {
     throw new Error(
       `Refusing to run migrations on non-test database: ${targetDb}`,

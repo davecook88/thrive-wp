@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import {
   CourseProgram,
@@ -35,6 +36,7 @@ import { Student } from "../students/entities/student.entity.js";
 
 @Module({
   imports: [
+    ConfigModule,
     TypeOrmModule.forFeature([
       CourseProgram,
       CourseProgramLevel,

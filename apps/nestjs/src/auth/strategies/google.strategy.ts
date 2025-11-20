@@ -12,7 +12,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, "google") {
     private readonly authService: AuthService,
   ) {
     const clientID = configService.get<string>("google.clientId");
-    const clientSecret = configService.get<string>("google.clientSecret");
+    const clientSecret = configService?.get<string>("google.clientSecret");
     if (!clientID || !clientSecret) {
       throw new Error("Google OAuth client ID/secret not configured");
     }

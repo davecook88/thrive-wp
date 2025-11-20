@@ -4,29 +4,25 @@ Date: 2025-08-31
 
 ## Goals
 
-- Create a teachers area with multiple routes under a single origin: `/teacher` and `/teacher/*`.
-- Ship the first feature: Availabili- API:
-  - GET/PUT/preview endpoints work and are role-protected.
-  - All times stored/returned as UTC with correct conversions for preview.
-  - Unit + E2E tests passing.alendar where teachers set recurring rules and exceptions at `/teacher/set-availability`.
+- Create a single, unified teacher dashboard at `/teacher`.
+- Ship the first feature: An availability calendar where teachers can set recurring rules and exceptions directly on the `/teacher` page.
 - Align with our hybrid architecture: WordPress (blocks/editor-first) + NestJS API behind Nginx with reverse-proxy auth headers.
 
 ## Scope (Phase 1)
 
 1) Routing & Pages
-- Public routes (server-rendered via WordPress):
-  - `/teacher` – teacher home (simple welcome + links)
-  - `/teacher/set-availability` – availability management UI
+- Public route (server-rendered via WordPress):
+  - `/teacher` – A unified teacher dashboard that includes the availability management UI.
 
 2) Availability Management (MVP)
-- Weekly recurring rules by weekday and time windows
-- Optional date-specific exceptions and blackout periods
-- Timezone-aware editing; store all times in UTC
-- Server-side preview: expand rules to concrete availability slots for a date range
+- Weekly recurring rules by weekday and time windows.
+- Optional date-specific exceptions and blackout periods.
+- Timezone-aware editing; store all times in UTC.
+- Server-side preview: expand rules to concrete availability slots for a date range.
 
 3) AuthZ
-- Only users with the `teacher` role can access the settings UI and API
-- Non-teachers see a gentle “not authorized” message
+- Only users with the `teacher` role can access the `/teacher` page and its API endpoints.
+- Non-teachers see a gentle “not authorized” message.
 
 Out of scope (Phase 1): Google Calendar sync, student bookings, pricing/tier logic beyond read-only display, complex recurrence (RRULE), holidays import.
 
@@ -35,7 +31,7 @@ Out of scope (Phase 1): Google Calendar sync, student bookings, pricing/tier log
 ## Architecture Alignment
 
 - WordPress: Editor-first, block-driven UI (per `wordpress.instructions.md`).
-  - Implement a custom block for teacher availability with server-side render mapping attributes to frontend output.
+  - Implement a custom block for teacher availability on the `/teacher` page with server-side render mapping attributes to frontend output.
   - Gate in PHP using `thrive_is_logged_in()` and `thrive_is_teacher()`; never rely on `is_user_logged_in()`.
 - NestJS API: ESM + TypeORM. All DB columns snake_case, UTC datetimes. Use guards to enforce role `teacher`.
 - Nginx: No config changes needed. All API under `/api/` is already proxied to NestJS; auth headers injected via `/auth/introspect`.
@@ -46,19 +42,15 @@ Out of scope (Phase 1): Google Calendar sync, student bookings, pricing/tier log
 ## User Flows (Phase 1)
 
 1) Visit `/teacher`
-- If logged in as teacher: show welcome with links: “Set Availability” → `/teacher/set-availability`.
+- If logged in as teacher:
+    - Show welcome message and the availability management UI.
+    - UI allows adding weekday rules (e.g., Mon 09:00–12:00, 13:00–17:00) and optional date-specific exceptions/blackouts.
+    - Save button persists via `/api/teachers/me/availability` endpoints.
+    - Preview calendar shows the next 2–4 weeks of slots expanded from rules.
 - If logged in but not teacher: show “Teacher access required”.
 - If anonymous: show login CTA to `/auth/google`.
 
-2) Visit `/teacher/set-availability`
-- Server-rendered page with Teacher Availability block.
-- UI allows adding weekday rules (e.g., Mon 09:00–12:00, 13:00–17:00) and optional date-specific exceptions/blackouts.
-- Save button persists via `/api/teachers/me/availability` endpoints.
-- Preview calendar shows the next 2–4 weeks of slots expanded from rules.
-
 ---
-
-## Data Model (MVP)
 
 ## Data Model (MVP)
 
@@ -163,9 +155,8 @@ Client UI
 - No need to read cookies; browser sends `thrive_sess` automatically. Handle 401/403 gracefully.
 
 Pages
-- Create WordPress pages (can be seeded) with slugs:
-  - `teacher` → simple template (links to set-availability)
-  - `teacher/set-availability` → contains Teacher Availability block
+- Create WordPress page (can be seeded) with slug:
+  - `teacher` → contains the Teacher Availability block.
 
 Security
 - All sensitive branching in PHP using helpers from `wordpress.instructions.md`.
@@ -193,7 +184,7 @@ Security
 - ✅ Created `custom-theme/teacher-availability` block with editor interface
 - ✅ Implemented PHP render with auth checks (`thrive_is_teacher()`)
 - ✅ Added interactive JavaScript for availability management
-- ✅ Created page creation script (`create-teacher-pages.php`)
+- ✅ Created page creation script (`create-teacher-pages.php`) to set up the `/teacher` page.
 - ✅ Registered block in build system
 - ✅ PHPStan passes; no use of `is_user_logged_in()` for gating
 
@@ -215,14 +206,12 @@ Security
 ## Acceptance Criteria
 
 - Visiting `/teacher`:
-  - Teacher sees welcome and link to Set Availability.
-  - Non-teacher sees access message. Anonymous sees login CTA.
-
-- Visiting `/teacher/set-availability` as a teacher:
-  - Page renders block with form and preview calendar.
+  - Teacher sees a welcome message and the availability management UI with a form and preview calendar.
   - Can add weekday windows, save, refresh, and see persisted rules.
   - Can add a date-specific blackout; preview removes windows accordingly.
   - Saving invalid overlaps yields clear inline errors (no server 500s).
+  - Non-teacher sees access message.
+  - Anonymous sees login CTA.
 
 - API:
   - GET/PUT/preview endpoints work and are role-protected.
@@ -266,7 +255,7 @@ NestJS
 
 WordPress
 - `thrive/teacher-availability` block (JS + PHP render)
-- Pages created and populated
+- Page created and populated
 - Minimal docs under `wordpress/themes/custom-theme/README.md`
 
 Frontend
@@ -292,7 +281,7 @@ Docs
 
 ### Setup Steps
 1. **Start the services**: Run `make run` to start Docker containers
-2. **Create teacher pages**: Run the page creation script:
+2. **Create teacher page**: Run the page creation script:
    ```bash
    docker-compose exec wordpress php /var/www/html/wp-content/themes/custom-theme/create-teacher-pages.php
    ```
@@ -308,15 +297,12 @@ Docs
 
 ### Test Scenarios
 1. **Visit teacher home**: `http://localhost:8080/teacher`
-   - Should show welcome message and link to set availability
-   - Non-teachers should see access denied
+   - Should show welcome message and the availability management interface.
+   - Test adding rules and exceptions.
+   - Test preview functionality.
+   - Non-teachers should see access denied.
 
-2. **Visit availability page**: `http://localhost:8080/teacher/set-availability`
-   - Should show the availability management interface
-   - Test adding rules and exceptions
-   - Test preview functionality
-
-3. **API Testing**:
+2. **API Testing**:
    ```bash
    # Get availability
    curl -H "Cookie: thrive_sess=YOUR_SESSION_COOKIE" http://localhost:3000/api/teachers/me/availability

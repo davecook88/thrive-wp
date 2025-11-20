@@ -22,7 +22,6 @@ import { AdminGuard } from "./admin.guard.js";
   providers: [
     AuthService,
     GoogleStrategy,
-    ConfigService,
     StudentGuard,
     TeacherGuard,
     AdminGuard,

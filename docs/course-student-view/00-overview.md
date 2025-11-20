@@ -412,6 +412,7 @@ Instead of requiring WordPress posts for each course, we implemented a fully dyn
 - [Enrollment Flow Details](./05-enrollment-flow.md)
 - [Student Dashboard Updates](./06-student-dashboard.md)
 - [Calendar Integration](./07-calendar-integration.md)
+- [Student Course Materials Block](./08-course-materials-block.md)
 
 ## Future Enhancements (Out of Scope for MVP)
 

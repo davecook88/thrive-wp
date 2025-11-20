@@ -763,9 +763,62 @@ export class ThriveWeekView extends LitElement {
     weekView.scrollTo({ top: clampedScrollTop, behavior: "smooth" });
   }
 
+  private scrollToFirstEvent() {
+    // Find the first visible event (filtered by date range and event type)
+    const visibleEvents = this.events
+      .filter(
+        (ev) =>
+          (this.showClasses &&
+            (ev.type === "class" ||
+              ev.type === "availability" ||
+              ev.type === "blackout")) ||
+          (this.showBookings && ev.type === "booking")
+      )
+      .map((event) => {
+        const pos = this.getEventPosition(event);
+        return { event, ...pos };
+      })
+      .filter((item) => item.dayIndex !== -1); // Only events in current week
+
+    if (visibleEvents.length === 0) {
+      // No visible events, fall back to scrolling to current time
+      this.scrollToCurrentTime();
+      return;
+    }
+
+    // Sort by top position and get the first event
+    visibleEvents.sort((a, b) => a.top - b.top);
+    const firstEvent = visibleEvents[0];
+
+    // Get the scrollable week view element
+    const weekView = this.renderRoot.querySelector(
+      ".week-view"
+    ) as HTMLElement | null;
+    if (!weekView) return;
+
+    // Center the first event within the visible viewport
+    const targetScrollTop = firstEvent.top - weekView.clientHeight / 2;
+
+    // Clamp to valid scroll range
+    const maxScroll = Math.max(
+      0,
+      weekView.scrollHeight - weekView.clientHeight
+    );
+    const clampedScrollTop = Math.max(0, Math.min(targetScrollTop, maxScroll));
+
+    weekView.scrollTo({ top: clampedScrollTop, behavior: "smooth" });
+  }
+
   firstUpdated() {
     // Schedule scroll after layout so measurements are stable
-    requestAnimationFrame(() => this.scrollToCurrentTime());
+    // Try to scroll to first event; if none exist, fall back to current time
+    requestAnimationFrame(() => {
+      if (this.events.length > 0) {
+        this.scrollToFirstEvent();
+      } else {
+        this.scrollToCurrentTime();
+      }
+    });
   }
 
   render() {

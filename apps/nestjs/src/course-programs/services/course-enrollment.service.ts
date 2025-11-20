@@ -4,9 +4,11 @@ import {
   ConflictException,
   NotFoundException,
   Logger,
+  Inject,
+  Optional,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { InjectRepository } from "@nestjs/typeorm";
+import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
 import { Repository, DataSource } from "typeorm";
 import Stripe from "stripe";
 import { CourseProgram } from "../entities/course-program.entity.js";
@@ -29,16 +31,20 @@ export class CourseEnrollmentService {
     private packageRepo: Repository<StudentPackage>,
     @InjectRepository(StripeProductMap)
     private stripeMapRepo: Repository<StripeProductMap>,
+    @Optional()
+    @Inject(ConfigService)
     private configService: ConfigService,
+    @InjectDataSource()
     private dataSource: DataSource,
   ) {
-    const secretKey = this.configService.get<string>("stripe.secretKey");
-    if (!secretKey) {
-      throw new Error("Stripe secret key is not configured");
+    if (this.configService) {
+      const secretKey = this.configService.get<string>("stripe.secretKey");
+      if (secretKey) {
+        this.stripe = new Stripe(secretKey, {
+          apiVersion: "2025-08-27.basil",
+        });
+      }
     }
-    this.stripe = new Stripe(secretKey, {
-      apiVersion: "2025-08-27.basil",
-    });
   }
 
   async createCheckoutSession(

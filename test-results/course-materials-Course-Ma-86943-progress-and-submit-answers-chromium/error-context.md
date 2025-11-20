@@ -1,0 +1,57 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation "Toolbar":
+      - menu:
+        - group [ref=e3]:
+          - menuitem "About WordPress" [ref=e4] [cursor=pointer]:
+            - generic [ref=e5]: 
+            - generic [ref=e6]: About WordPress
+        - group [ref=e7]:
+          - menuitem " thrive-in-spanish" [ref=e8] [cursor=pointer]
+      - menu [ref=e9]:
+        - group [ref=e10]:
+          - menuitem "Howdy, Test Student" [ref=e11] [cursor=pointer]
+        - group [ref=e12]:
+          - menuitem " Search" [ref=e13]:
+            - generic [ref=e14]:
+              - text: 
+              - textbox "Search" [ref=e15] [cursor=pointer]
+              - generic [ref=e16]: Search
+  - banner [ref=e17]:
+    - generic [ref=e19]:
+      - paragraph [ref=e20]:
+        - link "thrive-in-spanish" [ref=e21] [cursor=pointer]:
+          - /url: http://localhost:8080
+      - navigation [ref=e22]:
+        - list [ref=e27]:
+          - listitem [ref=e28]:
+            - link "Home" [ref=e29] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e30]:
+            - link "My Courses" [ref=e31] [cursor=pointer]:
+              - /url: /my-courses
+          - listitem [ref=e32]:
+            - link "Schedule" [ref=e33] [cursor=pointer]:
+              - /url: /schedule
+          - listitem [ref=e34]:
+            - link "Booking" [ref=e35] [cursor=pointer]:
+              - /url: /booking
+          - listitem [ref=e36]:
+            - link "Student Dashboard" [ref=e37] [cursor=pointer]:
+              - /url: /student
+      - button "Sign out Test Student" [ref=e41] [cursor=pointer]
+  - main [ref=e42]:
+    - article [ref=e43]:
+      - paragraph [ref=e47]: No materials available for this course step yet.
+  - contentinfo [ref=e48]:
+    - generic [ref=e50]:
+      - generic [ref=e51]:
+        - heading "thrive-in-spanish" [level=3] [ref=e52]:
+          - link "thrive-in-spanish" [ref=e53] [cursor=pointer]:
+            - /url: http://localhost:8080
+        - paragraph [ref=e54]: Learn Spanish with confidence
+      - paragraph [ref=e56]: © 2025 Thrive in Spanish. All rights reserved.
+```

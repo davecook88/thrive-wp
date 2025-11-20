@@ -6,6 +6,8 @@ import {
 import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
 import { DataSource, Repository, EntityManager } from "typeorm";
 import { CourseStep } from "../course-programs/entities/course-step.entity.js";
+import { StudentPackage } from "../packages/entities/student-package.entity.js";
+import { ScopeType } from "../payments/entities/stripe-product-map.entity.js";
 import { CreateCourseStepMaterialDto } from "./dto/create-course-step-material.dto.js";
 import { UpdateCourseStepMaterialDto } from "./dto/update-course-step-material.dto.js";
 import { CourseStepMaterial } from "./entities/course-step-material.entity.js";
@@ -26,6 +28,8 @@ export class CourseMaterialsService {
     private readonly progressRepo: Repository<StudentCourseStepMaterialProgress>,
     @InjectRepository(CourseStep)
     private readonly courseStepRepo: Repository<CourseStep>,
+    @InjectRepository(StudentPackage)
+    private readonly studentPackageRepo: Repository<StudentPackage>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
   ) {
@@ -347,5 +351,37 @@ export class CourseMaterialsService {
     // Fallback to first key
     const firstKey = Object.keys(options)[0];
     return firstKey || "";
+  }
+
+  async getEnrollmentForStep(
+    userId: number,
+    courseStepId: number,
+  ): Promise<{ studentPackageId: number } | null> {
+    const courseStep = await this.courseStepRepo.findOne({
+      where: { id: courseStepId },
+    });
+
+    if (!courseStep) {
+      return null;
+    }
+
+    // Find active package for this course
+    const studentPackage = await this.studentPackageRepo.findOne({
+      where: {
+        student: { userId },
+        stripeProductMap: {
+          scopeType: ScopeType.COURSE,
+          scopeId: courseStep.courseProgramId,
+        },
+      },
+      relations: ["stripeProductMap"],
+      order: { purchasedAt: "DESC" },
+    });
+
+    if (!studentPackage) {
+      return null;
+    }
+
+    return { studentPackageId: studentPackage.id };
   }
 }

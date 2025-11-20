@@ -218,4 +218,11 @@ export class UsersService {
         : undefined,
     };
   }
+
+  async findByEmail(email: string): Promise<User | null> {
+    return this.usersRepo.findOne({
+      where: { email, deletedAt: IsNull() },
+      relations: ["admin", "teacher"],
+    });
+  }
 }

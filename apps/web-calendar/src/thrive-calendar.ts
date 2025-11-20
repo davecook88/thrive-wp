@@ -96,6 +96,10 @@ export class ThriveCalendar extends LitElement {
   blackoutStripe?: string;
   @property({ type: Number, attribute: "view-height" })
   viewHeight: number = 600;
+  @property({ type: Boolean, reflect: true, attribute: "auto-navigate-to-first-event" })
+  autoNavigateToFirstEvent: boolean = true;
+
+  @state() private _hasNavigatedToFirstEvent: boolean = false;
 
   private emit<T extends object>(name: string, detail: T) {
     this.dispatchEvent(
@@ -114,6 +118,7 @@ export class ThriveCalendar extends LitElement {
         const parsed = new Date(this.date);
         if (!isNaN(parsed.getTime())) {
           this.currentDate = parsed;
+          this._hasNavigatedToFirstEvent = false; // Reset flag on explicit date change
         }
       }
     }
@@ -130,10 +135,23 @@ export class ThriveCalendar extends LitElement {
         // ignore invalid JSON
       }
     }
-    // Sync from public events prop
+    // Sync from public events prop and handle auto-navigation to first event
     if (changed.has("events")) {
       if (Array.isArray(this.events)) {
+        const hadEvents = this._events.length > 0;
+        const hasEventsNow = this.events.length > 0;
         this._events = this.events;
+
+        // Auto-navigate to first event if events just loaded and feature is enabled
+        if (
+          hasEventsNow &&
+          !hadEvents &&
+          !this._hasNavigatedToFirstEvent &&
+          this.autoNavigateToFirstEvent
+        ) {
+          this._hasNavigatedToFirstEvent = true;
+          this.navigateToFirstEvent();
+        }
       }
     }
 
@@ -184,6 +202,20 @@ export class ThriveCalendar extends LitElement {
     const days = this.view === "week" ? 7 : this.view === "day" ? 1 : 30;
     newDate.setDate(newDate.getDate() + (direction === "next" ? days : -days));
     this.currentDate = newDate;
+  }
+
+  private navigateToFirstEvent() {
+    if (this._events.length === 0) return;
+
+    // Find the earliest event by startUtc
+    const firstEvent = this._events.reduce((earliest, current) => {
+      const earliestTime = new Date(earliest.startUtc).getTime();
+      const currentTime = new Date(current.startUtc).getTime();
+      return currentTime < earliestTime ? current : earliest;
+    });
+
+    // Update currentDate to the week/day containing the first event
+    this.currentDate = new Date(firstEvent.startUtc);
   }
 
   private setView(newView: ViewMode) {

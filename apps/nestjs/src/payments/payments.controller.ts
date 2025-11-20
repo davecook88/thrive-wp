@@ -63,9 +63,7 @@ export class PaymentsController {
     body: BookWithPackagePayloadDto,
     @Request() req: ExpressRequest,
   ) {
-    console.log("bookWithPackage called with body:", body);
     const userId = req.headers["x-auth-user-id"] as string;
-    console.log("Extracted userId from headers:", userId);
     if (!userId) throw new UnauthorizedException("Authentication required");
     const res = await this.paymentsService.bookWithPackage(
       parseInt(userId, 10),
@@ -74,7 +72,6 @@ export class PaymentsController {
       body.confirmed,
     );
 
-    console.log("Booking result:", res);
     return BookingResponseSchema.parse(res);
   }
 

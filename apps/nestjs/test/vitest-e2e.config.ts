@@ -1,5 +1,6 @@
 /// <reference types="vitest" />
 import { defineConfig } from "vitest/config";
+import swc from "unplugin-swc";
 
 export default defineConfig({
   test: {
@@ -14,6 +15,11 @@ export default defineConfig({
       NODE_ENV: "test",
     },
   },
+  plugins: [
+    swc.vite({
+      module: { type: "es6" },
+    }),
+  ],
   esbuild: {
     target: "node18",
   },

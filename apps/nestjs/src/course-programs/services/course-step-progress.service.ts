@@ -446,4 +446,211 @@ export class CourseStepProgressService {
 
     return { autoBooked, manualSelections, booked };
   }
+
+  /**
+   * Get all course packages for a student with progress summary.
+   *
+   * @param studentId - The Student.id
+   */
+  /**
+   * Get all course packages for a student with progress summary.
+   *
+   * @param studentId - The Student.id
+   */
+  async getStudentPackages(studentId: number) {
+    const packages = await this.packageRepo.find({
+      where: { studentId },
+      order: { purchasedAt: "DESC" },
+    });
+
+    const result = [];
+
+    for (const pkg of packages) {
+      // Only include course packages (those with metadata.courseProgramId)
+      if (!pkg.metadata?.courseProgramId) {
+        continue;
+      }
+
+      const courseProgramId = pkg.metadata.courseProgramId as number;
+      const cohortId = pkg.metadata.cohortId as number | undefined;
+
+      // Get progress
+      const progress = await this.progressRepo.find({
+        where: { studentPackageId: pkg.id },
+        relations: ["courseStep"],
+        order: { courseStep: { stepOrder: "ASC" } },
+      });
+
+      const totalSteps = progress.length;
+      const completedSteps = progress.filter(
+        (p) => p.status === "COMPLETED",
+      ).length;
+      const unbookedSteps = progress.filter(
+        (p) => p.status === "UNBOOKED",
+      ).length;
+
+      // Find next session
+      // Find next session
+      // TODO: Implement next session logic
+      const nextSessionAt: Date | null = null;
+
+      const courseTitle = (pkg.metadata.courseTitle as string) || "Course";
+      const courseCode = (pkg.metadata.courseCode as string) || "COURSE";
+      const cohortName = (pkg.metadata.cohortName as string) || null;
+
+      result.push({
+        packageId: pkg.id,
+        packageName: pkg.packageName,
+        courseProgramId,
+        courseCode,
+        courseTitle,
+        courseDescription: null, // TODO: Fetch from program
+        cohortId: cohortId || null,
+        cohortName,
+        purchasedAt: pkg.purchasedAt.toISOString(),
+        expiresAt: pkg.expiresAt?.toISOString() || null,
+        progress: progress.map((p) => ({
+          stepId: p.courseStepId,
+          stepLabel: p.courseStep.label,
+          stepTitle: p.courseStep.title,
+          stepOrder: p.courseStep.stepOrder,
+          status: p.status,
+          bookedAt: p.bookedAt?.toISOString() || null,
+          completedAt: p.completedAt?.toISOString() || null,
+          sessionId: p.sessionId,
+        })),
+        completedSteps,
+        totalSteps,
+        unbookedSteps,
+        nextSessionAt: null,
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * Get detailed view of a single course package.
+   *
+   * @param studentId - The Student.id
+   * @param packageId - The StudentPackage.id
+   */
+  async getPackageDetail(studentId: number, packageId: number) {
+    const pkg = await this.packageRepo.findOne({
+      where: { id: packageId, studentId },
+    });
+
+    if (!pkg) {
+      throw new NotFoundException("Package not found");
+    }
+
+    if (!pkg.metadata?.courseProgramId) {
+      throw new BadRequestException("Not a course package");
+    }
+
+    const courseProgramId = pkg.metadata.courseProgramId as number;
+    const cohortId = pkg.metadata.cohortId as number | undefined;
+
+    // Get progress with steps
+    const progress = await this.progressRepo.find({
+      where: { studentPackageId: pkg.id },
+      relations: ["courseStep"],
+      order: { courseStep: { stepOrder: "ASC" } },
+    });
+
+    // Get sessions for booked steps
+    const sessions = [];
+    if (cohortId) {
+      // Get all cohort sessions to find details for booked steps
+      const cohortSessions = await this.cohortSessionRepo.find({
+        where: { cohortId },
+        relations: [
+          "courseStepOption",
+          "courseStepOption.groupClass",
+          "courseStepOption.groupClass.session",
+          "courseStepOption.groupClass.groupClassTeachers",
+          "courseStepOption.groupClass.groupClassTeachers.teacher",
+          "courseStepOption.groupClass.groupClassTeachers.teacher.user",
+        ],
+      });
+
+      for (const p of progress) {
+        if (p.status === "BOOKED" && p.sessionId) {
+          // p.sessionId is actually the groupClassId in our current logic (see bookSessions)
+          // We need to find the cohort session that matches this group class
+          const cs = cohortSessions.find(
+            (c) => c.courseStepOption.groupClassId === p.sessionId,
+          );
+
+          if (cs) {
+            const groupClass = cs.courseStepOption.groupClass;
+            const session = groupClass?.session;
+            // Get primary teacher or first teacher
+            const teacherRel =
+              groupClass?.groupClassTeachers?.find((t) => t.isPrimary) ||
+              groupClass?.groupClassTeachers?.[0];
+            const teacher = teacherRel?.teacher;
+
+            if (session && teacher && teacher.user) {
+              sessions.push({
+                sessionId: p.sessionId,
+                stepId: p.courseStepId,
+                stepLabel: p.courseStep.label,
+                stepTitle: p.courseStep.title,
+                groupClassName: groupClass.title,
+                startUtc: session.startAt.toISOString(),
+                endUtc: session.endAt.toISOString(),
+                status: "SCHEDULED", // TODO: Check session status
+                meetingUrl: session.meetingUrl,
+                teacherId: teacher.id,
+                teacherName: `${teacher.user?.firstName} ${teacher.user?.lastName}`,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    const totalSteps = progress.length;
+    const completedSteps = progress.filter(
+      (p) => p.status === "COMPLETED",
+    ).length;
+    const unbookedSteps = progress.filter(
+      (p) => p.status === "UNBOOKED",
+    ).length;
+
+    const courseCode = (pkg.metadata.courseCode as string) || "COURSE";
+    const courseTitle = (pkg.metadata.courseTitle as string) || "Course";
+    const cohortName = (pkg.metadata.cohortName as string) || null;
+
+    return {
+      packageId: pkg.id,
+      packageName: pkg.packageName,
+      courseProgramId,
+      courseCode,
+      courseTitle,
+      courseDescription: null,
+      courseHeroImageUrl: null,
+      cohortId: cohortId || null,
+      cohortName,
+      cohortStartDate: new Date().toISOString(), // TODO: Get from cohort
+      cohortEndDate: new Date().toISOString(), // TODO: Get from cohort
+      purchasedAt: pkg.purchasedAt.toISOString(),
+      progress: progress.map((p) => ({
+        stepId: p.courseStepId,
+        stepLabel: p.courseStep.label,
+        stepTitle: p.courseStep.title,
+        stepOrder: p.courseStep.stepOrder,
+        status: p.status,
+        bookedAt: p.bookedAt?.toISOString() || null,
+        completedAt: p.completedAt?.toISOString() || null,
+        sessionId: p.sessionId,
+      })),
+      completedSteps,
+      totalSteps,
+      unbookedSteps,
+      sessions,
+      courseLevels: [], // TODO: Fetch levels
+    };
+  }
 }

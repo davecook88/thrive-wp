@@ -51,12 +51,10 @@ export function computeRemainingCreditsForAllowance(
     creditsUsed?: number;
   }>,
 ): number {
-  console.log("Computing remaining for allowance:", allowance, packageUses);
   const totalUsed = packageUses
     .filter((use) => use.allowanceId === allowance.id)
     .reduce((sum, use) => sum + (use.creditsUsed || 1), 0);
 
-  console.log("Total used credits for allowance:", totalUsed);
   return Math.max(0, allowance.credits - totalUsed);
 }
 

@@ -17,6 +17,8 @@ import { execInsert } from "./utils/query-helpers.js";
 import { runMigrations } from "./setup.js";
 import { GoogleStrategy } from "../src/auth/strategies/google.strategy.js";
 import { StripeProductService } from "../src/common/services/stripe-product.service.js";
+import { CourseEnrollmentService } from "../src/course-programs/services/course-enrollment.service.js";
+import { PaymentsService } from "../src/payments/payments.service.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
@@ -42,6 +44,15 @@ describe("Course Materials (e2e)", () => {
           product: { id: "prod_123" },
           price: { id: "price_123" },
         }),
+      })
+      .overrideProvider(CourseEnrollmentService)
+      .useValue({
+        createCheckoutSession: () => ({ sessionId: "sess_123", url: "http://test.com" }),
+        getEnrollmentSessionInfo: () => ({ packageId: 1 }),
+      })
+      .overrideProvider(PaymentsService)
+      .useValue({
+        createPaymentIntent: () => ({ clientSecret: "secret" }),
       })
       .overrideGuard(AdminGuard)
       .useValue({

@@ -18,6 +18,8 @@ import {
   CancelStepBookingDto,
   BulkBookSessionsDto,
 } from "../../course-programs/dto/book-step-session.dto.js";
+import { StudentsService } from "../students.service.js";
+import { NotFoundException } from "@nestjs/common";
 
 @Controller("students/me/course-packages")
 @UseGuards(StudentGuard)
@@ -25,7 +27,42 @@ export class StudentPackagesController {
   constructor(
     private readonly courseStepProgressService: CourseStepProgressService,
     private readonly courseStepBookingService: CourseStepBookingService,
+    private readonly studentsService: StudentsService,
   ) {}
+
+  private async getStudentId(userId: number): Promise<number> {
+    const student = await this.studentsService.findByUserId(userId);
+    if (!student) {
+      throw new NotFoundException("Student profile not found");
+    }
+    return student.id;
+  }
+
+  /**
+   * GET /students/me/course-packages
+   * Get all course packages for the current student
+   */
+  @Get()
+  async getStudentPackages(@Req() req: { user: { id: number } }) {
+    const studentId = await this.getStudentId(req.user.id);
+    return this.courseStepProgressService.getStudentPackages(studentId);
+  }
+
+  /**
+   * GET /students/me/course-packages/:packageId
+   * Get detailed view of a single course package
+   */
+  @Get(":packageId")
+  async getPackageDetail(
+    @Param("packageId", ParseIntPipe) packageId: number,
+    @Req() req: { user: { id: number } },
+  ) {
+    const studentId = await this.getStudentId(req.user.id);
+    return this.courseStepProgressService.getPackageDetail(
+      studentId,
+      packageId,
+    );
+  }
 
   /**
    * GET /students/me/course-packages/:packageId/unbooked-steps
@@ -34,9 +71,10 @@ export class StudentPackagesController {
   @Get(":packageId/unbooked-steps")
   async getUnbookedSteps(
     @Param("packageId", ParseIntPipe) packageId: number,
-    @Req() req: { user: { id: number; studentId: number } },
+    @Req() req: { user: { id: number } },
   ) {
-    // TODO: Verify package ownership
+    await this.getStudentId(req.user.id); // Ensure student exists
+    // TODO: Verify package ownership using studentId
     return this.courseStepProgressService.getUnbookedSteps(packageId);
   }
 
@@ -49,10 +87,11 @@ export class StudentPackagesController {
     @Param("packageId", ParseIntPipe) packageId: number,
     @Param("stepId", ParseIntPipe) stepId: number,
     @Body() dto: BookStepSessionDto,
-    @Req() req: { user: { id: number; studentId: number } },
+    @Req() req: { user: { id: number } },
   ) {
+    const studentId = await this.getStudentId(req.user.id);
     return this.courseStepBookingService.bookStepSession(
-      req.user.studentId,
+      studentId,
       packageId,
       stepId,
       dto.courseStepOptionId,
@@ -68,10 +107,11 @@ export class StudentPackagesController {
     @Param("packageId", ParseIntPipe) packageId: number,
     @Param("stepId", ParseIntPipe) stepId: number,
     @Body() dto: ChangeStepSessionDto,
-    @Req() req: { user: { id: number; studentId: number } },
+    @Req() req: { user: { id: number } },
   ) {
+    const studentId = await this.getStudentId(req.user.id);
     return this.courseStepBookingService.changeStepSession(
-      req.user.studentId,
+      studentId,
       packageId,
       stepId,
       dto.courseStepOptionId,
@@ -87,10 +127,11 @@ export class StudentPackagesController {
   async bulkBookStepSessions(
     @Param("packageId", ParseIntPipe) packageId: number,
     @Body() dto: BulkBookSessionsDto,
-    @Req() req: { user: { id: number; studentId: number } },
+    @Req() req: { user: { id: number } },
   ) {
+    const studentId = await this.getStudentId(req.user.id);
     return this.courseStepBookingService.bulkBookStepSessions(
-      req.user.studentId,
+      studentId,
       packageId,
       dto.selections || [],
     );
@@ -105,14 +146,14 @@ export class StudentPackagesController {
     @Param("packageId", ParseIntPipe) packageId: number,
     @Param("stepId", ParseIntPipe) stepId: number,
     @Body() dto: CancelStepBookingDto,
-    @Req() req: { user: { id: number; studentId: number } },
+    @Req() req: { user: { id: number } },
   ) {
-    await this.courseStepBookingService.cancelStepBooking(
-      req.user.studentId,
+    const studentId = await this.getStudentId(req.user.id);
+    return this.courseStepBookingService.cancelStepBooking(
+      studentId,
       packageId,
       stepId,
       dto.reason,
     );
-    return { success: true };
   }
 }

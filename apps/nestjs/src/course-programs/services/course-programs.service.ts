@@ -302,15 +302,23 @@ export class CourseProgramsService {
         // Get next cohort start date
         const nextCohortResult = await this.dataSource
           .createQueryBuilder()
-          .select("MIN(cc.start_date)", "startDate")
+          .select("MIN(s.start_at)", "startDate")
           .from("course_cohort", "cc")
+          .innerJoin("course_cohort_session", "ccs", "ccs.cohort_id = cc.id")
+          .innerJoin(
+            "course_step_option",
+            "cso",
+            "cso.id = ccs.course_step_option_id",
+          )
+          .innerJoin("group_class", "gc", "gc.id = cso.group_class_id")
+          .innerJoin("session", "s", "s.group_class_id = gc.id")
           .where("cc.course_program_id = :cpId", { cpId: cp.id })
           .andWhere("cc.is_active = 1")
           .andWhere("cc.current_enrollment < cc.max_enrollment")
           .andWhere(
             "(cc.enrollment_deadline IS NULL OR cc.enrollment_deadline > NOW())",
           )
-          .andWhere("cc.start_date >= CURDATE()")
+          .andWhere("s.start_at >= CURDATE()")
           .getRawOne<{ startDate: string | null }>();
 
         const nextCohortStartDate = nextCohortResult?.startDate || null;

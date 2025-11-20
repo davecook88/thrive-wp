@@ -9,11 +9,32 @@ applyTo: 'wordpress/**'
 
 **CRITICAL: File-Based vs Callback-Based Rendering**
 
-WordPress blocks can be rendered in two### Contributor DO / DON'T
-DO: Add new PHP conditionals using `thrive_is_logged_in()`.
-DO: Keep auth state server-driven.
-DON'T: Call `is_user_logged_in()` for proxy sessions.
-DON'T: Store sensitive auth data in client-readable cookies or localStorage.
+WordPress blocks can be rendered in two ways, and the output method differs:
+
+1. **File-Based Rendering** (`"render": "./render.php"` in block.json):
+   ```php
+   // render.php - MUST use echo, NOT return
+   $output = '<div>Block content</div>';
+   echo $output; // ✅ Correct
+   // return $output; // ❌ WRONG - Content will not appear
+   ```
+
+2. **Callback-Based Rendering** (`render_callback` function):
+   ```php
+   // In functions.php - MUST use return, NOT echo
+   'render_callback' => function($attributes, $content, $block) {
+       $output = '<div>Block content</div>';
+       return $output; // ✅ Correct
+       // echo $output; // ❌ WRONG - May cause output issues
+   }
+   ```
+
+**Common Debugging Symptoms:**
+- Block appears in editor but not on frontend
+- `render.php` executes (logs show execution) but no HTML output
+- `render_block` filter receives empty `$block_content`
+
+**Solution:** Verify you're using the correct output method for your rendering approach.
 
 ---
 
@@ -93,34 +114,6 @@ $wrapper_attributes = get_block_wrapper_attributes([
 3. **Test output method:** Try callback-based rendering vs file-based
 4. **Inspect HTML:** Use browser dev tools to see if content appears in DOM
 5. **Check logs:** Look for PHP errors in WordPress debug logs
-
----
-This document is the authoritative reference for WordPress-side behavior in the hybrid auth model. Keep it updated alongside any Nginx or NestJS auth pipeline changes.nd the output method differs:
-
-1. **File-Based Rendering** (`"render": "./render.php"` in block.json):
-   ```php
-   // render.php - MUST use echo, NOT return
-   $output = '<div>Block content</div>';
-   echo $output; // ✅ Correct
-   // return $output; // ❌ WRONG - Content will not appear
-   ```
-
-2. **Callback-Based Rendering** (`render_callback` function):
-   ```php
-   // In functions.php - MUST use return, NOT echo
-   'render_callback' => function($attributes, $content, $block) {
-       $output = '<div>Block content</div>';
-       return $output; // ✅ Correct
-       // echo $output; // ❌ WRONG - May cause output issues
-   }
-   ```
-
-**Common Debugging Symptoms:**
-- Block appears in editor but not on frontend
-- `render.php` executes (logs show execution) but no HTML output
-- `render_block` filter receives empty `$block_content`
-
-**Solution:** Verify you're using the correct output method for your rendering approach.
 
 ### Provided Helpers
 * `thrive_get_auth_context(): ?ThriveAuthContext` – returns strongly typed context object (email, name, roles, externalId, raw payload).

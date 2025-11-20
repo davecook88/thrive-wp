@@ -16,9 +16,14 @@ type AuthenticatedRequest = ExpressRequest & {
   user: { id: number; email: string; roles: string[] };
 };
 
+import { StudentDashboardService } from "./services/student-dashboard.service.js";
+
 @Controller("students")
 export class StudentsController {
-  constructor(private readonly studentsService: StudentsService) {}
+  constructor(
+    private readonly studentsService: StudentsService,
+    private readonly studentDashboardService: StudentDashboardService,
+  ) {}
 
   @Get()
   findAll(): Promise<Student[]> {
@@ -80,5 +85,12 @@ export class StudentsController {
   async getMyEnrollments(@Request() req: AuthenticatedRequest) {
     const userId = req.user.id;
     return this.studentsService.getStudentEnrollments(userId);
+  }
+
+  @Get("me/dashboard-summary")
+  @UseGuards(StudentGuard)
+  async getDashboardSummary(@Request() req: AuthenticatedRequest) {
+    const userId = req.user.id;
+    return this.studentDashboardService.getDashboardSummary(userId);
   }
 }

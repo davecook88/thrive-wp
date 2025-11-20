@@ -6,6 +6,7 @@ import { StudentPackagesController } from "./controllers/student-packages.contro
 import { Student } from "./entities/student.entity.js";
 import { AuthModule } from "../auth/auth.module.js";
 import { StudentAvailabilityService } from "./services/student-availability.service.js";
+import { StudentDashboardService } from "./services/student-dashboard.service.js";
 import { Booking } from "../payments/entities/booking.entity.js";
 import { Session } from "../sessions/entities/session.entity.js";
 import { CourseProgramsModule } from "../course-programs/course-programs.module.js";
@@ -17,7 +18,15 @@ import { CourseProgramsModule } from "../course-programs/course-programs.module.
     CourseProgramsModule,
   ],
   controllers: [StudentsController, StudentPackagesController],
-  providers: [StudentsService, StudentAvailabilityService],
-  exports: [StudentsService, StudentAvailabilityService],
+  providers: [
+    StudentsService,
+    StudentAvailabilityService,
+    StudentDashboardService,
+  ],
+  exports: [
+    StudentsService,
+    StudentAvailabilityService,
+    StudentDashboardService,
+  ],
 })
 export class StudentsModule {}

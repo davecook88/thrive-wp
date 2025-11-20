@@ -77,6 +77,17 @@ fetch('/api/classes', { method: 'POST', headers: { 'Content-Type': 'application/
 - Use TypeORM migrations for schema changes. Follow idempotent migration patterns.
 - Role detection is implemented as a single UNION query for performance.
 
+### Timezone Handling (UTC Convention)
+
+**All session times are stored in UTC in the database.** Client applications are responsible for displaying times in the user's local timezone.
+
+- **Database Layer**: All `datetime` columns (e.g., `session.startAt`, `session.endAt`, `course_cohort.enrollmentDeadline`) store times in UTC.
+- **API Responses**: Times are serialized as ISO 8601 strings (e.g., `"2025-01-15T14:30:00Z"`), always in UTC.
+- **Client Layer**: The frontend JavaScript/Vue code must convert UTC times to the user's local timezone for display. Use standard browser APIs (`Intl`, `toLocaleString()`) or libraries like `Day.js` with timezone support.
+- **No Course-Level Timezone Configuration**: There is no course-level or cohort-level timezone field. All scheduling uses a single UTC reference.
+
+This approach ensures consistency across regions and simplifies scheduling logic, while allowing flexible, client-side presentation.
+
 ---
 ## 5. Development Workflow & Commands
 
@@ -99,6 +110,7 @@ The repository contains additional, focused design notes and plans. Refer to the
 - `docs/reusable-calendar-plan.md` — plan for reusability and data flow of calendar components.
 - `docs/teachers-section-plan.md` — UX and data model for the teachers admin section.
 - `docs/thrive-modal-architecture.md` — modal design used by block editor and runtime (referenced by block implementations).
+- `docs/ai-test-accounts.md` — details on stable test accounts for AI agents and automation.
 
 When updating blocks, update the relevant doc in `docs/` and update this file if the runtime contract changes.
 
