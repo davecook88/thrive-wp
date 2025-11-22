@@ -182,24 +182,33 @@ const CourseMaterialsBuilder: React.FC = () => {
         <h2>Select Course and Step</h2>
         <div className="form-group">
           <label htmlFor="course-select">Select Course</label>
-          <select
-            id="course-select"
-            value={selectedCourseId || ''}
-            onChange={(e) => {
-              const courseId = e.target.value ? parseInt(e.target.value) : null;
-              setSelectedCourseId(courseId);
-              setSelectedStepId(null);
-              setMaterials([]);
-            }}
-            disabled={loading}
-          >
-            <option value="">-- Select a Course --</option>
-            {courses.map((course) => (
-              <option key={course.id} value={course.id}>
-                {course.name}
-              </option>
-            ))}
-          </select>
+          {courses.length === 0 && !loading ? (
+            <div className="empty-courses-message">
+              <p>No courses found. Please create a Course Program first.</p>
+              <a href="/wp-admin/post-new.php?post_type=thrive_course" className="btn-primary">
+                Create Course Program
+              </a>
+            </div>
+          ) : (
+            <select
+              id="course-select"
+              value={selectedCourseId || ''}
+              onChange={(e) => {
+                const courseId = e.target.value ? parseInt(e.target.value) : null;
+                setSelectedCourseId(courseId);
+                setSelectedStepId(null);
+                setMaterials([]);
+              }}
+              disabled={loading}
+            >
+              <option value="">-- Select a Course --</option>
+              {courses.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {course.title}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         {selectedCourseId && (

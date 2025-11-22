@@ -104,11 +104,12 @@ final class ThriveAuthContext
      * Apply this auth context to WordPress request lifecycle (stateless).
      * - Finds or creates the user (by email)
      * - Syncs display name & roles (if provided)
-     * - Sets the current user (wp_set_current_user)
+     * - Sets the current user (wp_set_current_user) unless disabled via $setCurrentUser
      *
+     * @param bool $setCurrentUser Whether to call wp_set_current_user.
      * @return int|null User ID set, or null if failure.
      */
-    public function applyToWordPress(): ?int
+    public function applyToWordPress(bool $setCurrentUser = true): ?int
     {
         if (!function_exists('get_user_by')) {
             return null; // Should not happen inside WP, defensive.
@@ -148,16 +149,19 @@ final class ThriveAuthContext
             ]);
         }
 
-        // Ensure password is known for testing (since we can't rely on header auth for manual wp-admin login check)
-        // In a real prod env, we might not want this, but for this hybrid setup it helps.
-        wp_set_password('thrive_test_123', $userId);
+        // Ensure password is known for testing. Only reset when it differs to avoid clearing auth cookies every request.
+        if (!wp_check_password('thrive_test_123', $user->user_pass, $userId)) {
+            wp_set_password('thrive_test_123', $userId);
+            // Reload user object to reflect updated hash
+            $user = get_user_by('id', $userId);
+        }
 
         // Roles sync if supplied
         if (!empty($this->roles)) {
             global $wp_roles;
             if ($wp_roles instanceof WP_Roles) {
                 $roleStrings = array_map(fn(ThriveRole $role) => $role->value, $this->roles);
-                
+
                 // Map NestJS roles to WordPress roles
                 $mappedRoles = [];
                 foreach ($roleStrings as $r) {
@@ -181,7 +185,9 @@ final class ThriveAuthContext
             }
         }
 
-        wp_set_current_user($userId);
+        if ($setCurrentUser) {
+            wp_set_current_user($userId);
+        }
         return $userId;
     }
 

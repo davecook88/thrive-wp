@@ -23,10 +23,15 @@
       </div>
 
       <div class="px-6 py-4">
-        <!-- Add Step Form -->
+        <!-- Add/Edit Step Form -->
         <div class="mb-6 bg-gray-50 rounded-lg p-4">
-          <h4 class="text-sm font-medium text-gray-900 mb-3">Add New Step</h4>
-          <form @submit.prevent="handleAddStep" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="flex justify-between items-center mb-3">
+            <h4 class="text-sm font-medium text-gray-900">{{ editingStepId ? 'Edit Step' : 'Add New Step' }}</h4>
+            <button v-if="editingStepId" @click="cancelEdit" class="text-xs text-gray-500 hover:text-gray-700">
+              Cancel Edit
+            </button>
+          </div>
+          <form @submit.prevent="handleSaveStep" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-medium text-gray-700">Step Order</label>
               <input
@@ -90,7 +95,7 @@
                 :disabled="addingStep"
                 class="px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
               >
-                {{ addingStep ? 'Adding...' : 'Add Step' }}
+                {{ savingStep ? (editingStepId ? 'Updating...' : 'Adding...') : (editingStepId ? 'Update Step' : 'Add Step') }}
               </button>
             </div>
           </form>
@@ -99,17 +104,26 @@
         <!-- Steps List -->
         <div v-if="course.steps && course.steps.length > 0" class="space-y-3">
           <h4 class="text-sm font-medium text-gray-900">Course Steps</h4>
-          <div
-            v-for="step in course.steps"
-            :key="step.id"
-            class="border border-gray-200 rounded-lg p-4"
+          <draggable
+            v-model="localSteps"
+            item-key="id"
+            handle=".drag-handle"
+            @end="onDragEnd"
+            class="space-y-3"
           >
-            <div class="flex items-start justify-between mb-3">
-              <div class="flex-1">
-                <div class="flex items-center">
-                  <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-800 text-sm font-medium">
-                    {{ step.stepOrder }}
-                  </span>
+            <template #item="{ element: step }">
+              <div class="border border-gray-200 rounded-lg p-4 bg-white">
+                <div class="flex items-start justify-between mb-3">
+                  <div class="flex-1">
+                    <div class="flex items-center">
+                      <span class="drag-handle cursor-move text-gray-400 mr-3 hover:text-gray-600" title="Drag to reorder">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+                        </svg>
+                      </span>
+                      <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-800 text-sm font-medium">
+                        {{ step.stepOrder }}
+                      </span>
                   <div class="ml-3">
                     <h5 class="text-sm font-medium text-gray-900">{{ step.label }}: {{ step.title }}</h5>
                     <p v-if="step.description" class="text-xs text-gray-500 mt-1">{{ step.description }}</p>
@@ -119,6 +133,12 @@
                   </div>
                 </div>
               </div>
+              <button
+                @click="handleEditStep(step)"
+                class="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3"
+              >
+                Edit
+              </button>
               <button
                 @click="handleDeleteStep(step.id)"
                 class="text-red-600 hover:text-red-800 text-sm font-medium"
@@ -178,6 +198,8 @@
               </div>
             </div>
           </div>
+        </template>
+      </draggable>
         </div>
         <div v-else class="text-center py-6 text-gray-500 text-sm">
           No steps added yet. Create your first step above.
@@ -257,6 +279,7 @@
 
 <script lang="ts">
 import { defineComponent, reactive, ref, watch, onMounted, computed } from 'vue';
+import Draggable from 'vuedraggable';
 import { thriveClient } from '@wp-shared/thrive';
 import type { CourseProgramDetailDto, CourseStepDetailDto, LevelDto, PublicTeacherDto } from '@thrive/shared';
 import type { CourseStepForm } from './types';
@@ -266,6 +289,8 @@ export default defineComponent({
   name: 'ManageStepsModal',
   components: {
     GroupClassModal,
+    // Prefer CDN-provided global (window.VueDraggableNext) when available, otherwise use the imported module.
+    draggable: (typeof window !== 'undefined' && (window as any).VueDraggableNext) ? (window as any).VueDraggableNext : Draggable,
   },
   props: {
     course: {
@@ -277,16 +302,11 @@ export default defineComponent({
   setup(props, { emit }) {
     const labelNumber = ref(props.course?.steps ? props.course.steps.length + 1 : 1);
 
-    // Add watcher for course prop changes
-    watch(() => props.course, (newCourse, oldCourse) => {
-      console.log('Course prop updated:', {
-        new: newCourse,
-        old: oldCourse
-      });
-      labelNumber.value = newCourse?.steps ? newCourse.steps.length + 1 : 1;
-      updateLabelNumber(); // Ensure label is unique after course change
-    }, { deep: true });
-    const addingStep = ref(false);
+    const savingStep = ref(false);
+    const editingStepId = ref<number | null>(null);
+    const localSteps = ref<CourseStepDetailDto[]>([]);
+
+
 
     // Step options state
     const showAttachOptionModal = ref(false);
@@ -324,30 +344,99 @@ export default defineComponent({
       stepForm.label = `${props.course.code}-${labelNumber.value}`;
     }
 
-    const handleAddStep = async () => {
+    const handleSaveStep = async () => {
       if (!props.course) return;
 
-      addingStep.value = true;
+      savingStep.value = true;
 
       try {
-        await thriveClient.createCourseStep({
-          courseProgramId: props.course.id,
-          ...stepForm
-        });
+        if (editingStepId.value) {
+          await thriveClient.updateCourseStep(editingStepId.value, {
+            ...stepForm
+          });
+        } else {
+          await thriveClient.createCourseStep({
+            courseProgramId: props.course.id,
+            ...stepForm
+          });
+          
+          // Only increment order if we're adding a new step
+          stepForm.stepOrder += 1;
+          labelNumber.value = stepForm.stepOrder;
+        }
 
-        // Reset step form but increment order
-        stepForm.stepOrder += 1;
-        labelNumber.value = stepForm.stepOrder;
-        stepForm.title = '';
-        stepForm.description = '';
-        stepForm.isRequired = true;
-
+        // Reset form
+        resetStepForm();
         emit('course-updated');
       } catch (err: any) {
-        console.error('Failed to add step:', err);
-        // You might want to emit an error event here
+        console.error('Failed to save step:', err);
+        alert('Failed to save step: ' + (err.message || 'Unknown error'));
       } finally {
-        addingStep.value = false;
+        savingStep.value = false;
+      }
+    };
+
+    const handleEditStep = (step: CourseStepDetailDto) => {
+      editingStepId.value = step.id;
+      stepForm.stepOrder = step.stepOrder;
+      stepForm.label = step.label;
+      stepForm.title = step.title;
+      stepForm.description = step.description || '';
+      stepForm.isRequired = step.isRequired;
+      
+      // Update label number to match the editing step
+      const parts = step.label.split('-');
+      if (parts.length > 1) {
+        const num = parseInt(parts[1]);
+        if (!isNaN(num)) {
+          labelNumber.value = num;
+        }
+      }
+    };
+
+    const cancelEdit = () => {
+      resetStepForm();
+      updateStepOrder(); // Reset to next available order
+    };
+
+    const resetStepForm = () => {
+      editingStepId.value = null;
+      stepForm.title = '';
+      stepForm.description = '';
+      stepForm.isRequired = true;
+    };
+
+    const onDragEnd = async () => {
+      if (!props.course) return;
+
+      // Update orders based on new index
+      const updates = localSteps.value.map((step, index) => ({
+        id: step.id,
+        stepOrder: index + 1,
+        label: step.label // Keep existing label or update it? For now keeping it, but order changes
+      }));
+
+      // Optimistically update local state
+      localSteps.value.forEach((step, index) => {
+        step.stepOrder = index + 1;
+        // Optional: Auto-update label to match new order? 
+        // step.label = `${props.course!.code}-${index + 1}`;
+      });
+
+      try {
+        // Sequential updates since no batch endpoint
+        for (const update of updates) {
+          if (update.stepOrder !== props.course.steps.find(s => s.id === update.id)?.stepOrder) {
+             await thriveClient.updateCourseStep(update.id, {
+               stepOrder: update.stepOrder
+             });
+          }
+        }
+        emit('course-updated');
+      } catch (err) {
+        console.error('Failed to reorder steps:', err);
+        alert('Failed to save new step order');
+        emit('course-updated'); // Revert to server state
       }
     };
 
@@ -403,6 +492,21 @@ export default defineComponent({
       const val = (e.target as HTMLInputElement)?.value;
       updateLabelNumber(val);
     };
+
+    // Add watcher for course prop changes
+    watch(() => props.course, (newCourse, oldCourse) => {
+      console.log('Course prop updated:', {
+        new: newCourse,
+        old: oldCourse
+      });
+      labelNumber.value = newCourse?.steps ? newCourse.steps.length + 1 : 1;
+      if (newCourse?.steps) {
+        localSteps.value = [...newCourse.steps].sort((a, b) => a.stepOrder - b.stepOrder);
+      } else {
+        localSteps.value = [];
+      }
+      updateLabelNumber(); // Ensure label is unique after course change
+    }, { deep: true, immediate: true });
 
     // Watch for course changes to update step order
     if (props.course) {
@@ -516,10 +620,15 @@ export default defineComponent({
     });
 
     return {
-      addingStep,
+      savingStep,
+      editingStepId,
+      localSteps,
       stepForm,
       labelNumber,
-      handleAddStep,
+      handleSaveStep,
+      handleEditStep,
+      cancelEdit,
+      onDragEnd,
       handleDeleteStep,
       updateLabelNumber,
       onLabelChange,

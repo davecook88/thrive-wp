@@ -34,6 +34,7 @@ docs/
 - NestJS issues a signed session cookie (default name `thrive_sess`).
 - Nginx performs an internal subrequest to `/auth/introspect` when `thrive_sess` is present and injects `X-Auth-*` headers into incoming requests forwarded to WordPress.
 - WordPress PHP code parses `X-Auth-Context` into a typed `ThriveAuthContext` object; helpers such as `thrive_is_logged_in()`, `thrive_get_auth_context()` and role helpers are provided.
+- Manual wp-login flows: `thrive_hydrate_user_from_proxy()` now skips hydration entirely when WordPress forces `reauth=1` or processes a POST to `wp-login.php`. This leaves the native login form fully in control while the rest of the site continues to hydrate users via headers. After a successful manual login, a `login_redirect` filter forces navigation to `/wp-admin/` so the very next request re-enters the hydrated state.
 
 Environment variables used by auth flows: `SESSION_SECRET`, `SESSION_COOKIE_NAME`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`, and `WP_BASE_URL`.
 

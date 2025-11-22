@@ -1,10 +1,84 @@
-import { NestFactory } from "@nestjs/core";
-import { AppModule } from "../app.module.js";
-import { AuthService } from "../auth/auth.service.js";
-import { UsersService } from "../users/users.service.js";
 import { Logger } from "@nestjs/common";
+import { DataSource } from "typeorm";
+import PasswordHash from "phpass";
+
+interface WordPressUserRow {
+  ID: number;
+}
+
+interface InsertResult {
+  insertId: number;
+}
+
+async function ensureWordPressUser(
+  dataSource: DataSource,
+  email: string,
+  password: string,
+  firstName: string,
+  lastName: string,
+  wpRole: string,
+  logger: Logger,
+): Promise<void> {
+  // Check if user exists
+  const result: WordPressUserRow[] = await dataSource.query(
+    "SELECT ID FROM wp_users WHERE user_email = ?",
+    [email],
+  );
+
+  if (result && result.length > 0) {
+    const userId: number = result[0].ID;
+    logger.log(`WordPress user ${email} already exists (ID: ${userId})`);
+
+    // Update password using bcrypt (WordPress uses phpass which is bcrypt-based)
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const userLogin = email;
+    await dataSource.query(
+      "UPDATE wp_users SET user_pass = ?, user_login = ? WHERE ID = ?",
+      [hashedPassword, userLogin, userId],
+    );
+
+    // Update role
+    const prefix = "wp_";
+    await dataSource.query(
+      `DELETE FROM ${prefix}usermeta WHERE user_id = ? AND meta_key = ?`,
+      [userId, `${prefix}capabilities`],
+    );
+    await dataSource.query(
+      `INSERT INTO ${prefix}usermeta (user_id, meta_key, meta_value) VALUES (?, ?, ?)`,
+      [userId, `${prefix}capabilities`, JSON.stringify({ [wpRole]: true })],
+    );
+
+    logger.log(`Updated WordPress user ${email} role to ${wpRole}`);
+  } else {
+    // Create new WordPress user
+    const userLogin = email;
+    const displayName = `${firstName} ${lastName}`.trim();
+
+    // Hash password using bcrypt (WordPress uses phpass which is bcrypt-based)
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const insertResult: InsertResult = await dataSource.query(
+      `INSERT INTO wp_users (user_login, user_email, user_pass, display_name, user_registered, user_status)
+       VALUES (?, ?, ?, ?, NOW(), 0)`,
+      [userLogin, email, hashedPassword, displayName],
+    );
+
+    const userId = insertResult.insertId;
+    const prefix = "wp_";
+    await dataSource.query(
+      `INSERT INTO ${prefix}usermeta (user_id, meta_key, meta_value) VALUES (?, ?, ?)`,
+      [userId, `${prefix}capabilities`, JSON.stringify({ [wpRole]: true })],
+    );
+
+    logger.log(
+      `Created WordPress user ${email} (ID: ${userId}) with role ${wpRole}`,
+    );
+  }
+}
 
 async function bootstrap() {
+  const logger = new Logger("SeedTestUsers");
+
   // Set dummy env vars for Google Strategy if not present
   if (!process.env.GOOGLE_CLIENT_ID) process.env.GOOGLE_CLIENT_ID = "dummy_id";
   if (!process.env.GOOGLE_CLIENT_SECRET)
@@ -15,68 +89,40 @@ async function bootstrap() {
   if (!process.env.STRIPE_SECRET_KEY)
     process.env.STRIPE_SECRET_KEY = "dummy_stripe_key";
 
-  const app = await NestFactory.createApplicationContext(AppModule);
+  // Fall back to direct database setup
+  const dataSource = new DataSource({
+    type: "mysql",
+    host: process.env.DB_HOST || "localhost",
+    port: parseInt(process.env.DB_PORT || "3306", 10),
+    username: process.env.DB_USERNAME || "wordpress",
+    password: process.env.DB_PASSWORD || "wordpress",
+    database: process.env.DB_DATABASE || "wordpress",
+  });
 
-  const authService = app.get(AuthService);
-  const usersService = app.get(UsersService);
-  const logger = new Logger("SeedTestUsers");
+  try {
+    await dataSource.initialize();
+    logger.log("Database connection established");
 
-  const users = [
-    {
-      email: "student@thrive.com",
-      password: "thrive_test_123",
-      firstName: "Test",
-      lastName: "Student",
-      role: "student",
-    },
-    {
-      email: "teacher@thrive.com",
-      password: "thrive_test_123",
-      firstName: "Test",
-      lastName: "Teacher",
-      role: "teacher",
-    },
-    {
-      email: "admin@thrive.com",
-      password: "thrive_test_123",
-      firstName: "Test",
-      lastName: "Admin",
-      role: "admin",
-    },
-  ];
+    // Create WordPress admin user directly
+    await ensureWordPressUser(
+      dataSource,
+      "admin@thrive.com",
+      "thrive_test_123",
+      "Test",
+      "Admin",
+      "administrator",
+      logger,
+    );
 
-  for (const u of users) {
-    try {
-      let user = await usersService.findByEmail(u.email);
-      if (!user) {
-        logger.log(`Creating user ${u.email}...`);
-        user = await authService.registerLocal(
-          u.email,
-          u.password,
-          u.firstName,
-          u.lastName,
-        );
-      } else {
-        logger.log(`User ${u.email} already exists.`);
-      }
-
-      if (u.role === "admin") {
-        if (!user.admin) {
-          logger.log(`Making ${u.email} admin...`);
-          await usersService.makeUserAdmin(user.id);
-        }
-      } else if (u.role === "teacher") {
-        if (!user.teacher) {
-          logger.log(`Making ${u.email} teacher...`);
-          await usersService.makeUserTeacher(user.id);
-        }
-      }
-    } catch (e) {
-      logger.error(`Failed to process user ${u.email}`, e);
+    logger.log("Seed complete!");
+  } catch (error) {
+    logger.error("Error during seed:", error);
+    throw error;
+  } finally {
+    if (dataSource.isInitialized) {
+      await dataSource.destroy();
     }
   }
-
-  await app.close();
 }
 
 bootstrap();

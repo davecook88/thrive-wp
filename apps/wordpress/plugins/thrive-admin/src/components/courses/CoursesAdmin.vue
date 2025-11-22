@@ -33,6 +33,42 @@
       </nav>
     </div>
 
+    <!-- Filters -->
+    <div v-if="activeTab === 'list'" class="mb-6 flex flex-wrap gap-4 items-center bg-gray-50 p-4 rounded-lg border border-gray-200">
+      <div class="flex items-center">
+        <label for="status-filter" class="mr-2 text-sm font-medium text-gray-700">Status:</label>
+        <select
+          id="status-filter"
+          v-model="filters.status"
+          class="block w-32 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+        >
+          <option value="all">All</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+
+      <div class="flex items-center">
+        <label for="level-filter" class="mr-2 text-sm font-medium text-gray-700">Level:</label>
+        <select
+          id="level-filter"
+          v-model="filters.levelId"
+          class="block w-40 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+        >
+          <option :value="null">All Levels</option>
+          <option v-for="level in levels" :key="level.id" :value="level.id">
+            {{ level.code }} - {{ level.name }}
+          </option>
+        </select>
+      </div>
+
+      <div class="flex-1"></div>
+      
+      <div class="text-sm text-gray-500">
+        Showing {{ filteredCourses.length }} courses
+      </div>
+    </div>
+
     <!-- List Tab -->
     <div v-if="activeTab === 'list'" class="space-y-4">
       <div v-if="loading" class="text-center py-8">
@@ -44,19 +80,30 @@
         <p class="text-red-800">{{ error }}</p>
       </div>
 
-      <div v-else-if="courses.length === 0" class="text-center py-8">
-        <p class="text-gray-500">No courses found. Create your first course to get started.</p>
-        <button
-          @click="activeTab = 'create'"
-          class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
-        >
-          Create Course
-        </button>
+      <div v-else-if="filteredCourses.length === 0" class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No courses found</h3>
+        <p class="mt-1 text-sm text-gray-500">
+          {{ courses.length === 0 ? 'Get started by creating your first course program.' : 'Try adjusting your filters.' }}
+        </p>
+        <div class="mt-6" v-if="courses.length === 0">
+          <button
+            @click="activeTab = 'create'"
+            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          >
+            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+            Create New Course
+          </button>
+        </div>
       </div>
 
       <div v-else class="bg-white shadow overflow-hidden sm:rounded-md">
         <ul class="divide-y divide-gray-200">
-          <li v-for="course in courses" :key="course.id" class="px-6 py-4">
+          <li v-for="course in filteredCourses" :key="course.id" class="px-6 py-4 hover:bg-gray-50 transition-colors">
             <div class="flex items-center justify-between">
               <div class="flex-1">
                 <div class="flex items-center">
@@ -250,7 +297,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, reactive, onMounted } from 'vue';
+import { defineComponent, ref, reactive, onMounted, computed } from 'vue';
 import { thriveClient } from '@wp-shared/thrive';
 import type { CourseProgramDetailDto } from '@thrive/shared';
 import ManageStepsModal from './ManageStepsModal.vue';
@@ -286,6 +333,27 @@ export default defineComponent({
       isActive: true,
       levelIds: [],
       heroImageUrl: null
+    });
+
+    const filters = reactive({
+      status: 'all',
+      levelId: null as number | null
+    });
+
+    const filteredCourses = computed(() => {
+      return courses.value.filter(course => {
+        // Status filter
+        if (filters.status === 'active' && !course.isActive) return false;
+        if (filters.status === 'inactive' && course.isActive) return false;
+
+        // Level filter
+        if (filters.levelId) {
+          const hasLevel = course.levels?.some(l => l.id === filters.levelId);
+          if (!hasLevel) return false;
+        }
+
+        return true;
+      });
     });
 
     const loadLevels = async () => {
@@ -482,7 +550,9 @@ export default defineComponent({
       resetForm,
       openPublishModal,
       closePublishModal,
-      onCoursePublished
+      onCoursePublished,
+      filters,
+      filteredCourses
     };
   }
 });

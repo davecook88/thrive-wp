@@ -3,17 +3,79 @@
  * Authentication helpers that bridge Nginx/NestJS injected headers into theme.
  */
 
+function thrive_request_targets_wp_login(): bool
+{
+    global $pagenow;
+    if (isset($pagenow) && $pagenow === 'wp-login.php') {
+        return true;
+    }
+
+    $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+    return $requestUri !== '' && strpos($requestUri, 'wp-login.php') !== false;
+}
+
+function thrive_should_skip_proxy_hydration(): bool
+{
+    if (!thrive_request_targets_wp_login()) {
+        return false;
+    }
+
+    $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+    $forceReauth = isset($_REQUEST['reauth']) && $_REQUEST['reauth'] === '1';
+
+    if ($method !== 'POST' && !$forceReauth) {
+        return false;
+    }
+
+    static $logged = false;
+    if (!$logged) {
+        $reason = $forceReauth ? 'reauth request' : 'login form POST';
+        error_log('[ThriveAuth] Skipping proxy hydration for wp-login ' . $reason . '.');
+        $logged = true;
+    }
+
+    return true;
+}
+
 function thrive_hydrate_user_from_proxy(): void
 {
     $rawHeader = $_SERVER['HTTP_X_AUTH_CONTEXT'] ?? '';
     $ctx = ThriveAuthContext::fromJson($rawHeader);
-    if ($ctx !== null) {
-        $GLOBALS['thrive_auth_context'] = $ctx;
-        // Sync user to WP database and log them in
-        $ctx->applyToWordPress();
+    if ($ctx === null) {
+        return;
     }
+
+    if (thrive_should_skip_proxy_hydration()) {
+        return;
+    }
+
+    $GLOBALS['thrive_auth_context'] = $ctx;
+    // Sync user to WP database and log them in
+    $ctx->applyToWordPress();
 }
 add_action('init', 'thrive_hydrate_user_from_proxy', 1);
+
+/**
+ * Force manual wp-login flows back into /wp-admin/ so proxy hydration resumes immediately.
+ *
+ * @param string $redirectTo
+ * @param string $requestedRedirectTo
+ * @param mixed $user WP_User|WP_Error
+ * @return string
+ */
+function thrive_redirect_manual_login_to_admin(string $redirectTo, string $requestedRedirectTo, $user): string
+{
+    if (!thrive_request_targets_wp_login()) {
+        return $redirectTo;
+    }
+
+    if (is_wp_error($user)) {
+        return $redirectTo;
+    }
+
+    return admin_url();
+}
+add_filter('login_redirect', 'thrive_redirect_manual_login_to_admin', 99, 3);
 
 function thrive_get_auth_context(): ?ThriveAuthContext
 {

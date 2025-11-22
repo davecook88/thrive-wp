@@ -37,7 +37,19 @@ All accounts use the same password: `thrive_test_123`
 >
 > If you cannot log in to `/wp-admin` with `admin@thrive.com`, you may need to:
 > 1. Ensure the `X-Auth-Context` header is being passed (requires Nginx/proxy).
-> 2. Or use a manually created local admin user (e.g., `localadmin`) if testing in a dev environment without the full proxy stack.
+> 2. Or use the provided WP seed script to create/update users directly in WordPress.
+
+### Running the WP Seed Script
+
+To ensure all test users (Admin, Teacher, Student) exist in WordPress with the correct roles and passwords:
+
+**Option 1: Via Browser**
+Visit: `http://localhost:8080/wp-content/themes/custom-theme/scripts/seed-wp-users.php`
+
+**Option 2: Via CLI (Docker)**
+```bash
+docker-compose exec wordpress wp eval-file wp-content/themes/custom-theme/scripts/seed-wp-users.php
+```
 
 ## Usage in Playwright / E2E Tests
 
