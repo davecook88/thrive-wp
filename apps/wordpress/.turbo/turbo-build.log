@@ -1,5 +1,86 @@
 
+
 > @thrive/wordpress@1.0.0 build /Users/davidcook/personal/thrive-wp/apps/wordpress
 > pnpm -r --filter './themes/*' --filter './plugins/*' build
 
-No projects matched the filters in "/Users/davidcook/personal/thrive-wp"
+Scope: 2 of 7 workspace projects
+themes/custom-theme [96mbuild[39m$ wp-scripts build ./blocks/index.ts ./blocks/view.index.ts ./admin/admin-course-materials.tsx
+[95m└─[39m [95mRunning...[39m
+plugins/thrive-admin [96mbuild[39m$ vite build
+[95m└─[39m [95mRunning...[39m
+[1A[95m│[39m vite v5.4.19 building for production...
+[95m└─[39m [95mRunning...[39m
+[1A[95m│[39m transforming...
+[95m└─[39m [95mRunning...[39m
+[1A[95m│[39m ✓ 252 modules transformed.
+[95m└─[39m [95mRunning...[39m
+[1A[95m│[39m rendering chunks...
+[95m└─[39m [95mRunning...[39m
+[1A[95m│[39m [90m[plugin:vite:reporter] [plugin vite:reporter] [39m
+[95m└─[39m [95mRunning...[39m
+[1A[95m│[39m [90m(!) /Users/davidcook/personal/thrive-wp/packages/shared/src/types/payments.ts is dynamically imported by /Users/davidcook/personal/thrive-wp…[39m
+[95m└─[39m [95mRunning...[39m
+[1A[95m│[39m computing gzip size...
+[95m└─[39m [95mRunning...[39m
+[1A[95m│[39m dist/.vite/manifest.json                1.40 kB │ gzip:  0.29 kB
+[95m└─[39m [95mRunning...[39m
+[1A[95m│[39m dist/css/main.css                      32.47 kB │ gzip:  5.96 kB
+[95m└─[39m [95mRunning...[39m
+[1A[95m│[39m dist/js/dashboard.js                    3.30 kB │ gzip:  1.39 kB
+[95m└─[39m [95mRunning...[39m
+[11A[1 lines collapsed][0K
+[9B[95m│[39m dist/js/settings.js                     6.94 kB │ gzip:  2.32 kB
+[95m└─[39m [95mRunning...[39m
+[1C[12A2[2D[1B[95m│[39m ✓ 252 modules transformed.
+[95m│[39m rendering chunks...[0K
+[95m│[39m [90m[plugin:vite:reporter] [plugin vite:reporter] [39m
+[95m│[39m [90m(!) /Users/davidcook/personal/thrive-wp/packages/shared/src/types/payments.ts is dynamically imported by /Users/davidcook/personal/thrive-wp…[39m
+[95m│[39m computing gzip size...[0K
+[95m│[39m dist/.vite/manifest.json                1.40 kB │ gzip:  0.29 kB
+[95m│[39m dist/css/main.css                      32.47 kB │ gzip:  5.96 kB
+[95m│[39m dist/js/dashboard.js                    3.30 kB │ gzip:  1.39 kB
+[95m│[39m dist/js/settings.js                     6.94 kB │ gzip:  2.32 kB
+[95m│[39m dist/js/runtime-dom.esm-bundler.js     22.32 kB │ gzip:  9.03 kB
+[1B[1C[12A3[2D[1B[95m│[39m rendering chunks...[0K
+[95m│[39m [90m[plugin:vite:reporter] [plugin vite:reporter] [39m
+[95m│[39m [90m(!) /Users/davidcook/personal/thrive-wp/packages/shared/src/types/payments.ts is dynamically imported by /Users/davidcook/personal/thrive-wp…[39m
+[95m│[39m computing gzip size...[0K
+[95m│[39m dist/.vite/manifest.json                1.40 kB │ gzip:  0.29 kB
+[95m│[39m dist/css/main.css                      32.47 kB │ gzip:  5.96 kB
+[95m│[39m dist/js/dashboard.js                    3.30 kB │ gzip:  1.39 kB
+[95m│[39m dist/js/settings.js                     6.94 kB │ gzip:  2.32 kB
+[95m│[39m dist/js/runtime-dom.esm-bundler.js     22.32 kB │ gzip:  9.03 kB
+[95m│[39m dist/js/_plugin-vue_export-helper.js   83.91 kB │ gzip: 33.25 kB
+[1B[1C[12A4[2D[1B[95m│[39m [90m[plugin:vite:reporter] [plugin vite:reporter] [39m
+[95m│[39m [90m(!) /Users/davidcook/personal/thrive-wp/packages/shared/src/types/payments.ts is dynamically imported by /Users/davidcook/personal/thrive-wp…[39m
+[95m│[39m computing gzip size...[0K
+[95m│[39m dist/.vite/manifest.json                1.40 kB │ gzip:  0.29 kB
+[95m│[39m dist/css/main.css                      32.47 kB │ gzip:  5.96 kB
+[95m│[39m dist/js/dashboard.js                    3.30 kB │ gzip:  1.39 kB
+[95m│[39m dist/js/settings.js                     6.94 kB │ gzip:  2.32 kB
+[95m│[39m dist/js/runtime-dom.esm-bundler.js     22.32 kB │ gzip:  9.03 kB
+[95m│[39m dist/js/_plugin-vue_export-helper.js   83.91 kB │ gzip: 33.25 kB
+[95m│[39m dist/js/users.js                      161.50 kB │ gzip: 42.12 kB
+[1B[1C[12A5[2D[1B[95m│[39m [90m(!) /Users/davidcook/personal/thrive-wp/packages/shared/src/types/payments.ts is dynamically imported by /Users/davidcook/personal/thrive-wp…[39m
+[95m│[39m computing gzip size...[0K
+[95m│[39m dist/.vite/manifest.json                1.40 kB │ gzip:  0.29 kB
+[95m│[39m dist/css/main.css                      32.47 kB │ gzip:  5.96 kB
+[95m│[39m dist/js/dashboard.js                    3.30 kB │ gzip:  1.39 kB
+[95m│[39m dist/js/settings.js                     6.94 kB │ gzip:  2.32 kB
+[95m│[39m dist/js/runtime-dom.esm-bundler.js     22.32 kB │ gzip:  9.03 kB
+[95m│[39m dist/js/_plugin-vue_export-helper.js   83.91 kB │ gzip: 33.25 kB
+[95m│[39m dist/js/users.js                      161.50 kB │ gzip: 42.12 kB
+[95m│[39m dist/js/main.js                       283.71 kB │ gzip: 79.96 kB
+[1B[1C[12A6[2D[1B[95m│[39m computing gzip size...[0K
+[95m│[39m dist/.vite/manifest.json                1.40 kB │ gzip:  0.29 kB
+[95m│[39m dist/css/main.css                      32.47 kB │ gzip:  5.96 kB
+[95m│[39m dist/js/dashboard.js                    3.30 kB │ gzip:  1.39 kB
+[95m│[39m dist/js/settings.js                     6.94 kB │ gzip:  2.32 kB
+[95m│[39m dist/js/runtime-dom.esm-bundler.js     22.32 kB │ gzip:  9.03 kB
+[95m│[39m dist/js/_plugin-vue_export-helper.js   83.91 kB │ gzip: 33.25 kB
+[95m│[39m dist/js/users.js                      161.50 kB │ gzip: 42.12 kB
+[95m│[39m dist/js/main.js                       283.71 kB │ gzip: 79.96 kB
+[95m│[39m ✓ built in 5.53s[0K
+[1B[1A[95m└─[39m [95mDone in 6.4s[39m
+[14A[95m└─[39m [31mFailed in 15.1s at /Users/davidcook/personal/thrive-wp/apps/wordpress/themes/custom-theme[39m
+[13B

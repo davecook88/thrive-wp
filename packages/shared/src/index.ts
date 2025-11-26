@@ -17,4 +17,8 @@ export * from "./types/users.js";
 export * from "./types/student-stats.js";
 export * from "./types/course-programs.js";
 export * from "./types/course-materials.js";
+export * from "./types/notifications.js";
+export * from "./types/testimonials.js";
+export * from "./types/google-meet.js";
+export * from "./types/admin-orders.js";
 export * from "./utils/date.js";

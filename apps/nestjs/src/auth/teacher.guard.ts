@@ -5,7 +5,6 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { Request } from "express";
-import { AuthService } from "./auth.service.js";
 import jwt from "jsonwebtoken";
 
 interface SessionPayload {
@@ -24,7 +23,7 @@ interface RequestWithUser extends Request {
 
 @Injectable()
 export class TeacherGuard implements CanActivate {
-  constructor(private readonly authService: AuthService) {}
+  constructor() {}
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<RequestWithUser>();

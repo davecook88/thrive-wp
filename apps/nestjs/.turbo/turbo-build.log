@@ -1,4 +1,13 @@
 
+
 > @thrive/api@0.0.1 build /Users/davidcook/personal/thrive-wp/apps/nestjs
 > nest build
 
+[96msrc/testimonials/testimonials.service.ts[0m:[93m275[0m:[93m9[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'courseProgramId' does not exist in type 'FindOptionsWhere<StudentPackage> | FindOptionsWhere<StudentPackage>[]'.
+
+[7m275[0m         courseProgramId,
+[7m   [0m [91m        ~~~~~~~~~~~~~~~[0m
+
+Found 1 error(s).
+
+[41m[30m ELIFECYCLE [39m[49m [31mCommand failed with exit code 1.[39m

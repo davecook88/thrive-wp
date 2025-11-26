@@ -16,6 +16,7 @@ interface GoogleProfileLike {
   emails?: { value: string }[];
   name?: { givenName?: string; familyName?: string };
   displayName?: string;
+  photos?: { value: string }[];
 }
 
 @Injectable()
@@ -61,7 +62,12 @@ export class AuthService {
     if (user) {
       // Update existing user
       const dirtyUser = this.checkDirtyGoogleUser(profile, user);
-      if (dirtyUser) {
+      // Only set avatar if not already set, to avoid overwriting custom uploads
+      if (!user.avatarUrl && profile.photos?.[0]?.value) {
+        user.avatarUrl = profile.photos[0].value;
+        await this.usersRepo.save(user);
+        this.logger.log(`Updated Google user avatar ${email}`);
+      } else if (dirtyUser) {
         user = await this.usersRepo.save(dirtyUser);
         this.logger.log(`Updated Google user ${email}`);
       }
@@ -71,6 +77,7 @@ export class AuthService {
         email,
         firstName: profile.name?.givenName ?? "",
         lastName: profile.name?.familyName ?? "",
+        avatarUrl: profile.photos?.[0]?.value ?? null,
       });
       user = await this.usersRepo.save(user);
       this.logger.log(`Created new Google user ${email}`);

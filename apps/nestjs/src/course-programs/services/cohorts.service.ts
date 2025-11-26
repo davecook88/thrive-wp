@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 import {
   Injectable,
   NotFoundException,
@@ -439,7 +438,7 @@ export class CohortsService {
         const session = cs.courseStepOption?.groupClass?.session;
         return session?.startAt ? new Date(session.startAt) : null;
       })
-      .filter((date) => date !== null) as Date[];
+      .filter((date) => date !== null);
 
     if (sessionDates.length === 0) {
       return { startDate: null, endDate: null };

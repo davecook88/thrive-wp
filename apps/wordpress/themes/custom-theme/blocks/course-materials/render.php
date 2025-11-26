@@ -43,8 +43,10 @@ $course_program_id = $wpdb->get_var($wpdb->prepare(
 ));
 
 $studentPackageId = 0;
+$isAdminOrTeacher = thrive_is_admin() || thrive_is_teacher();
 
-if ($course_program_id) {
+// Students need a package to access materials, admins/teachers don't
+if (!$isAdminOrTeacher && $course_program_id) {
     // 2. Get stripe product map ID for the course
     $stripe_map_id = $wpdb->get_var($wpdb->prepare(
         "SELECT id FROM stripe_product_map WHERE scope_type = 'course' AND scope_id = %d",
@@ -55,11 +57,11 @@ if ($course_program_id) {
         // 3. Get student package ID
         // Join student_package -> student -> user to match email
         $studentPackageId = $wpdb->get_var($wpdb->prepare(
-            "SELECT sp.id 
+            "SELECT sp.id
              FROM student_package sp
              JOIN student s ON sp.student_id = s.id
              JOIN user u ON s.user_id = u.id
-             WHERE u.email = %s 
+             WHERE u.email = %s
              AND sp.stripe_product_map_id = %d
              AND (sp.expires_at IS NULL OR sp.expires_at > NOW())
              ORDER BY sp.purchased_at DESC
@@ -70,21 +72,14 @@ if ($course_program_id) {
     }
 }
 
-// If we couldn't find a package, we still render the block, 
-// but the React component might show an error or limited view.
-// Or maybe we should show a message here?
-// The React component requires studentPackageId.
-// If 0, it might fail.
-// But maybe the user has access via some other means (e.g. admin)?
-// If admin, maybe we don't need package ID?
-// But the API requires it for progress tracking.
-
-// For now, we pass what we found.
+// Admins and teachers can view all materials without a package
+// Students require a valid package to access materials
 
 // Enqueue the view script (handled by block.json usually, but we can ensure dependencies)
 // wp_enqueue_script('thrive-course-materials-view'); // This name depends on build
 
 ?>
 <div class="student-course-materials-block" data-course-step-id="<?php echo esc_attr((string) $courseStepId); ?>"
-    data-student-package-id="<?php echo esc_attr((string) ($studentPackageId ?: 0)); ?>">
+    data-student-package-id="<?php echo esc_attr((string) ($studentPackageId ?: 0)); ?>"
+    data-is-admin-or-teacher="<?php echo esc_attr($isAdminOrTeacher ? 'true' : 'false'); ?>">
 </div>

@@ -102,6 +102,19 @@ Plugin/theme development: files under `wordpress/plugins/` and `wordpress/themes
 
 NestJS dev: `pnpm run start:dev` (inside the Nest container) for hot reload if configured.
 
+### 5.1 Running Playwright E2E Tests
+
+To run specific Playwright End-to-End tests, use the following command. The `--reporter list` flag provides a concise, real-time summary of test execution in the console.
+
+```bash
+pnpm exec playwright test <path/to/test-file.spec.ts> --reporter list
+```
+
+Example:
+```bash
+pnpm exec playwright test tests/e2e/admin-curriculum-builder.spec.ts --reporter list
+```
+
 ---
 ## 6. Related design docs (in `docs/`)
 

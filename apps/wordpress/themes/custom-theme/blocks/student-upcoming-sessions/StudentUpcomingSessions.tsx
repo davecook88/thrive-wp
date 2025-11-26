@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { thriveClient } from "../../../../shared/thrive";
 import { UpcomingSessionDto } from "@thrive/shared";
+import SessionDetailsModal from "./SessionDetailsModal";
+import "./session-details-modal.css";
 
 interface StudentUpcomingSessionsProps {
   limit?: number;
@@ -14,6 +16,7 @@ export default function StudentUpcomingSessions({
   const [sessions, setSessions] = useState<UpcomingSessionDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedSession, setSelectedSession] = useState<UpcomingSessionDto | null>(null);
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -118,7 +121,16 @@ export default function StudentUpcomingSessions({
           return (
             <div
               key={session.id}
-              className={`session-card ${isSoon ? "session-soon" : ""}`}
+              className={`session-card ${isSoon ? "session-soon" : ""} clickable`}
+              onClick={() => setSelectedSession(session)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setSelectedSession(session);
+                }
+              }}
             >
               <div className="session-time">
                 <div className="session-date">
@@ -146,6 +158,7 @@ export default function StudentUpcomingSessions({
                     target="_blank"
                     rel="noopener noreferrer"
                     className="button join-button"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     {isSoon ? "Join Now" : "Meeting Link"}
                   </a>
@@ -159,6 +172,13 @@ export default function StudentUpcomingSessions({
       <div className="view-all-link">
         <a href="/student/sessions">View All Sessions</a>
       </div>
+
+      {selectedSession && (
+        <SessionDetailsModal
+          session={selectedSession}
+          onClose={() => setSelectedSession(null)}
+        />
+      )}
     </div>
   );
 }

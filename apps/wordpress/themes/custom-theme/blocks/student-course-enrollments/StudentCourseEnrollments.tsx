@@ -6,6 +6,7 @@ interface StudentCoursePackage {
   packageName: string;
   courseProgramId: number;
   courseCode: string;
+  courseSlug: string;
   courseTitle: string;
   courseDescription: string | null;
   cohortId: number | null;
@@ -123,6 +124,11 @@ export default function StudentCourseEnrollments({
               ? (pkg.completedSteps / pkg.totalSteps) * 100
               : 0;
 
+          // Find first incomplete step
+          const firstIncompleteStep = pkg.progress
+            .sort((a, b) => a.stepOrder - b.stepOrder)
+            .find((step) => step.status !== "COMPLETED");
+
           return (
             <div key={pkg.packageId} className="course-package-card">
               <div className="course-package-card__header">
@@ -136,8 +142,11 @@ export default function StudentCourseEnrollments({
                     </p>
                   )}
                 </div>
+                {/* Link to public course page or materials? Let's keep it as public page for now, 
+                    but maybe we should link to materials if enrolled? 
+                    Actually, let's just keep View Course as is, but add Continue Learning below. */}
                 <a
-                  href={`/courses/${pkg.courseCode}`}
+                  href={`/courses/${pkg.courseSlug || pkg.courseCode}`}
                   className="course-package-card__view-link"
                 >
                   View Course →
@@ -187,6 +196,15 @@ export default function StudentCourseEnrollments({
                 >
                   View Details
                 </a>
+
+                {firstIncompleteStep && (
+                  <a
+                    href={`/course/${pkg.courseSlug}/step-${firstIncompleteStep.stepId}`}
+                    className="button button--primary"
+                  >
+                    Continue Learning
+                  </a>
+                )}
 
                 {pkg.unbookedSteps > 0 && (
                   <button

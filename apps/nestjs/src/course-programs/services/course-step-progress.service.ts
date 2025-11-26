@@ -9,6 +9,7 @@ import { StudentCourseStepProgress } from "../entities/student-course-step-progr
 import { CourseStep } from "../entities/course-step.entity.js";
 import { CourseCohortSession } from "../entities/course-cohort-session.entity.js";
 import { CourseStepOption } from "../entities/course-step-option.entity.js";
+import { CourseProgram } from "../entities/course-program.entity.js";
 import { StudentPackage } from "../../packages/entities/student-package.entity.js";
 import { BookingStatus } from "../../payments/entities/booking.entity.js";
 
@@ -36,6 +37,8 @@ export class CourseStepProgressService {
     private readonly stepOptionRepo: Repository<CourseStepOption>,
     @InjectRepository(StudentPackage)
     private readonly packageRepo: Repository<StudentPackage>,
+    @InjectRepository(CourseProgram)
+    private readonly courseProgramRepo: Repository<CourseProgram>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -490,12 +493,20 @@ export class CourseStepProgressService {
       ).length;
 
       // Find next session
-      // Find next session
       // TODO: Implement next session logic
       const nextSessionAt: Date | null = null;
 
-      const courseTitle = (pkg.metadata.courseTitle as string) || "Course";
-      const courseCode = (pkg.metadata.courseCode as string) || "COURSE";
+      const courseProgram = await this.courseProgramRepo.findOne({
+        where: { id: courseProgramId },
+      });
+
+      const courseCode =
+        courseProgram?.code || (pkg.metadata.courseCode as string) || "COURSE";
+      const courseTitle =
+        courseProgram?.title ||
+        (pkg.metadata.courseTitle as string) ||
+        "Course";
+      const courseSlug = courseProgram?.slug || courseCode.toLowerCase();
       const cohortName = (pkg.metadata.cohortName as string) || null;
 
       result.push({
@@ -503,8 +514,9 @@ export class CourseStepProgressService {
         packageName: pkg.packageName,
         courseProgramId,
         courseCode,
+        courseSlug,
         courseTitle,
-        courseDescription: null, // TODO: Fetch from program
+        courseDescription: courseProgram?.description || null,
         cohortId: cohortId || null,
         cohortName,
         purchasedAt: pkg.purchasedAt.toISOString(),
@@ -619,8 +631,15 @@ export class CourseStepProgressService {
       (p) => p.status === "UNBOOKED",
     ).length;
 
-    const courseCode = (pkg.metadata.courseCode as string) || "COURSE";
-    const courseTitle = (pkg.metadata.courseTitle as string) || "Course";
+    const courseProgram = await this.courseProgramRepo.findOne({
+      where: { id: courseProgramId },
+    });
+
+    const courseCode =
+      courseProgram?.code || (pkg.metadata.courseCode as string) || "COURSE";
+    const courseTitle =
+      courseProgram?.title || (pkg.metadata.courseTitle as string) || "Course";
+    const courseSlug = courseProgram?.slug || courseCode.toLowerCase();
     const cohortName = (pkg.metadata.cohortName as string) || null;
 
     return {
@@ -628,9 +647,10 @@ export class CourseStepProgressService {
       packageName: pkg.packageName,
       courseProgramId,
       courseCode,
+      courseSlug,
       courseTitle,
-      courseDescription: null,
-      courseHeroImageUrl: null,
+      courseDescription: courseProgram?.description || null,
+      courseHeroImageUrl: courseProgram?.heroImageUrl || null,
       cohortId: cohortId || null,
       cohortName,
       cohortStartDate: new Date().toISOString(), // TODO: Get from cohort

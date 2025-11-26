@@ -17,6 +17,7 @@ export const UserResponseSchema = z.object({
   email: z.string(),
   firstName: z.string(),
   lastName: z.string(),
+  avatarUrl: z.string().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
   admin: AdminResponseSchema.optional(),
@@ -55,3 +56,18 @@ export const MakeTeacherSchema = z.object({
 });
 
 export type MakeTeacherDto = z.infer<typeof MakeTeacherSchema>;
+
+export const UpdateUserProfileSchema = z.object({
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  avatarUrl: z
+    .string()
+    .refine(
+      (url) => !url || /^https?:\/\/.+/.test(url),
+      "avatarUrl must be a valid URL starting with http:// or https://",
+    )
+    .nullable()
+    .optional(),
+});
+
+export type UpdateUserProfileDto = z.infer<typeof UpdateUserProfileSchema>;

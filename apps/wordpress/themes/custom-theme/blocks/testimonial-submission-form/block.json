@@ -1,0 +1,45 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "thrive/testimonial-submission-form",
+    "title": "Testimonial Submission Form",
+    "category": "thrive",
+    "icon": "edit",
+    "description": "Allow students to submit testimonials for teachers or courses",
+    "keywords": [
+        "testimonial",
+        "review",
+        "feedback",
+        "form"
+    ],
+    "textdomain": "custom-theme",
+    "editorScript": "file:./index.tsx",
+    "render": "file:./render.php",
+    "viewScript": "file:./view.tsx",
+    "style": "file:./style.css",
+    "attributes": {
+        "title": {
+            "type": "string",
+            "default": "Share Your Experience"
+        },
+        "description": {
+            "type": "string",
+            "default": "Help others by sharing your experience with Thrive in Spanish!"
+        },
+        "showGeneralOption": {
+            "type": "boolean",
+            "default": true
+        }
+    },
+    "supports": {
+        "html": false,
+        "align": [
+            "wide",
+            "full"
+        ],
+        "spacing": {
+            "margin": true,
+            "padding": true
+        }
+    }
+}

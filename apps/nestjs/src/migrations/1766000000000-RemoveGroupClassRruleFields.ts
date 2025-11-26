@@ -20,21 +20,21 @@ export class RemoveGroupClassRruleFields1766000000000
     const columnNames = columns.map((col: any) => col.COLUMN_NAME);
     const dropStatements = [];
 
-    if (columnNames.includes('rrule')) {
-      dropStatements.push('DROP COLUMN rrule');
+    if (columnNames.includes("rrule")) {
+      dropStatements.push("DROP COLUMN rrule");
     }
-    if (columnNames.includes('start_date')) {
-      dropStatements.push('DROP COLUMN start_date');
+    if (columnNames.includes("start_date")) {
+      dropStatements.push("DROP COLUMN start_date");
     }
-    if (columnNames.includes('end_date')) {
-      dropStatements.push('DROP COLUMN end_date');
+    if (columnNames.includes("end_date")) {
+      dropStatements.push("DROP COLUMN end_date");
     }
 
     // Only run ALTER TABLE if there are columns to drop
     if (dropStatements.length > 0) {
       await queryRunner.query(`
         ALTER TABLE group_class
-        ${dropStatements.join(', ')}
+        ${dropStatements.join(", ")}
       `);
     }
   }

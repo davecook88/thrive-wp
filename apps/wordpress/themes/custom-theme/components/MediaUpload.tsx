@@ -2,6 +2,7 @@ import { createElement, useState, useRef } from "@wordpress/element";
 import {
   validateFile,
   validateImageDimensions,
+  resizeImage,
   uploadFile,
   isImage,
   createImagePreview,
@@ -68,18 +69,33 @@ export function MediaUpload({
     setError(null);
     setSelectedFile(file);
 
-    // Basic validation
-    const validation = validateFile(file, constraints);
+    // Basic validation - skip size check for images (we'll resize them)
+    const skipSizeCheck = isImage(file);
+    const validation = validateFile(file, constraints, skipSizeCheck);
     if (!validation.valid) {
       setError(validation.error || "File validation failed");
       setSelectedFile(null);
       return;
     }
 
-    // Image dimension validation (if applicable)
+    let processedFile = file;
+
+    // Image dimension and size validation (if applicable)
     if (isImage(file) && constraints) {
+      // Always try to resize images to ensure they meet constraints
+      try {
+        processedFile = await resizeImage(file, constraints);
+        console.log('Resized image from', file.size, 'to', processedFile.size, 'bytes');
+      } catch (err) {
+        console.error('Failed to resize image:', err);
+        setError(err instanceof Error ? err.message : "Failed to resize image");
+        setSelectedFile(null);
+        return;
+      }
+      
+      // Validate the processed image dimensions
       const dimensionValidation = await validateImageDimensions(
-        file,
+        processedFile,
         constraints,
       );
       if (!dimensionValidation.valid) {
@@ -87,19 +103,41 @@ export function MediaUpload({
         setSelectedFile(null);
         return;
       }
+
+      // Final size check after resize
+      if (constraints.maxSize && processedFile.size > constraints.maxSize) {
+        const maxMB = (constraints.maxSize / (1024 * 1024)).toFixed(1);
+        setError(`File size still exceeds ${maxMB} MB after compression. Please use a smaller image.`);
+        setSelectedFile(null);
+        return;
+      }
     }
 
     // Show preview for images
-    if (showPreview && isImage(file)) {
+    if (showPreview && isImage(processedFile)) {
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl);
       }
-      const preview = createImagePreview(file);
+      const preview = createImagePreview(processedFile);
       setPreviewUrl(preview);
     }
 
+    // Validate the file before upload
+    if (!processedFile || processedFile.size === 0) {
+      console.error('Invalid file after processing:', processedFile);
+      setError('Failed to process image. Please try a different file.');
+      setSelectedFile(null);
+      return;
+    }
+
+    console.log('Uploading file:', {
+      name: processedFile.name,
+      size: processedFile.size,
+      type: processedFile.type,
+    });
+
     // Auto-upload the file
-    await handleUpload(file);
+    await handleUpload(processedFile);
   };
 
   /**

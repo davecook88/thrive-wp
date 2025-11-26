@@ -57,3 +57,13 @@ export { Level } from "./levels/entities/level.entity.js";
 
 // Waitlists
 export { Waitlist } from "./waitlists/entities/waitlist.entity.js";
+
+// Notifications
+export { Notification } from "./notifications/entities/notification.entity.js";
+
+// Testimonials
+export { Testimonial } from "./testimonials/entities/testimonial.entity.js";
+
+// Google Meet
+export { TeacherGoogleCredential } from "./google-meet/entities/teacher-google-credential.entity.js";
+export { SessionMeetEvent } from "./google-meet/entities/session-meet-event.entity.js";

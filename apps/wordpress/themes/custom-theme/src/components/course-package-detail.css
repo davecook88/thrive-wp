@@ -213,3 +213,47 @@
     height: 200px;
   }
 }
+
+/* New Styles for Clickable Steps */
+.step-item-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: transform 0.2s ease;
+}
+
+.step-item-link:hover .step-item {
+  border-color: var(--wp--preset--color--primary);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  background-color: var(--wp--preset--color--gray-50);
+}
+
+.step-item {
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.step-item__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 1rem;
+  color: var(--wp--preset--color--gray-400);
+}
+
+.chevron {
+  font-size: 1.5rem;
+  font-weight: 300;
+}
+
+.step-item-link:hover .chevron {
+  color: var(--wp--preset--color--primary);
+  transform: translateX(4px);
+  transition: transform 0.2s ease;
+}
+
+.continue-learning-btn {
+  margin-top: 1rem;
+  display: inline-block;
+  text-decoration: none;
+}

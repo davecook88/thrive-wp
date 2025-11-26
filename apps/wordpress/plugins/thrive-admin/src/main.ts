@@ -7,6 +7,8 @@ import Settings from "./components/Settings.vue";
 import PackagesAdmin from "./components/PackagesAdmin.vue";
 import GroupClasses from "./components/GroupClasses.vue";
 import CoursesAdmin from "./components/courses/CoursesAdmin.vue";
+import OrdersAdmin from "./components/OrdersAdmin.vue";
+import TestimonialsAdmin from "./components/TestimonialsAdmin.vue";
 
 // The data-* attributes come in as strings; we keep them generic to avoid over-assumptions.
 function createVueIsland<TProps extends Record<string, unknown>>(
@@ -41,6 +43,14 @@ const init = () => {
   createVueIsland(
     '[data-vue-component="courses-admin"]',
     CoursesAdmin as Component,
+  );
+  createVueIsland(
+    '[data-vue-component="orders-admin"]',
+    OrdersAdmin as Component,
+  );
+  createVueIsland(
+    '[data-vue-component="testimonials-admin"]',
+    TestimonialsAdmin as Component,
   );
 };
 

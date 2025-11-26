@@ -62,14 +62,16 @@ export const DEFAULT_CONSTRAINTS = {
  *
  * @param file - The file to validate
  * @param constraints - Validation constraints
+ * @param skipSizeCheck - Skip size check (for images that will be resized)
  * @returns Validation result
  */
 export function validateFile(
   file: File,
-  constraints: UploadConstraints = {}
+  constraints: UploadConstraints = {},
+  skipSizeCheck: boolean = false
 ): ValidationResult {
-  // Check file size
-  if (constraints.maxSize && file.size > constraints.maxSize) {
+  // Check file size (skip for images that will be resized later)
+  if (!skipSizeCheck && constraints.maxSize && file.size > constraints.maxSize) {
     const maxMB = (constraints.maxSize / (1024 * 1024)).toFixed(1);
     return {
       valid: false,
@@ -173,6 +175,126 @@ export function validateImageDimensions(
 }
 
 /**
+ * Resize an image file to fit within maximum dimensions and size constraints.
+ *
+ * @param file - The image file to resize
+ * @param constraints - Dimension and size constraints
+ * @returns Promise with resized file or original file if no resizing needed
+ */
+export function resizeImage(
+  file: File,
+  constraints: UploadConstraints
+): Promise<File> {
+  return new Promise((resolve, reject) => {
+    // If no resize constraints, return original file
+    if (!constraints.maxWidth && !constraints.maxHeight && !constraints.maxSize) {
+      resolve(file);
+      return;
+    }
+
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+
+      const canvas = document.createElement("canvas");
+      let { width, height } = img;
+
+      // Calculate new dimensions while maintaining aspect ratio
+      if (constraints.maxWidth && width > constraints.maxWidth) {
+        const ratio = height / width;
+        width = constraints.maxWidth;
+        height = Math.round(width * ratio);
+      }
+
+      if (constraints.maxHeight && height > constraints.maxHeight) {
+        const ratio = width / height;
+        height = constraints.maxHeight;
+        width = Math.round(height * ratio);
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        reject(new Error("Failed to get canvas context"));
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Convert canvas to blob with quality reduction if needed
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error("Failed to create blob from canvas"));
+            return;
+          }
+
+          // Create the file from blob
+          const createFileFromBlob = (b: Blob): File => {
+            return new File([b], file.name, { type: file.type });
+          };
+
+          // If resized file is still too large, reduce quality further
+          if (constraints.maxSize && blob.size > constraints.maxSize) {
+            // Try again with lower quality (only for jpeg/webp)
+            const isJpeg = file.type === "image/jpeg" || file.type === "image/jpg";
+            const isWebp = file.type === "image/webp";
+
+            if (isJpeg || isWebp) {
+              let quality = 0.7;
+              let lastBlob: Blob = blob;
+
+              const attemptQuality = () => {
+                canvas.toBlob(
+                  (qualityBlob) => {
+                    if (!qualityBlob) {
+                      resolve(createFileFromBlob(lastBlob));
+                      return;
+                    }
+
+                    if (qualityBlob.size <= (constraints.maxSize || Infinity)) {
+                      resolve(createFileFromBlob(qualityBlob));
+                    } else if (quality > 0.1) {
+                      lastBlob = qualityBlob;
+                      quality -= 0.1;
+                      attemptQuality();
+                    } else {
+                      // Return best effort even if still too large
+                      resolve(createFileFromBlob(lastBlob));
+                    }
+                  },
+                  file.type,
+                  quality
+                );
+              };
+
+              attemptQuality();
+            } else {
+              resolve(createFileFromBlob(blob));
+            }
+          } else {
+            resolve(createFileFromBlob(blob));
+          }
+        },
+        file.type,
+        0.9 // Default quality
+      );
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Failed to load image"));
+    };
+
+    img.src = url;
+  });
+}
+
+/**
  * Upload a file to the server.
  *
  * @param file - The file to upload
@@ -245,6 +367,7 @@ export function uploadFile(
     });
 
     xhr.open("POST", endpoint);
+    xhr.withCredentials = true; // Send cookies for authentication
     xhr.send(formData);
   });
 }

@@ -1,4 +1,5 @@
 // Frontend view entry: import any block view scripts that need to run on the site
+import "./login-auth/view.tsx";
 import "./teacher-profile-form/view";
 import "./student-calendar/view";
 import "./course-materials/view";
@@ -23,6 +24,8 @@ import "./teacher-stats-widget/view";
 import "./teacher-info/view";
 import "./teacher-calendar/view";
 import "./package-selection/view";
+import "./testimonials-display/view";
+import "./testimonial-form/view";
 // Context-specific logic now lives in ./thrive-calendar-context/view.ts
 import "./hooks/get-context";
 import "./hooks/get-teachers";

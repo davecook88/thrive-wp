@@ -1,6 +1,6 @@
 import { Logger } from "@nestjs/common";
 import { DataSource } from "typeorm";
-import PasswordHash from "phpass";
+import * as bcrypt from "bcryptjs";
 
 interface WordPressUserRow {
   ID: number;

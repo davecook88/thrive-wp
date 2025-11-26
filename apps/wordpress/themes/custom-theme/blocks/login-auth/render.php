@@ -85,14 +85,17 @@ $block = new Thrive_Login_Auth_Block($attributes);
 
 <div <?php echo $block->get_wrapper_attributes(); ?>>
     <?php if ($is_logged_in): ?>
-        <form action="<?php echo $logout_url; ?>" method="get" class="thrive-auth-form" style="display:inline;">
-            <button class="has-primary-background-color <?php echo $block->get_button_classes(); ?>" type="submit"
-                onclick="window.dispatchEvent(new CustomEvent('thrive:auth:logout'));">
-                <?php echo esc_html($block->get_attribute('signOutText')); ?>
-                <?php if ($ctx->name)
-                    echo ' ' . esc_html($ctx->name); ?>
-            </button>
-        </form>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div id="thrive-notifications-root"></div>
+            <form action="<?php echo $logout_url; ?>" method="get" class="thrive-auth-form" style="display:inline;">
+                <button class="has-primary-background-color <?php echo $block->get_button_classes(); ?>" type="submit"
+                    onclick="window.dispatchEvent(new CustomEvent('thrive:auth:logout'));">
+                    <?php echo esc_html($block->get_attribute('signOutText')); ?>
+                    <?php if ($ctx->name)
+                        echo ' ' . esc_html($ctx->name); ?>
+                </button>
+            </form>
+        </div>
     <?php else: ?>
         <button id="thrive-login-button" class="has-primary-background-color <?php echo $block->get_button_classes(); ?>"
             type="button" aria-haspopup="dialog" aria-controls="thrive-login-modal">

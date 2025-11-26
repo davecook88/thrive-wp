@@ -7,21 +7,33 @@ import { User } from "../../users/entities/user.entity.js";
 @Index(["questionId", "studentId"], { unique: true })
 @Index(["assessedById"])
 export class StudentAnswer extends BaseEntity {
-  @Column({ name: "question_id", type: "int", comment: "FK to material_question.id" })
+  @Column({
+    name: "question_id",
+    type: "int",
+    comment: "FK to material_question.id",
+  })
   questionId: number;
 
   @ManyToOne(() => MaterialQuestion, { onDelete: "CASCADE" })
   @JoinColumn({ name: "question_id" })
   question: MaterialQuestion;
 
-  @Column({ name: "student_id", type: "int", comment: "FK to user.id (student)" })
+  @Column({
+    name: "student_id",
+    type: "int",
+    comment: "FK to user.id (student)",
+  })
   studentId: number;
 
   @ManyToOne(() => User, { onDelete: "CASCADE" })
   @JoinColumn({ name: "student_id" })
   student: User;
 
-  @Column({ name: "answer_content", type: "text", comment: "The student's answer (text, or URL to uploaded file/video)" })
+  @Column({
+    name: "answer_content",
+    type: "text",
+    comment: "The student's answer (text, or URL to uploaded file/video)",
+  })
   answerContent: string;
 
   @Column({
@@ -33,13 +45,23 @@ export class StudentAnswer extends BaseEntity {
   })
   status: "pending_assessment" | "approved" | "needs_revision";
 
-  @Column({ name: "assessed_by_id", type: "int", nullable: true, comment: "FK to user.id (teacher who assessed it)" })
+  @Column({
+    name: "assessed_by_id",
+    type: "int",
+    nullable: true,
+    comment: "FK to user.id (teacher who assessed it)",
+  })
   assessedById: number | null;
 
   @ManyToOne(() => User, { onDelete: "SET NULL" })
   @JoinColumn({ name: "assessed_by_id" })
   assessedBy: User | null;
 
-  @Column({ name: "feedback", type: "text", nullable: true, comment: "Teacher's feedback on the answer" })
+  @Column({
+    name: "feedback",
+    type: "text",
+    nullable: true,
+    comment: "Teacher's feedback on the answer",
+  })
   feedback: string | null;
 }

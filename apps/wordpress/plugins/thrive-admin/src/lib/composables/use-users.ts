@@ -142,6 +142,16 @@ export function useUsers(options: UseUsersOptions = {}) {
     }
   };
 
+  const demoteFromTeacher = async (userId: number) => {
+    try {
+      await thriveClient.demoteFromTeacher(userId);
+      await refresh(); // Refresh the list to show updated roles
+    } catch (err: unknown) {
+      console.error("Error demoting user from teacher:", err);
+      throw err;
+    }
+  };
+
   // User utility methods
   const getUserName = (user: UserResponse) => UserUtils.getDisplayName(user);
   const getUserRole = (user: UserResponse) => UserUtils.getRoleDisplay(user);
@@ -172,6 +182,7 @@ export function useUsers(options: UseUsersOptions = {}) {
     demoteFromAdmin,
     promoteToTeacher,
     updateTeacherTier,
+    demoteFromTeacher,
 
     // Utilities
     getUserName,

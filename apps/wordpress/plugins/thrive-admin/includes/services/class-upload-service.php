@@ -48,6 +48,7 @@ class Thrive_Upload_Service
      *   - min_height: minimum image height (if require_image)
      *   - max_width: maximum image width (if require_image)
      *   - max_height: maximum image height (if require_image)
+     *   - resize_if_too_large: bool, whether to resize images that exceed max dimensions
      * @param int $user_id Optional. User ID to associate with upload.
      *
      * @return array|WP_Error Array with attachment_id and url on success, WP_Error on failure.
@@ -57,6 +58,11 @@ class Thrive_Upload_Service
         // Validate file exists
         if (empty($file) || !isset($file['tmp_name']) || empty($file['tmp_name'])) {
             return new WP_Error('no_file', 'No file was uploaded.');
+        }
+        
+        // Check if temp file actually exists on disk
+        if (!file_exists($file['tmp_name'])) {
+            return new WP_Error('no_file', 'Uploaded file not found on disk.');
         }
 
         // Check for upload errors
@@ -69,12 +75,33 @@ class Thrive_Upload_Service
             'allowed_types' => self::DEFAULT_IMAGE_TYPES,
             'max_size' => self::DEFAULT_MAX_SIZE,
             'require_image' => true,
+            'resize_if_too_large' => false,
         ]);
 
         // Validate file
         $validation_result = $this->validate_file($file, $constraints);
         if (is_wp_error($validation_result)) {
-            return $validation_result;
+            // If image is too large and resizing is enabled, try to resize it
+            if ($validation_result->get_error_code() === 'image_too_large' &&
+                !empty($constraints['resize_if_too_large']) &&
+                !empty($constraints['require_image'])) {
+
+                $resize_result = $this->resize_image($file, $constraints);
+                if (is_wp_error($resize_result)) {
+                    return $resize_result;
+                }
+
+                // Update file reference with resized image
+                $file = $resize_result;
+
+                // Re-validate the resized file
+                $validation_result = $this->validate_file($file, $constraints);
+                if (is_wp_error($validation_result)) {
+                    return $validation_result;
+                }
+            } else {
+                return $validation_result;
+            }
         }
 
         // Require WordPress media handling functions
@@ -278,6 +305,126 @@ class Thrive_Upload_Service
         }
 
         return $mimes;
+    }
+
+    /**
+     * Resize an image to fit within maximum dimensions.
+     *
+     * @param array $file The file array from $_FILES.
+     * @param array $constraints Upload constraints with max_width and max_height.
+     *
+     * @return array|WP_Error Updated file array with resized image, or WP_Error on failure.
+     */
+    private function resize_image($file, $constraints)
+    {
+        // Get image dimensions
+        $image_info = getimagesize($file['tmp_name']);
+        if ($image_info === false) {
+            return new WP_Error('invalid_image', 'File is not a valid image.');
+        }
+
+        list($width, $height) = $image_info;
+        $max_width = $constraints['max_width'] ?? null;
+        $max_height = $constraints['max_height'] ?? null;
+
+        if (!$max_width && !$max_height) {
+            return new WP_Error('no_max_dimensions', 'No maximum dimensions specified for resizing.');
+        }
+
+        // Calculate new dimensions while maintaining aspect ratio
+        $ratio = $width / $height;
+        $new_width = $width;
+        $new_height = $height;
+
+        if ($max_width && $width > $max_width) {
+            $new_width = $max_width;
+            $new_height = (int) ($max_width / $ratio);
+        }
+
+        if ($max_height && $new_height > $max_height) {
+            $new_height = $max_height;
+            $new_width = (int) ($max_height * $ratio);
+        }
+
+        // If no resizing needed, return original file
+        if ($new_width === $width && $new_height === $height) {
+            return $file;
+        }
+
+        // Load image based on MIME type
+        $mime_type = $image_info['mime'];
+        $source_image = null;
+
+        switch ($mime_type) {
+            case 'image/jpeg':
+            case 'image/jpg':
+                $source_image = imagecreatefromjpeg($file['tmp_name']);
+                break;
+            case 'image/png':
+                $source_image = imagecreatefrompng($file['tmp_name']);
+                break;
+            case 'image/webp':
+                $source_image = imagecreatefromwebp($file['tmp_name']);
+                break;
+            case 'image/gif':
+                $source_image = imagecreatefromgif($file['tmp_name']);
+                break;
+            default:
+                return new WP_Error('unsupported_image_type', 'Image type not supported for resizing.');
+        }
+
+        if (!$source_image) {
+            return new WP_Error('image_load_failed', 'Failed to load image for resizing.');
+        }
+
+        // Create new image
+        $resized_image = imagecreatetruecolor($new_width, $new_height);
+
+        // Preserve transparency for PNG and GIF
+        if ($mime_type === 'image/png' || $mime_type === 'image/gif') {
+            imagealphablending($resized_image, false);
+            imagesavealpha($resized_image, true);
+            $transparent = imagecolorallocatealpha($resized_image, 255, 255, 255, 127);
+            imagefilledrectangle($resized_image, 0, 0, $new_width, $new_height, $transparent);
+        }
+
+        // Resize the image
+        imagecopyresampled($resized_image, $source_image, 0, 0, 0, 0, $new_width, $new_height, $width, $height);
+
+        // Save resized image to temporary file
+        $temp_file = wp_tempnam();
+        $save_success = false;
+
+        switch ($mime_type) {
+            case 'image/jpeg':
+            case 'image/jpg':
+                $save_success = imagejpeg($resized_image, $temp_file, 90);
+                break;
+            case 'image/png':
+                $save_success = imagepng($resized_image, $temp_file, 8);
+                break;
+            case 'image/webp':
+                $save_success = imagewebp($resized_image, $temp_file, 90);
+                break;
+            case 'image/gif':
+                $save_success = imagegif($resized_image, $temp_file);
+                break;
+        }
+
+        // Clean up
+        imagedestroy($source_image);
+        imagedestroy($resized_image);
+
+        if (!$save_success) {
+            @unlink($temp_file);
+            return new WP_Error('resize_save_failed', 'Failed to save resized image.');
+        }
+
+        // Update file array with resized image
+        $file['tmp_name'] = $temp_file;
+        $file['size'] = filesize($temp_file);
+
+        return $file;
     }
 
     /**

@@ -219,10 +219,117 @@ export class UsersService {
     };
   }
 
+  async findById(userId: number): Promise<User | null> {
+    return this.usersRepo.findOne({
+      where: { id: userId, deletedAt: IsNull() },
+      relations: ["admin", "teacher", "student"],
+    });
+  }
+
   async findByEmail(email: string): Promise<User | null> {
     return this.usersRepo.findOne({
       where: { email, deletedAt: IsNull() },
       relations: ["admin", "teacher"],
     });
+  }
+
+  async demoteFromTeacher(userId: number): Promise<UserResponse> {
+    // Find the user
+    const user = await this.usersRepo.findOne({
+      where: { id: userId, deletedAt: IsNull() },
+      relations: ["admin", "teacher"],
+    });
+
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    // Check if user is a teacher
+    if (!user.teacher) {
+      throw new ConflictException("User is not a teacher");
+    }
+
+    // Set teacher as inactive
+    user.teacher.isActive = false;
+    await this.teacherRepo.save(user.teacher);
+
+    // Reload user with updated relation
+    const updatedUser = await this.usersRepo.findOne({
+      where: { id: userId },
+      relations: ["admin", "teacher"],
+    });
+
+    if (!updatedUser) {
+      throw new NotFoundException("User not found after update");
+    }
+
+    return {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      createdAt: updatedUser.createdAt.toISOString(),
+      updatedAt: updatedUser.updatedAt.toISOString(),
+      admin: updatedUser.admin
+        ? {
+            id: updatedUser.admin.id,
+            role: updatedUser.admin.role,
+            isActive:
+              typeof updatedUser.admin.isActive === "number"
+                ? Boolean(updatedUser.admin.isActive)
+                : updatedUser.admin.isActive,
+            createdAt: updatedUser.admin.createdAt.toISOString(),
+            updatedAt: updatedUser.admin.updatedAt.toISOString(),
+          }
+        : undefined,
+      teacher: updatedUser.teacher
+        ? updatedUser.teacher.toPublicDto()
+        : undefined,
+    };
+  }
+
+  async updateProfile(
+    userId: number,
+    dto: { firstName?: string; lastName?: string; avatarUrl?: string | null },
+  ): Promise<UserResponse> {
+    const user = await this.usersRepo.findOne({
+      where: { id: userId, deletedAt: IsNull() },
+      relations: ["admin", "teacher"],
+    });
+
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    if (dto.firstName !== undefined) user.firstName = dto.firstName;
+    if (dto.lastName !== undefined) user.lastName = dto.lastName;
+    if (dto.avatarUrl !== undefined) user.avatarUrl = dto.avatarUrl;
+
+    const updatedUser = await this.usersRepo.save(user);
+
+    return {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      avatarUrl: updatedUser.avatarUrl,
+      createdAt: updatedUser.createdAt.toISOString(),
+      updatedAt: updatedUser.updatedAt.toISOString(),
+      admin: updatedUser.admin
+        ? {
+            id: updatedUser.admin.id,
+            role: updatedUser.admin.role,
+            isActive:
+              typeof updatedUser.admin.isActive === "number"
+                ? Boolean(updatedUser.admin.isActive)
+                : updatedUser.admin.isActive,
+            createdAt: updatedUser.admin.createdAt.toISOString(),
+            updatedAt: updatedUser.admin.updatedAt.toISOString(),
+          }
+        : undefined,
+      teacher: updatedUser.teacher
+        ? updatedUser.teacher.toPublicDto()
+        : undefined,
+    };
   }
 }

@@ -361,7 +361,10 @@ describe("CourseMaterialsService", () => {
       const mockQuestion = {
         id: questionId,
         questionType: "multiple_choice",
-        options: { a: { text: "Correct", correct: true }, b: { text: "Wrong" } },
+        options: {
+          a: { text: "Correct", correct: true },
+          b: { text: "Wrong" },
+        },
         courseStepMaterial: { id: 1 },
       };
 

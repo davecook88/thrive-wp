@@ -61,6 +61,7 @@ export class StudentDashboardService {
 
     return {
       studentName: student.user.firstName,
+      avatarUrl: student.user.avatarUrl,
       nextSession,
       activeCourse: null, // Set to null for now as we don't have course progress logic yet
       creditBalance,

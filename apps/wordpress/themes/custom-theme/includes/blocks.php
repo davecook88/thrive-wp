@@ -50,4 +50,18 @@ add_action('init', function () {
     }
 });
 
+// Register custom block category for Thrive blocks
+add_filter('block_categories_all', function ($categories) {
+    return array_merge(
+        [
+            [
+                'slug' => 'thrive',
+                'title' => __('Thrive in Spanish', 'custom-theme'),
+                'icon' => 'star-filled',
+            ],
+        ],
+        $categories
+    );
+});
+
 ?>

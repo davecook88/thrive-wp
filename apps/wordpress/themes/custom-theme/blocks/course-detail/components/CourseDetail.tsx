@@ -3,6 +3,7 @@ import { thriveClient } from "../../../../../shared/thrive";
 import {
   PublicCourseCohortDto,
   CourseProgramDetailDto,
+  ServiceType,
 } from "@thrive/shared";
 import type { ClassEvent } from "@thrive/shared/types/events";
 
@@ -160,26 +161,28 @@ export default function CourseDetail({
       setCalendarLoading(true);
 
       try {
-        // Convert cohort sessions to calendar events
-        const events: ClassEvent[] = selectedCohort.sessions.map((session) => {
-          const startTime = new Date(session.sessionDateTime);
-          const endTime = new Date(
-            startTime.getTime() + session.durationMinutes * 60000,
-          );
+        // Convert cohort sessions to calendar events and sort by date
+        const events: ClassEvent[] = selectedCohort.sessions
+          .map((session) => {
+            const startTime = new Date(session.sessionDateTime);
+            const endTime = new Date(
+              startTime.getTime() + session.durationMinutes * 60000,
+            );
 
-          return {
-            id: `session-${session.id}`,
-            type: "class" as const,
-            title: session.stepLabel,
-            description: session.stepTitle,
-            startUtc: startTime.toISOString(),
-            endUtc: endTime.toISOString(),
-            serviceType: "COURSE" as const,
-            status: "SCHEDULED" as const,
-            capacityMax: 0,
-            sessionId: session.id.toString(),
-          };
-        });
+            return {
+              id: `session-${session.id}`,
+              type: "class" as const,
+              title: session.stepLabel,
+              description: session.stepTitle,
+              startUtc: startTime.toISOString(),
+              endUtc: endTime.toISOString(),
+              serviceType: ServiceType.COURSE,
+              status: "SCHEDULED" as const,
+              capacityMax: 0,
+              sessionId: session.id.toString(),
+            };
+          })
+          .sort((a, b) => new Date(a.startUtc).getTime() - new Date(b.startUtc).getTime());
 
         setCalendarEvents(events);
       } catch (err) {
@@ -195,9 +198,23 @@ export default function CourseDetail({
 
   // Update calendar web component when events change
   useEffect(() => {
-    if (calendarRef.current && calendarEvents.length > 0) {
-      calendarRef.current.events = calendarEvents;
-    }
+    if (calendarEvents.length === 0) return;
+
+    // Wait for calendar element to be available
+    const setEventsOnCalendar = () => {
+      if (calendarRef.current) {
+        console.log('Setting events on calendar:', calendarEvents);
+        calendarRef.current.events = calendarEvents;
+        console.log('Events set, calendar.events:', calendarRef.current.events);
+      } else {
+        // Calendar not ready yet, try again
+        console.log('Calendar ref not ready, retrying...');
+        setTimeout(setEventsOnCalendar, 50);
+      }
+    };
+
+    // Use setTimeout to allow React to render the calendar element first
+    setTimeout(setEventsOnCalendar, 0);
   }, [calendarEvents]);
 
   // Handle enrollment
@@ -316,7 +333,7 @@ export default function CourseDetail({
               <div key={step.id} className="course-detail__step-card">
                 <div className="course-detail__step-number">{index + 1}</div>
                 <div className="course-detail__step-content">
-                  <h3 className="course-detail__step-title">{step.name || `Step ${index + 1}`}</h3>
+                  <h3 className="course-detail__step-title">{step.title || `Step ${index + 1}`}</h3>
                   {step.description && (
                     <p className="course-detail__step-description">{step.description}</p>
                   )}
@@ -375,7 +392,9 @@ export default function CourseDetail({
                 </div>
 
                 <div className="course-detail__schedule-dates">
-                  {formatDate(cohort.startDate)} — {formatDate(cohort.endDate)}
+                  {cohort.startDate && cohort.endDate && (
+                    <>{formatDate(cohort.startDate)} — {formatDate(cohort.endDate)}</>
+                  )}
                 </div>
 
                 {cohort.description && (

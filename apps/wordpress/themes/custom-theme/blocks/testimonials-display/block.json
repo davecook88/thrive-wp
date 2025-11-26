@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "thrive/testimonials-display",
+  "title": "Testimonials Display",
+  "category": "thrive",
+  "icon": "star-filled",
+  "description": "Display student testimonials with various layout options",
+  "supports": {
+    "html": false
+  },
+  "attributes": {
+    "layout": {
+      "type": "string",
+      "enum": ["grid", "carousel", "list"],
+      "default": "grid"
+    },
+    "columns": {
+      "type": "number",
+      "default": 3
+    },
+    "limit": {
+      "type": "number",
+      "default": 6
+    },
+    "teacherId": {
+      "type": "number",
+      "default": 0
+    },
+    "courseProgramId": {
+      "type": "number",
+      "default": 0
+    },
+    "minRating": {
+      "type": "number",
+      "default": 1
+    },
+    "featuredOnly": {
+      "type": "boolean",
+      "default": false
+    },
+    "showRating": {
+      "type": "boolean",
+      "default": true
+    },
+    "showDate": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "editorScript": "custom-theme-blocks",
+  "viewScript": "custom-theme-blocks-view",
+  "render": "file:./render.php"
+}

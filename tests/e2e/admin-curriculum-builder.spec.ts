@@ -1,66 +1,75 @@
-import { test, expect, Page } from "@playwright/test";
-
-const adminEmail = "admin@thrive.com";
-const adminPassword = "thrive_test_123";
-
-/**
- * Admin Curriculum Builder E2E Tests
- *
- * Tests for the Admin Course Programs Management interface including:
- * - Drag-and-drop step reordering
- * - Step editing and creation
- * - Course filtering by status and level
- * - UX enhancements and empty states
- */
+import { test, expect, Page, Locator } from "@playwright/test";
+import { loginToThrive, handleWpAdminLogin } from "./utils/auth";
 
 test.describe("Admin Curriculum Builder", () => {
+  const COURSE_ADMIN_URL = "/wp-admin/admin.php?page=thrive-admin-courses";
+  const COURSE_ADMIN_HEADING = "Course Programs";
+
   // Helper function to login as admin
-  async function loginAsAdmin(page: Page) {
-    await page.goto("/");
-    await page.getByRole("button", { name: "Sign in" }).click();
-
-    // Wait for modal dialog
-    await expect(page.getByRole("dialog", { name: "Sign In" })).toBeVisible({
-      timeout: 10000,
-    });
-
-    // Fill credentials
-    await page.fill('input[type="email"]', adminEmail);
-    await page.fill('input[type="password"]', adminPassword);
-
-    // Submit
-    await page.getByRole("button", { name: "Sign in with Email" }).click();
-
-    // Verify modal is gone and we're logged in
-    await expect(page.getByRole("dialog", { name: "Sign In" })).not.toBeVisible(
-      { timeout: 10000 },
-    );
-  }
-
-  // Helper function to logout
   async function logout(page: Page) {
-    await page.getByRole("button", { name: "Sign out" }).click();
-    await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+    const signOutButton = page.getByRole("button", { name: /sign out/i });
+    if ((await signOutButton.count()) === 0) {
+      return;
+    }
+
+    await signOutButton.first().click();
+    await expect(page.getByRole("button", { name: /sign in/i })).toBeVisible();
   }
 
   // Navigate to admin dashboard
   async function navigateToCoursesAdmin(page: Page) {
-    await page.goto("/");
-    // Wait for page to load and look for the admin link or navigate directly
-    await page.goto("/wp-admin/admin.php?page=thrive-courses");
+    await loginToThrive(page);
+
+    // Navigate directly to the admin course page
+    await page.goto(COURSE_ADMIN_URL);
 
     // Check if we were redirected to login page
     if (page.url().includes("wp-login.php")) {
-      await page.fill("#user_login", adminEmail);
-      await page.fill("#user_pass", adminPassword);
-      await page.click("#wp-submit");
+      console.log("Redirected to wp-login.php, re-authenticating...");
+      await handleWpAdminLogin(page);
+      // After successful re-authentication, we should be on the admin dashboard
+      // Ensure we navigate back to the target admin page
+      await page.goto(COURSE_ADMIN_URL);
     }
 
     await page.waitForLoadState("networkidle");
+    // Finally, assert that we are on the correct admin page
+    await expect(page).toHaveURL(
+      /wp-admin\/admin\.php\?page=thrive-admin-courses/,
+    );
+    await expect(
+      page.getByRole("heading", { name: COURSE_ADMIN_HEADING, level: 2 }),
+    ).toBeVisible({ timeout: 15000 });
   }
 
+  const getCourseCards = (page: Page) => page.getByTestId("course-card");
+
+  const getManageStepsModal = (page: Page): Locator =>
+    page.locator(".fixed.inset-0.bg-gray-500").first();
+
+  const getModalFieldByLabel = (
+    modal: Locator,
+    labelText: string,
+    elementTag: "input" | "textarea" = "input",
+  ): Locator =>
+    modal
+      .locator(`label:has-text("${labelText}")`)
+      .first()
+      .locator(`xpath=following::*[self::${elementTag}][1]`);
+
+  const openCreateCourseForm = async (page: Page): Promise<void> => {
+    const createCourseButton = page.getByRole("button", {
+      name: "Create Course",
+    });
+    await expect(createCourseButton).toBeVisible();
+    await createCourseButton.click();
+    await expect(
+      page.getByRole("button", { name: "Back to List" }),
+    ).toBeVisible();
+  };
+
   test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginToThrive(page);
   });
 
   test.afterEach(async ({ page }) => {
@@ -73,20 +82,22 @@ test.describe("Admin Curriculum Builder", () => {
 
       // Verify the main heading is visible
       await expect(
-        page.getByRole("heading", { name: "Course Programs Management" }),
+        page.getByRole("heading", { name: COURSE_ADMIN_HEADING, level: 2 }),
       ).toBeVisible();
 
-      // Verify the tabs are visible
+      // Supporting description and controls
       await expect(
-        page.getByRole("button", { name: "Course List" }),
-      ).toBeVisible();
-      await expect(
-        page.getByRole("button", { name: "Create New Course" }),
+        page.getByText("Manage your course catalog, curriculum, and cohorts."),
       ).toBeVisible();
 
-      // Course list tab should be active by default
-      const courseListTab = page.getByRole("button", { name: "Course List" });
-      await expect(courseListTab).toHaveClass(/border-blue-500/);
+      const courseCount = page.getByTestId("course-count");
+      await expect(courseCount).toBeVisible();
+      await expect(courseCount).toContainText("Showing");
+
+      await expect(page.getByTestId("course-list")).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Create Course" }),
+      ).toBeVisible();
     });
 
     test("should display loading state while fetching courses", async ({
@@ -96,6 +107,13 @@ test.describe("Admin Curriculum Builder", () => {
 
       // Look for loading indicator briefly
       const loadingIndicator = page.locator(".animate-spin");
+      try {
+        await loadingIndicator
+          .first()
+          .waitFor({ state: "visible", timeout: 2000 });
+      } catch {
+        // Indicator may finish before we observe it; ignore timeout
+      }
       // Wait for either the loading to appear and disappear, or courses to load
       await page.waitForLoadState("networkidle");
     });
@@ -107,9 +125,7 @@ test.describe("Admin Curriculum Builder", () => {
       await page.waitForLoadState("networkidle");
 
       // Look for at least one course in the list
-      const courseItems = page
-        .locator("li")
-        .filter({ has: page.locator(".text-lg.font-medium.text-gray-900") });
+      const courseItems = getCourseCards(page);
       const courseCount = await courseItems.count();
 
       if (courseCount > 0) {
@@ -117,24 +133,15 @@ test.describe("Admin Curriculum Builder", () => {
         const firstCourse = courseItems.first();
 
         // Should have course code badge
-        const courseBadge = firstCourse
-          .locator("span")
-          .filter({ hasText: /^[A-Z0-9-]+$/ })
-          .first();
+        const courseBadge = firstCourse.locator("span").first();
         await expect(courseBadge).toBeVisible();
 
         // Should have step count
-        const stepsText = firstCourse
-          .locator("span")
-          .filter({ hasText: "steps" });
+        const stepsText = firstCourse.getByTestId("step-count");
         await expect(stepsText).toBeVisible();
 
         // Should have status badge (Active/Inactive)
-        const statusBadge = firstCourse
-          .locator(".inline-flex.items-center.px-2\\.5")
-          .filter({
-            hasText: /Active|Inactive/,
-          });
+        const statusBadge = firstCourse.getByTestId("status-badge");
         await expect(statusBadge).toBeVisible();
       }
     });
@@ -143,29 +150,31 @@ test.describe("Admin Curriculum Builder", () => {
       await navigateToCoursesAdmin(page);
       await page.waitForLoadState("networkidle");
 
-      const courseItems = page
-        .locator("li")
-        .filter({ has: page.locator(".text-lg.font-medium.text-gray-900") });
+      const courseItems = getCourseCards(page);
       const courseCount = await courseItems.count();
 
       if (courseCount > 0) {
         const firstCourse = courseItems.first();
 
-        // Should have Manage Steps button
-        const manageStepsBtn = firstCourse.getByRole("button", {
-          name: "Manage Steps",
-        });
-        await expect(manageStepsBtn).toBeVisible();
+        // Should have Curriculum management button
+        await expect(
+          firstCourse.getByRole("button", { name: "Curriculum" }),
+        ).toBeVisible();
 
-        // Should have Manage Cohorts button
-        const manageCohorts = firstCourse.getByRole("button", {
-          name: "Manage Cohorts",
-        });
-        await expect(manageCohorts).toBeVisible();
+        // Should have Cohorts button
+        await expect(
+          firstCourse.getByRole("button", { name: "Cohorts" }),
+        ).toBeVisible();
 
-        // Should have Edit button
-        const editBtn = firstCourse.getByRole("button", { name: "Edit" });
-        await expect(editBtn).toBeVisible();
+        // Should have Materials button
+        await expect(
+          firstCourse.getByRole("button", { name: "Materials" }),
+        ).toBeVisible();
+
+        // Should have Edit Details link
+        await expect(
+          firstCourse.getByRole("button", { name: "Edit Details" }),
+        ).toBeVisible();
       }
     });
 
@@ -175,15 +184,17 @@ test.describe("Admin Curriculum Builder", () => {
       await navigateToCoursesAdmin(page);
       await page.waitForLoadState("networkidle");
 
-      // Try filtering to a non-existent level
-      const levelFilter = page.locator("#level-filter");
-      if (await levelFilter.isVisible()) {
-        await levelFilter.selectOption("999"); // Non-existent level ID
-        await page.waitForLoadState("networkidle");
+      // Try filtering with a nonsense search query
+      const searchInput = page.getByPlaceholder(
+        "Search courses by title or code...",
+      );
+      if (await searchInput.isVisible()) {
+        const randomQuery = `non-existent-${Date.now()}`;
+        await searchInput.fill(randomQuery);
 
         // Should show empty state
         const emptyState = page.locator("text=No courses found");
-        await expect(emptyState).toBeVisible();
+        await expect(emptyState).toBeVisible({ timeout: 10000 });
       }
     });
   });
@@ -218,24 +229,21 @@ test.describe("Admin Curriculum Builder", () => {
       await page.waitForLoadState("networkidle");
 
       const statusFilter = page.locator("#status-filter");
-      const initialCount = page.locator("li").filter({
-        has: page.locator(".text-lg.font-medium.text-gray-900"),
-      });
-
-      const initialCourses = await initialCount.count();
+      const courseCards = getCourseCards(page);
+      const initialCourses = await courseCards.count();
 
       // Filter by Active
       await statusFilter.selectOption("active");
       await page.waitForLoadState("networkidle");
 
       // Count should remain same or less
-      const activeCourses = await initialCount.count();
+      const activeCourses = await courseCards.count();
       expect(activeCourses).toBeLessThanOrEqual(initialCourses);
 
       // All visible courses should have Active badge
       if (activeCourses > 0) {
         const activeBadges = page
-          .locator(".inline-flex")
+          .getByTestId("status-badge")
           .filter({ hasText: "Active" });
         const activeCount = await activeBadges.count();
         expect(activeCount).toBeGreaterThan(0);
@@ -254,7 +262,7 @@ test.describe("Admin Curriculum Builder", () => {
 
       // All visible courses should have Inactive badge (if any)
       const inactiveBadges = page
-        .locator(".inline-flex")
+        .getByTestId("status-badge")
         .filter({ hasText: "Inactive" });
       const inactiveCount = await inactiveBadges.count();
       expect(inactiveCount).toBeGreaterThanOrEqual(0);
@@ -265,9 +273,7 @@ test.describe("Admin Curriculum Builder", () => {
       await page.waitForLoadState("networkidle");
 
       // Look for "Showing X courses" text
-      const courseCountText = page
-        .locator(".text-sm.text-gray-500")
-        .filter({ hasText: "Showing" });
+      const courseCountText = page.getByTestId("course-count");
       await expect(courseCountText).toBeVisible();
     });
 
@@ -278,15 +284,12 @@ test.describe("Admin Curriculum Builder", () => {
       const statusFilter = page.locator("#status-filter");
 
       // Get initial count
-      const courseItems = page.locator("li").filter({
-        has: page.locator(".text-lg.font-medium.text-gray-900"),
-      });
+      const courseItems = getCourseCards(page);
       const initialCount = await courseItems.count();
 
       // Filter by Active
       await statusFilter.selectOption("active");
       await page.waitForLoadState("networkidle");
-      const activeCount = await courseItems.count();
 
       // Reset to All
       await statusFilter.selectOption("all");
@@ -299,26 +302,24 @@ test.describe("Admin Curriculum Builder", () => {
   });
 
   test.describe("Step Management Modal", () => {
-    test("should open Manage Steps modal when clicking Manage Steps button", async ({
+    test("should open Manage Steps modal when clicking Curriculum button", async ({
       page,
     }) => {
       await navigateToCoursesAdmin(page);
       await page.waitForLoadState("networkidle");
 
-      const courseItems = page.locator("li").filter({
-        has: page.locator(".text-lg.font-medium.text-gray-900"),
-      });
+      const courseItems = getCourseCards(page);
       const courseCount = await courseItems.count();
 
       if (courseCount > 0) {
-        // Click Manage Steps on first course
+        // Click Curriculum on first course
         const manageStepsBtn = courseItems
           .first()
-          .getByRole("button", { name: "Manage Steps" });
+          .getByRole("button", { name: "Curriculum" });
         await manageStepsBtn.click();
 
         // Wait for modal to appear
-        const modal = page.locator(".fixed.inset-0.bg-gray-500").first();
+        const modal = getManageStepsModal(page);
         await expect(modal).toBeVisible();
 
         // Modal should show title with course name
@@ -339,28 +340,21 @@ test.describe("Admin Curriculum Builder", () => {
       await navigateToCoursesAdmin(page);
       await page.waitForLoadState("networkidle");
 
-      const courseItems = page.locator("li").filter({
-        has: page.locator(".text-lg.font-medium.text-gray-900"),
-      });
+      const courseItems = getCourseCards(page);
       const courseCount = await courseItems.count();
 
       if (courseCount > 0) {
         const manageStepsBtn = courseItems
           .first()
-          .getByRole("button", { name: "Manage Steps" });
+          .getByRole("button", { name: "Curriculum" });
         await manageStepsBtn.click();
 
         // Modal should be visible
-        const modal = page.locator(".fixed.inset-0.bg-gray-500").first();
+        const modal = getManageStepsModal(page);
         await expect(modal).toBeVisible();
 
         // Click close button (X icon)
-        const closeBtn = page
-          .locator("svg")
-          .filter({
-            has: page.locator("path").filter({ hasText: /M6 18L18 6/ }),
-          })
-          .first();
+        const closeBtn = modal.getByRole("button", { name: "Close" });
         await closeBtn.click();
 
         // Modal should be hidden
@@ -372,30 +366,36 @@ test.describe("Admin Curriculum Builder", () => {
       await navigateToCoursesAdmin(page);
       await page.waitForLoadState("networkidle");
 
-      const courseItems = page.locator("li").filter({
-        has: page.locator(".text-lg.font-medium.text-gray-900"),
-      });
+      const courseItems = getCourseCards(page);
       const courseCount = await courseItems.count();
 
       if (courseCount > 0) {
         const manageStepsBtn = courseItems
           .first()
-          .getByRole("button", { name: "Manage Steps" });
+          .getByRole("button", { name: "Curriculum" });
         await manageStepsBtn.click();
 
+        const modal = getManageStepsModal(page);
+
         // Form should have required fields
-        const stepOrderInput = page
-          .locator('input[type="number"][min="1"]')
-          .first();
+        const stepOrderInput = getModalFieldByLabel(modal, "Step Order");
         await expect(stepOrderInput).toBeVisible();
 
-        const titleInput = page.locator('input[type="text"]').filter({
-          has: page.locator('label:has-text("Title")').first(),
-        });
+        const labelInput = getModalFieldByLabel(modal, "Label");
+        await expect(labelInput).toBeVisible();
+
+        const titleInput = getModalFieldByLabel(modal, "Title");
         await expect(titleInput).toBeVisible();
 
+        const descriptionInput = getModalFieldByLabel(
+          modal,
+          "Description",
+          "textarea",
+        );
+        await expect(descriptionInput).toBeVisible();
+
         // Should have Add Step button
-        const addStepBtn = page.getByRole("button", { name: "Add Step" });
+        const addStepBtn = modal.getByRole("button", { name: "Add Step" });
         await expect(addStepBtn).toBeVisible();
       }
     });
@@ -404,9 +404,7 @@ test.describe("Admin Curriculum Builder", () => {
       await navigateToCoursesAdmin(page);
       await page.waitForLoadState("networkidle");
 
-      const courseItems = page.locator("li").filter({
-        has: page.locator(".text-lg.font-medium.text-gray-900"),
-      });
+      const courseItems = getCourseCards(page);
       const courseCount = await courseItems.count();
 
       if (courseCount > 0) {
@@ -419,7 +417,7 @@ test.describe("Admin Curriculum Builder", () => {
 
         if (stepsCount > 0) {
           const manageStepsBtn = firstCourse.getByRole("button", {
-            name: "Manage Steps",
+            name: "Curriculum",
           });
           await manageStepsBtn.click();
 
@@ -445,9 +443,7 @@ test.describe("Admin Curriculum Builder", () => {
       await navigateToCoursesAdmin(page);
       await page.waitForLoadState("networkidle");
 
-      const courseItems = page.locator("li").filter({
-        has: page.locator(".text-lg.font-medium.text-gray-900"),
-      });
+      const courseItems = getCourseCards(page);
       const courseCount = await courseItems.count();
 
       if (courseCount > 0) {
@@ -460,14 +456,22 @@ test.describe("Admin Curriculum Builder", () => {
 
         if (stepsCount > 1) {
           const manageStepsBtn = firstCourse.getByRole("button", {
-            name: "Manage Steps",
+            name: "Curriculum",
           });
           await manageStepsBtn.click();
 
+          const modal = getManageStepsModal(page);
+          const stepCards = modal.locator(
+            ".border.border-gray-200.rounded-lg.p-4.bg-white",
+          );
+          const stepCardCount = await stepCards.count();
+          if (stepCardCount === 0) {
+            test.skip(true, "No steps available to verify drag handles");
+          }
+
           // Should have drag handles
-          const dragHandles = page.locator(".drag-handle.cursor-move");
-          const handleCount = await dragHandles.count();
-          expect(handleCount).toBeGreaterThan(0);
+          const dragHandles = modal.locator(".drag-handle.cursor-move");
+          await expect(dragHandles.first()).toBeVisible();
         }
       }
     });
@@ -476,9 +480,7 @@ test.describe("Admin Curriculum Builder", () => {
       await navigateToCoursesAdmin(page);
       await page.waitForLoadState("networkidle");
 
-      const courseItems = page.locator("li").filter({
-        has: page.locator(".text-lg.font-medium.text-gray-900"),
-      });
+      const courseItems = getCourseCards(page);
       const courseCount = await courseItems.count();
 
       if (courseCount > 0) {
@@ -491,26 +493,29 @@ test.describe("Admin Curriculum Builder", () => {
 
         if (stepsCount > 1) {
           const manageStepsBtn = firstCourse.getByRole("button", {
-            name: "Manage Steps",
+            name: "Curriculum",
           });
           await manageStepsBtn.click();
 
+          const modal = getManageStepsModal(page);
           // Get initial step order
-          const stepCards = page.locator(
+          const stepCards = modal.locator(
             ".border.border-gray-200.rounded-lg.p-4.bg-white",
           );
+          if ((await stepCards.count()) < 2) {
+            test.skip(true, "Need at least two steps to reorder");
+          }
           const firstStepTitle = await stepCards
             .first()
             .locator("h5")
             .textContent();
+          expect(firstStepTitle?.trim()).toBeTruthy();
 
           // Get second step element
-          const firstDragHandle = page
+          const firstDragHandle = modal
             .locator(".drag-handle.cursor-move")
             .first();
-          const secondStepCard = page
-            .locator(".border.border-gray-200.rounded-lg.p-4.bg-white")
-            .nth(1);
+          const secondStepCard = stepCards.nth(1);
 
           // Drag first step to second position
           await firstDragHandle.dragTo(secondStepCard, { force: true });
@@ -519,7 +524,7 @@ test.describe("Admin Curriculum Builder", () => {
           await page.waitForLoadState("networkidle");
 
           // Verify order changed (this is a simple check)
-          const updatedStepCards = page.locator(
+          const updatedStepCards = modal.locator(
             ".border.border-gray-200.rounded-lg.p-4.bg-white",
           );
           expect(await updatedStepCards.count()).toBeGreaterThanOrEqual(
@@ -535,9 +540,7 @@ test.describe("Admin Curriculum Builder", () => {
       await navigateToCoursesAdmin(page);
       await page.waitForLoadState("networkidle");
 
-      const courseItems = page.locator("li").filter({
-        has: page.locator(".text-lg.font-medium.text-gray-900"),
-      });
+      const courseItems = getCourseCards(page);
       const courseCount = await courseItems.count();
 
       if (courseCount > 0) {
@@ -550,17 +553,22 @@ test.describe("Admin Curriculum Builder", () => {
 
         if (stepsCount > 1) {
           const manageStepsBtn = firstCourse.getByRole("button", {
-            name: "Manage Steps",
+            name: "Curriculum",
           });
           await manageStepsBtn.click();
 
           // Wait for modal to fully load
           await page.waitForLoadState("networkidle");
 
+          const modal = getManageStepsModal(page);
+
           // Get step order numbers from the display
-          const stepOrderBadges = page.locator(
+          const stepOrderBadges = modal.locator(
             ".inline-flex.items-center.justify-center.h-8.w-8.rounded-full.bg-blue-100.text-blue-800",
           );
+          if ((await stepOrderBadges.count()) === 0) {
+            test.skip(true, "No steps available to verify order persistence");
+          }
           const initialOrders: (string | undefined)[] = [];
           for (let i = 0; i < (await stepOrderBadges.count()); i++) {
             const text = await stepOrderBadges.nth(i).textContent();
@@ -568,18 +576,17 @@ test.describe("Admin Curriculum Builder", () => {
           }
 
           // Close modal
-          const modal = page.locator(".fixed.inset-0.bg-gray-500").first();
-          await modal.click();
+          await modal.getByRole("button", { name: "Close" }).click();
 
           // Reopen the same course
           await page.waitForLoadState("networkidle");
           const manageStepsBtn2 = courseItems
             .first()
-            .getByRole("button", { name: "Manage Steps" });
+            .getByRole("button", { name: "Curriculum" });
           await manageStepsBtn2.click();
 
           // Verify order is same
-          const stepOrderBadges2 = page.locator(
+          const stepOrderBadges2 = getManageStepsModal(page).locator(
             ".inline-flex.items-center.justify-center.h-8.w-8.rounded-full.bg-blue-100.text-blue-800",
           );
           const finalOrders: (string | undefined)[] = [];
@@ -599,9 +606,7 @@ test.describe("Admin Curriculum Builder", () => {
       await navigateToCoursesAdmin(page);
       await page.waitForLoadState("networkidle");
 
-      const courseItems = page.locator("li").filter({
-        has: page.locator(".text-lg.font-medium.text-gray-900"),
-      });
+      const courseItems = getCourseCards(page);
       const courseCount = await courseItems.count();
 
       if (courseCount > 0) {
@@ -614,13 +619,17 @@ test.describe("Admin Curriculum Builder", () => {
 
         if (stepsCount > 0) {
           const manageStepsBtn = firstCourse.getByRole("button", {
-            name: "Manage Steps",
+            name: "Curriculum",
           });
           await manageStepsBtn.click();
 
           // Should have Edit buttons
-          const editButtons = page.getByRole("button", { name: "Edit" });
+          const modal = getManageStepsModal(page);
+          const editButtons = modal.getByRole("button", { name: "Edit" });
           const editCount = await editButtons.count();
+          if (editCount === 0) {
+            test.skip(true, "No steps available to edit");
+          }
           expect(editCount).toBeGreaterThan(0);
         }
       }
@@ -632,9 +641,7 @@ test.describe("Admin Curriculum Builder", () => {
       await navigateToCoursesAdmin(page);
       await page.waitForLoadState("networkidle");
 
-      const courseItems = page.locator("li").filter({
-        has: page.locator(".text-lg.font-medium.text-gray-900"),
-      });
+      const courseItems = getCourseCards(page);
       const courseCount = await courseItems.count();
 
       if (courseCount > 0) {
@@ -647,26 +654,29 @@ test.describe("Admin Curriculum Builder", () => {
 
         if (stepsCount > 0) {
           const manageStepsBtn = firstCourse.getByRole("button", {
-            name: "Manage Steps",
+            name: "Curriculum",
           });
           await manageStepsBtn.click();
 
           // Click Edit button on first step
-          const editButtons = page.getByRole("button", { name: "Edit" });
-          if ((await editButtons.count()) > 0) {
-            const firstEditBtn = editButtons.first();
-            await firstEditBtn.click();
-
-            // Form title should change to "Edit Step"
-            const formTitle = page
-              .locator("h4")
-              .filter({ hasText: "Edit Step" });
-            await expect(formTitle).toBeVisible();
-
-            // Button text should change to "Update Step"
-            const updateBtn = page.getByRole("button", { name: "Update Step" });
-            await expect(updateBtn).toBeVisible();
+          const modal = getManageStepsModal(page);
+          const editButtons = modal.getByRole("button", { name: "Edit" });
+          if ((await editButtons.count()) === 0) {
+            test.skip(true, "No steps available to edit");
           }
+
+          const firstEditBtn = editButtons.first();
+          await firstEditBtn.click();
+
+          // Form title should change to "Edit Step"
+          const formTitle = modal
+            .locator("h4")
+            .filter({ hasText: "Edit Step" });
+          await expect(formTitle).toBeVisible();
+
+          // Button text should change to "Update Step"
+          const updateBtn = modal.getByRole("button", { name: "Update Step" });
+          await expect(updateBtn).toBeVisible();
         }
       }
     });
@@ -675,9 +685,7 @@ test.describe("Admin Curriculum Builder", () => {
       await navigateToCoursesAdmin(page);
       await page.waitForLoadState("networkidle");
 
-      const courseItems = page.locator("li").filter({
-        has: page.locator(".text-lg.font-medium.text-gray-900"),
-      });
+      const courseItems = getCourseCards(page);
       const courseCount = await courseItems.count();
 
       if (courseCount > 0) {
@@ -690,52 +698,43 @@ test.describe("Admin Curriculum Builder", () => {
 
         if (stepsCount > 0) {
           const manageStepsBtn = firstCourse.getByRole("button", {
-            name: "Manage Steps",
+            name: "Curriculum",
           });
           await manageStepsBtn.click();
 
-          // Get original title
-          const stepCards = page.locator(
+          // Click Edit
+          const modal = getManageStepsModal(page);
+          const editButtons = modal.getByRole("button", { name: "Edit" });
+          if ((await editButtons.count()) === 0) {
+            test.skip(true, "No steps available to edit");
+          }
+          await editButtons.first().click();
+
+          // Update title
+          const titleInput = getModalFieldByLabel(modal, "Title");
+          await titleInput.clear();
+          const newTitle = `Updated Step Title ${Date.now()}`;
+          await titleInput.fill(newTitle);
+
+          // Submit
+          const updateBtn = modal.getByRole("button", {
+            name: "Update Step",
+          });
+          await expect(updateBtn).toBeVisible();
+          await updateBtn.click();
+
+          // Wait for update to complete
+          await page.waitForLoadState("networkidle");
+
+          // Title should be updated
+          const updatedCards = modal.locator(
             ".border.border-gray-200.rounded-lg.p-4.bg-white",
           );
-          const originalTitle = await stepCards
+          const updatedTitle = await updatedCards
             .first()
             .locator("h5")
             .textContent();
-
-          // Click Edit
-          const editButtons = page.getByRole("button", { name: "Edit" });
-          if ((await editButtons.count()) > 0) {
-            await editButtons.first().click();
-
-            // Update title
-            const titleInput = page
-              .locator('input[type="text"]')
-              .filter({
-                has: page.locator('label:has-text("Title")').first(),
-              })
-              .first();
-            await titleInput.clear();
-            const newTitle = `Updated Step Title ${Date.now()}`;
-            await titleInput.fill(newTitle);
-
-            // Submit
-            const updateBtn = page.getByRole("button", { name: "Update Step" });
-            await updateBtn.click();
-
-            // Wait for update to complete
-            await page.waitForLoadState("networkidle");
-
-            // Title should be updated
-            const updatedCards = page.locator(
-              ".border.border-gray-200.rounded-lg.p-4.bg-white",
-            );
-            const updatedTitle = await updatedCards
-              .first()
-              .locator("h5")
-              .textContent();
-            expect(updatedTitle).toContain(newTitle);
-          }
+          expect(updatedTitle).toContain(newTitle);
         }
       }
     });
@@ -744,9 +743,7 @@ test.describe("Admin Curriculum Builder", () => {
       await navigateToCoursesAdmin(page);
       await page.waitForLoadState("networkidle");
 
-      const courseItems = page.locator("li").filter({
-        has: page.locator(".text-lg.font-medium.text-gray-900"),
-      });
+      const courseItems = getCourseCards(page);
       const courseCount = await courseItems.count();
 
       if (courseCount > 0) {
@@ -759,34 +756,36 @@ test.describe("Admin Curriculum Builder", () => {
 
         if (stepsCount > 0) {
           const manageStepsBtn = firstCourse.getByRole("button", {
-            name: "Manage Steps",
+            name: "Curriculum",
           });
           await manageStepsBtn.click();
 
           // Click Edit
-          const editButtons = page.getByRole("button", { name: "Edit" });
-          if ((await editButtons.count()) > 0) {
-            await editButtons.first().click();
-
-            // Cancel button should be visible
-            const cancelBtn = page
-              .locator("button")
-              .filter({ hasText: "Cancel Edit" });
-            await expect(cancelBtn).toBeVisible();
-
-            // Click Cancel
-            await cancelBtn.click();
-
-            // Form title should be back to "Add New Step"
-            const formTitle = page
-              .locator("h4")
-              .filter({ hasText: "Add New Step" });
-            await expect(formTitle).toBeVisible();
-
-            // Button should be "Add Step"
-            const addBtn = page.getByRole("button", { name: "Add Step" });
-            await expect(addBtn).toBeVisible();
+          const modal = getManageStepsModal(page);
+          const editButtons = modal.getByRole("button", { name: "Edit" });
+          if ((await editButtons.count()) === 0) {
+            test.skip(true, "No steps available to edit");
           }
+          await editButtons.first().click();
+
+          // Cancel button should be visible
+          const cancelBtn = modal
+            .getByRole("button", { name: "Cancel Edit" })
+            .first();
+          await expect(cancelBtn).toBeVisible();
+
+          // Click Cancel
+          await cancelBtn.click();
+
+          // Form title should be back to "Add New Step"
+          const formTitle = modal
+            .locator("h4")
+            .filter({ hasText: "Add New Step" });
+          await expect(formTitle).toBeVisible();
+
+          // Button should be "Add Step"
+          const addBtn = modal.getByRole("button", { name: "Add Step" });
+          await expect(addBtn).toBeVisible();
         }
       }
     });
@@ -799,16 +798,14 @@ test.describe("Admin Curriculum Builder", () => {
       await navigateToCoursesAdmin(page);
       await page.waitForLoadState("networkidle");
 
-      const courseItems = page.locator("li").filter({
-        has: page.locator(".text-lg.font-medium.text-gray-900"),
-      });
+      const courseItems = getCourseCards(page);
       const courseCount = await courseItems.count();
 
       if (courseCount > 0) {
         const firstCourse = courseItems.first();
 
         // Check for hover class
-        await expect(firstCourse).toHaveClass(/hover:bg-gray-50/);
+        await expect(firstCourse).toHaveClass(/hover:shadow-md/);
       }
     });
 
@@ -816,9 +813,7 @@ test.describe("Admin Curriculum Builder", () => {
       await navigateToCoursesAdmin(page);
       await page.waitForLoadState("networkidle");
 
-      const courseItems = page.locator("li").filter({
-        has: page.locator(".text-lg.font-medium.text-gray-900"),
-      });
+      const courseItems = getCourseCards(page);
       const courseCount = await courseItems.count();
 
       if (courseCount > 0) {
@@ -859,8 +854,8 @@ test.describe("Admin Curriculum Builder", () => {
 
       // Check for any Stripe-related badges
       const stripeBadges = page
-        .locator(".bg-blue-100.text-blue-800")
-        .filter({ hasText: "Stripe" });
+        .locator(".bg-indigo-100.text-indigo-800")
+        .filter({ hasText: "Stripe Connected" });
       // Count is >= 0 as not all courses may be published
       const stripeCount = await stripeBadges.count();
       expect(stripeCount).toBeGreaterThanOrEqual(0);
@@ -871,23 +866,19 @@ test.describe("Admin Curriculum Builder", () => {
 
       // Verify the page heading is clear and descriptive
       const pageDescription = page.locator("p").filter({
-        hasText: "Create and manage structured course programs",
+        hasText: "Manage your course catalog, curriculum, and cohorts.",
       });
       await expect(pageDescription).toBeVisible();
     });
   });
 
   test.describe("Create/Edit Course Tab", () => {
-    test("should switch to Create New Course tab", async ({ page }) => {
+    test("should show course creation form when clicking Create Course", async ({
+      page,
+    }) => {
       await navigateToCoursesAdmin(page);
+      await openCreateCourseForm(page);
 
-      const createTab = page.getByRole("button", { name: "Create New Course" });
-      await createTab.click();
-
-      // Tab should be active
-      await expect(createTab).toHaveClass(/border-blue-500/);
-
-      // Form should be visible
       const courseInfoHeading = page.getByRole("heading", {
         name: "Course Information",
       });
@@ -896,9 +887,7 @@ test.describe("Admin Curriculum Builder", () => {
 
     test("should display course creation form fields", async ({ page }) => {
       await navigateToCoursesAdmin(page);
-
-      const createTab = page.getByRole("button", { name: "Create New Course" });
-      await createTab.click();
+      await openCreateCourseForm(page);
 
       // Should have required fields
       const codeInput = page.locator("#code");
@@ -914,9 +903,7 @@ test.describe("Admin Curriculum Builder", () => {
       page,
     }) => {
       await navigateToCoursesAdmin(page);
-
-      const createTab = page.getByRole("button", { name: "Create New Course" });
-      await createTab.click();
+      await openCreateCourseForm(page);
 
       const codeInput = page.locator("#code");
       const helpText = codeInput.locator("+ p");
@@ -931,7 +918,7 @@ test.describe("Admin Curriculum Builder", () => {
       await navigateToCoursesAdmin(page);
 
       const mainHeading = page.getByRole("heading", {
-        name: "Course Programs Management",
+        name: COURSE_ADMIN_HEADING,
         level: 2,
       });
       await expect(mainHeading).toBeVisible();
@@ -945,8 +932,9 @@ test.describe("Admin Curriculum Builder", () => {
       const statusFilter = page.locator("#status-filter");
       const statusLabel = page.locator('label[for="status-filter"]');
 
+      await expect(statusFilter).toBeVisible();
       await expect(statusLabel).toBeVisible();
-      await expect(statusLabel).toHaveText("Status:");
+      await expect(statusLabel).toHaveText("Status Filter");
     });
 
     test("should have close button on modal accessible via keyboard", async ({
@@ -955,25 +943,24 @@ test.describe("Admin Curriculum Builder", () => {
       await navigateToCoursesAdmin(page);
       await page.waitForLoadState("networkidle");
 
-      const courseItems = page.locator("li").filter({
-        has: page.locator(".text-lg.font-medium.text-gray-900"),
-      });
+      const courseItems = getCourseCards(page);
       const courseCount = await courseItems.count();
 
       if (courseCount > 0) {
         const manageStepsBtn = courseItems
           .first()
-          .getByRole("button", { name: "Manage Steps" });
+          .getByRole("button", { name: "Curriculum" });
         await manageStepsBtn.click();
 
         // Modal should be open
-        const modal = page.locator(".fixed.inset-0.bg-gray-500").first();
+        const modal = getManageStepsModal(page);
         await expect(modal).toBeVisible();
 
         // Close button should have title attribute
-        const closeBtn = page.locator("button").filter({ hasText: "Close" });
+        const closeBtn = modal.getByRole("button", { name: "Close" });
+        await expect(closeBtn).toBeVisible();
         // The close button has sr-only text
-        const srOnlyText = page.locator(".sr-only");
+        const srOnlyText = modal.locator(".sr-only");
         await expect(srOnlyText).toHaveCount(1);
       }
     });

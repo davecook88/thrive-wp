@@ -14,10 +14,20 @@ export class SessionMaterial extends BaseEntity {
   @JoinColumn({ name: "session_id" })
   session: Session;
 
-  @Column({ name: "title", type: "varchar", length: 255, comment: "Material title" })
+  @Column({
+    name: "title",
+    type: "varchar",
+    length: 255,
+    comment: "Material title",
+  })
   title: string;
 
-  @Column({ name: "description", type: "text", nullable: true, comment: "Material description" })
+  @Column({
+    name: "description",
+    type: "text",
+    nullable: true,
+    comment: "Material description",
+  })
   description: string | null;
 
   @Column({
@@ -28,10 +38,18 @@ export class SessionMaterial extends BaseEntity {
   })
   type: "file" | "video_embed" | "rich_text";
 
-  @Column({ name: "content", type: "text", comment: "URL for file, embed code for video, or markdown for rich text" })
+  @Column({
+    name: "content",
+    type: "text",
+    comment: "URL for file, embed code for video, or markdown for rich text",
+  })
   content: string;
 
-  @Column({ name: "created_by_id", type: "int", comment: "FK to user.id (admin who created it)" })
+  @Column({
+    name: "created_by_id",
+    type: "int",
+    comment: "FK to user.id (admin who created it)",
+  })
   createdById: number;
 
   @ManyToOne(() => User, { onDelete: "SET NULL" })

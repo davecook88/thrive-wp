@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const DashboardSummarySchema = z.object({
   studentName: z.string(),
+  avatarUrl: z.string().nullable().optional(),
   nextSession: z
     .object({
       id: z.number(),

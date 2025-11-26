@@ -11,6 +11,7 @@ import { Teacher } from "../teachers/entities/teacher.entity.js";
 import { StudentGuard } from "./student.guard.js";
 import { TeacherGuard } from "./teacher.guard.js";
 import { AdminGuard } from "./admin.guard.js";
+import { AuthenticatedGuard } from "./authenticated.guard.js";
 
 @Module({
   imports: [
@@ -25,7 +26,14 @@ import { AdminGuard } from "./admin.guard.js";
     StudentGuard,
     TeacherGuard,
     AdminGuard,
+    AuthenticatedGuard,
   ],
-  exports: [AuthService, StudentGuard, TeacherGuard, AdminGuard],
+  exports: [
+    AuthService,
+    StudentGuard,
+    TeacherGuard,
+    AdminGuard,
+    AuthenticatedGuard,
+  ],
 })
 export class AuthModule {}

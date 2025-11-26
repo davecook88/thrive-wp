@@ -47,7 +47,10 @@ describe("Course Materials (e2e)", () => {
       })
       .overrideProvider(CourseEnrollmentService)
       .useValue({
-        createCheckoutSession: () => ({ sessionId: "sess_123", url: "http://test.com" }),
+        createCheckoutSession: () => ({
+          sessionId: "sess_123",
+          url: "http://test.com",
+        }),
         getEnrollmentSessionInfo: () => ({ packageId: 1 }),
       })
       .overrideProvider(PaymentsService)
@@ -138,8 +141,7 @@ describe("Course Materials (e2e)", () => {
 
   describe("POST /course-materials", () => {
     it("should create a file material", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await request(app.getHttpServer() as any)
+      const response = await request(app.getHttpServer())
         .post("/course-materials")
         .set("Cookie", [`thrive_sess=${adminToken}`])
         .send({
@@ -161,8 +163,7 @@ describe("Course Materials (e2e)", () => {
     });
 
     it("should create a question material", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await request(app.getHttpServer() as any)
+      const response = await request(app.getHttpServer())
         .post("/course-materials")
         .set("Cookie", [`thrive_sess=${adminToken}`])
         .send({
@@ -192,8 +193,7 @@ describe("Course Materials (e2e)", () => {
     });
 
     it("should fail if question data is missing for question type", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await request(app.getHttpServer() as any)
+      const response = await request(app.getHttpServer())
         .post("/course-materials")
         .set("Cookie", [`thrive_sess=${adminToken}`])
         .send({
@@ -209,23 +209,22 @@ describe("Course Materials (e2e)", () => {
 
   describe("GET /course-materials/step/:stepId", () => {
     it("should return all materials for a step", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await request(app.getHttpServer() as any)
+      const response = await request(app.getHttpServer())
         .get(`/course-materials/step/${courseStepId}`)
         .set("Cookie", [`thrive_sess=${adminToken}`]);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveLength(2);
-      expect((response.body as Any)[0].title).toBe("Introduction PDF");
-      expect((response.body as Any)[1].title).toBe("Quiz 1");
+      expect(response.body[0].title).toBe("Introduction PDF");
+      expect(response.body[1].title).toBe("Quiz 1");
     });
   });
 
   describe("PATCH /course-materials/:id", () => {
     it("should update a material", async () => {
       // Get the first material
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const materials = await request(app.getHttpServer() as any)
+
+      const materials = await request(app.getHttpServer())
         .get(`/course-materials/step/${courseStepId}`)
         .set("Cookie", [`thrive_sess=${adminToken}`]);
 
@@ -235,8 +234,7 @@ describe("Course Materials (e2e)", () => {
       const first = materials.body[0] as { id: number };
       const materialId = first.id;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await request(app.getHttpServer() as any)
+      const response = await request(app.getHttpServer())
         .patch(`/course-materials/${materialId}`)
         .set("Cookie", [`thrive_sess=${adminToken}`])
         .send({
@@ -244,12 +242,11 @@ describe("Course Materials (e2e)", () => {
         });
 
       expect(response.status).toBe(200);
-      expect((response.body as Any).title).toBe("Updated PDF");
+      expect(response.body.title).toBe("Updated PDF");
     });
 
     it("should update a question material", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const materials = await request(app.getHttpServer() as any)
+      const materials = await request(app.getHttpServer())
         .get(`/course-materials/step/${courseStepId}`)
         .set("Cookie", [`thrive_sess=${adminToken}`]);
 
@@ -264,8 +261,7 @@ describe("Course Materials (e2e)", () => {
       }
       const materialId = (questionMaterial as { id: number }).id;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await request(app.getHttpServer() as any)
+      const response = await request(app.getHttpServer())
         .patch(`/course-materials/${materialId}`)
         .set("Cookie", [`thrive_sess=${adminToken}`])
         .send({
@@ -276,14 +272,13 @@ describe("Course Materials (e2e)", () => {
 
       expect(response.status).toBe(200);
       // Verify question text updated
-      expect((response.body as Any).question.questionText).toBe("What is 3+3?");
+      expect(response.body.question.questionText).toBe("What is 3+3?");
     });
   });
 
   describe("DELETE /course-materials/:id", () => {
     it("should delete a material", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const materials = await request(app.getHttpServer() as any)
+      const materials = await request(app.getHttpServer())
         .get(`/course-materials/step/${courseStepId}`)
         .set("Cookie", [`thrive_sess=${adminToken}`]);
 
@@ -293,15 +288,13 @@ describe("Course Materials (e2e)", () => {
       const first = materials.body[0] as { id: number };
       const materialId = first.id;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await request(app.getHttpServer() as any)
+      const response = await request(app.getHttpServer())
         .delete(`/course-materials/${materialId}`)
         .set("Cookie", [`thrive_sess=${adminToken}`]);
 
       expect(response.status).toBe(200);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const check = await request(app.getHttpServer() as any)
+      const check = await request(app.getHttpServer())
         .get(`/course-materials/${materialId}`)
         .set("Cookie", [`thrive_sess=${adminToken}`]);
 
@@ -358,8 +351,7 @@ describe("Course Materials (e2e)", () => {
     });
 
     it("should update material progress to in_progress", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await request(app.getHttpServer() as any)
+      const response = await request(app.getHttpServer())
         .post("/course-materials/progress")
         .set("Cookie", [`thrive_sess=${studentToken}`])
         .send({
@@ -369,13 +361,12 @@ describe("Course Materials (e2e)", () => {
         });
 
       expect(response.status).toBe(201);
-      expect((response.body as Any).status).toBe("in_progress");
-      expect((response.body as Any).studentId).toBe(studentUserId);
+      expect(response.body.status).toBe("in_progress");
+      expect(response.body.studentId).toBe(studentUserId);
     });
 
     it("should update material progress to completed", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await request(app.getHttpServer() as any)
+      const response = await request(app.getHttpServer())
         .post("/course-materials/progress")
         .set("Cookie", [`thrive_sess=${studentToken}`])
         .send({
@@ -385,8 +376,8 @@ describe("Course Materials (e2e)", () => {
         });
 
       expect(response.status).toBe(201);
-      expect((response.body as Any).status).toBe("completed");
-      expect((response.body as Any).completedAt).toBeTruthy();
+      expect(response.body.status).toBe("completed");
+      expect(response.body.completedAt).toBeTruthy();
     });
   });
 
@@ -412,8 +403,7 @@ describe("Course Materials (e2e)", () => {
     });
 
     it("should get progress for a course step", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await request(app.getHttpServer() as any)
+      const response = await request(app.getHttpServer())
         .get(`/course-materials/progress/${courseStepId}`)
         .set("Cookie", [`thrive_sess=${studentToken}`]);
 
@@ -456,12 +446,11 @@ describe("Course Materials (e2e)", () => {
 
     it("should submit an answer to a multiple choice question", async () => {
       if (!questionId) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const materials = await request(app.getHttpServer() as any)
+        const materials = await request(app.getHttpServer())
           .get(`/course-materials/step/${courseStepId}`)
           .set("Cookie", [`thrive_sess=${studentToken}`]);
 
-        const questionMaterial = (materials.body as Any).find(
+        const questionMaterial = materials.body.find(
           (m: Any) => m.type === "question",
         );
         if (!questionMaterial || !questionMaterial.questions?.length) {
@@ -471,8 +460,7 @@ describe("Course Materials (e2e)", () => {
         questionId = questionMaterial.questions[0].id;
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await request(app.getHttpServer() as any)
+      const response = await request(app.getHttpServer())
         .post("/course-materials/answers/submit")
         .set("Cookie", [`thrive_sess=${studentToken}`])
         .send({
@@ -481,13 +469,12 @@ describe("Course Materials (e2e)", () => {
         });
 
       expect(response.status).toBe(201);
-      expect((response.body as Any).answerContent).toBe("a");
-      expect((response.body as Any).studentId).toBe(studentUserId);
+      expect(response.body.answerContent).toBe("a");
+      expect(response.body.studentId).toBe(studentUserId);
     });
 
     it("should fail if question does not exist", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await request(app.getHttpServer() as any)
+      const response = await request(app.getHttpServer())
         .post("/course-materials/answers/submit")
         .set("Cookie", [`thrive_sess=${studentToken}`])
         .send({
@@ -521,8 +508,7 @@ describe("Course Materials (e2e)", () => {
     });
 
     it("should get all answers submitted by the student", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await request(app.getHttpServer() as any)
+      const response = await request(app.getHttpServer())
         .get("/course-materials/my-answers")
         .set("Cookie", [`thrive_sess=${studentToken}`]);
 
@@ -554,8 +540,7 @@ describe("Course Materials (e2e)", () => {
     });
 
     it("should get pending answers for assessment", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await request(app.getHttpServer() as any)
+      const response = await request(app.getHttpServer())
         .get("/course-materials/assessment/queue")
         .set("Cookie", [`thrive_sess=${teacherToken}`]);
 
@@ -601,8 +586,7 @@ describe("Course Materials (e2e)", () => {
         return;
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await request(app.getHttpServer() as any)
+      const response = await request(app.getHttpServer())
         .post(`/course-materials/assessment/answers/${answerId}`)
         .set("Cookie", [`thrive_sess=${teacherToken}`])
         .send({
@@ -611,9 +595,9 @@ describe("Course Materials (e2e)", () => {
         });
 
       expect(response.status).toBe(201);
-      expect((response.body as Any).status).toBe("approved");
-      expect((response.body as Any).feedback).toBe("Great answer!");
-      expect((response.body as Any).assessedById).toBe(teacherUserId);
+      expect(response.body.status).toBe("approved");
+      expect(response.body.feedback).toBe("Great answer!");
+      expect(response.body.assessedById).toBe(teacherUserId);
     });
 
     it("should assess an answer as needs_revision", async () => {
@@ -621,8 +605,7 @@ describe("Course Materials (e2e)", () => {
         return;
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await request(app.getHttpServer() as any)
+      const response = await request(app.getHttpServer())
         .post(`/course-materials/assessment/answers/${answerId}`)
         .set("Cookie", [`thrive_sess=${teacherToken}`])
         .send({
@@ -631,12 +614,11 @@ describe("Course Materials (e2e)", () => {
         });
 
       expect(response.status).toBe(201);
-      expect((response.body as Any).status).toBe("needs_revision");
+      expect(response.body.status).toBe("needs_revision");
     });
 
     it("should fail if answer does not exist", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await request(app.getHttpServer() as any)
+      const response = await request(app.getHttpServer())
         .post("/course-materials/assessment/answers/99999")
         .set("Cookie", [`thrive_sess=${teacherToken}`])
         .send({

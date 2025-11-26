@@ -15,7 +15,11 @@ export class StudentCourseStepMaterialProgress extends BaseEntity {
   @JoinColumn({ name: "student_id" })
   student: Student;
 
-  @Column({ name: "course_step_material_id", type: "int", comment: "FK to course_step_material.id" })
+  @Column({
+    name: "course_step_material_id",
+    type: "int",
+    comment: "FK to course_step_material.id",
+  })
   courseStepMaterialId: number;
 
   @ManyToOne(() => CourseStepMaterial, { onDelete: "CASCADE" })
@@ -31,10 +35,19 @@ export class StudentCourseStepMaterialProgress extends BaseEntity {
   })
   status: "not_started" | "in_progress" | "completed";
 
-  @Column({ name: "completed_at", type: "datetime", nullable: true, comment: "Timestamp when material was completed" })
+  @Column({
+    name: "completed_at",
+    type: "datetime",
+    nullable: true,
+    comment: "Timestamp when material was completed",
+  })
   completedAt: Date | null;
 
-  @Column({ name: "student_package_id", type: "int", comment: "FK to student_package.id, linking to the specific enrollment" })
+  @Column({
+    name: "student_package_id",
+    type: "int",
+    comment: "FK to student_package.id, linking to the specific enrollment",
+  })
   studentPackageId: number;
 
   @ManyToOne(() => StudentPackage, { onDelete: "CASCADE" })

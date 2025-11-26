@@ -136,8 +136,9 @@ class Thrive_Profile_Picture_API
             'require_image' => true,
             'min_width' => 100,
             'min_height' => 100,
-            'max_width' => 4000,
-            'max_height' => 4000,
+            'max_width' => 2000,
+            'max_height' => 2000,
+            'resize_if_too_large' => true,
         ];
 
         // Upload the file

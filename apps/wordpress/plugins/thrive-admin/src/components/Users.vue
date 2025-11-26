@@ -27,6 +27,7 @@
         @promote-admin="handlePromoteAdmin"
         @demote-admin="handleDemoteAdmin"
         @promote-teacher="handlePromoteTeacher"
+        @demote-teacher="handleDemoteTeacher"
         @update-teacher-tier="handleUpdateTeacherTier"
       />
 
@@ -79,6 +80,7 @@ export default defineComponent({
       demoteFromAdmin,
       promoteToTeacher,
       updateTeacherTier,
+      demoteFromTeacher,
     } = useUsers({
       initialPage: Number(props.initialPage),
       initialSearch: props.initialSearch,
@@ -148,6 +150,16 @@ export default defineComponent({
       }
     };
 
+    const handleDemoteTeacher = async (user: UserResponse) => {
+      try {
+        await demoteFromTeacher(user.id);
+        // Success message could be added here
+      } catch (err) {
+        console.error('Failed to demote user from teacher:', err);
+        // Error handling could be added here
+      }
+    };
+
     onMounted(enhancedLoadUsers);
 
     return {
@@ -169,6 +181,7 @@ export default defineComponent({
       handleDemoteAdmin,
       handlePromoteTeacher,
       handleUpdateTeacherTier,
+      handleDemoteTeacher,
     };
   }
 });

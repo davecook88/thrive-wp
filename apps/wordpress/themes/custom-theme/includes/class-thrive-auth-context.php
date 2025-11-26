@@ -149,12 +149,9 @@ final class ThriveAuthContext
             ]);
         }
 
-        // Ensure password is known for testing. Only reset when it differs to avoid clearing auth cookies every request.
-        if (!wp_check_password('thrive_test_123', $user->user_pass, $userId)) {
-            wp_set_password('thrive_test_123', $userId);
-            // Reload user object to reflect updated hash
-            $user = get_user_by('id', $userId);
-        }
+        // NOTE: We intentionally do NOT sync/reset passwords here.
+        // The WP user's password is managed separately from Thrive auth.
+        // Thrive auth uses cookie-based sessions, not WP passwords.
 
         // Roles sync if supplied
         if (!empty($this->roles)) {

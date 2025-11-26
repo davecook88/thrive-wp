@@ -29,3 +29,5 @@ import "./student-course-enrollments/index.tsx";
 import "./session-selection-wizard/index.tsx";
 import "./teacher-info/index.tsx";
 import "./teacher-calendar/index.tsx";
+import "./testimonials-display/index.tsx";
+import "./testimonial-form/index.tsx";

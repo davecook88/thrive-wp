@@ -34,3 +34,7 @@ export { ConsolidateCourseBookings1768000000000 } from "./1768000000000-Consolid
 export { RemoveCourseCohortDates1769000000000 } from "./1769000000000-RemoveCourseCohortDates.js";
 export { RemoveCourseProgramTimezone1770000000000 } from "./1770000000000-RemoveCourseProgramTimezone.js";
 export { CreateCourseAndSessionMaterialEntities1767511092496 } from "./1767511092496-CreateCourseAndSessionMaterialEntities.js";
+export { CreateNotificationTable1771000000000 } from "./1771000000000-CreateNotificationTable.js";
+export { CreateTestimonialsTable1772000000000 } from "./1772000000000-CreateTestimonialsTable.js";
+export { AddGoogleMeetTables1773000000000 } from "./1773000000000-AddGoogleMeetTables.js";
+export { AddAvatarUrlToUser1774000000000 } from "./1774000000000-AddAvatarUrlToUser.js";

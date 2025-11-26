@@ -75,3 +75,7 @@ prod-deploy:
 migrate-generate:
 	@if [ -z "$(NAME)" ]; then echo "ERROR: provide NAME=YourMigrationName"; exit 1; fi; \
 	docker compose exec $(NESTJS) pnpm run typeorm -- migration:generate $(MIGRATIONS_DIR)/$(NAME)
+
+rebuild-nestjs:
+	docker compose down nestjs
+	docker compose up --build -d nestjs

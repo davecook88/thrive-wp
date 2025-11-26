@@ -40,6 +40,15 @@ export class User extends BaseEntity {
   })
   passwordHash: string | null;
 
+  @Column({
+    name: "avatar_url",
+    type: "varchar",
+    length: 500,
+    nullable: true,
+    comment: "URL to user profile picture",
+  })
+  avatarUrl: string | null;
+
   @OneToOne(() => Admin, (admin) => admin.user, { nullable: true })
   admin: Admin | null;
 

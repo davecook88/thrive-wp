@@ -8,6 +8,7 @@ import { StudentPackage } from "../packages/entities/student-package.entity.js";
 import { PoliciesModule } from "../policies/policies.module.js";
 import { PackagesModule } from "../packages/packages.module.js";
 import { WaitlistsModule } from "../waitlists/waitlists.module.js";
+import { EventsModule } from "../events/events.module.js";
 import { BookingsService } from "./bookings.service.js";
 import { BookingsController } from "./bookings.controller.js";
 import { PackageUse } from "../packages/entities/package-use.entity.js";
@@ -28,6 +29,7 @@ import { StripeProductMap } from "../payments/entities/stripe-product-map.entity
     PoliciesModule,
     PackagesModule,
     WaitlistsModule,
+    EventsModule,
   ],
   providers: [BookingsService],
   controllers: [BookingsController],

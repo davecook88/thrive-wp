@@ -83,6 +83,26 @@ class Thrive_Admin_Bridge_Admin
             [$this, 'thrive_admin_courses_page']
         );
 
+        // Submenu: Orders & Sales
+        add_submenu_page(
+            'thrive-admin-dashboard',
+            'Orders & Sales',
+            'Orders',
+            'manage_options',
+            'thrive-admin-orders',
+            [$this, 'thrive_admin_orders_page']
+        );
+
+        // Submenu: Testimonials
+        add_submenu_page(
+            'thrive-admin-dashboard',
+            'Testimonials',
+            'Testimonials',
+            'manage_options',
+            'thrive-admin-testimonials',
+            [$this, 'thrive_admin_testimonials_page']
+        );
+
         // Submenu: Settings
         add_submenu_page(
             'thrive-admin-dashboard',
@@ -102,6 +122,8 @@ class Thrive_Admin_Bridge_Admin
             'thrive-admin_page_thrive-admin-products',
             'thrive-admin_page_thrive-admin-group-classes',
             'thrive-admin_page_thrive-admin-courses',
+            'thrive-admin_page_thrive-admin-orders',
+            'thrive-admin_page_thrive-admin-testimonials',
             'thrive-admin_page_thrive-admin-settings'
         ];
 
@@ -296,6 +318,26 @@ class Thrive_Admin_Bridge_Admin
 
         // Load the Vue template
         include plugin_dir_path(__FILE__) . '../../templates/courses.php';
+    }
+
+    public function thrive_admin_orders_page()
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.'));
+        }
+
+        // Load the Vue template
+        include plugin_dir_path(__FILE__) . '../../templates/orders.php';
+    }
+
+    public function thrive_admin_testimonials_page()
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.'));
+        }
+
+        // Load the Vue template
+        include plugin_dir_path(__FILE__) . '../../templates/testimonials.php';
     }
 
     public function thrive_admin_settings_page()

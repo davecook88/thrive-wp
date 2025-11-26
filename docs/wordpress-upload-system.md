@@ -2,6 +2,68 @@
 
 This document describes the reusable file upload system built on WordPress's native media library functionality.
 
+## Server Configuration Requirements
+
+**CRITICAL**: The following server configurations MUST be in place for file uploads to work correctly.
+
+### PHP Configuration
+
+PHP must be configured with sufficient limits for file uploads. These settings are configured in the main `Dockerfile`:
+
+```dockerfile
+# Configure PHP for file uploads and image processing
+RUN echo "upload_max_filesize = 50M" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "post_max_size = 50M" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "memory_limit = 512M" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/uploads.ini
+```
+
+| Setting | Value | Purpose |
+|---------|-------|---------|
+| `upload_max_filesize` | 50M | Maximum size of individual uploaded files |
+| `post_max_size` | 50M | Maximum size of POST data (must be >= upload_max_filesize) |
+| `memory_limit` | 512M | Memory for image processing/resizing |
+| `max_execution_time` | 300 | Time allowed for upload processing |
+
+### Nginx Configuration
+
+The Nginx reverse proxy must also allow large uploads. Configured in `nginx/nginx.conf/default.conf`:
+
+```nginx
+server {
+    # Allow larger file uploads
+    client_max_body_size 50M;
+    # Configure body buffering for large uploads
+    client_body_buffer_size 10M;
+    client_body_timeout 600s;
+    # ...
+}
+```
+
+### Verification
+
+To verify settings are applied in a running container:
+
+```bash
+# Check PHP settings
+docker-compose exec wordpress php -i | grep -E "upload_max_filesize|post_max_size|memory_limit"
+
+# Expected output:
+# memory_limit => 512M => 512M
+# post_max_size => 50M => 50M
+# upload_max_filesize => 50M => 50M
+```
+
+### Common Upload Errors
+
+| Error Code | PHP Constant | Cause | Solution |
+|------------|--------------|-------|----------|
+| 1 | `UPLOAD_ERR_INI_SIZE` | File exceeds `upload_max_filesize` | Increase PHP limit |
+| 2 | `UPLOAD_ERR_FORM_SIZE` | File exceeds form MAX_FILE_SIZE | Increase form limit |
+| 413 | HTTP 413 | File exceeds Nginx `client_max_body_size` | Increase Nginx limit |
+
+---
+
 ## Architecture Overview
 
 The upload system consists of three layers:

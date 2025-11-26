@@ -9,3 +9,4 @@ export { FormField } from "./FormField";
 export { LocationField } from "./LocationField";
 export { EditableProfileField } from "./EditableProfileField";
 export { LanguageSelector } from "./LanguageSelector";
+export { Notifications } from "./Notifications";

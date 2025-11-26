@@ -499,13 +499,18 @@ export class CourseProgramsService {
   async remove(id: number): Promise<void> {
     const courseProgram = await this.findOneOrFail(id);
 
-    // Check if there are active enrollments
+    // Check if there are active enrollments (StudentPackages linked to this course)
     const enrollmentCount = (await this.dataSource
       .createQueryBuilder()
       .select("COUNT(*)", "count")
-      .from("student_course_enrollment", "sce")
-      .where("sce.course_program_id = :id", { id })
-      .andWhere("sce.status = :status", { status: "ACTIVE" })
+      .from("student_package", "sp")
+      .innerJoin(
+        "stripe_product_map",
+        "spm",
+        "sp.stripe_product_map_id = spm.id",
+      )
+      .where("spm.scope_type = :scopeType", { scopeType: ScopeType.COURSE })
+      .andWhere("spm.scope_id = :id", { id })
       .getRawOne()) as { count: string };
 
     if (parseInt(enrollmentCount.count) > 0) {

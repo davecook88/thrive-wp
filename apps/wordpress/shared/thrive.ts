@@ -77,6 +77,39 @@ import {
   StudentAnswerDtoSchema,
   UpdateProgressDto,
   SubmitAnswerDto,
+  // Testimonials types
+  TestimonialResponseDto,
+  TestimonialResponseSchema,
+  CreateTestimonialDto,
+  TestimonialEligibilityDto,
+  TestimonialEligibilitySchema,
+  PaginatedTestimonialsResponse,
+  PaginatedTestimonialsResponseSchema,
+  ApproveTestimonialDto,
+  RejectTestimonialDto,
+  UpdateTestimonialDto,
+  // Notifications types
+  NotificationDto,
+  NotificationSchema,
+  // Admin orders types
+  PaginatedOrdersResponseSchema,
+  OrderDetailSchema,
+  RefundResponseSchema,
+  SalesDashboardMetricsSchema,
+  RevenueReportResponseSchema,
+  PaginatedStudentPackagesResponseSchema,
+  StudentPackageAdminListItemSchema,
+  type PaginatedOrdersResponse,
+  type OrderDetailDto,
+  type RefundRequestDto,
+  type RefundResponseDto,
+  type SalesDashboardMetricsDto,
+  type RevenueReportQueryDto,
+  type RevenueReportResponseDto,
+  type PaginatedStudentPackagesResponse,
+  type StudentPackageAdminListItemDto,
+  type CreditAdjustmentDto,
+  type ExtendPackageDto,
 } from "@thrive/shared";
 import {
   PreviewAvailabilityResponseSchema,
@@ -706,6 +739,14 @@ export const thriveClient = {
     );
   },
 
+  demoteFromTeacher: async (userId: number): Promise<UserResponse | null> => {
+    return await apiPost<UserResponse>(
+      `/api/users/${userId}/demote/teacher`,
+      undefined,
+      UserResponseSchema,
+    );
+  },
+
   // Course Programs management methods
   getCoursePrograms: async (): Promise<CourseProgramDetailDto[]> => {
     const data = await apiGet(
@@ -1164,5 +1205,323 @@ export const thriveClient = {
    */
   deleteCourseMaterial: async (materialId: number): Promise<void> => {
     await apiDelete(`/api/course-materials/${materialId}`);
+  },
+
+  // ==================== Notification Methods ====================
+
+  fetchNotifications: async (): Promise<NotificationDto[]> => {
+    const data = await apiGet<NotificationDto[]>(
+      `/api/notifications`,
+      z.array(NotificationSchema),
+    );
+    return Array.isArray(data) ? data : [];
+  },
+
+  markNotificationAsRead: async (
+    notificationId: number,
+  ): Promise<NotificationDto | null> => {
+    return await apiPatch<NotificationDto>(
+      `/api/notifications/${notificationId}/read`,
+      undefined,
+      NotificationSchema,
+    );
+  },
+
+  // ==================== Testimonials Methods ====================
+
+  /**
+   * Get public (approved) testimonials with optional filtering
+   */
+  getTestimonials: async (filters?: {
+    teacherId?: number;
+    courseProgramId?: number;
+    limit?: number;
+    minRating?: number;
+    featuredOnly?: boolean;
+  }): Promise<TestimonialResponseDto[]> => {
+    const params = new URLSearchParams();
+    if (filters?.teacherId)
+      params.append("teacherId", String(filters.teacherId));
+    if (filters?.courseProgramId)
+      params.append("courseProgramId", String(filters.courseProgramId));
+    if (filters?.limit) params.append("limit", String(filters.limit));
+    if (filters?.minRating)
+      params.append("minRating", String(filters.minRating));
+    if (filters?.featuredOnly) params.append("isFeatured", "true");
+
+    const data = await apiGet<TestimonialResponseDto[]>(
+      `/api/testimonials?${params}`,
+      z.array(TestimonialResponseSchema),
+    );
+    return Array.isArray(data) ? data : [];
+  },
+
+  /**
+   * Submit a new testimonial (student endpoint)
+   */
+  submitTestimonial: async (
+    data: CreateTestimonialDto,
+  ): Promise<TestimonialResponseDto | null> => {
+    return await apiPost<TestimonialResponseDto>(
+      `/api/testimonials/student`,
+      data,
+      TestimonialResponseSchema,
+    );
+  },
+
+  /**
+   * Check what the current student can review
+   */
+  checkTestimonialEligibility:
+    async (): Promise<TestimonialEligibilityDto | null> => {
+      return await apiGet<TestimonialEligibilityDto>(
+        `/api/testimonials/student/eligibility`,
+        TestimonialEligibilitySchema,
+      );
+    },
+
+  /**
+   * Get current student's testimonials
+   */
+  getMyTestimonials: async (): Promise<TestimonialResponseDto[]> => {
+    const data = await apiGet<TestimonialResponseDto[]>(
+      `/api/testimonials/student/my-testimonials`,
+      z.array(TestimonialResponseSchema),
+    );
+    return Array.isArray(data) ? data : [];
+  },
+
+  /**
+   * Get all testimonials for admin with pagination and filters
+   */
+  getTestimonialsAdmin: async (filters?: {
+    status?: string;
+    teacherId?: number;
+    courseProgramId?: number;
+    page?: number;
+    limit?: number;
+  }): Promise<PaginatedTestimonialsResponse | null> => {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append("status", filters.status);
+    if (filters?.teacherId)
+      params.append("teacherId", String(filters.teacherId));
+    if (filters?.courseProgramId)
+      params.append("courseProgramId", String(filters.courseProgramId));
+    if (filters?.page) params.append("page", String(filters.page));
+    if (filters?.limit) params.append("limit", String(filters.limit));
+
+    return await apiGet<PaginatedTestimonialsResponse>(
+      `/api/admin/testimonials?${params}`,
+      PaginatedTestimonialsResponseSchema,
+    );
+  },
+
+  /**
+   * Approve a testimonial (admin endpoint)
+   */
+  approveTestimonial: async (
+    id: number,
+    data?: ApproveTestimonialDto,
+  ): Promise<void> => {
+    await apiPost(
+      `/api/admin/testimonials/${id}/approve`,
+      data || {},
+      z.object({ message: z.string() }),
+    );
+  },
+
+  /**
+   * Reject a testimonial (admin endpoint)
+   */
+  rejectTestimonial: async (
+    id: number,
+    data: RejectTestimonialDto,
+  ): Promise<void> => {
+    await apiPost(
+      `/api/admin/testimonials/${id}/reject`,
+      data,
+      z.object({ message: z.string() }),
+    );
+  },
+
+  /**
+   * Toggle featured status (admin endpoint)
+   */
+  toggleFeaturedTestimonial: async (id: number): Promise<void> => {
+    await apiPatch(
+      `/api/admin/testimonials/${id}/featured`,
+      undefined,
+      z.object({ message: z.string() }),
+    );
+  },
+
+  /**
+   * Update a testimonial (admin endpoint)
+   */
+  updateTestimonial: async (
+    id: number,
+    data: UpdateTestimonialDto,
+  ): Promise<TestimonialResponseDto | null> => {
+    return await apiPut<TestimonialResponseDto>(
+      `/api/admin/testimonials/${id}`,
+      data,
+      TestimonialResponseSchema,
+    );
+  },
+
+  /**
+   * Delete a testimonial (admin endpoint)
+   */
+  deleteTestimonial: async (id: number): Promise<void> => {
+    await apiDelete(`/api/admin/testimonials/${id}`);
+  },
+
+  // ==================== Admin Orders ====================
+
+  /**
+   * Get paginated list of all orders (admin endpoint)
+   */
+  getAdminOrders: async (filters?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    search?: string;
+  }): Promise<PaginatedOrdersResponse | null> => {
+    const params = new URLSearchParams();
+    if (filters?.page) params.append("page", String(filters.page));
+    if (filters?.limit) params.append("limit", String(filters.limit));
+    if (filters?.status) params.append("status", filters.status);
+    if (filters?.dateFrom) params.append("dateFrom", filters.dateFrom);
+    if (filters?.dateTo) params.append("dateTo", filters.dateTo);
+    if (filters?.search) params.append("search", filters.search);
+
+    return await apiGet<PaginatedOrdersResponse>(
+      `/api/admin/orders?${params}`,
+      PaginatedOrdersResponseSchema,
+    );
+  },
+
+  /**
+   * Get a single order by ID (admin endpoint)
+   */
+  getAdminOrder: async (id: number): Promise<OrderDetailDto | null> => {
+    return await apiGet<OrderDetailDto>(
+      `/api/admin/orders/${id}`,
+      OrderDetailSchema,
+    );
+  },
+
+  /**
+   * Refund an order (admin endpoint)
+   */
+  refundOrder: async (
+    id: number,
+    data: RefundRequestDto,
+  ): Promise<RefundResponseDto | null> => {
+    return await apiPost<RefundResponseDto>(
+      `/api/admin/orders/${id}/refund`,
+      data,
+      RefundResponseSchema,
+    );
+  },
+
+  // ==================== Admin Sales Dashboard ====================
+
+  /**
+   * Get sales dashboard metrics (admin endpoint)
+   */
+  getSalesDashboardMetrics:
+    async (): Promise<SalesDashboardMetricsDto | null> => {
+      return await apiGet<SalesDashboardMetricsDto>(
+        `/api/admin/sales/dashboard`,
+        SalesDashboardMetricsSchema,
+      );
+    },
+
+  /**
+   * Get revenue report (admin endpoint)
+   */
+  getRevenueReport: async (
+    query: RevenueReportQueryDto,
+  ): Promise<RevenueReportResponseDto | null> => {
+    const params = new URLSearchParams();
+    params.append("startDate", query.startDate);
+    params.append("endDate", query.endDate);
+    if (query.groupBy) params.append("groupBy", query.groupBy);
+    if (query.breakdown) params.append("breakdown", query.breakdown);
+
+    return await apiGet<RevenueReportResponseDto>(
+      `/api/admin/sales/revenue-report?${params}`,
+      RevenueReportResponseSchema,
+    );
+  },
+
+  // ==================== Admin Student Packages ====================
+
+  /**
+   * Get paginated list of all student packages (admin endpoint)
+   */
+  getAdminStudentPackages: async (filters?: {
+    page?: number;
+    limit?: number;
+    studentId?: number;
+    active?: boolean;
+    search?: string;
+  }): Promise<PaginatedStudentPackagesResponse | null> => {
+    const params = new URLSearchParams();
+    if (filters?.page) params.append("page", String(filters.page));
+    if (filters?.limit) params.append("limit", String(filters.limit));
+    if (filters?.studentId)
+      params.append("studentId", String(filters.studentId));
+    if (filters?.active !== undefined)
+      params.append("active", String(filters.active));
+    if (filters?.search) params.append("search", filters.search);
+
+    return await apiGet<PaginatedStudentPackagesResponse>(
+      `/api/admin/student-packages?${params}`,
+      PaginatedStudentPackagesResponseSchema,
+    );
+  },
+
+  /**
+   * Get a single student package by ID (admin endpoint)
+   */
+  getAdminStudentPackage: async (
+    id: number,
+  ): Promise<StudentPackageAdminListItemDto | null> => {
+    return await apiGet<StudentPackageAdminListItemDto>(
+      `/api/admin/student-packages/${id}`,
+      StudentPackageAdminListItemSchema,
+    );
+  },
+
+  /**
+   * Adjust credits for a student package (admin endpoint)
+   */
+  adjustPackageCredits: async (
+    id: number,
+    data: CreditAdjustmentDto,
+  ): Promise<StudentPackageAdminListItemDto | null> => {
+    return await apiPost<StudentPackageAdminListItemDto>(
+      `/api/admin/student-packages/${id}/adjust-credits`,
+      data,
+      StudentPackageAdminListItemSchema,
+    );
+  },
+
+  /**
+   * Extend a student package expiry date (admin endpoint)
+   */
+  extendPackage: async (
+    id: number,
+    data: ExtendPackageDto,
+  ): Promise<StudentPackageAdminListItemDto | null> => {
+    return await apiPost<StudentPackageAdminListItemDto>(
+      `/api/admin/student-packages/${id}/extend`,
+      data,
+      StudentPackageAdminListItemSchema,
+    );
   },
 } as const;

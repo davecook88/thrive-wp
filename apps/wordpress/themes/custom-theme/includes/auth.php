@@ -1,8 +1,17 @@
 <?php
 /**
  * Authentication helpers that bridge Nginx/NestJS injected headers into theme.
+ *
+ * IMPORTANT: Thrive auth (via Google OAuth) and WordPress native auth are separate systems.
+ * - Thrive auth: Uses thrive_sess cookie validated by NestJS, injected via X-Auth-Context header
+ * - WP native auth: Uses wordpress_logged_in_* cookies, validated by WordPress core
+ *
+ * This file bridges them, but WP admin users should NOT be overwritten by Thrive auth.
  */
 
+/**
+ * Check if the current request is targeting wp-login.php
+ */
 function thrive_request_targets_wp_login(): bool
 {
     global $pagenow;
@@ -14,27 +23,103 @@ function thrive_request_targets_wp_login(): bool
     return $requestUri !== '' && strpos($requestUri, 'wp-login.php') !== false;
 }
 
+/**
+ * Check if the current request is in the wp-admin area
+ */
+function thrive_request_is_wp_admin(): bool
+{
+    // Check if this is an admin request
+    if (is_admin()) {
+        return true;
+    }
+
+    // Also check URI for early detection before is_admin() is available
+    $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+    return strpos($requestUri, '/wp-admin') !== false;
+}
+
+/**
+ * Check if the user is already authenticated via WordPress native auth.
+ * This runs BEFORE we potentially override with Thrive auth.
+ *
+ * @return bool True if user has a valid WordPress session (logged in via wp-login.php)
+ */
+function thrive_user_has_native_wp_session(): bool
+{
+    // Check for WordPress auth cookies (they start with wordpress_logged_in_)
+    foreach ($_COOKIE as $name => $value) {
+        if (strpos($name, 'wordpress_logged_in_') === 0 && !empty($value)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Check if the currently logged-in WP user (via native auth) is an administrator.
+ * This is used to determine if we should skip Thrive auth override in wp-admin.
+ *
+ * @return bool True if current WP session user is an admin
+ */
+function thrive_native_wp_user_is_admin(): bool
+{
+    if (!thrive_user_has_native_wp_session()) {
+        return false;
+    }
+
+    // Validate the WordPress cookie and get the user
+    $userId = wp_validate_auth_cookie('', 'logged_in');
+    if (!$userId) {
+        return false;
+    }
+
+    $user = get_user_by('id', $userId);
+    if (!$user) {
+        return false;
+    }
+
+    return user_can($user, 'manage_options');
+}
+
+/**
+ * Determine if we should skip Thrive proxy hydration for this request.
+ *
+ * Skip in these cases:
+ * 1. wp-login.php POST (user is actively logging in via WP native form)
+ * 2. wp-login.php with reauth=1 (user is re-authenticating)
+ * 3. In wp-admin area AND user already has a valid WP admin session
+ *
+ * This prevents Thrive auth from overwriting WP admin credentials.
+ */
 function thrive_should_skip_proxy_hydration(): bool
 {
-    if (!thrive_request_targets_wp_login()) {
-        return false;
+    // Case 1 & 2: Skip during wp-login.php form submissions
+    if (thrive_request_targets_wp_login()) {
+        $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+        $forceReauth = isset($_REQUEST['reauth']) && $_REQUEST['reauth'] === '1';
+
+        if ($method === 'POST' || $forceReauth) {
+            static $loginLogged = false;
+            if (!$loginLogged) {
+                $reason = $forceReauth ? 'reauth request' : 'login form POST';
+                error_log('[ThriveAuth] Skipping proxy hydration for wp-login ' . $reason . '.');
+                $loginLogged = true;
+            }
+            return true;
+        }
     }
 
-    $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
-    $forceReauth = isset($_REQUEST['reauth']) && $_REQUEST['reauth'] === '1';
-
-    if ($method !== 'POST' && !$forceReauth) {
-        return false;
+    // Case 3: In wp-admin with existing WP admin session - don't override!
+    if (thrive_request_is_wp_admin() && thrive_native_wp_user_is_admin()) {
+        static $adminLogged = false;
+        if (!$adminLogged) {
+            error_log('[ThriveAuth] Skipping proxy hydration - user has valid WP admin session in wp-admin area.');
+            $adminLogged = true;
+        }
+        return true;
     }
 
-    static $logged = false;
-    if (!$logged) {
-        $reason = $forceReauth ? 'reauth request' : 'login form POST';
-        error_log('[ThriveAuth] Skipping proxy hydration for wp-login ' . $reason . '.');
-        $logged = true;
-    }
-
-    return true;
+    return false;
 }
 
 function thrive_hydrate_user_from_proxy(): void

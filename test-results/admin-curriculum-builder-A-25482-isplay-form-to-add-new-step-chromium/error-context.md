@@ -1,0 +1,162 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e5]:
+      - paragraph [ref=e6]:
+        - link "thrive-in-spanish" [ref=e7] [cursor=pointer]:
+          - /url: http://localhost:8080
+      - navigation [ref=e8]:
+        - list [ref=e13]:
+          - listitem [ref=e14]:
+            - link "Home" [ref=e15] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e16]:
+            - link "Booking" [ref=e17] [cursor=pointer]:
+              - /url: /booking
+      - generic [ref=e19]:
+        - button "Sign in" [ref=e20] [cursor=pointer]
+        - dialog "Sign In" [ref=e21]:
+          - document [ref=e23]:
+            - button "Close" [ref=e24] [cursor=pointer]: ×
+            - heading "Sign In" [level=2] [ref=e25]
+            - paragraph [ref=e26]: Choose a sign-in method
+            - button "Continue with Google" [ref=e29] [cursor=pointer]:
+              - generic [ref=e30]: G
+              - generic [ref=e31]: Continue with Google
+            - generic [ref=e32]:
+              - generic [ref=e33]:
+                - generic [ref=e34]: Email
+                - textbox "Email" [ref=e35]: admin@thrive.com
+              - generic [ref=e36]:
+                - generic [ref=e37]: Password
+                - textbox "Password" [ref=e38]: thrive_test_123
+              - generic [ref=e39]:
+                - generic [ref=e40]:
+                  - generic [ref=e41]: First name
+                  - textbox "First name" [ref=e42]
+                - generic [ref=e43]:
+                  - generic [ref=e44]: Last name
+                  - textbox "Last name" [ref=e45]
+              - generic [ref=e46]:
+                - button "Sign in with Email" [ref=e47] [cursor=pointer]
+                - button "Create account" [ref=e48] [cursor=pointer]
+              - alert [ref=e49]: Request failed
+            - paragraph [ref=e50]:
+              - text: By continuing you agree to our
+              - link "Terms" [ref=e51] [cursor=pointer]:
+                - /url: "#"
+              - text: "&"
+              - link "Privacy Policy" [ref=e52] [cursor=pointer]:
+                - /url: "#"
+              - text: .
+  - generic [ref=e54]:
+    - generic [ref=e55]:
+      - heading "Speak Spanish Like a Local, Not a Textbook." [level=1] [ref=e56]:
+        - strong [ref=e57]: Speak Spanish Like a Local, Not a Textbook.
+      - paragraph [ref=e58]: Join small, interactive cohorts led by native teachers. Move from ‘Hola’ to deep conversations in just 12 weeks.
+      - generic [ref=e59]:
+        - generic [ref=e61] [cursor=pointer]: Find Your Level
+        - generic [ref=e63] [cursor=pointer]: View Cohorts
+      - paragraph [ref=e64]: ⭐ Trusted by 500+ Students
+    - figure [ref=e66]:
+      - img "Happy students learning Spanish" [ref=e67]
+  - generic [ref=e69]:
+    - heading "Why Thrive in Spanish?" [level=2] [ref=e70]
+    - generic [ref=e71]:
+      - generic [ref=e73]:
+        - heading "Native Teachers" [level=3] [ref=e74]:
+          - strong [ref=e75]: Native Teachers
+        - paragraph [ref=e76]: Learn from certified native speakers from across Latin America and Spain who bring culture into the classroom.
+      - generic [ref=e78]:
+        - heading "Small Groups" [level=3] [ref=e79]:
+          - strong [ref=e80]: Small Groups
+        - paragraph [ref=e81]: Max 6 students per class ensures you get speaking time, not just listening time. Active participation is guaranteed.
+      - generic [ref=e83]:
+        - heading "Real-World Focus" [level=3] [ref=e84]:
+          - strong [ref=e85]: Real-World Focus
+        - paragraph [ref=e86]: Curriculum designed for travel, work, and connection. We focus on practical communication skills you can use immediately.
+  - generic [ref=e88]:
+    - heading "Your Journey to Fluency" [level=2] [ref=e89]
+    - generic [ref=e90]:
+      - generic [ref=e92]:
+        - heading "A1 – Beginner" [level=4] [ref=e93]:
+          - strong [ref=e94]: A1 – Beginner
+        - paragraph [ref=e95]:
+          - strong [ref=e96]: "Goal:"
+          - text: Survival Spanish
+        - paragraph [ref=e97]: Order food, introduce yourself, and handle basic travel situations.
+      - generic [ref=e99]:
+        - heading "A2 – Elementary" [level=4] [ref=e100]:
+          - strong [ref=e101]: A2 – Elementary
+        - paragraph [ref=e102]:
+          - strong [ref=e103]: "Goal:"
+          - text: Conversations
+        - paragraph [ref=e104]: Talk about your past, your family, and describe your surroundings.
+      - generic [ref=e106]:
+        - heading "B1 – Intermediate" [level=4] [ref=e107]:
+          - strong [ref=e108]: B1 – Intermediate
+        - paragraph [ref=e109]:
+          - strong [ref=e110]: "Goal:"
+          - text: Independence
+        - paragraph [ref=e111]: Express opinions, deal with most situations while traveling, and tell stories.
+      - generic [ref=e113]:
+        - heading "B2 – Upper Int." [level=4] [ref=e114]:
+          - strong [ref=e115]: B2 – Upper Int.
+        - paragraph [ref=e116]:
+          - strong [ref=e117]: "Goal:"
+          - text: Fluency
+        - paragraph [ref=e118]: Interact with native speakers with a degree of fluency and spontaneity.
+  - generic [ref=e119]:
+    - heading "Available Courses" [level=2] [ref=e120]
+    - paragraph [ref=e123]: "Error loading courses: Failed to fetch courses"
+  - generic [ref=e126]:
+    - figure [ref=e128]:
+      - img "Teacher Portrait" [ref=e129]
+    - generic [ref=e130]:
+      - heading "Meet Your Maestra" [level=2] [ref=e131]
+      - paragraph [ref=e132]:
+        - strong [ref=e133]: Valentina Rodriguez
+      - paragraph [ref=e134]: Valentina is a certified Spanish teacher from Bogotá, Colombia with over 8 years of experience. She specializes in helping beginners overcome their fear of speaking and brings the vibrant culture of Colombia into every lesson.
+      - blockquote [ref=e135]:
+        - paragraph [ref=e136]: “My goal is to make you fall in love with the language, not just learn the rules. We laugh, we talk, and we learn together.”
+      - generic [ref=e139] [cursor=pointer]: Meet All Teachers
+  - generic [ref=e141]:
+    - heading "What Our Students Say" [level=2] [ref=e142]
+    - generic [ref=e143]:
+      - generic [ref=e145]:
+        - paragraph [ref=e146]: “I finally feel confident speaking! The small group size made all the difference. I’m not just memorizing words anymore.”
+        - generic [ref=e147]:
+          - figure [ref=e148]
+          - generic [ref=e149]:
+            - paragraph [ref=e150]: Sarah M.
+            - paragraph [ref=e151]: Completed A2
+      - generic [ref=e153]:
+        - paragraph [ref=e154]: “The teachers are amazing. They are patient, funny, and really know how to explain complex grammar simply.”
+        - generic [ref=e155]:
+          - figure [ref=e156]
+          - generic [ref=e157]:
+            - paragraph [ref=e158]: James R.
+            - paragraph [ref=e159]: Completed B1
+      - generic [ref=e161]:
+        - paragraph [ref=e162]: “Best investment I’ve made for my travel plans. I was able to navigate Mexico City like a local thanks to this course.”
+        - generic [ref=e163]:
+          - figure [ref=e164]
+          - generic [ref=e165]:
+            - paragraph [ref=e166]: Elena K.
+            - paragraph [ref=e167]: Completed A1
+  - generic [ref=e170]:
+    - generic [ref=e171]:
+      - heading "Not sure where to start?" [level=2] [ref=e172]
+      - paragraph [ref=e173]: Take our free 5-minute placement test to find the perfect level for you.
+    - generic [ref=e177] [cursor=pointer]: Take Assessment
+  - contentinfo [ref=e178]:
+    - generic [ref=e180]:
+      - generic [ref=e181]:
+        - heading "thrive-in-spanish" [level=3] [ref=e182]:
+          - link "thrive-in-spanish" [ref=e183] [cursor=pointer]:
+            - /url: http://localhost:8080
+        - paragraph [ref=e184]: Learn Spanish with confidence
+      - paragraph [ref=e186]: © 2025 Thrive in Spanish. All rights reserved.
+```

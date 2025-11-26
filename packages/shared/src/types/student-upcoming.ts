@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MeetEventStatusSchema } from "./google-meet.js";
 
 export const UpcomingSessionSchema = z.object({
   id: z.number().int().positive(),
@@ -10,6 +11,7 @@ export const UpcomingSessionSchema = z.object({
   courseId: z.number().int().nullable().optional(),
   courseName: z.string().nullable().optional(),
   meetingUrl: z.string().url().nullable().optional(),
+  meetStatus: MeetEventStatusSchema.nullable().optional(),
   status: z.string(),
 });
 

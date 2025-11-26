@@ -27,6 +27,12 @@ import {
 import { CancelBookingDto } from "@thrive/shared";
 import { computeRemainingCredits } from "../packages/utils/bundle-helpers.js";
 import { PackageQueryBuilder } from "../packages/utils/package-query-builder.js";
+import { EventEmitter2 } from "@nestjs/event-emitter";
+import { NotificationEvent } from "../events/notification.events.js";
+import {
+  SessionScheduledEvent,
+  SessionCanceledEvent,
+} from "../google-meet/events/session.events.js";
 
 export interface BookingModificationCheck {
   canCancel: boolean;
@@ -64,6 +70,7 @@ export class BookingsService {
     private readonly packageUseRepository: Repository<PackageUse>,
     private readonly policiesService: PoliciesService,
     private readonly waitlistsService: WaitlistsService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   /**
@@ -126,7 +133,21 @@ export class BookingsService {
       sourceTimezone: "UTC",
     });
 
-    return this.sessionRepository.save(newSession);
+    const savedSession = await this.sessionRepository.save(newSession);
+
+    // Emit session scheduled event for Google Meet creation
+    this.eventEmitter.emit(
+      SessionScheduledEvent.eventName,
+      new SessionScheduledEvent(
+        savedSession.id,
+        savedSession.teacherId,
+        savedSession.startAt,
+        savedSession.endAt,
+        `Private Session`,
+      ),
+    );
+
+    return savedSession;
   }
 
   /**
@@ -346,7 +367,18 @@ export class BookingsService {
       packageUseId,
     });
 
-    return this.bookingRepository.save(booking);
+    const savedBooking = await this.bookingRepository.save(booking);
+
+    this.eventEmitter.emit(
+      "notification.created",
+      new NotificationEvent(userId, "booking_created", {
+        bookingId: savedBooking.id,
+        sessionId: session.id,
+        startAt: session.startAt,
+      }),
+    );
+
+    return savedBooking;
   }
 
   /**
@@ -529,6 +561,16 @@ export class BookingsService {
         await manager.update(Session, booking.sessionId, {
           status: SessionStatus.CANCELLED,
         });
+
+        // Emit session canceled event to remove Google Meet
+        this.eventEmitter.emit(
+          SessionCanceledEvent.eventName,
+          new SessionCanceledEvent(
+            booking.sessionId,
+            booking.session.teacherId,
+            dto.reason,
+          ),
+        );
       } else if (booking.session.type === ServiceType.GROUP) {
         // For group sessions, we just remove the booking, but the session remains active
         // and we might want to notify the waitlist

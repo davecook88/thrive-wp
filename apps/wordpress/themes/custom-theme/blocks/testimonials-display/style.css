@@ -1,0 +1,262 @@
+.testimonials-display {
+  width: 100%;
+}
+
+/* Loading state */
+.testimonials-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+}
+
+.testimonials-loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--wp--preset--color--gray-200, #e5e7eb);
+  border-top-color: var(--wp--preset--color--primary, #3b82f6);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.testimonials-loading p {
+  margin-top: 1rem;
+  color: var(--wp--preset--color--gray-600, #4b5563);
+}
+
+/* Error state */
+.testimonials-error {
+  padding: 2rem;
+  text-align: center;
+  color: var(--wp--preset--color--error, #ef4444);
+  background-color: var(--wp--preset--color--error-light, #fee2e2);
+  border-radius: 8px;
+}
+
+/* Empty state */
+.testimonials-empty {
+  padding: 4rem 2rem;
+  text-align: center;
+  color: var(--wp--preset--color--gray-600, #4b5563);
+}
+
+/* Testimonial Card */
+.testimonial-card {
+  background: var(--wp--preset--color--white, #ffffff);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.testimonial-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.testimonial-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.testimonial-star-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.testimonial-star-rating .star {
+  font-size: 1.25rem;
+}
+
+.testimonial-star-rating .star.filled {
+  color: var(--wp--preset--color--warning, #fbbf24);
+}
+
+.testimonial-star-rating .star.empty {
+  color: var(--wp--preset--color--gray-300, #d1d5db);
+}
+
+.testimonial-star-rating .rating-number {
+  margin-left: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--wp--preset--color--gray-600, #4b5563);
+}
+
+.testimonial-comment {
+  margin: 0;
+  font-style: italic;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--wp--preset--color--gray-700, #374151);
+  border-left: 3px solid var(--wp--preset--color--primary, #3b82f6);
+  padding-left: 1rem;
+}
+
+.testimonial-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.testimonial-tags .tag {
+  padding: 0.25rem 0.75rem;
+  background: var(--wp--preset--color--gray-100, #f3f4f6);
+  color: var(--wp--preset--color--gray-700, #374151);
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.testimonial-author {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--wp--preset--color--gray-200, #e5e7eb);
+}
+
+.author-avatar,
+.author-avatar-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.author-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wp--preset--color--primary, #3b82f6);
+  color: white;
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.author-info {
+  flex: 1;
+}
+
+.author-name {
+  font-weight: 600;
+  color: var(--wp--preset--color--gray-900, #111827);
+}
+
+.author-context {
+  font-size: 0.875rem;
+  color: var(--wp--preset--color--primary, #3b82f6);
+  margin-top: 0.25rem;
+}
+
+.author-context span {
+  display: block;
+}
+
+/* Grid Layout */
+.testimonials-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
+  .testimonials-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Carousel Layout */
+.carousel-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.carousel-button {
+  background: var(--wp--preset--color--white, #ffffff);
+  border: 2px solid var(--wp--preset--color--gray-300, #d1d5db);
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.carousel-button:hover {
+  background: var(--wp--preset--color--primary, #3b82f6);
+  color: white;
+  border-color: var(--wp--preset--color--primary, #3b82f6);
+}
+
+.carousel-button:active {
+  transform: scale(0.95);
+}
+
+.carousel-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.carousel-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.carousel-indicators .indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--wp--preset--color--gray-300, #d1d5db);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.carousel-indicators .indicator.active {
+  background: var(--wp--preset--color--primary, #3b82f6);
+  width: 24px;
+  border-radius: 5px;
+}
+
+.carousel-indicators .indicator:hover {
+  background: var(--wp--preset--color--primary-light, #60a5fa);
+}
+
+@media (max-width: 768px) {
+  .carousel-button {
+    width: 36px;
+    height: 36px;
+    font-size: 1.5rem;
+  }
+}
+
+/* List Layout */
+.testimonials-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

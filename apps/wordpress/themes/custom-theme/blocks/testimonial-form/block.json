@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "thrive/testimonial-form",
+  "version": "1.0.0",
+  "title": "Testimonial Submission Form",
+  "category": "thrive",
+  "icon": "star-filled",
+  "description": "Allow students to submit testimonials for teachers and courses",
+  "supports": {
+    "html": false
+  },
+  "attributes": {
+    "showMyTestimonials": {
+      "type": "boolean",
+      "default": true
+    },
+    "allowGeneralTestimonials": {
+      "type": "boolean",
+      "default": true
+    },
+    "thankYouMessage": {
+      "type": "string",
+      "default": "Thank you for your testimonial! It will be reviewed by our team."
+    }
+  },
+  "textdomain": "thrive",
+  "editorScript": "file:./index.tsx",
+  "viewScript": "file:./view.tsx"
+}

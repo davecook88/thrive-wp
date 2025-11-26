@@ -61,6 +61,7 @@
                     @promote-admin="$emit('promote-admin', user)"
                     @demote-admin="$emit('demote-admin', user)"
                     @promote-teacher="$emit('promote-teacher', user)"
+                    @demote-teacher="$emit('demote-teacher', user)"
                     @update-teacher-tier="$emit('update-teacher-tier', { user, tier: $event })"
                   />
                 </div>
@@ -102,6 +103,7 @@ export default defineComponent({
     'promote-admin',
     'demote-admin',
     'promote-teacher',
+    'demote-teacher',
     'update-teacher-tier'
   ],
   setup() {

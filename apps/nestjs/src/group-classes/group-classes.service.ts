@@ -345,11 +345,7 @@ export class GroupClassesService {
         await createLevelsAndTeachers(savedGroupClass.id);
 
         // Create the single session for this GroupClass
-        await createSession(
-          savedGroupClass.id,
-          startAt,
-          endAt,
-        );
+        await createSession(savedGroupClass.id, startAt, endAt);
 
         createdGroupClasses.push(savedGroupClass);
       }

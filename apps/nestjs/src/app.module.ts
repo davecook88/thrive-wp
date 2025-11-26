@@ -19,6 +19,11 @@ import { GroupClassesModule } from "./group-classes/group-classes.module.js";
 import { WaitlistsModule } from "./waitlists/waitlists.module.js";
 import { CourseProgramsModule } from "./course-programs/course-programs.module.js";
 import { CourseMaterialsModule } from "./course-materials/course-materials.module.js";
+import { NotificationsModule } from "./notifications/notifications.module.js";
+import { TestimonialsModule } from "./testimonials/testimonials.module.js";
+import { EventsModule } from "./events/events.module.js";
+import { GoogleMeetModule } from "./google-meet/google-meet.module.js";
+import { AdminOrdersModule } from "./admin-orders/admin-orders.module.js";
 import { AppController } from "./app.controller.js";
 import { AppService } from "./app.service.js";
 
@@ -76,6 +81,11 @@ import { AppService } from "./app.service.js";
     WaitlistsModule,
     CourseProgramsModule,
     CourseMaterialsModule,
+    NotificationsModule,
+    TestimonialsModule,
+    EventsModule,
+    GoogleMeetModule,
+    AdminOrdersModule,
   ],
   controllers: [AppController],
   providers: [

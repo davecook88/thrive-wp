@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Query,
+  Param,
   UseGuards,
   BadRequestException,
 } from "@nestjs/common";
@@ -65,5 +66,16 @@ export class UsersController {
     @Body(new ZodValidationPipe(MakeTeacherSchema)) dto: MakeTeacherDto,
   ): Promise<UserResponse> {
     return this.usersService.makeUserTeacher(dto.userId);
+  }
+
+  @Post(":userId/demote/teacher")
+  async demoteFromTeacher(
+    @Param("userId") userId: string,
+  ): Promise<UserResponse> {
+    const userIdNum = parseInt(userId, 10);
+    if (isNaN(userIdNum) || userIdNum < 1) {
+      throw new BadRequestException("Invalid user ID");
+    }
+    return this.usersService.demoteFromTeacher(userIdNum);
   }
 }

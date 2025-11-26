@@ -1,0 +1,282 @@
+/**
+ * Thrive Notifications Component Styles
+ * 
+ * A clean, modern notification bell with dropdown panel.
+ * Uses theme.json CSS variables for consistency.
+ */
+
+.thrive-notifications {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Trigger Button */
+.thrive-notifications__trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.15s ease;
+  color: var(--wp--preset--color--contrast, #1f2937);
+}
+
+.thrive-notifications__trigger:hover {
+  background-color: var(--wp--preset--color--gray-100, #f3f4f6);
+}
+
+.thrive-notifications__trigger:active {
+  transform: scale(0.95);
+}
+
+.thrive-notifications__trigger:focus-visible {
+  outline: 2px solid var(--wp--preset--color--primary, #ff5722);
+  outline-offset: 2px;
+}
+
+/* Bell Icon */
+.thrive-notifications__icon {
+  width: 22px;
+  height: 22px;
+  stroke-width: 2;
+}
+
+/* Unread Badge */
+.thrive-notifications__badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+  color: #fff;
+  background-color: var(--wp--preset--color--primary, #ff5722);
+  border-radius: 9px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  animation: thrive-badge-pop 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes thrive-badge-pop {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Dropdown Panel */
+.thrive-notifications__dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  max-height: 400px;
+  background: var(--wp--preset--color--base, #fff);
+  border-radius: var(--wp--custom--border-radius--field, 12px);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 10px 20px -2px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  z-index: 1000;
+  animation: thrive-dropdown-enter 0.2s ease-out;
+}
+
+@keyframes thrive-dropdown-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dropdown Header */
+.thrive-notifications__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--wp--preset--color--gray-100, #f3f4f6);
+}
+
+.thrive-notifications__header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--wp--preset--color--contrast, #1f2937);
+}
+
+.thrive-notifications__count {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--wp--preset--color--primary, #ff5722);
+  background: rgba(255, 87, 34, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* Notification List */
+.thrive-notifications__list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.thrive-notifications__list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.thrive-notifications__list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thrive-notifications__list::-webkit-scrollbar-thumb {
+  background: var(--wp--preset--color--gray-200, #e5e7eb);
+  border-radius: 3px;
+}
+
+/* Empty State */
+.thrive-notifications__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--wp--preset--color--gray-500, #6b7280);
+}
+
+.thrive-notifications__empty svg {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+.thrive-notifications__empty p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Notification Item */
+.thrive-notifications__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--wp--preset--color--base, #fff);
+  border-bottom: 1px solid var(--wp--preset--color--gray-100, #f3f4f6);
+  transition: background-color 0.15s ease;
+  cursor: default;
+}
+
+.thrive-notifications__item:last-child {
+  border-bottom: none;
+}
+
+.thrive-notifications__item:not(.thrive-notifications__item--read) {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 87, 34, 0.04) 0%,
+    transparent 100%
+  );
+}
+
+.thrive-notifications__item:hover {
+  background-color: var(--wp--preset--color--gray-50, #f9fafb);
+}
+
+/* Unread Indicator Dot */
+.thrive-notifications__item-indicator {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  background-color: var(--wp--preset--color--primary, #ff5722);
+  border-radius: 50%;
+  transition: opacity 0.2s ease;
+}
+
+.thrive-notifications__item--read .thrive-notifications__item-indicator {
+  opacity: 0;
+}
+
+/* Item Content */
+.thrive-notifications__item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.thrive-notifications__item-type {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--wp--preset--color--contrast, #1f2937);
+  line-height: 1.4;
+}
+
+.thrive-notifications__item--read .thrive-notifications__item-type {
+  color: var(--wp--preset--color--gray-600, #4b5563);
+  font-weight: 400;
+}
+
+.thrive-notifications__item-time {
+  display: block;
+  font-size: 12px;
+  color: var(--wp--preset--color--gray-500, #6b7280);
+}
+
+/* Mark as Read Button */
+.thrive-notifications__mark-read {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--wp--preset--color--gray-200, #e5e7eb);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--wp--preset--color--gray-500, #6b7280);
+  transition: all 0.15s ease;
+}
+
+.thrive-notifications__mark-read:hover {
+  background: var(--wp--preset--color--secondary, #10b981);
+  border-color: var(--wp--preset--color--secondary, #10b981);
+  color: #fff;
+}
+
+.thrive-notifications__mark-read:focus-visible {
+  outline: 2px solid var(--wp--preset--color--primary, #ff5722);
+  outline-offset: 2px;
+}
+
+.thrive-notifications__mark-read svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 400px) {
+  .thrive-notifications__dropdown {
+    width: calc(100vw - 32px);
+    right: -8px;
+  }
+}

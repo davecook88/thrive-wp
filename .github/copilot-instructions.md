@@ -12,6 +12,17 @@ This entire app must be able to be deployed to a single VPS. This means all serv
 - **MariaDB**: Internal port 3306 (database container)
 - **Network**: All services communicate on `wordpress_net` bridge network
 
+### File Upload Configuration
+File uploads require proper configuration at multiple layers. See `docs/wordpress-upload-system.md` for full details.
+
+**Key files that configure upload limits:**
+- `Dockerfile` - PHP settings (`upload_max_filesize`, `post_max_size`, `memory_limit`)
+- `nginx/nginx.conf/default.conf` - Nginx settings (`client_max_body_size`)
+
+**Current limits:** 50MB for uploads, 512MB PHP memory for image processing.
+
+**Frontend image resizing:** The frontend (`apps/wordpress/themes/custom-theme/lib/upload-utils.ts`) automatically resizes images before upload to reduce file size.
+
 ## Critical Patterns
 
 ### WordPress-NestJS Bridge Communication
